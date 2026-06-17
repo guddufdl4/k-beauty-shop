@@ -48,6 +48,7 @@ export async function signIn(
   }
 
   revalidatePath("/account");
+  revalidatePath("/admin");
   redirect("/account");
 }
 

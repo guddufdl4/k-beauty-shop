@@ -4,19 +4,33 @@ import { getAdminOrderStats } from "@/lib/admin/orders";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getTossStatusMessage, isTossConfigured } from "@/lib/toss";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboardPage() {
-  const { configured, user, profile } = await getSessionProfile();
+  const { configured, user, profile, profileError } = await getSessionProfile();
   const stats = await getAdminOrderStats();
 
   if (configured && (!user || profile?.role !== "admin")) {
+    const accessMessage = !user
+      ? "관리자 계정으로 로그인하세요."
+      : profileError
+        ? "프로필을 불러오지 못했습니다. Supabase RLS·profiles 행을 확인하세요."
+        : !profile
+          ? "profiles 행이 없습니다. 회원가입 후 SQL로 admin 역할을 지정하세요."
+          : `현재 역할(${profile.role})은 관리자(admin)가 아닙니다.`;
+
     return (
       <main className="mx-auto max-w-5xl px-4 py-16">
         <h1 className="text-2xl font-bold text-zinc-900">관리자 대시보드</h1>
-        <p className="mt-4 text-zinc-600">
-          {!user
-            ? "관리자 계정으로 로그인하세요."
-            : "관리자 권한이 있는 계정만 접근할 수 있습니다."}
-        </p>
+        <p className="mt-4 text-zinc-600">{accessMessage}</p>
+        {user ? (
+          <p className="mt-2 font-mono text-xs text-zinc-500">
+            user id: {user.id}
+            {user.email ? ` · email: ${user.email}` : null}
+            {profile ? ` · role: ${profile.role}` : null}
+            {profileError ? ` · profile error: ${profileError}` : null}
+          </p>
+        ) : null}
         <Link
           href={user ? "/" : "/login"}
           className="mt-6 inline-flex rounded-lg bg-rose-600 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-700"
