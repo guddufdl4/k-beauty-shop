@@ -96,8 +96,19 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-zinc-200 bg-zinc-50 py-8 text-center text-xs text-zinc-500">
-        © K-Beauty Shop · 한국 화장품 수출 플랫폼
+      <footer className="border-t border-zinc-200 bg-zinc-50 px-4 py-8 text-center text-xs text-zinc-500">
+        <nav className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link href="/about" className="hover:text-rose-600 hover:underline">
+            회사 소개
+          </Link>
+          <span aria-hidden="true" className="text-zinc-300">
+            ·
+          </span>
+          <Link href="/terms" className="hover:text-rose-600 hover:underline">
+            이용약관
+          </Link>
+        </nav>
+        <p>© K-Beauty Shop · 한국 화장품 수출 플랫폼</p>
       </footer>
     </div>
   );
