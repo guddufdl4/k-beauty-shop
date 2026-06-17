@@ -2,32 +2,42 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { signOut } from "@/app/actions/auth";
 
-const links = [
+const baseLinks = [
   { href: "/categories", label: "카테고리" },
   { href: "/products", label: "상품" },
   { href: "/cart", label: "장바구니" },
-  { href: "/account", label: "마이페이지" },
+];
+
+const guestLinks = [
   { href: "/login", label: "로그인" },
   { href: "/signup", label: "회원가입" },
 ];
 
 type Props = {
   cartCount: number;
+  isLoggedIn: boolean;
+  userEmail?: string | null;
 };
 
-export function MobileNav({ cartCount }: Props) {
+function accountLabel(email?: string | null) {
+  if (!email) return "마이페이지";
+  return email.length > 24 ? `${email.slice(0, 24)}…` : email;
+}
+
+export function MobileNav({ cartCount, isLoggedIn, userEmail }: Props) {
   const [open, setOpen] = useState(false);
+
+  const linkClass =
+    "transition-colors hover:text-rose-600";
+  const mobileLinkClass = "text-zinc-700 hover:text-rose-600";
 
   return (
     <>
       <nav className="hidden items-center gap-5 text-sm font-medium text-zinc-700 md:flex">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="transition-colors hover:text-rose-600"
-          >
+        {baseLinks.map((link) => (
+          <Link key={link.href} href={link.href} className={linkClass}>
             {link.label}
             {link.href === "/cart" && cartCount > 0 ? (
               <span className="ml-1 rounded-full bg-rose-600 px-1.5 py-0.5 text-xs text-white">
@@ -36,6 +46,27 @@ export function MobileNav({ cartCount }: Props) {
             ) : null}
           </Link>
         ))}
+        {isLoggedIn ? (
+          <>
+            <Link href="/account" className={linkClass}>
+              {accountLabel(userEmail)}
+            </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className={`${linkClass} cursor-pointer`}
+              >
+                로그아웃
+              </button>
+            </form>
+          </>
+        ) : (
+          guestLinks.map((link) => (
+            <Link key={link.href} href={link.href} className={linkClass}>
+              {link.label}
+            </Link>
+          ))
+        )}
       </nav>
 
       <button
@@ -51,11 +82,11 @@ export function MobileNav({ cartCount }: Props) {
       {open ? (
         <div className="absolute left-0 right-0 top-full border-b border-rose-100 bg-white px-4 py-4 shadow-md md:hidden">
           <nav className="flex flex-col gap-3 text-sm font-medium">
-            {links.map((link) => (
+            {baseLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-zinc-700 hover:text-rose-600"
+                className={mobileLinkClass}
                 onClick={() => setOpen(false)}
               >
                 {link.label}
@@ -64,6 +95,37 @@ export function MobileNav({ cartCount }: Props) {
                   : ""}
               </Link>
             ))}
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/account"
+                  className={mobileLinkClass}
+                  onClick={() => setOpen(false)}
+                >
+                  {accountLabel(userEmail)}
+                </Link>
+                <form action={signOut}>
+                  <button
+                    type="submit"
+                    className={`${mobileLinkClass} text-left`}
+                    onClick={() => setOpen(false)}
+                  >
+                    로그아웃
+                  </button>
+                </form>
+              </>
+            ) : (
+              guestLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={mobileLinkClass}
+                  onClick={() => setOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))
+            )}
           </nav>
         </div>
       ) : null}

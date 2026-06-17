@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { getCart } from "@/lib/cart";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { MobileNav } from "./mobile-nav";
 
 export async function StoreHeader() {
-  const cart = await getCart();
+  const [cart, { user, profile }] = await Promise.all([
+    getCart(),
+    getSessionProfile(),
+  ]);
+  const userEmail = profile?.email ?? user?.email ?? null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-rose-100/80 bg-white/95 backdrop-blur-sm">
@@ -15,7 +20,11 @@ export async function StoreHeader() {
           >
             K-Beauty Shop
           </Link>
-          <MobileNav cartCount={cart.itemCount} />
+          <MobileNav
+            cartCount={cart.itemCount}
+            isLoggedIn={Boolean(user)}
+            userEmail={userEmail}
+          />
         </div>
       </div>
     </header>
