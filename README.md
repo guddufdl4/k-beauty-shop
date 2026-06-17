@@ -8,8 +8,7 @@ Next.js App Router + Supabase(PostgreSQL) 기반으로 구축합니다.
 스캐폴드, 라우트 구조, DB 스키마 설계가 완료되었습니다.  
 **상세 기획·페이지 맵·ERD·Phase 2 범위는 아래 문서를 참고하세요.**
 
-👉 **[docs/PHASE1.md](./docs/PHASE1.md)**  
-🚀 **배포:** [docs/PHASE7.md](./docs/PHASE7.md)
+👉 **[docs/PHASE1.md](./docs/PHASE1.md)** · 배포: **[docs/PHASE7.md](./docs/PHASE7.md)**
 
 ## 빠른 시작
 
@@ -42,10 +41,6 @@ Supabase용 DDL: [`supabase/schema.sql`](./supabase/schema.sql)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS 4
 - **Database:** Supabase PostgreSQL (Phase 2 연동 예정)
-
-## 배포 (Phase 7)
-
-Vercel 배포 절차·환경 변수: **[docs/PHASE7.md](./docs/PHASE7.md)**
 
 ## 다음 단계
 

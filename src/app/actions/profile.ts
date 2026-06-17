@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
@@ -27,7 +27,8 @@ export async function updateProfileFullName(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return redirect({ href: "/login", locale: await getLocale() });
+    redirect({ href: "/login", locale: await getLocale() });
+    return { error: "로그인이 필요합니다." };
   }
 
   const { error } = await supabase
