@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { formatKRW } from "@/lib/utils";
 import type { ProductWithRelations } from "@/lib/supabase/products";
 

@@ -1,60 +1,49 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
-
-const baseLinks = [
-  { href: "/categories", label: "카테고리" },
-  { href: "/products", label: "상품" },
-  { href: "/cart", label: "장바구니" },
-];
-
-const guestLinks = [
-  { href: "/login", label: "로그인" },
-  { href: "/signup", label: "회원가입" },
-];
+import { LocaleSwitcher } from "./locale-switcher";
 
 type Props = {
   cartCount: number;
   isLoggedIn: boolean;
-  userEmail?: string | null;
   profileRole?: "customer" | "admin" | "wholesale" | null;
   profileFullName?: string | null;
 };
 
-function accountLabel({
-  role,
-  fullName,
-  email,
-}: {
-  role?: "customer" | "admin" | "wholesale" | null;
-  fullName?: string | null;
-  email?: string | null;
-}) {
-  if (role === "admin") return "관리자";
-  const nickname = fullName?.trim();
-  if (nickname) return nickname;
-  if (!email) return "마이페이지";
-  return email.length > 24 ? `${email.slice(0, 24)}…` : email;
+function accountLabel(
+  t: (key: "admin" | "account") => string,
+  role?: "customer" | "admin" | "wholesale" | null,
+  fullName?: string | null,
+) {
+  if (role === "admin") return t("admin");
+  const trimmed = fullName?.trim();
+  if (trimmed) return trimmed;
+  return t("account");
 }
 
 export function MobileNav({
   cartCount,
   isLoggedIn,
-  userEmail,
   profileRole,
   profileFullName,
 }: Props) {
-  const label = accountLabel({
-    role: profileRole,
-    fullName: profileFullName,
-    email: userEmail,
-  });
+  const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
+  const label = accountLabel(t, profileRole, profileFullName);
+  const baseLinks = [
+    { href: "/categories", label: t("categories") },
+    { href: "/products", label: t("products") },
+    { href: "/cart", label: t("cart") },
+  ] as const;
+  const guestLinks = [
+    { href: "/login", label: t("login") },
+    { href: "/signup", label: t("signup") },
+  ] as const;
 
-  const linkClass =
-    "transition-colors hover:text-rose-600";
+  const linkClass = "transition-colors hover:text-rose-600";
   const mobileLinkClass = "text-zinc-700 hover:text-rose-600";
 
   return (
@@ -73,14 +62,11 @@ export function MobileNav({
         {isLoggedIn ? (
           <>
             <Link href="/account" className={linkClass}>
-              {accountLabel(userEmail)}
+              {label}
             </Link>
             <form action={signOut}>
-              <button
-                type="submit"
-                className={`${linkClass} cursor-pointer`}
-              >
-                로그아웃
+              <button type="submit" className={`${linkClass} cursor-pointer`}>
+                {t("logout")}
               </button>
             </form>
           </>
@@ -98,9 +84,9 @@ export function MobileNav({
         className="rounded-lg border border-zinc-200 px-3 py-2 text-sm md:hidden"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label="메뉴"
+        aria-label={t("menu")}
       >
-        메뉴
+        {t("menu")}
       </button>
 
       {open ? (
@@ -126,7 +112,7 @@ export function MobileNav({
                   className={mobileLinkClass}
                   onClick={() => setOpen(false)}
                 >
-                  {accountLabel(userEmail)}
+                  {label}
                 </Link>
                 <form action={signOut}>
                   <button
@@ -134,7 +120,7 @@ export function MobileNav({
                     className={`${mobileLinkClass} text-left`}
                     onClick={() => setOpen(false)}
                   >
-                    로그아웃
+                    {t("logout")}
                   </button>
                 </form>
               </>
@@ -150,6 +136,7 @@ export function MobileNav({
                 </Link>
               ))
             )}
+            <LocaleSwitcher />
           </nav>
         </div>
       ) : null}

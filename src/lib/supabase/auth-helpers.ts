@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -13,7 +14,7 @@ async function fetchProfileByUserId(userId: string) {
   const supabase = await createClient();
   return supabase
     .from("profiles")
-    .select("id, email, role")
+    .select("id, email, full_name, role")
     .eq("id", userId)
     .maybeSingle();
 }
@@ -26,7 +27,7 @@ async function fetchProfileWithServiceRole(userId: string) {
 
   return serviceClient
     .from("profiles")
-    .select("id, email, role")
+    .select("id, email, full_name, role")
     .eq("id", userId)
     .maybeSingle();
 }
@@ -115,4 +116,21 @@ export async function getSessionProfile(): Promise<{
     profile: null,
     profileError: null,
   };
+}
+
+/** Supabase 연결 시 /admin — 로그인 + role=admin 필수 (데모 모드는 통과) */
+export async function requireAdminSession(): Promise<void> {
+  const { configured, user, profile } = await getSessionProfile();
+
+  if (!configured) {
+    return;
+  }
+
+  if (!user) {
+    redirect("/en/login");
+  }
+
+  if (profile?.role !== "admin") {
+    redirect("/en");
+  }
 }

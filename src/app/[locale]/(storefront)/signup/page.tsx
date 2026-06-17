@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { AuthForm } from "@/components/store/auth-form";
 import { signUp } from "@/app/actions/auth";
+import { Link } from "@/i18n/navigation";
 
 export default function SignUpPage() {
   return (

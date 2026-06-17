@@ -6,3 +6,4 @@ export { AddToCartButton } from "./add-to-cart-button";
 export { AddToCartForm } from "./add-to-cart-form";
 export { EmptyState } from "./empty-state";
 export { MobileNav } from "./mobile-nav";
+export { LocaleSwitcher } from "./locale-switcher";

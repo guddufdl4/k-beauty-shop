@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   placeOrder,
   type CheckoutState,
 } from "@/app/actions/checkout";
+import { useRouter } from "@/i18n/navigation";
 import { formatKRW } from "@/lib/utils";
 import type { CartView } from "@/types/cart";
 

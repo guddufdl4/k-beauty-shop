@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { CategoryCard } from "@/components/store/category-card";
 import { EmptyState } from "@/components/store/empty-state";
 import { getCategories } from "@/lib/supabase/products";
+import { Link } from "@/i18n/navigation";
 
 export default async function CategoriesPage() {
   const { categories, meta } = await getCategories();

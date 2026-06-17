@@ -1,5 +1,5 @@
--- K-Beauty Shop — Phase 3 seed data
--- Run AFTER schema.sql and migrations/001_rls_and_profiles.sql
+-- K-Beauty Shop — sample categories & products
+-- Run AFTER supabase/reset-and-setup.sql (see docs/SUPABASE_SETUP.md)
 
 -- =============================================================================
 -- Admin write policies (product & category management)

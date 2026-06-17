@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import {
   calculateShippingCost,
@@ -6,6 +5,7 @@ import {
   usesDatabaseCart,
 } from "@/lib/cart";
 import { getStripeStatusMessage, isStripeConfigured } from "@/lib/stripe";
+import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
 
