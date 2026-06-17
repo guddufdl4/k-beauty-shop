@@ -59,3 +59,40 @@ export async function signOut() {
   revalidatePath("/account");
   redirect("/login");
 }
+
+export async function updateProfileNickname(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const nickname = String(formData.get("nickname") ?? "").trim();
+
+  if (!nickname) {
+    return { error: "닉네임을 입력해 주세요." };
+  }
+
+  if (nickname.length > 30) {
+    return { error: "닉네임은 30자 이하로 입력해 주세요." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: nickname })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/account");
+  return { success: "닉네임이 저장되었습니다." };
+}

@@ -18,15 +18,28 @@ const guestLinks = [
 type Props = {
   cartCount: number;
   isLoggedIn: boolean;
-  userEmail?: string | null;
+  profileRole?: "customer" | "admin" | "wholesale" | null;
+  profileFullName?: string | null;
 };
 
-function accountLabel(email?: string | null) {
-  if (!email) return "마이페이지";
-  return email.length > 24 ? `${email.slice(0, 24)}…` : email;
+function accountLabel(
+  role?: "customer" | "admin" | "wholesale" | null,
+  fullName?: string | null,
+) {
+  if (role === "admin") return "관리자";
+  const nickname = fullName?.trim();
+  if (nickname) {
+    return nickname.length > 16 ? `${nickname.slice(0, 16)}…` : nickname;
+  }
+  return "마이페이지";
 }
 
-export function MobileNav({ cartCount, isLoggedIn, userEmail }: Props) {
+export function MobileNav({
+  cartCount,
+  isLoggedIn,
+  profileRole,
+  profileFullName,
+}: Props) {
   const [open, setOpen] = useState(false);
 
   const linkClass =
@@ -49,7 +62,7 @@ export function MobileNav({ cartCount, isLoggedIn, userEmail }: Props) {
         {isLoggedIn ? (
           <>
             <Link href="/account" className={linkClass}>
-              {accountLabel(userEmail)}
+              {accountLabel(profileRole, profileFullName)}
             </Link>
             <form action={signOut}>
               <button
@@ -102,7 +115,7 @@ export function MobileNav({ cartCount, isLoggedIn, userEmail }: Props) {
                   className={mobileLinkClass}
                   onClick={() => setOpen(false)}
                 >
-                  {accountLabel(userEmail)}
+                  {accountLabel(profileRole, profileFullName)}
                 </Link>
                 <form action={signOut}>
                   <button

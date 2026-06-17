@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 export type SessionProfile = {
   id: string;
   email: string;
+  full_name: string | null;
   role: "customer" | "admin" | "wholesale";
 };
 
@@ -12,7 +13,7 @@ async function fetchProfileByUserId(userId: string) {
   const supabase = await createClient();
   return supabase
     .from("profiles")
-    .select("id, email, role")
+    .select("id, email, full_name, role")
     .eq("id", userId)
     .maybeSingle();
 }
@@ -25,7 +26,7 @@ async function fetchProfileWithServiceRole(userId: string) {
 
   return serviceClient
     .from("profiles")
-    .select("id, email, role")
+    .select("id, email, full_name, role")
     .eq("id", userId)
     .maybeSingle();
 }

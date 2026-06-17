@@ -8,8 +8,6 @@ export async function StoreHeader() {
     getCart(),
     getSessionProfile(),
   ]);
-  const userEmail = profile?.email ?? user?.email ?? null;
-
   return (
     <header className="sticky top-0 z-50 border-b border-rose-100/80 bg-white/95 backdrop-blur-sm">
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
@@ -23,7 +21,8 @@ export async function StoreHeader() {
           <MobileNav
             cartCount={cart.itemCount}
             isLoggedIn={Boolean(user)}
-            userEmail={userEmail}
+            profileRole={profile?.role ?? null}
+            profileFullName={profile?.full_name ?? null}
           />
         </div>
       </div>
