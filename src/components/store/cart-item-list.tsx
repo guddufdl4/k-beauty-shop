@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import {
   removeFromCart,
   updateQuantity,
@@ -13,6 +14,7 @@ import type { CartItemView } from "@/types/cart";
 const initialState: CartActionState = {};
 
 function CartItemRow({ item }: { item: CartItemView }) {
+  const t = useTranslations("cart");
   const [updateState, updateAction, updatePending] = useActionState(
     updateQuantity,
     initialState,
@@ -37,9 +39,7 @@ function CartItemRow({ item }: { item: CartItemView }) {
           >
             {item.name}
           </Link>
-          <p className="mt-1 text-sm text-zinc-500">
-            SKU {item.sku} · MOQ {item.moq}
-          </p>
+          <p className="mt-1 text-sm text-zinc-500">SKU {item.sku} - MOQ {item.moq}</p>
           <p className="mt-2 text-lg font-bold">{formatKRW(item.lineTotal)}</p>
         </div>
 
@@ -58,7 +58,7 @@ function CartItemRow({ item }: { item: CartItemView }) {
               disabled={updatePending}
               className="rounded-lg border border-zinc-300 px-3 py-3 text-sm hover:bg-zinc-50 disabled:opacity-60"
             >
-              변경
+              {t("change")}
             </button>
           </form>
 
@@ -69,7 +69,7 @@ function CartItemRow({ item }: { item: CartItemView }) {
               disabled={removePending}
               className="py-3 text-sm text-zinc-500 hover:text-red-600 disabled:opacity-60"
             >
-              삭제
+              {t("remove")}
             </button>
           </form>
         </div>
