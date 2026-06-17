@@ -18,28 +18,39 @@ const guestLinks = [
 type Props = {
   cartCount: number;
   isLoggedIn: boolean;
+  userEmail?: string | null;
   profileRole?: "customer" | "admin" | "wholesale" | null;
   profileFullName?: string | null;
 };
 
-function accountLabel(
-  role?: "customer" | "admin" | "wholesale" | null,
-  fullName?: string | null,
-) {
+function accountLabel({
+  role,
+  fullName,
+  email,
+}: {
+  role?: "customer" | "admin" | "wholesale" | null;
+  fullName?: string | null;
+  email?: string | null;
+}) {
   if (role === "admin") return "관리자";
   const nickname = fullName?.trim();
-  if (nickname) {
-    return nickname.length > 16 ? `${nickname.slice(0, 16)}…` : nickname;
-  }
-  return "마이페이지";
+  if (nickname) return nickname;
+  if (!email) return "마이페이지";
+  return email.length > 24 ? `${email.slice(0, 24)}…` : email;
 }
 
 export function MobileNav({
   cartCount,
   isLoggedIn,
+  userEmail,
   profileRole,
   profileFullName,
 }: Props) {
+  const label = accountLabel({
+    role: profileRole,
+    fullName: profileFullName,
+    email: userEmail,
+  });
   const [open, setOpen] = useState(false);
 
   const linkClass =
@@ -62,7 +73,7 @@ export function MobileNav({
         {isLoggedIn ? (
           <>
             <Link href="/account" className={linkClass}>
-              {accountLabel(profileRole, profileFullName)}
+              {accountLabel(userEmail)}
             </Link>
             <form action={signOut}>
               <button
@@ -115,7 +126,7 @@ export function MobileNav({
                   className={mobileLinkClass}
                   onClick={() => setOpen(false)}
                 >
-                  {accountLabel(profileRole, profileFullName)}
+                  {accountLabel(userEmail)}
                 </Link>
                 <form action={signOut}>
                   <button

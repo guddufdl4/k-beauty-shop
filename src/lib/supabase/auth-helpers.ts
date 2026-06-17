@@ -13,7 +13,7 @@ async function fetchProfileByUserId(userId: string) {
   const supabase = await createClient();
   return supabase
     .from("profiles")
-    .select("id, email, full_name, role")
+    .select("id, email, role")
     .eq("id", userId)
     .maybeSingle();
 }
@@ -26,7 +26,7 @@ async function fetchProfileWithServiceRole(userId: string) {
 
   return serviceClient
     .from("profiles")
-    .select("id, email, full_name, role")
+    .select("id, email, role")
     .eq("id", userId)
     .maybeSingle();
 }
