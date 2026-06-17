@@ -1,21 +1,27 @@
-import { AuthForm } from "@/components/store/auth-form";
+﻿import { getTranslations } from "next-intl/server";
 import { signUp } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
+import { AuthForm } from "@/components/store/auth-form";
 
-export default function SignUpPage() {
+export default async function SignUpPage() {
+  const t = await getTranslations("auth");
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-16">
-      <h1 className="text-3xl font-bold">회원가입</h1>
-      <p className="mt-2 text-zinc-600">B2C · 도매 회원 모두 가입 가능 (Phase 2)</p>
+      <h1 className="text-3xl font-bold">{t("signupTitle")}</h1>
+      <p className="mt-2 text-zinc-600">{t("signupSubtitle")}</p>
       <div className="mt-8">
         <AuthForm
           action={signUp}
-          submitLabel="가입하기"
+          submitLabel={t("signupButton")}
+          emailLabel={t("email")}
+          passwordLabel={t("password")}
+          pendingLabel={t("processing")}
           footer={
             <p className="text-center text-sm text-zinc-600">
-              이미 계정이 있으신가요?{" "}
+              {t("hasAccount")}{" "}
               <Link href="/login" className="text-rose-600 hover:underline">
-                로그인
+                {t("loginTitle")}
               </Link>
             </p>
           }
@@ -24,3 +30,4 @@ export default function SignUpPage() {
     </main>
   );
 }
+

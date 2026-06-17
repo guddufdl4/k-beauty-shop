@@ -1,4 +1,4 @@
-import { Link } from "@/i18n/navigation";
+﻿import { Link } from "@/i18n/navigation";
 import { formatKRW } from "@/lib/utils";
 import type { ProductWithRelations } from "@/lib/supabase/products";
 
@@ -7,8 +7,7 @@ type Props = {
 };
 
 export function ProductCard({ product }: Props) {
-  const primaryImage =
-    product.images.find((img) => img.is_primary) ?? product.images[0];
+  const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
 
   return (
     <Link
@@ -25,10 +24,7 @@ export function ProductCard({ product }: Props) {
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
-            <span className="text-3xl opacity-40">✨</span>
-            <span className="text-xs font-medium uppercase tracking-wider text-rose-400">
-              {product.brand}
-            </span>
+            <span className="text-xs font-medium uppercase tracking-wider text-rose-400">{product.brand}</span>
           </div>
         )}
         {product.is_featured ? (
@@ -38,26 +34,18 @@ export function ProductCard({ product }: Props) {
         ) : null}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-rose-500">
-          {product.brand}
-        </p>
+        <p className="text-xs font-medium uppercase tracking-wide text-rose-500">{product.brand}</p>
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 group-hover:text-rose-700">
           {product.name}
         </h3>
         {product.short_description ? (
-          <p className="line-clamp-2 text-xs text-zinc-500">
-            {product.short_description}
-          </p>
+          <p className="line-clamp-2 text-xs text-zinc-500">{product.short_description}</p>
         ) : null}
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
           <div>
-            <p className="text-base font-bold text-zinc-900">
-              {formatKRW(product.price)}
-            </p>
+            <p className="text-base font-bold text-zinc-900">{formatKRW(product.price)}</p>
             {product.compare_at_price ? (
-              <p className="text-xs text-zinc-400 line-through">
-                {formatKRW(product.compare_at_price)}
-              </p>
+              <p className="text-xs text-zinc-400 line-through">{formatKRW(product.compare_at_price)}</p>
             ) : null}
           </div>
           <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600">

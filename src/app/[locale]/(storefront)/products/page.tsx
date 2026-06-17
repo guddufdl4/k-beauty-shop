@@ -1,23 +1,26 @@
-import { getTranslations } from "next-intl/server";
+﻿import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { ProductCard } from "@/components/store/product-card";
 import { EmptyState } from "@/components/store/empty-state";
 import { getCategories, getProducts } from "@/lib/supabase/products";
-import { Link } from "@/i18n/navigation";
 
 type ProductsPageProps = {
   searchParams: Promise<{ category?: string }>;
 };
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { category: categorySlug } = await searchParams;
-  const [t, { categories }, { products, meta }] = await Promise.all([
+  const [{ category: categorySlug }, t] = await Promise.all([
+    searchParams,
     getTranslations("products"),
-    getCategories(),
+  ]);
+
+  const [{ products, meta }, { categories }] = await Promise.all([
     getProducts({ categorySlug }),
+    getCategories(),
   ]);
 
   const activeCategory = categorySlug
-    ? categories.find((category) => category.slug === categorySlug)
+    ? categories.find((c) => c.slug === categorySlug)
     : null;
 
   return (
@@ -57,17 +60,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         >
           {t("all")}
         </Link>
-        {categories.map((category) => (
+        {categories.map((cat) => (
           <Link
-            key={category.id}
-            href={`/products?category=${category.slug}`}
+            key={cat.id}
+            href={`/products?category=${cat.slug}`}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              categorySlug === category.slug
+              categorySlug === cat.slug
                 ? "bg-rose-600 text-white"
                 : "bg-white text-zinc-600 ring-1 ring-rose-100 hover:text-rose-600"
             }`}
           >
-            {category.name}
+            {cat.name}
           </Link>
         ))}
       </div>

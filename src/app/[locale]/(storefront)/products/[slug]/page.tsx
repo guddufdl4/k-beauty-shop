@@ -1,30 +1,24 @@
-import { getTranslations } from "next-intl/server";
+﻿import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { ProductImagePlaceholder } from "@/components/store/product-image-placeholder";
 import { getProductBySlug } from "@/lib/supabase/products";
 import { formatKRW } from "@/lib/utils";
-import { Link } from "@/i18n/navigation";
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export default async function ProductDetailPage({
-  params,
-}: ProductDetailPageProps) {
-  const { slug } = await params;
-  const [t, { product, meta }] = await Promise.all([
-    getTranslations("products"),
-    getProductBySlug(slug),
-  ]);
+export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const [{ slug }, t] = await Promise.all([params, getTranslations("products")]);
+  const { product, meta } = await getProductBySlug(slug);
 
   if (!product) {
     notFound();
   }
 
-  const primaryImage =
-    product.images.find((image) => image.is_primary) ?? product.images[0];
+  const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
   const inStock = product.stock > 0;
 
   return (
@@ -42,10 +36,7 @@ export default async function ProductDetailPage({
         {product.category ? (
           <>
             <span className="mx-2">/</span>
-            <Link
-              href={`/products?category=${product.category.slug}`}
-              className="hover:text-rose-600"
-            >
+            <Link href={`/products?category=${product.category.slug}`} className="hover:text-rose-600">
               {product.category.name}
             </Link>
           </>
@@ -68,12 +59,12 @@ export default async function ProductDetailPage({
           )}
           {product.images.length > 1 ? (
             <div className="mt-4 grid grid-cols-4 gap-3">
-              {product.images.map((image) => (
+              {product.images.map((img) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  key={image.id}
-                  src={image.url}
-                  alt={image.alt_text ?? product.name}
+                  key={img.id}
+                  src={img.url}
+                  alt={img.alt_text ?? product.name}
                   className="aspect-square rounded-lg object-cover ring-1 ring-rose-100"
                 />
               ))}
@@ -82,12 +73,8 @@ export default async function ProductDetailPage({
         </div>
 
         <div className="flex flex-col">
-          <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">
-            {product.brand}
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">
-            {product.name}
-          </h1>
+          <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">{product.brand}</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">{product.name}</h1>
           {product.short_description ? (
             <p className="mt-3 text-lg text-zinc-600">{product.short_description}</p>
           ) : null}
@@ -95,26 +82,16 @@ export default async function ProductDetailPage({
           <div className="mt-8 space-y-4 rounded-2xl border border-rose-100 bg-white p-6">
             <div className="flex items-baseline justify-between gap-4">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  {t("retailPrice")}
-                </p>
-                <p className="text-2xl font-bold text-zinc-900">
-                  {formatKRW(product.price)}
-                </p>
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t("retailPrice")}</p>
+                <p className="text-2xl font-bold text-zinc-900">{formatKRW(product.price)}</p>
                 {product.compare_at_price ? (
-                  <p className="text-sm text-zinc-400 line-through">
-                    {formatKRW(product.compare_at_price)}
-                  </p>
+                  <p className="text-sm text-zinc-400 line-through">{formatKRW(product.compare_at_price)}</p>
                 ) : null}
               </div>
               {product.wholesale_price ? (
                 <div className="text-right">
-                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    {t("wholesalePrice")}
-                  </p>
-                  <p className="text-xl font-bold text-rose-700">
-                    {formatKRW(product.wholesale_price)}
-                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t("wholesalePrice")}</p>
+                  <p className="text-xl font-bold text-rose-700">{formatKRW(product.wholesale_price)}</p>
                 </div>
               ) : null}
             </div>
@@ -122,18 +99,12 @@ export default async function ProductDetailPage({
             <dl className="grid grid-cols-2 gap-4 border-t border-rose-50 pt-4 text-sm">
               <div>
                 <dt className="text-zinc-500">{t("moq")}</dt>
-                <dd className="font-semibold text-zinc-900">
-                  {t("moqUnit", { count: product.moq })}
-                </dd>
+                <dd className="font-semibold text-zinc-900">{t("moqUnit", { count: product.moq })}</dd>
               </div>
               <div>
                 <dt className="text-zinc-500">{t("stock")}</dt>
-                <dd
-                  className={`font-semibold ${inStock ? "text-emerald-600" : "text-red-600"}`}
-                >
-                  {inStock
-                    ? t("inStock", { count: product.stock })
-                    : t("outOfStock")}
+                <dd className={`font-semibold ${inStock ? "text-emerald-600" : "text-red-600"}`}>
+                  {inStock ? t("inStock", { count: product.stock }) : t("outOfStock")}
                 </dd>
               </div>
               <div>
@@ -143,9 +114,7 @@ export default async function ProductDetailPage({
               {product.country_of_origin ? (
                 <div>
                   <dt className="text-zinc-500">{t("origin")}</dt>
-                  <dd className="font-semibold text-zinc-900">
-                    {product.country_of_origin}
-                  </dd>
+                  <dd className="font-semibold text-zinc-900">{product.country_of_origin}</dd>
                 </div>
               ) : null}
             </dl>
@@ -155,32 +124,22 @@ export default async function ProductDetailPage({
 
           {product.description ? (
             <section className="mt-10">
-              <h2 className="text-lg font-semibold text-zinc-900">
-                {t("description")}
-              </h2>
-              <p className="mt-3 whitespace-pre-line leading-relaxed text-zinc-600">
-                {product.description}
-              </p>
+              <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
+              <p className="mt-3 whitespace-pre-line leading-relaxed text-zinc-600">{product.description}</p>
             </section>
           ) : null}
 
           {product.ingredients ? (
             <section className="mt-8">
-              <h2 className="text-lg font-semibold text-zinc-900">
-                {t("ingredients")}
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-                {product.ingredients}
-              </p>
+              <h2 className="text-lg font-semibold text-zinc-900">{t("ingredients")}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-600">{product.ingredients}</p>
             </section>
           ) : null}
 
           {product.how_to_use ? (
             <section className="mt-8">
               <h2 className="text-lg font-semibold text-zinc-900">{t("howToUse")}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-                {product.how_to_use}
-              </p>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-600">{product.how_to_use}</p>
             </section>
           ) : null}
         </div>

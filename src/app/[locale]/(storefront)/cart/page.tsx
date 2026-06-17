@@ -1,4 +1,5 @@
-import { getTranslations } from "next-intl/server";
+﻿import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { CartItemList } from "@/components/store/cart-item-list";
 import {
   calculateShippingCost,
@@ -6,7 +7,6 @@ import {
   getCart,
   usesDatabaseCart,
 } from "@/lib/cart";
-import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
 

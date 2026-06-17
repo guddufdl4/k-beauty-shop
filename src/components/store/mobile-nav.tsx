@@ -1,9 +1,8 @@
-"use client";
+﻿"use client";
 
-import { Link } from "@/i18n/navigation";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
+import { Link } from "@/i18n/navigation";
 import { LocaleSwitcher } from "./locale-switcher";
 
 type Props = {
@@ -11,17 +10,28 @@ type Props = {
   isLoggedIn: boolean;
   profileRole?: "customer" | "admin" | "wholesale" | null;
   profileFullName?: string | null;
+  labels: {
+    categories: string;
+    products: string;
+    cart: string;
+    login: string;
+    signup: string;
+    logout: string;
+    account: string;
+    admin: string;
+    menu: string;
+  };
 };
 
 function accountLabel(
-  t: (key: "admin" | "account") => string,
-  role?: "customer" | "admin" | "wholesale" | null,
-  fullName?: string | null,
+  role: Props["profileRole"],
+  fullName: Props["profileFullName"],
+  labels: Props["labels"],
 ) {
-  if (role === "admin") return t("admin");
+  if (role === "admin") return labels.admin;
   const trimmed = fullName?.trim();
   if (trimmed) return trimmed;
-  return t("account");
+  return labels.account;
 }
 
 export function MobileNav({
@@ -29,19 +39,21 @@ export function MobileNav({
   isLoggedIn,
   profileRole,
   profileFullName,
+  labels,
 }: Props) {
-  const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
-  const label = accountLabel(t, profileRole, profileFullName);
+  const label = accountLabel(profileRole, profileFullName, labels);
+
   const baseLinks = [
-    { href: "/categories", label: t("categories") },
-    { href: "/products", label: t("products") },
-    { href: "/cart", label: t("cart") },
-  ] as const;
+    { href: "/categories", label: labels.categories },
+    { href: "/products", label: labels.products },
+    { href: "/cart", label: labels.cart },
+  ];
+
   const guestLinks = [
-    { href: "/login", label: t("login") },
-    { href: "/signup", label: t("signup") },
-  ] as const;
+    { href: "/login", label: labels.login },
+    { href: "/signup", label: labels.signup },
+  ];
 
   const linkClass = "transition-colors hover:text-rose-600";
   const mobileLinkClass = "text-zinc-700 hover:text-rose-600";
@@ -66,7 +78,7 @@ export function MobileNav({
             </Link>
             <form action={signOut}>
               <button type="submit" className={`${linkClass} cursor-pointer`}>
-                {t("logout")}
+                {labels.logout}
               </button>
             </form>
           </>
@@ -77,6 +89,7 @@ export function MobileNav({
             </Link>
           ))
         )}
+        <LocaleSwitcher />
       </nav>
 
       <button
@@ -84,14 +97,17 @@ export function MobileNav({
         className="rounded-lg border border-zinc-200 px-3 py-2 text-sm md:hidden"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label={t("menu")}
+        aria-label={labels.menu}
       >
-        {t("menu")}
+        {labels.menu}
       </button>
 
       {open ? (
         <div className="absolute left-0 right-0 top-full border-b border-rose-100 bg-white px-4 py-4 shadow-md md:hidden">
           <nav className="flex flex-col gap-3 text-sm font-medium">
+            <div className="pb-2">
+              <LocaleSwitcher className="inline-flex" />
+            </div>
             {baseLinks.map((link) => (
               <Link
                 key={link.href}
@@ -100,9 +116,7 @@ export function MobileNav({
                 onClick={() => setOpen(false)}
               >
                 {link.label}
-                {link.href === "/cart" && cartCount > 0
-                  ? ` (${cartCount})`
-                  : ""}
+                {link.href === "/cart" && cartCount > 0 ? ` (${cartCount})` : ""}
               </Link>
             ))}
             {isLoggedIn ? (
@@ -120,7 +134,7 @@ export function MobileNav({
                     className={`${mobileLinkClass} text-left`}
                     onClick={() => setOpen(false)}
                   >
-                    {t("logout")}
+                    {labels.logout}
                   </button>
                 </form>
               </>
@@ -136,7 +150,11 @@ export function MobileNav({
                 </Link>
               ))
             )}
-            <LocaleSwitcher />
+            {profileRole === "admin" ? (
+              <a href="/admin" className={mobileLinkClass} onClick={() => setOpen(false)}>
+                {labels.admin}
+              </a>
+            ) : null}
           </nav>
         </div>
       ) : null}

@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { useActionState } from "react";
-import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   removeFromCart,
@@ -14,15 +13,8 @@ import type { CartItemView } from "@/types/cart";
 const initialState: CartActionState = {};
 
 function CartItemRow({ item }: { item: CartItemView }) {
-  const t = useTranslations("cart");
-  const [updateState, updateAction, updatePending] = useActionState(
-    updateQuantity,
-    initialState,
-  );
-  const [removeState, removeAction, removePending] = useActionState(
-    removeFromCart,
-    initialState,
-  );
+  const [updateState, updateAction, updatePending] = useActionState(updateQuantity, initialState);
+  const [removeState, removeAction, removePending] = useActionState(removeFromCart, initialState);
 
   const error = updateState.error ?? removeState.error;
 
@@ -30,16 +22,11 @@ function CartItemRow({ item }: { item: CartItemView }) {
     <li className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-rose-600">
-            {item.brand}
-          </p>
-          <Link
-            href={`/products/${item.slug}`}
-            className="mt-1 block font-semibold text-zinc-900 hover:text-rose-600"
-          >
+          <p className="text-xs font-medium uppercase tracking-wide text-rose-600">{item.brand}</p>
+          <Link href={`/products/${item.slug}`} className="mt-1 block font-semibold text-zinc-900 hover:text-rose-600">
             {item.name}
           </Link>
-          <p className="mt-1 text-sm text-zinc-500">SKU {item.sku} - MOQ {item.moq}</p>
+          <p className="mt-1 text-sm text-zinc-500">SKU {item.sku} · MOQ {item.moq}</p>
           <p className="mt-2 text-lg font-bold">{formatKRW(item.lineTotal)}</p>
         </div>
 
@@ -58,7 +45,7 @@ function CartItemRow({ item }: { item: CartItemView }) {
               disabled={updatePending}
               className="rounded-lg border border-zinc-300 px-3 py-3 text-sm hover:bg-zinc-50 disabled:opacity-60"
             >
-              {t("change")}
+              Update
             </button>
           </form>
 
@@ -69,7 +56,7 @@ function CartItemRow({ item }: { item: CartItemView }) {
               disabled={removePending}
               className="py-3 text-sm text-zinc-500 hover:text-red-600 disabled:opacity-60"
             >
-              {t("remove")}
+              Remove
             </button>
           </form>
         </div>

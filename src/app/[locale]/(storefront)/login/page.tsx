@@ -1,7 +1,7 @@
-import { getTranslations } from "next-intl/server";
-import { AuthForm } from "@/components/store/auth-form";
+﻿import { getTranslations } from "next-intl/server";
 import { signIn } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
+import { AuthForm } from "@/components/store/auth-form";
 
 export default async function LoginPage() {
   const t = await getTranslations("auth");
@@ -16,7 +16,7 @@ export default async function LoginPage() {
           submitLabel={t("loginButton")}
           emailLabel={t("email")}
           passwordLabel={t("password")}
-          processingLabel={t("processing")}
+          pendingLabel={t("processing")}
           footer={
             <p className="text-center text-sm text-zinc-600">
               {t("noAccount")}{" "}
@@ -30,3 +30,4 @@ export default async function LoginPage() {
     </main>
   );
 }
+

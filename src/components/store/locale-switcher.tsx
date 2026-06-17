@@ -2,28 +2,33 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { routing, type Locale } from "@/i18n/routing";
+import { routing } from "@/i18n/routing";
 
-export function LocaleSwitcher() {
+export function LocaleSwitcher({
+  className,
+}: {
+  className?: string;
+}) {
   const t = useTranslations("localeSwitcher");
-  const locale = useLocale() as Locale;
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
 
   return (
-    <label className="inline-flex items-center gap-2 text-xs text-zinc-600">
+    <label className={className}>
       <span className="sr-only">{t("label")}</span>
       <select
+        className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700"
         value={locale}
-        onChange={(event) =>
-          router.replace(pathname, { locale: event.target.value as Locale })
-        }
-        className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700"
+        onChange={(event) => {
+          router.replace(pathname, { locale: event.target.value });
+          router.refresh();
+        }}
         aria-label={t("label")}
       >
-        {routing.locales.map((loc) => (
-          <option key={loc} value={loc}>
-            {t(loc)}
+        {routing.locales.map((nextLocale) => (
+          <option key={nextLocale} value={nextLocale}>
+            {t(nextLocale)}
           </option>
         ))}
       </select>
