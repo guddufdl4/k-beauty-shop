@@ -10,6 +10,7 @@ type Props = {
   emailLabel?: string;
   passwordLabel?: string;
   pendingLabel?: string;
+  processingLabel?: string;
 };
 
 export function AuthForm({
@@ -19,6 +20,7 @@ export function AuthForm({
   emailLabel = "Email",
   passwordLabel = "Password",
   pendingLabel = "Processing...",
+  processingLabel,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, {});
 
@@ -56,7 +58,7 @@ export function AuthForm({
         disabled={pending}
         className="w-full rounded-lg bg-rose-600 py-2.5 text-white hover:bg-rose-700 disabled:opacity-50"
       >
-        {pending ? pendingLabel : submitLabel}
+        {pending ? (processingLabel ?? pendingLabel) : submitLabel}
       </button>
       {footer}
     </form>
