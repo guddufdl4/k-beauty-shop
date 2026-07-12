@@ -6,7 +6,6 @@ import { formatKRW } from "@/lib/utils";
 import {
   enrichProductImages,
   productHasRealImage,
-  type ProductImageSource,
 } from "@/lib/product-images";
 import type { ProductListSort } from "@/lib/store/products-url";
 import { isProductOnSale } from "@/lib/store/products-url";
@@ -25,6 +24,7 @@ export const formatUsd = formatKRW;
 const SUPABASE_PAGE_SIZE = 1000;
 export const STOREFRONT_PRODUCTS_PAGE_SIZE = 48;
 const CACHE_REVALIDATE_SECONDS = 300;
+const ADMIN_IMPORT_BATCHES_CACHE_SECONDS = 60;
 
 export type ProductStatus = "draft" | "active" | "archived";
 export type ProductContentStatus = "pending" | "complete";
@@ -740,120 +740,9 @@ const PRODUCT_SELECT = `
   images:product_images(id, product_id, url, alt_text, sort_order, is_primary)
 `;
 
-/** Lightweight select for image-first admin sorting (avoids loading full product graph). */
-const PRODUCT_IMAGE_SORT_SELECT = `
-  id,
-  created_at,
-  updated_at,
-  price,
-  compare_at_price,
-  image_url,
-  source_row,
-  category:categories(slug),
-  images:product_images(url)
-`;
-
-type ProductImageSortRow = {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  price: number;
-  compare_at_price: number | null;
-  imageSource: ProductImageSource;
-};
-
-function mapProductImageSortRow(row: Record<string, unknown>): ProductImageSortRow {
-  const categoryRaw = row.category as Record<string, unknown> | null;
-  const imagesRaw = (row.images as Record<string, unknown>[] | null) ?? [];
-  const id = String(row.id);
-
-  return {
-    id,
-    created_at: String(row.created_at),
-    updated_at: String(row.updated_at),
-    price: parseDecimal(row.price),
-    compare_at_price:
-      row.compare_at_price != null ? parseDecimal(row.compare_at_price) : null,
-    imageSource: {
-      id,
-      name: "",
-      image_url: row.image_url ? String(row.image_url) : null,
-      source_row:
-        row.source_row && typeof row.source_row === "object"
-          ? (row.source_row as Record<string, unknown>)
-          : null,
-      category: categoryRaw ? { slug: String(categoryRaw.slug) } : null,
-      images: imagesRaw.map((img, index) => ({
-        id: `sort-${id}-${index}`,
-        product_id: id,
-        url: String(img.url),
-        alt_text: null,
-        sort_order: index,
-        is_primary: index === 0,
-      })),
-    },
-  };
-}
-
-function compareProductImageSortRows(
-  a: ProductImageSortRow,
-  b: ProductImageSortRow,
-  options: ProductListOrderOptions,
-): number {
-  if (options.imageFirst === true) {
-    const aHasImage = productHasRealImage(a.imageSource) ? 1 : 0;
-    const bHasImage = productHasRealImage(b.imageSource) ? 1 : 0;
-    if (bHasImage !== aHasImage) {
-      return bHasImage - aHasImage;
-    }
-  }
-
-  if (options.sort === "sale") {
-    const aCompare = a.compare_at_price ?? 0;
-    const bCompare = b.compare_at_price ?? 0;
-    if (bCompare !== aCompare) {
-      return bCompare - aCompare;
-    }
-  }
-
-  return b[options.orderBy].localeCompare(a[options.orderBy]);
-}
-
-function sortProductImageSortRows(
-  rows: ProductImageSortRow[],
-  options: ProductListOrderOptions,
-): ProductImageSortRow[] {
-  return [...rows].sort((a, b) => compareProductImageSortRows(a, b, options));
-}
-
-async function fetchProductsByIds(
-  supabase: SupabaseClient,
-  ids: string[],
-): Promise<ProductWithRelations[]> {
-  if (ids.length === 0) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .in("id", ids);
-
-  if (error || !data?.length) {
-    return [];
-  }
-
-  const byId = new Map(
-    data.map((row) => {
-      const mapped = mapProductWithRelations(row as Record<string, unknown>);
-      return [mapped.id, mapped] as const;
-    }),
-  );
-
-  return ids
-    .map((id) => byId.get(id))
-    .filter((product): product is ProductWithRelations => product != null);
-}
+/** Lightweight select for admin product list table (skips heavy text/json columns). */
+const ADMIN_LIST_SELECT =
+  "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, moq, stock, sold_out, status, image_url, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
 
 export async function getCategories(): Promise<{
   categories: Category[];
@@ -929,6 +818,7 @@ export async function getProducts(
         orderBy?: "created_at" | "updated_at";
         deletionFilter?: ProductDeletionFilter;
         imageFirst?: boolean;
+        lightSelect?: boolean;
       },
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
   const options =
@@ -945,6 +835,7 @@ export async function getProducts(
   const orderBy = options?.orderBy ?? "created_at";
   const deletionFilter = options?.deletionFilter ?? "active";
   const imageFirst = options?.imageFirst === true;
+  const lightSelect = options?.lightSelect === true;
   const listLimit = options?.limit;
   const listPage = Math.max(1, options?.page ?? 1);
   const listOrderOptions: ProductListOrderOptions = {
@@ -1078,71 +969,29 @@ export async function getProducts(
   let totalCount = 0;
 
   if (listLimit != null) {
-    if (imageFirst) {
-      const { data, error } = await fetchAllPages<Record<string, unknown>>(
-        async (from, to) => {
-          let query = supabase.from("products").select(PRODUCT_IMAGE_SORT_SELECT);
-          query = applyProductFilters(query, false) as typeof query;
-          const result = await query.range(from, to);
-          return {
-            data: (result.data ?? []) as Record<string, unknown>[],
-            error: result.error,
-          };
-        },
-      );
+    const { count, error: countError } = await fetchExactCount(
+      supabase,
+      "products",
+      (query) => applyProductFilters(query, false),
+    );
 
-      if (error) {
-        if (isMissingDeletedAtColumnError(error)) {
-          markSoftDeleteColumnMissing();
-          return getProducts(categoryOrOptions);
-        }
-
-        return {
-          ...staticProductsResult(),
-          meta: { source: "static", configured: true, error },
-        };
-      }
-
-      let sortRows = data.map((row) => mapProductImageSortRow(row));
-
-      if (sort === "sale") {
-        sortRows = sortRows.filter((row) => isProductOnSale(row));
-      }
-
-      sortRows = sortProductImageSortRows(sortRows, listOrderOptions);
-      const totalCount = sortRows.length;
-      const from = (listPage - 1) * listLimit;
-      const pageIds = sortRows.slice(from, from + listLimit).map((row) => row.id);
-      const products = await fetchProductsByIds(supabase, pageIds);
-
-      return {
-        products,
-        totalCount,
-        meta: { source: "database", configured: true },
-      };
-    }
-
-    let countQuery = supabase
-      .from("products")
-      .select("*", { count: "exact", head: true });
-    countQuery = applyProductFilters(countQuery, false) as typeof countQuery;
-
-    const { count, error: countError } = await countQuery;
     if (countError) {
-      if (isMissingDeletedAtColumnError(countError.message)) {
+      if (isMissingDeletedAtColumnError(countError)) {
         markSoftDeleteColumnMissing();
         return getProducts(categoryOrOptions);
       }
 
       return {
         ...staticProductsResult(),
-        meta: { source: "static", configured: true, error: countError.message },
+        meta: { source: "static", configured: true, error: countError },
       };
     }
 
-    totalCount = count ?? 0;
+    totalCount = count;
 
-    let query = supabase.from("products").select(PRODUCT_SELECT);
+    let query = lightSelect
+      ? supabase.from("products").select(ADMIN_LIST_SELECT)
+      : supabase.from("products").select(PRODUCT_SELECT);
     query = applyProductFilters(query, true) as typeof query;
 
     const from = (listPage - 1) * listLimit;
@@ -1161,7 +1010,7 @@ export async function getProducts(
     }
 
     let products = (data ?? []).map((row) =>
-      mapProductWithRelations(row as Record<string, unknown>),
+      mapProductWithRelations(row as unknown as Record<string, unknown>),
     );
 
     if (sort === "sale") {
@@ -1421,6 +1270,17 @@ export async function getRecentlyUpdatedProducts(limit = 12): Promise<{
 }
 
 export async function getProductImportBatches(): Promise<{
+  batches: ProductImportBatch[];
+  meta: FetchMeta;
+}> {
+  return unstable_cache(
+    fetchProductImportBatchesFromSource,
+    ["admin-product-import-batches"],
+    { revalidate: ADMIN_IMPORT_BATCHES_CACHE_SECONDS },
+  )();
+}
+
+async function fetchProductImportBatchesFromSource(): Promise<{
   batches: ProductImportBatch[];
   meta: FetchMeta;
 }> {

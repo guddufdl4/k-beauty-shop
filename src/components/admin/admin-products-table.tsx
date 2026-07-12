@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import {
   extractProductImageFileFromClipboard,
   validateClientProductImageFile,
@@ -11,21 +12,38 @@ import { appendProductImageNormalizeOptionsToFormData } from "@/lib/admin/produc
 import type { ProductImageNormalizeOptions } from "@/lib/admin/product-image-normalize-options";
 import { isValidProductImageUrl } from "@/lib/admin/product-image-resolver";
 import {
-  ProductImageUploadSettingsPanel,
   useProductImageUploadSettings,
 } from "@/components/admin/product-image-upload-settings";
 import { resolveProductImageUrl } from "@/lib/product-images";
-import type { ProductWithRelations } from "@/lib/supabase/products";
+import type { ProductWithRelations, Category } from "@/lib/supabase/products";
 import { ProductNameWithCopy } from "@/components/admin/product-name-with-copy";
 import { formatProductPrice } from "@/lib/utils";
 
 type Props = {
   products: ProductWithRelations[];
+  categories?: Category[];
   emptyMessage?: string;
   viewMode?: "active" | "deleted";
 };
 
 const UNDO_DELETE_MS = 30_000;
+const PREVIEW_DEBOUNCE_MS = 500;
+
+const ProductImageUploadSettingsPanel = dynamic(
+  () =>
+    import("@/components/admin/product-image-upload-settings").then((module) => ({
+      default: module.ProductImageUploadSettingsPanel,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="h-28 animate-pulse rounded-lg border border-zinc-200 bg-zinc-100/80"
+        aria-hidden
+      />
+    ),
+  },
+);
 
 type UndoDeleteEntry = {
   product: ProductWithRelations;
@@ -42,6 +60,8 @@ type EditableProduct = Pick<
   | "sku"
   | "slug"
   | "image_url"
+  | "category_id"
+  | "sold_out"
   | "category"
   | "images"
 >;
@@ -104,8 +124,200 @@ function productTimestampDisplay(product: {
   };
 }
 
-export function AdminProductsTable({
+type ProductTableRowProps = {
+  product: ProductWithRelations;
+  index: number;
+  viewMode: "active" | "deleted";
+  stockEditingId: string | null;
+  stockDraft: string;
+  stockPending: boolean;
+  soldOutPendingId: string | null;
+  restoringId: string | null;
+  onOpenEdit: (product: ProductWithRelations) => void;
+  onStartStockEdit: (productId: string, stock: number) => void;
+  onStockDraftChange: (value: string) => void;
+  onCancelStockEdit: () => void;
+  onSaveStock: (productId: string) => void;
+  onToggleSoldOut: (product: ProductWithRelations) => void;
+  onRestore: (product: ProductWithRelations) => void;
+};
+
+const ProductTableRow = memo(function ProductTableRow({
+  product,
+  index,
+  viewMode,
+  stockEditingId,
+  stockDraft,
+  stockPending,
+  soldOutPendingId,
+  restoringId,
+  onOpenEdit,
+  onStartStockEdit,
+  onStockDraftChange,
+  onCancelStockEdit,
+  onSaveStock,
+  onToggleSoldOut,
+  onRestore,
+}: ProductTableRowProps) {
+  const imageUrl = resolveProductImageUrl(product);
+  const isEven = index % 2 === 0;
+  const shownPrice = displayPrice(product);
+  const timestamp = productTimestampDisplay(product);
+
+  return (
+    <tr
+      className={`border-b border-zinc-100 ${
+        isEven ? "bg-white" : "bg-zinc-50/70"
+      } hover:bg-rose-50/50`}
+    >
+      <td className="px-3 py-2.5">
+        <div className="relative h-10 w-10 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-contain"
+          />
+        </div>
+      </td>
+      <td className="px-3 py-2.5 align-top">
+        <p className="font-mono text-xs font-medium text-zinc-800">{product.sku}</p>
+        {product.barcode ? (
+          <p className="mt-0.5 font-mono text-[10px] text-zinc-400">
+            {product.barcode}
+          </p>
+        ) : null}
+      </td>
+      <td className="px-3 py-2.5 align-top">
+        <ProductNameWithCopy
+          name={product.name}
+          href={`/en/products/${product.slug}`}
+          linkClassName="line-clamp-2 font-medium leading-snug text-zinc-900 hover:text-rose-700"
+        />
+        <p className="mt-0.5 select-none text-[10px] text-zinc-400">MOQ {product.moq}</p>
+      </td>
+      <td className="px-3 py-2.5 align-top text-xs text-zinc-700">{product.brand}</td>
+      <td className="px-3 py-2.5 align-top">
+        <p
+          className={`text-xs font-semibold ${
+            shownPrice <= 1 ? "text-amber-700" : "text-zinc-900"
+          }`}
+        >
+          {formatProductPrice(shownPrice)}
+        </p>
+      </td>
+      <td className="px-3 py-2.5 align-top">
+        {stockEditingId === product.id ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={stockDraft}
+              onChange={(event) => onStockDraftChange(event.target.value)}
+              disabled={stockPending}
+              className="w-16 rounded border border-zinc-300 px-1.5 py-0.5 text-xs"
+              autoFocus
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void onSaveStock(product.id);
+                }
+                if (event.key === "Escape") {
+                  onCancelStockEdit();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => void onSaveStock(product.id)}
+              disabled={stockPending}
+              className="rounded border border-rose-200 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+            >
+              {stockPending ? "…" : "저장"}
+            </button>
+            <button
+              type="button"
+              onClick={onCancelStockEdit}
+              disabled={stockPending}
+              className="rounded px-1 py-0.5 text-[10px] text-zinc-400 hover:text-zinc-600"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onStartStockEdit(product.id, product.stock)}
+            className={`rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums hover:bg-zinc-100 ${
+              product.stock <= 0 ? "text-red-600" : "text-zinc-800"
+            }`}
+            title="클릭하여 재고 수정"
+          >
+            {product.stock}
+          </button>
+        )}
+      </td>
+      <td className="px-3 py-2.5 align-top">
+        <button
+          type="button"
+          onClick={() => void onToggleSoldOut(product)}
+          disabled={soldOutPendingId === product.id}
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase disabled:opacity-50 ${
+            product.sold_out
+              ? "bg-red-100 text-red-700 hover:bg-red-200"
+              : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+          }`}
+        >
+          {soldOutPendingId === product.id
+            ? "…"
+            : product.sold_out
+              ? "품절"
+              : "판매중"}
+        </button>
+      </td>
+      <td className="px-3 py-2.5 align-top text-xs text-zinc-600">
+        {product.category?.name ?? "—"}
+      </td>
+      <td className="px-3 py-2.5 align-top">{statusBadge(product.status)}</td>
+      <td className="px-3 py-2.5 align-top">
+        <p className="whitespace-nowrap text-[11px] text-zinc-700">
+          {timestamp.primary}
+        </p>
+        {timestamp.secondary ? (
+          <p className="mt-0.5 whitespace-nowrap text-[10px] text-zinc-400">
+            {timestamp.secondary}
+          </p>
+        ) : null}
+      </td>
+      <td className="px-3 py-2.5 align-top">
+        {viewMode === "deleted" ? (
+          <button
+            type="button"
+            onClick={() => void onRestore(product)}
+            disabled={restoringId === product.id}
+            className="rounded-md border border-emerald-200 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+          >
+            {restoringId === product.id ? "복구 중…" : "복구"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onOpenEdit(product)}
+            className="rounded-md border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 hover:border-rose-200 hover:text-rose-700"
+          >
+            편집
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+});
+
+export const AdminProductsTable = memo(function AdminProductsTable({
   products: initialProducts,
+  categories = [],
   emptyMessage = "등록된 상품이 없습니다. seed SQL을 실행하거나 폼으로 추가하세요.",
   viewMode = "active",
 }: Props) {
@@ -115,6 +327,8 @@ export function AdminProductsTable({
   const [name, setName] = useState("");
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [soldOut, setSoldOut] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -125,14 +339,10 @@ export function AdminProductsTable({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [backgroundRemovalApplied, setBackgroundRemovalApplied] = useState(false);
   const [backgroundRemovalLoading, setBackgroundRemovalLoading] = useState(false);
+  const [imageSectionMounted, setImageSectionMounted] = useState(false);
+  const previewDebounceRef = useRef<number | null>(null);
+  const previewAbortRef = useRef<AbortController | null>(null);
   const [uploadSettings, setUploadSettingsState] = useProductImageUploadSettings();
-  const setUploadSettings = useCallback(
-    (options: ProductImageNormalizeOptions) => {
-      setUploadSettingsState(options);
-      setBackgroundRemovalApplied(false);
-    },
-    [setUploadSettingsState],
-  );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -238,6 +448,20 @@ export function AdminProductsTable({
     });
   }, []);
 
+  const startStockEdit = useCallback((productId: string, stock: number) => {
+    setStockEditingId(productId);
+    setStockDraft(String(stock));
+    setError(null);
+  }, []);
+
+  const cancelStockEdit = useCallback(() => {
+    setStockEditingId(null);
+  }, []);
+
+  const handleStockDraftChange = useCallback((value: string) => {
+    setStockDraft(value);
+  }, []);
+
   async function handleUndoDelete() {
     if (!undoDelete || undoPending) {
       return;
@@ -268,12 +492,16 @@ export function AdminProductsTable({
       sku: product.sku,
       slug: product.slug,
       image_url: product.image_url,
+      category_id: product.category_id,
+      sold_out: product.sold_out,
       category: product.category,
       images: product.images,
     });
     setName(product.name);
     setBarcode(product.barcode ?? "");
     setPrice(String(displayPrice(product)));
+    setCategoryId(product.category_id ?? "");
+    setSoldOut(product.sold_out);
     setImageUrl(product.image_url ?? "");
     clearPendingImage();
     setDragOver(false);
@@ -304,6 +532,13 @@ export function AdminProductsTable({
     setMessage(null);
     setBackgroundRemovalApplied(false);
     setPendingImageFile(file);
+    setNormalizedPreviewUrl((current) => {
+      if (current?.startsWith("blob:")) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+    setPreviewLoading(false);
     setLocalPreviewUrl((current) => {
       if (current?.startsWith("blob:")) {
         URL.revokeObjectURL(current);
@@ -392,11 +627,122 @@ export function AdminProductsTable({
     [clearPendingImage, editing, router, uploadSettings],
   );
 
+  useEffect(() => {
+    if (!editing) {
+      setImageSectionMounted(false);
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setImageSectionMounted(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      setImageSectionMounted(false);
+    };
+  }, [editing?.id]);
+
+  const cancelScheduledPreview = useCallback(() => {
+    if (previewDebounceRef.current != null) {
+      window.clearTimeout(previewDebounceRef.current);
+      previewDebounceRef.current = null;
+    }
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = null;
+  }, []);
+
+  const setUploadSettings = useCallback(
+    (options: ProductImageNormalizeOptions) => {
+      setUploadSettingsState(options);
+      setBackgroundRemovalApplied(false);
+      cancelScheduledPreview();
+      setNormalizedPreviewUrl((current) => {
+        if (current?.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return null;
+      });
+      setPreviewLoading(false);
+    },
+    [cancelScheduledPreview, setUploadSettingsState],
+  );
+
+  const runNormalizedPreview = useCallback(
+    async (options?: { immediate?: boolean }) => {
+      if (!editing || !pendingImageFile || backgroundRemovalApplied) {
+        return;
+      }
+
+      cancelScheduledPreview();
+
+      const execute = async () => {
+        const controller = new AbortController();
+        previewAbortRef.current = controller;
+        setPreviewLoading(true);
+
+        try {
+          const formData = new FormData();
+          formData.append("file", pendingImageFile);
+          formData.append("preview", "true");
+          appendProductImageNormalizeOptionsToFormData(formData, uploadSettings);
+
+          const response = await fetch(`/api/admin/products/${editing.id}/image`, {
+            method: "POST",
+            body: formData,
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            const data = (await response.json().catch(() => null)) as { error?: string } | null;
+            setError(data?.error ?? "미리보기 생성에 실패했습니다.");
+            return;
+          }
+
+          const blob = await response.blob();
+          setNormalizedPreviewUrl((current) => {
+            if (current?.startsWith("blob:")) {
+              URL.revokeObjectURL(current);
+            }
+            return URL.createObjectURL(blob);
+          });
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === "AbortError")) {
+            setError("미리보기를 불러오지 못했습니다.");
+          }
+        } finally {
+          if (previewAbortRef.current === controller) {
+            previewAbortRef.current = null;
+          }
+          setPreviewLoading(false);
+        }
+      };
+
+      if (options?.immediate) {
+        await execute();
+        return;
+      }
+
+      previewDebounceRef.current = window.setTimeout(() => {
+        previewDebounceRef.current = null;
+        void execute();
+      }, PREVIEW_DEBOUNCE_MS);
+    },
+    [
+      backgroundRemovalApplied,
+      cancelScheduledPreview,
+      editing,
+      pendingImageFile,
+      uploadSettings,
+    ],
+  );
+
   const removeImageBackground = useCallback(async () => {
     if (!editing || !pendingImageFile) {
       return;
     }
 
+    cancelScheduledPreview();
     setBackgroundRemovalLoading(true);
     setError(null);
 
@@ -432,79 +778,26 @@ export function AdminProductsTable({
     } finally {
       setBackgroundRemovalLoading(false);
     }
-  }, [editing, pendingImageFile, uploadSettings]);
+  }, [cancelScheduledPreview, editing, pendingImageFile, uploadSettings]);
 
   useEffect(() => {
-    if (!editing || !pendingImageFile || backgroundRemovalApplied) {
-      if (!pendingImageFile) {
-        setNormalizedPreviewUrl((current) => {
-          if (current?.startsWith("blob:")) {
-            URL.revokeObjectURL(current);
-          }
-          return null;
-        });
-        setPreviewLoading(false);
-      }
-      return;
+    if (!pendingImageFile) {
+      cancelScheduledPreview();
+      setNormalizedPreviewUrl((current) => {
+        if (current?.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return null;
+      });
+      setPreviewLoading(false);
     }
+  }, [cancelScheduledPreview, pendingImageFile]);
 
-    let cancelled = false;
-    const controller = new AbortController();
-
-    const runPreview = async () => {
-      setPreviewLoading(true);
-      try {
-        const formData = new FormData();
-        formData.append("file", pendingImageFile);
-        formData.append("preview", "true");
-        appendProductImageNormalizeOptionsToFormData(formData, uploadSettings);
-
-        const response = await fetch(`/api/admin/products/${editing.id}/image`, {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const data = (await response.json().catch(() => null)) as { error?: string } | null;
-          if (!cancelled) {
-            setError(data?.error ?? "미리보기 생성에 실패했습니다.");
-          }
-          return;
-        }
-
-        const blob = await response.blob();
-        if (cancelled) {
-          return;
-        }
-
-        setNormalizedPreviewUrl((current) => {
-          if (current?.startsWith("blob:")) {
-            URL.revokeObjectURL(current);
-          }
-          return URL.createObjectURL(blob);
-        });
-      } catch (error) {
-        if (!cancelled && !(error instanceof DOMException && error.name === "AbortError")) {
-          setError("미리보기를 불러오지 못했습니다.");
-        }
-      } finally {
-        if (!cancelled) {
-          setPreviewLoading(false);
-        }
-      }
-    };
-
-    const timeoutId = window.setTimeout(() => {
-      void runPreview();
-    }, 300);
-
+  useEffect(() => {
     return () => {
-      cancelled = true;
-      controller.abort();
-      window.clearTimeout(timeoutId);
+      cancelScheduledPreview();
     };
-  }, [backgroundRemovalApplied, editing, pendingImageFile, uploadSettings]);
+  }, [cancelScheduledPreview]);
 
   useEffect(() => {
     if (!editing || uploading) {
@@ -661,6 +954,8 @@ export function AdminProductsTable({
           barcode: barcode.trim(),
           wholesale_price: price.trim(),
           image_url: imageUrl.trim(),
+          category_id: categoryId.trim() || null,
+          sold_out: soldOut,
         }),
       });
 
@@ -671,6 +966,9 @@ export function AdminProductsTable({
           barcode: string | null;
           wholesale_price: number | null;
           image_url: string | null;
+          category_id: string | null;
+          sold_out: boolean;
+          category: { id: string; name: string; slug: string } | null;
         };
         error?: string;
       };
@@ -682,6 +980,22 @@ export function AdminProductsTable({
 
       if (data.product) {
         const saved = data.product;
+        const categoryRaw = saved.category as
+          | { id: string; name: string; slug: string }
+          | { id: string; name: string; slug: string }[]
+          | null;
+        const resolvedCategory = Array.isArray(categoryRaw)
+          ? (categoryRaw[0] ?? null)
+          : categoryRaw ??
+            categories.find((cat) => cat.id === saved.category_id) ??
+            null;
+        const normalizedCategory = resolvedCategory
+          ? {
+              id: resolvedCategory.id,
+              name: resolvedCategory.name,
+              slug: resolvedCategory.slug,
+            }
+          : null;
         const now = new Date().toISOString();
         setProducts((current) =>
           current.map((product) =>
@@ -692,6 +1006,9 @@ export function AdminProductsTable({
                   barcode: saved.barcode,
                   wholesale_price: saved.wholesale_price,
                   image_url: saved.image_url,
+                  category_id: saved.category_id,
+                  sold_out: saved.sold_out,
+                  category: normalizedCategory,
                   updated_at: now,
                   needs_image: !saved.image_url,
                   images: saved.image_url
@@ -828,7 +1145,7 @@ export function AdminProductsTable({
           {tableMessage}
         </p>
       ) : null}
-      <div className="max-h-[min(70vh,900px)] overflow-auto">
+      <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-left text-sm">
           <thead className="sticky top-0 z-10 border-b border-rose-100 bg-zinc-50 text-[11px] uppercase tracking-wide text-zinc-500 shadow-sm">
             <tr>
@@ -846,167 +1163,26 @@ export function AdminProductsTable({
             </tr>
           </thead>
           <tbody>
-            {products.map((product, index) => {
-              const imageUrl = resolveProductImageUrl(product);
-              const isEven = index % 2 === 0;
-              const shownPrice = displayPrice(product);
-              const timestamp = productTimestampDisplay(product);
-
-              return (
-                <tr
-                  key={product.id}
-                  className={`border-b border-zinc-100 ${
-                    isEven ? "bg-white" : "bg-zinc-50/70"
-                  } hover:bg-rose-50/50`}
-                >
-                  <td className="px-3 py-2.5">
-                    <div className="relative h-10 w-10 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imageUrl}
-                        alt=""
-                        loading="lazy"
-                        className="absolute inset-0 h-full w-full object-contain"
-                      />
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5 align-top">
-                    <p className="font-mono text-xs font-medium text-zinc-800">{product.sku}</p>
-                    {product.barcode ? (
-                      <p className="mt-0.5 font-mono text-[10px] text-zinc-400">
-                        {product.barcode}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-2.5 align-top">
-                    <ProductNameWithCopy
-                      name={product.name}
-                      href={`/en/products/${product.slug}`}
-                      linkClassName="line-clamp-2 font-medium leading-snug text-zinc-900 hover:text-rose-700"
-                    />
-                    <p className="mt-0.5 select-none text-[10px] text-zinc-400">MOQ {product.moq}</p>
-                  </td>
-                  <td className="px-3 py-2.5 align-top text-xs text-zinc-700">{product.brand}</td>
-                  <td className="px-3 py-2.5 align-top">
-                    <p
-                      className={`text-xs font-semibold ${
-                        shownPrice <= 1 ? "text-amber-700" : "text-zinc-900"
-                      }`}
-                    >
-                      {formatProductPrice(shownPrice)}
-                    </p>
-                  </td>
-                  <td className="px-3 py-2.5 align-top">
-                    {stockEditingId === product.id ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={stockDraft}
-                          onChange={(event) => setStockDraft(event.target.value)}
-                          disabled={stockPending}
-                          className="w-16 rounded border border-zinc-300 px-1.5 py-0.5 text-xs"
-                          autoFocus
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.preventDefault();
-                              void saveStock(product.id);
-                            }
-                            if (event.key === "Escape") {
-                              setStockEditingId(null);
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => void saveStock(product.id)}
-                          disabled={stockPending}
-                          className="rounded border border-rose-200 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                        >
-                          {stockPending ? "…" : "저장"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStockEditingId(null)}
-                          disabled={stockPending}
-                          className="rounded px-1 py-0.5 text-[10px] text-zinc-400 hover:text-zinc-600"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStockEditingId(product.id);
-                          setStockDraft(String(product.stock));
-                          setError(null);
-                        }}
-                        className={`rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums hover:bg-zinc-100 ${
-                          product.stock <= 0 ? "text-red-600" : "text-zinc-800"
-                        }`}
-                        title="클릭하여 재고 수정"
-                      >
-                        {product.stock}
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 align-top">
-                    <button
-                      type="button"
-                      onClick={() => void toggleSoldOut(product)}
-                      disabled={soldOutPendingId === product.id}
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase disabled:opacity-50 ${
-                        product.sold_out
-                          ? "bg-red-100 text-red-700 hover:bg-red-200"
-                          : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                      }`}
-                    >
-                      {soldOutPendingId === product.id
-                        ? "…"
-                        : product.sold_out
-                          ? "품절"
-                          : "판매중"}
-                    </button>
-                  </td>
-                  <td className="px-3 py-2.5 align-top text-xs text-zinc-600">
-                    {product.category?.name ?? "—"}
-                  </td>
-                  <td className="px-3 py-2.5 align-top">{statusBadge(product.status)}</td>
-                  <td className="px-3 py-2.5 align-top">
-                    <p className="whitespace-nowrap text-[11px] text-zinc-700">
-                      {timestamp.primary}
-                    </p>
-                    {timestamp.secondary ? (
-                      <p className="mt-0.5 whitespace-nowrap text-[10px] text-zinc-400">
-                        {timestamp.secondary}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-2.5 align-top">
-                    {viewMode === "deleted" ? (
-                      <button
-                        type="button"
-                        onClick={() => void restoreProduct(product)}
-                        disabled={restoringId === product.id}
-                        className="rounded-md border border-emerald-200 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-                      >
-                        {restoringId === product.id ? "복구 중…" : "복구"}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openEdit(product)}
-                        className="rounded-md border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 hover:border-rose-200 hover:text-rose-700"
-                      >
-                        편집
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            {products.map((product, index) => (
+              <ProductTableRow
+                key={product.id}
+                product={product}
+                index={index}
+                viewMode={viewMode}
+                stockEditingId={stockEditingId}
+                stockDraft={stockDraft}
+                stockPending={stockPending}
+                soldOutPendingId={soldOutPendingId}
+                restoringId={restoringId}
+                onOpenEdit={openEdit}
+                onStartStockEdit={startStockEdit}
+                onStockDraftChange={handleStockDraftChange}
+                onCancelStockEdit={cancelStockEdit}
+                onSaveStock={saveStock}
+                onToggleSoldOut={toggleSoldOut}
+                onRestore={restoreProduct}
+              />
+            ))}
           </tbody>
         </table>
       </div>
@@ -1030,7 +1206,7 @@ export function AdminProductsTable({
                   상품 편집
                 </h3>
                 <p className="mt-1 text-xs text-zinc-500">
-                  상품명, 바코드, 도매가, 이미지를 수정합니다.
+                  상품명, 바코드, 도매가, 카테고리, 판매 상태, 이미지를 수정합니다.
                 </p>
               </div>
               <button
@@ -1100,6 +1276,48 @@ export function AdminProductsTable({
                   required
                   className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                 />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="edit-category"
+                    className="block text-sm font-medium text-zinc-700"
+                  >
+                    카테고리
+                  </label>
+                  <select
+                    id="edit-category"
+                    value={categoryId}
+                    onChange={(event) => setCategoryId(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  >
+                    <option value="">선택 안 함</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="edit-sold-out"
+                    className="block text-sm font-medium text-zinc-700"
+                  >
+                    판매 상태
+                  </label>
+                  <select
+                    id="edit-sold-out"
+                    value={soldOut ? "sold_out" : "available"}
+                    onChange={(event) => setSoldOut(event.target.value === "sold_out")}
+                    className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                  >
+                    <option value="available">판매 가능</option>
+                    <option value="sold_out">품절</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -1210,42 +1428,51 @@ export function AdminProductsTable({
                   </div>
                 </div>
 
-                <div className="mt-3">
-                  <ProductImageUploadSettingsPanel
-                    options={uploadSettings}
-                    onChange={setUploadSettings}
-                    disabled={uploading}
-                  />
-                </div>
+                {pendingImageFile ? (
+                  <div className="mt-3 space-y-1 rounded-lg border border-rose-200 bg-rose-50/60 p-3">
+                    <button
+                      type="button"
+                      onClick={() => void removeImageBackground()}
+                      disabled={
+                        uploading ||
+                        previewLoading ||
+                        backgroundRemovalLoading ||
+                        backgroundRemovalApplied
+                      }
+                      className={`w-full rounded-lg px-4 py-3 text-base font-bold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        backgroundRemovalApplied
+                          ? "border-2 border-rose-300 bg-rose-100 text-rose-700"
+                          : "bg-rose-600 text-white hover:bg-rose-700"
+                      }`}
+                    >
+                      {backgroundRemovalLoading
+                        ? "배경 제거 중…"
+                        : backgroundRemovalApplied
+                          ? "배경 제거 완료"
+                          : "배경 제거하기"}
+                    </button>
+                    <p className="text-center text-xs font-medium text-rose-700/90">
+                      배경을 투명 PNG로 만들기
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-zinc-500">
+                    새 이미지를 선택하면 배경 제거 가능
+                  </p>
+                )}
+
+                {imageSectionMounted ? (
+                  <div className="mt-3">
+                    <ProductImageUploadSettingsPanel
+                      options={uploadSettings}
+                      onChange={setUploadSettings}
+                      disabled={uploading}
+                    />
+                  </div>
+                ) : null}
 
                 {pendingImageFile ? (
                   <div className="mt-3 space-y-3 rounded-lg border border-rose-100 bg-rose-50/40 p-3">
-                    <div className="space-y-1">
-                      <button
-                        type="button"
-                        onClick={() => void removeImageBackground()}
-                        disabled={
-                          uploading ||
-                          previewLoading ||
-                          backgroundRemovalLoading ||
-                          backgroundRemovalApplied
-                        }
-                        className={`w-full rounded-lg px-4 py-3 text-base font-bold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                          backgroundRemovalApplied
-                            ? "border-2 border-rose-300 bg-rose-100 text-rose-700"
-                            : "bg-rose-600 text-white hover:bg-rose-700"
-                        }`}
-                      >
-                        {backgroundRemovalLoading
-                          ? "배경 제거 중…"
-                          : backgroundRemovalApplied
-                            ? "배경 제거 완료"
-                            : "배경 제거하기"}
-                      </button>
-                      <p className="text-center text-xs font-medium text-rose-700/90">
-                        배경을 투명 PNG로 만들기
-                      </p>
-                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <p className="text-[10px] font-medium text-zinc-500">원본</p>
@@ -1294,6 +1521,16 @@ export function AdminProductsTable({
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                      {!backgroundRemovalApplied ? (
+                        <button
+                          type="button"
+                          onClick={() => void runNormalizedPreview({ immediate: true })}
+                          disabled={uploading || previewLoading || backgroundRemovalLoading}
+                          className="w-full rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50 sm:w-auto"
+                        >
+                          {previewLoading ? "미리보기 생성 중…" : "미리보기"}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() =>
@@ -1396,4 +1633,4 @@ export function AdminProductsTable({
       ) : null}
     </>
   );
-}
+});

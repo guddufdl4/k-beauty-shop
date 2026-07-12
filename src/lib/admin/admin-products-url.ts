@@ -23,6 +23,40 @@ export function resolveAdminProductsTab(
   return "bulk";
 }
 
+export type AdminProductsPaginationItem = number;
+
+const ADMIN_PRODUCTS_PAGINATION_WINDOW = 10;
+
+export function getAdminProductsPaginationItems(
+  currentPage: number,
+  totalPages: number,
+  windowSize = ADMIN_PRODUCTS_PAGINATION_WINDOW,
+): AdminProductsPaginationItem[] {
+  if (totalPages <= 1) {
+    return [];
+  }
+
+  const safeWindow = Math.max(1, Math.floor(windowSize));
+  if (totalPages <= safeWindow) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  let start = currentPage - Math.floor(safeWindow / 2);
+  let end = start + safeWindow - 1;
+
+  if (start < 1) {
+    start = 1;
+    end = safeWindow;
+  }
+
+  if (end > totalPages) {
+    end = totalPages;
+    start = totalPages - safeWindow + 1;
+  }
+
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
+
 export function buildAdminProductsHref(
   filters: AdminProductsFilters,
   page = 1,

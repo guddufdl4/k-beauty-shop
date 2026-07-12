@@ -1,7 +1,4 @@
-import {
-  STANDARD_PRODUCT_IMAGE_BACKGROUND,
-  STANDARD_PRODUCT_IMAGE_SIZE,
-} from "@/lib/product-images";
+import { STANDARD_PRODUCT_IMAGE_BACKGROUND } from "@/lib/product-images";
 
 export type ProductImageNormalizeFit = "inside" | "cover";
 export type ProductImageNormalizeBackground = "white" | "zinc";
@@ -15,8 +12,11 @@ export type ProductImageNormalizeOptions = {
 
 export const PRODUCT_IMAGE_CANVAS_SIZES = [800, 1000, 1200] as const;
 
+/** Default admin upload canvas — 800px balances speed and quality. */
+export const DEFAULT_PRODUCT_IMAGE_UPLOAD_CANVAS_SIZE = 800;
+
 export const DEFAULT_PRODUCT_IMAGE_NORMALIZE_OPTIONS: ProductImageNormalizeOptions = {
-  canvasSize: STANDARD_PRODUCT_IMAGE_SIZE,
+  canvasSize: DEFAULT_PRODUCT_IMAGE_UPLOAD_CANVAS_SIZE,
   fit: "inside",
   background: "zinc",
   trimEnabled: true,

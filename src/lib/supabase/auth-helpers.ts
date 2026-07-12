@@ -50,12 +50,13 @@ async function fetchProfileWithServiceRole(userId: string) {
     .maybeSingle();
 }
 
-export async function getSessionProfile(): Promise<{
+/** Deduplicate profile lookup within a single RSC request. */
+export const getSessionProfile = cache(async (): Promise<{
   configured: boolean;
   user: { id: string; email?: string } | null;
   profile: SessionProfile | null;
   profileError: string | null;
-}> {
+}> => {
   const configured = isSupabaseConfigured();
 
   if (!configured) {
@@ -131,7 +132,7 @@ export async function getSessionProfile(): Promise<{
     profile: null,
     profileError: null,
   };
-}
+});
 
 /** Supabase 연결 시 /admin — 로그인 + role=admin 필수 (데모 모드는 통과) */
 export async function requireAdminSession(): Promise<void> {

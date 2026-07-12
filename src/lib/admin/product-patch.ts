@@ -5,6 +5,8 @@ export type ProductPatch = {
   barcode: string | null;
   wholesale_price: number;
   image_url?: string | null;
+  category_id?: string | null;
+  sold_out?: boolean;
 };
 
 export type ProductPatchResult =
@@ -88,6 +90,26 @@ export function parseProductPatch(body: unknown): ProductPatchResult {
     }
   }
 
+  let category_id: string | null | undefined;
+  if (record.category_id !== undefined) {
+    if (record.category_id === null) {
+      category_id = null;
+    } else if (typeof record.category_id !== "string") {
+      return { ok: false, error: "카테고리 형식이 올바르지 않습니다." };
+    } else {
+      const trimmed = record.category_id.trim();
+      category_id = trimmed || null;
+    }
+  }
+
+  let sold_out: boolean | undefined;
+  if (record.sold_out !== undefined) {
+    if (typeof record.sold_out !== "boolean") {
+      return { ok: false, error: "품절 여부는 true/false여야 합니다." };
+    }
+    sold_out = record.sold_out;
+  }
+
   return {
     ok: true,
     patch: {
@@ -95,6 +117,8 @@ export function parseProductPatch(body: unknown): ProductPatchResult {
       barcode,
       wholesale_price,
       ...(image_url !== undefined ? { image_url } : {}),
+      ...(category_id !== undefined ? { category_id } : {}),
+      ...(sold_out !== undefined ? { sold_out } : {}),
     },
   };
 }

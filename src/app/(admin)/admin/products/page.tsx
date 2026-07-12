@@ -9,6 +9,7 @@ import {
   type AdminProductsFilters,
   type AdminProductsTab,
 } from "@/lib/admin/admin-products-url";
+import { AdminProductsPagination } from "@/components/admin/admin-products-pagination";
 import { AdminProductsTable } from "@/components/admin/admin-products-table";
 import { ExcelImportSection } from "@/components/admin/excel-import-section";
 import { ProductImageBatchSection } from "@/components/admin/product-image-batch-section";
@@ -17,7 +18,7 @@ import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getProductImportBatches, getProducts, type ProductImportBatch } from "@/lib/supabase/products";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
-const ADMIN_PRODUCTS_PAGE_SIZE = 50;
+const ADMIN_PRODUCTS_PAGE_SIZE = 10;
 
 const CARD_CLASS =
   "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm";
@@ -265,43 +266,49 @@ export default async function AdminProductsPage({
   const needsProducts = activeTab === "list";
   const needsBatches = activeTab === "bulk";
   const needsImageStats = activeTab === "bulk";
-  const { configured, user, profile } = await getSessionProfile();
-  const [{ categories }, { products, totalCount }, { batches }, imageStatsResult] =
-    await Promise.all([
-      needsCategories
-        ? getCategories()
-        : Promise.resolve({
-            categories: [],
-            meta: { source: "database" as const, configured: true },
-          }),
-      needsProducts
-        ? getProducts({
-            includeDraft: true,
-            importBatchId: activeBatchId ?? undefined,
-            categorySlug: categoryFilter,
-            search: searchTerm,
-            brand: brandFilter,
-            limit: ADMIN_PRODUCTS_PAGE_SIZE,
-            page: currentPage,
-            orderBy: sortRecent ? "updated_at" : "created_at",
-            deletionFilter: showDeleted ? "deleted" : "active",
-            imageFirst: true,
-          })
-        : Promise.resolve({
-            products: [],
-            totalCount: 0,
-            meta: { source: "database" as const, configured: true },
-          }),
-      needsBatches
-        ? getProductImportBatches()
-        : Promise.resolve({
-            batches: [],
-            meta: { source: "database" as const, configured: true },
-          }),
-      needsImageStats
-        ? getCachedProductImageBatchStats()
-        : Promise.resolve({ stats: null, error: null }),
-    ]);
+  const [
+    { configured, user, profile },
+    { categories },
+    { products, totalCount },
+    { batches },
+    imageStatsResult,
+  ] = await Promise.all([
+    getSessionProfile(),
+    needsCategories
+      ? getCategories()
+      : Promise.resolve({
+          categories: [],
+          meta: { source: "database" as const, configured: true },
+        }),
+    needsProducts
+      ? getProducts({
+          includeDraft: true,
+          importBatchId: activeBatchId ?? undefined,
+          categorySlug: categoryFilter,
+          search: searchTerm,
+          brand: brandFilter,
+          limit: ADMIN_PRODUCTS_PAGE_SIZE,
+          page: currentPage,
+          orderBy: sortRecent ? "updated_at" : "created_at",
+          deletionFilter: showDeleted ? "deleted" : "active",
+          imageFirst: true,
+          lightSelect: true,
+        })
+      : Promise.resolve({
+          products: [],
+          totalCount: 0,
+          meta: { source: "database" as const, configured: true },
+        }),
+    needsBatches
+      ? getProductImportBatches()
+      : Promise.resolve({
+          batches: [],
+          meta: { source: "database" as const, configured: true },
+        }),
+    needsImageStats
+      ? getCachedProductImageBatchStats()
+      : Promise.resolve({ stats: null, error: null }),
+  ]);
   const imageStats = imageStatsResult.stats;
   const lastCollectedAt = batches[0]?.created_at ?? null;
   const totalPages = Math.max(
@@ -312,9 +319,6 @@ export default async function AdminProductsPage({
     redirect(buildAdminProductsHref(listFilters, totalPages));
   }
   const safePage = currentPage;
-  const pageStart =
-    totalCount === 0 ? 0 : (safePage - 1) * ADMIN_PRODUCTS_PAGE_SIZE + 1;
-  const pageEnd = Math.min(safePage * ADMIN_PRODUCTS_PAGE_SIZE, totalCount);
   const hasListFilters = Boolean(searchTerm || brandFilter || categoryFilter);
   const emptyMessage = showDeleted
     ? hasListFilters
@@ -451,13 +455,13 @@ export default async function AdminProductsPage({
                     <span>
                       배치 필터 적용 중
                       {totalCount > 0
-                        ? ` · ${pageStart.toLocaleString("ko-KR")}–${pageEnd.toLocaleString("ko-KR")} / ${safePage}/${totalPages}페이지`
+                        ? ` · 총 ${totalCount.toLocaleString("ko-KR")}건 · 페이지 ${safePage} / ${totalPages}`
                         : null}
                     </span>
                   ) : (
                     <span>
                       {totalCount > 0
-                        ? `${pageStart.toLocaleString("ko-KR")}–${pageEnd.toLocaleString("ko-KR")} / ${safePage}/${totalPages}페이지`
+                        ? `총 ${totalCount.toLocaleString("ko-KR")}건 · 페이지 ${safePage} / ${totalPages}`
                         : "목록이 비어 있습니다"}
                     </span>
                   )}
@@ -488,37 +492,19 @@ export default async function AdminProductsPage({
               <AdminProductsTable
                 key={`${safePage}-${activeBatchId ?? ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
                 products={products}
+                categories={categories}
                 emptyMessage={emptyMessage}
                 viewMode={showDeleted ? "deleted" : "active"}
               />
             </div>
 
             {totalPages > 1 ? (
-              <div className="flex shrink-0 items-center justify-between gap-2 border-t border-zinc-100 bg-white px-3 py-2">
-                {safePage > 1 ? (
-                  <Link
-                    href={buildAdminProductsHref(listFilters, safePage - 1)}
-                    className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs text-zinc-700 hover:border-rose-200 hover:text-rose-700"
-                  >
-                    ← 이전
-                  </Link>
-                ) : (
-                  <span className="text-xs text-zinc-300">← 이전</span>
-                )}
-                <p className="text-xs text-zinc-500">
-                  {safePage} / {totalPages}
-                </p>
-                {safePage < totalPages ? (
-                  <Link
-                    href={buildAdminProductsHref(listFilters, safePage + 1)}
-                    className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs text-zinc-700 hover:border-rose-200 hover:text-rose-700"
-                  >
-                    다음 →
-                  </Link>
-                ) : (
-                  <span className="text-xs text-zinc-300">다음 →</span>
-                )}
-              </div>
+              <AdminProductsPagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                filters={listFilters}
+              />
             ) : null}
           </div>
         </section>

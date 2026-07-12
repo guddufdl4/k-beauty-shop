@@ -146,6 +146,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     wholesale_price: parsed.patch.wholesale_price,
   };
 
+  if (parsed.patch.category_id !== undefined) {
+    updatePayload.category_id = parsed.patch.category_id;
+  }
+
+  if (parsed.patch.sold_out !== undefined) {
+    updatePayload.sold_out = parsed.patch.sold_out;
+  }
+
   if (imageUrlProvided) {
     updatePayload.image_url = parsed.patch.image_url;
     updatePayload.needs_image = !parsed.patch.image_url;
@@ -159,7 +167,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     .from("products")
     .update(updatePayload)
     .eq("id", productId)
-    .select("id, name, barcode, wholesale_price, sku, slug, image_url")
+    .select(
+      "id, name, barcode, wholesale_price, sku, slug, image_url, category_id, sold_out, category:categories(id, name, slug)",
+    )
     .maybeSingle();
 
   if (error) {
