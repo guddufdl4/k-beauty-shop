@@ -44,3 +44,5 @@ next-env.d.ts
 build-audit.txt
 build-latest.txt
 dev-log.txt
+.vercel
+.env*

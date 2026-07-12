@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { ProductImageBatchSection } from "@/components/admin/product-image-batch-section";
 import { getProductImageBatchStats } from "@/lib/admin/product-image-batch";

@@ -8,7 +8,7 @@ import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60; // Vercel Hobby cap
 
 async function requireAdminApi() {
   const { configured, profile } = await getSessionProfile();

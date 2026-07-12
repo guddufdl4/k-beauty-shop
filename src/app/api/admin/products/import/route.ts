@@ -14,7 +14,7 @@ import { createSafeClient } from "@/lib/supabase/safe-server";
 
 export const runtime = "nodejs";
 /** Large Hanmi workbooks (~18k rows) need several minutes even with batch upsert. */
-export const maxDuration = 600;
+export const maxDuration = 60; // Vercel Hobby cap; use chunked import or Pro for longer runs
 
 const UPSERT_BATCH_SIZE = 500;
 const IMAGE_BATCH_SIZE = 500;

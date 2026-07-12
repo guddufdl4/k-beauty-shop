@@ -1,4 +1,4 @@
-﻿import { getTranslations, getLocale } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
