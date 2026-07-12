@@ -697,7 +697,7 @@ function compareProductsForList(
   b: ProductWithRelations,
   options: ProductListOrderOptions,
 ): number {
-  if (options.imageFirst !== false) {
+  if (options.imageFirst === true) {
     const aHasImage = productHasRealImage(a) ? 1 : 0;
     const bHasImage = productHasRealImage(b) ? 1 : 0;
     if (bHasImage !== aHasImage) {
@@ -825,7 +825,7 @@ export async function getProducts(
   const sort = options?.sort;
   const orderBy = options?.orderBy ?? "created_at";
   const deletionFilter = options?.deletionFilter ?? "active";
-  const imageFirst = options?.imageFirst !== false;
+  const imageFirst = options?.imageFirst === true;
   const listLimit = options?.limit;
   const listPage = Math.max(1, options?.page ?? 1);
   const listOrderOptions: ProductListOrderOptions = {
@@ -959,6 +959,48 @@ export async function getProducts(
   let totalCount = 0;
 
   if (listLimit != null) {
+    if (imageFirst) {
+      const { data, error } = await fetchAllPages<Record<string, unknown>>(
+        async (from, to) => {
+          let query = supabase.from("products").select(PRODUCT_SELECT);
+          query = applyProductFilters(query, false) as typeof query;
+          const result = await query.range(from, to);
+          return {
+            data: (result.data ?? []) as Record<string, unknown>[],
+            error: result.error,
+          };
+        },
+      );
+
+      if (error) {
+        if (isMissingDeletedAtColumnError(error)) {
+          markSoftDeleteColumnMissing();
+          return getProducts(categoryOrOptions);
+        }
+
+        return {
+          ...staticProductsResult(),
+          meta: { source: "static", configured: true, error },
+        };
+      }
+
+      let products = data.map((row) => mapProductWithRelations(row));
+
+      if (sort === "sale") {
+        products = products.filter((product) => isProductOnSale(product));
+      }
+
+      products = sortProductsForList(products, listOrderOptions);
+      const { products: pagedProducts, totalCount: imageFirstTotal } =
+        paginateStaticProducts(products);
+
+      return {
+        products: pagedProducts,
+        totalCount: imageFirstTotal,
+        meta: { source: "database", configured: true },
+      };
+    }
+
     let countQuery = supabase
       .from("products")
       .select("*", { count: "exact", head: true });
@@ -1004,8 +1046,6 @@ export async function getProducts(
     if (sort === "sale") {
       products = products.filter((product) => isProductOnSale(product));
     }
-
-    products = sortProductsForList(products, listOrderOptions);
 
     return {
       products,
@@ -1238,7 +1278,10 @@ export async function getAllProductsAdmin(): Promise<{
   products: ProductWithRelations[];
   meta: FetchMeta;
 }> {
-  const { products, meta } = await getProducts({ includeDraft: true });
+  const { products, meta } = await getProducts({
+    includeDraft: true,
+    imageFirst: true,
+  });
   return { products, meta };
 }
 

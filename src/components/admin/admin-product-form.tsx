@@ -10,17 +10,24 @@ type Props = {
     formData: FormData,
   ) => Promise<ProductFormState>;
   categories: Category[];
+  embedded?: boolean;
 };
 
-export function AdminProductForm({ action, categories }: Props) {
+export function AdminProductForm({ action, categories, embedded }: Props) {
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
     <form
       action={formAction}
-      className="space-y-4 rounded-2xl border border-rose-100 bg-white p-6 shadow-sm"
+      className={
+        embedded
+          ? "space-y-4"
+          : "space-y-4 rounded-2xl border border-rose-100 bg-white p-6 shadow-sm"
+      }
     >
-      <h2 className="text-lg font-semibold text-zinc-900">상품 추가</h2>
+      <h2 className={`font-semibold text-zinc-900 ${embedded ? "sr-only" : "text-lg"}`}>
+        상품 추가
+      </h2>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">

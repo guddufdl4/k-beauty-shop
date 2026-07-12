@@ -2,6 +2,8 @@ export type AdminProductsSort = "recent" | null;
 
 export type AdminProductsView = "active" | "deleted";
 
+export type AdminProductsTab = "bulk" | "add" | "list";
+
 export type AdminProductsFilters = {
   batchId: string | null;
   q: string | null;
@@ -9,7 +11,17 @@ export type AdminProductsFilters = {
   category: string | null;
   sort: AdminProductsSort;
   view: AdminProductsView;
+  tab?: AdminProductsTab | null;
 };
+
+export function resolveAdminProductsTab(
+  tab: string | undefined | null,
+): AdminProductsTab {
+  if (tab === "add" || tab === "list") {
+    return tab;
+  }
+  return "bulk";
+}
 
 export function buildAdminProductsHref(
   filters: AdminProductsFilters,
@@ -36,6 +48,9 @@ export function buildAdminProductsHref(
   }
   if (page > 1) {
     params.set("page", String(page));
+  }
+  if (filters.tab && filters.tab !== "bulk") {
+    params.set("tab", filters.tab);
   }
   const query = params.toString();
   return query ? `/admin/products?${query}` : "/admin/products";

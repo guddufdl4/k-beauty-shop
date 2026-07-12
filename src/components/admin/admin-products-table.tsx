@@ -15,6 +15,7 @@ import {
 } from "@/components/admin/product-image-upload-settings";
 import { resolveProductImageUrl } from "@/lib/product-images";
 import type { ProductWithRelations } from "@/lib/supabase/products";
+import { ProductNameWithCopy } from "@/components/admin/product-name-with-copy";
 import { formatProductPrice } from "@/lib/utils";
 
 type Props = {
@@ -814,13 +815,12 @@ export function AdminProductsTable({
                     ) : null}
                   </td>
                   <td className="px-3 py-2.5 align-top">
-                    <Link
+                    <ProductNameWithCopy
+                      name={product.name}
                       href={`/en/products/${product.slug}`}
-                      className="line-clamp-2 font-medium leading-snug text-zinc-900 hover:text-rose-700"
-                    >
-                      {product.name}
-                    </Link>
-                    <p className="mt-0.5 text-[10px] text-zinc-400">MOQ {product.moq}</p>
+                      linkClassName="line-clamp-2 font-medium leading-snug text-zinc-900 hover:text-rose-700"
+                    />
+                    <p className="mt-0.5 select-none text-[10px] text-zinc-400">MOQ {product.moq}</p>
                   </td>
                   <td className="px-3 py-2.5 align-top text-xs text-zinc-700">{product.brand}</td>
                   <td className="px-3 py-2.5 align-top">

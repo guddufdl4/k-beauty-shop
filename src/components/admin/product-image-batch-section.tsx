@@ -16,6 +16,7 @@ type BatchApiResponse = {
 type Props = {
   initialStats: ProductImageBatchStats | null;
   compact?: boolean;
+  variant?: "default" | "management";
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -24,7 +25,11 @@ const SOURCE_LABELS: Record<string, string> = {
   category_placeholder: "\uCE74\uD14C\uACE0\uB9AC \uD50C\uB808\uC774\uC2A4\uD640\uB354",
 };
 
-export function ProductImageBatchSection({ initialStats, compact }: Props) {
+export function ProductImageBatchSection({
+  initialStats,
+  compact,
+  variant = "default",
+}: Props) {
   const router = useRouter();
   const [stats, setStats] = useState<ProductImageBatchStats | null>(initialStats);
   const [lastResult, setLastResult] = useState<ProductImageBatchResult | null>(null);
@@ -71,6 +76,12 @@ export function ProductImageBatchSection({ initialStats, compact }: Props) {
     lastResult?.batch_number ?? stats?.lastRun?.batch_number,
   );
 
+  const isManagement = variant === "management";
+  const totalProducts = stats?.totalProducts ?? 0;
+  const withImage = stats?.withImage ?? 0;
+  const coveragePct =
+    totalProducts > 0 ? Math.round((withImage / totalProducts) * 100) : 0;
+
   const primaryLabel =
     pending
       ? "\uCC98\uB9AC \uC911..."
@@ -78,7 +89,85 @@ export function ProductImageBatchSection({ initialStats, compact }: Props) {
         ? "\uBAA8\uB978 \uC0C1\uD488\uC5D0 \uC774\uBBF8\uC9C0 \uC788\uC74C"
         : compact && hasPreviousRun
           ? `\uB2E4\uC74C ${batchSize.toLocaleString("ko-KR")}\uAC1C \uCC98\uB9AC`
-          : `\uC774\uBBF8\uC9C0 ${batchSize.toLocaleString("ko-KR")}\uAC1C \uCC44\uC6B0\uAE30`;
+          : isManagement
+            ? "\uC2E4\uD589"
+            : `\uC774\uBBF8\uC9C0 ${batchSize.toLocaleString("ko-KR")}\uAC1C \uCC44\uC6B0\uAE30`;
+
+  if (isManagement) {
+    return (
+      <section
+        aria-label="상품 이미지/정보 관리"
+        className="rounded-2xl border border-violet-100 bg-white shadow-sm"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-violet-50 px-4 py-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-500">
+              이미지 배치
+            </p>
+            <h2 className="mt-0.5 text-sm font-semibold text-zinc-900">
+              상품 이미지/정보 관리
+            </h2>
+            <p className="mt-0.5 text-[11px] text-zinc-500">
+              Excel URL · 카테고리 이미지 · 플레이스홀더 순으로 자동 채움
+            </p>
+          </div>
+          <Link
+            href="/admin/products/images"
+            className="text-xs text-violet-600 hover:underline"
+          >
+            상세 →
+          </Link>
+        </div>
+
+        <div className="space-y-3 p-4">
+          <div>
+            <div className="mb-1.5 flex items-center justify-between text-[11px]">
+              <span className="text-zinc-500">이미지 커버리지</span>
+              <span className="font-medium text-violet-700">
+                {withImage.toLocaleString("ko-KR")} / {totalProducts.toLocaleString("ko-KR")} ({coveragePct}%)
+              </span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-violet-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all"
+                style={{ width: `${coveragePct}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2">
+              <p className="text-[11px] text-violet-700">미등록 이미지</p>
+              <p className="text-xl font-bold text-violet-900">
+                {withoutImage.toLocaleString("ko-KR")}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={pending || withoutImage === 0}
+              onClick={() => handleRunBatch(batchSize)}
+              className="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {primaryLabel}
+            </button>
+          </div>
+
+          {error ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          ) : null}
+
+          {lastResult ? (
+            <p className="text-xs text-zinc-500">
+              배치 #{lastResult.batch_number} · 처리 {lastResult.processed_count.toLocaleString("ko-KR")} ·
+              남음 {lastResult.remaining_count.toLocaleString("ko-KR")}
+            </p>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
@@ -104,7 +193,9 @@ export function ProductImageBatchSection({ initialStats, compact }: Props) {
         ) : null}
       </div>
 
-      <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+      <dl
+        className={`mt-4 grid gap-3 ${compact ? "grid-cols-1" : "sm:grid-cols-3"}`}
+      >
         <div className="rounded-xl bg-violet-50 px-4 py-3">
           <dt className="text-xs text-violet-700">Missing images</dt>
           <dd className="text-xl font-bold text-violet-900">

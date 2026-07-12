@@ -26,7 +26,12 @@ export function AdminProductsToolbar({ filters, categories, totalCount }: Props)
   );
 
   function navigate(next: AdminProductsFilters) {
-    router.push(buildAdminProductsHref(next, 1));
+    router.push(
+      buildAdminProductsHref({
+        ...next,
+        tab: next.tab ?? filters.tab ?? "list",
+      }, 1),
+    );
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -90,7 +95,27 @@ export function AdminProductsToolbar({ filters, categories, totalCount }: Props)
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <p className="text-sm font-semibold text-zinc-900">
+          {filters.view === "deleted" ? "삭제된 상품" : "전체 목록"}
+        </p>
+        <label className="flex items-center gap-2 text-xs text-zinc-500">
+          <span className="hidden sm:inline">정렬</span>
+          <select
+            value={filters.sort === "recent" ? "recent" : "created"}
+            onChange={(event) =>
+              handleSortChange(event.target.value === "recent" ? "recent" : null)
+            }
+            className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+          >
+            <option value="created">등록순</option>
+            <option value="recent">최신 수집순</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-zinc-700">
           {totalCount.toLocaleString("ko-KR")}개 상품 찾음
@@ -118,30 +143,6 @@ export function AdminProductsToolbar({ filters, categories, totalCount }: Props)
               }`}
             >
               삭제됨
-            </button>
-          </div>
-          <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5">
-            <button
-              type="button"
-              onClick={() => handleSortChange(null)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                filters.sort !== "recent"
-                  ? "bg-white text-zinc-900 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700"
-              }`}
-            >
-              등록순
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSortChange("recent")}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                filters.sort === "recent"
-                  ? "bg-white text-violet-700 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700"
-              }`}
-            >
-              최근 수정
             </button>
           </div>
           {hasActiveFilters ? (
@@ -217,6 +218,7 @@ export function AdminProductsToolbar({ filters, categories, totalCount }: Props)
           </label>
         </div>
       </form>
+      </div>
     </div>
   );
 }
