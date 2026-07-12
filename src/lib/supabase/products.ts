@@ -11,7 +11,7 @@ import type { ProductListSort } from "@/lib/store/products-url";
 import { isProductOnSale } from "@/lib/store/products-url";
 import { isSupabaseConfigured } from "./config";
 import { createSafeClient } from "./safe-server";
-import { createPublicClient } from "./service";
+import { createPublicClient, createServiceClient } from "./service";
 import {
   ensureSoftDeleteColumnProbed,
   isMissingDeletedAtColumnError,
@@ -1293,7 +1293,7 @@ async function fetchProductImportBatchesFromSource(): Promise<{
     };
   }
 
-  const supabase = await createSafeClient();
+  const supabase = createServiceClient() ?? createPublicClient();
   if (!supabase) {
     return {
       batches: [],
