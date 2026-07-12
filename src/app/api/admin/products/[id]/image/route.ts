@@ -101,8 +101,11 @@ export async function POST(request: Request, context: RouteContext) {
   });
 
   const previewOnly = String(formData.get("preview") ?? "").trim() === "true";
+  const removeBackground = String(formData.get("removeBackground") ?? "").trim() === "true";
 
-  const validated = await readAndValidateProductImageFile(file, normalizeOptions);
+  const validated = await readAndValidateProductImageFile(file, normalizeOptions, {
+    removeBackground,
+  });
   if (!validated.ok) {
     return NextResponse.json({ error: validated.error }, { status: 400 });
   }

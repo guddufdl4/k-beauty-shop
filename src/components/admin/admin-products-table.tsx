@@ -8,6 +8,7 @@ import {
   validateClientProductImageFile,
 } from "@/lib/admin/product-image-upload";
 import { appendProductImageNormalizeOptionsToFormData } from "@/lib/admin/product-image-normalize-options";
+import type { ProductImageNormalizeOptions } from "@/lib/admin/product-image-normalize-options";
 import { isValidProductImageUrl } from "@/lib/admin/product-image-resolver";
 import {
   ProductImageUploadSettingsPanel,
@@ -122,7 +123,16 @@ export function AdminProductsTable({
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [normalizedPreviewUrl, setNormalizedPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [uploadSettings, setUploadSettings] = useProductImageUploadSettings();
+  const [backgroundRemovalApplied, setBackgroundRemovalApplied] = useState(false);
+  const [backgroundRemovalLoading, setBackgroundRemovalLoading] = useState(false);
+  const [uploadSettings, setUploadSettingsState] = useProductImageUploadSettings();
+  const setUploadSettings = useCallback(
+    (options: ProductImageNormalizeOptions) => {
+      setUploadSettingsState(options);
+      setBackgroundRemovalApplied(false);
+    },
+    [setUploadSettingsState],
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -212,6 +222,8 @@ export function AdminProductsTable({
 
   const clearPendingImage = useCallback(() => {
     setPendingImageFile(null);
+    setBackgroundRemovalApplied(false);
+    setBackgroundRemovalLoading(false);
     setLocalPreviewUrl((current) => {
       if (current?.startsWith("blob:")) {
         URL.revokeObjectURL(current);
@@ -290,6 +302,7 @@ export function AdminProductsTable({
 
     setError(null);
     setMessage(null);
+    setBackgroundRemovalApplied(false);
     setPendingImageFile(file);
     setLocalPreviewUrl((current) => {
       if (current?.startsWith("blob:")) {
@@ -300,7 +313,7 @@ export function AdminProductsTable({
   }, []);
 
   const uploadImageFile = useCallback(
-    async (file: File) => {
+    async (file: File, withBackgroundRemoval = false) => {
       if (!editing) {
         return;
       }
@@ -319,6 +332,9 @@ export function AdminProductsTable({
         const formData = new FormData();
         formData.append("file", file);
         appendProductImageNormalizeOptionsToFormData(formData, uploadSettings);
+        if (withBackgroundRemoval) {
+          formData.append("removeBackground", "true");
+        }
 
         const response = await fetch(`/api/admin/products/${editing.id}/image`, {
           method: "POST",
@@ -361,7 +377,11 @@ export function AdminProductsTable({
               : product,
           ),
         );
-        setMessage("이미지를 업로드하고 저장했습니다.");
+        setMessage(
+          withBackgroundRemoval
+            ? "배경을 제거한 PNG 이미지를 업로드하고 저장했습니다."
+            : "이미지를 업로드하고 저장했습니다.",
+        );
         router.refresh();
       } catch {
         setError("네트워크 오류로 이미지를 업로드하지 못했습니다.");
@@ -372,15 +392,59 @@ export function AdminProductsTable({
     [clearPendingImage, editing, router, uploadSettings],
   );
 
-  useEffect(() => {
+  const removeImageBackground = useCallback(async () => {
     if (!editing || !pendingImageFile) {
+      return;
+    }
+
+    setBackgroundRemovalLoading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", pendingImageFile);
+      formData.append("preview", "true");
+      formData.append("removeBackground", "true");
+      appendProductImageNormalizeOptionsToFormData(formData, uploadSettings);
+
+      const response = await fetch(`/api/admin/products/${editing.id}/image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        setError(data?.error ?? "배경 제거 미리보기 생성에 실패했습니다.");
+        return;
+      }
+
+      const blob = await response.blob();
       setNormalizedPreviewUrl((current) => {
         if (current?.startsWith("blob:")) {
           URL.revokeObjectURL(current);
         }
-        return null;
+        return URL.createObjectURL(blob);
       });
-      setPreviewLoading(false);
+      setBackgroundRemovalApplied(true);
+      setMessage("배경 제거 미리보기가 준비되었습니다. 확인 후 업로드하세요.");
+    } catch {
+      setError("배경 제거 중 네트워크 오류가 발생했습니다. 원본 이미지를 유지합니다.");
+    } finally {
+      setBackgroundRemovalLoading(false);
+    }
+  }, [editing, pendingImageFile, uploadSettings]);
+
+  useEffect(() => {
+    if (!editing || !pendingImageFile || backgroundRemovalApplied) {
+      if (!pendingImageFile) {
+        setNormalizedPreviewUrl((current) => {
+          if (current?.startsWith("blob:")) {
+            URL.revokeObjectURL(current);
+          }
+          return null;
+        });
+        setPreviewLoading(false);
+      }
       return;
     }
 
@@ -440,7 +504,7 @@ export function AdminProductsTable({
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [editing, pendingImageFile, uploadSettings]);
+  }, [backgroundRemovalApplied, editing, pendingImageFile, uploadSettings]);
 
   useEffect(() => {
     if (!editing || uploading) {
@@ -1061,10 +1125,14 @@ export function AdminProductsTable({
                       alt=""
                       className="absolute inset-0 h-full w-full object-contain"
                     />
-                    {uploading || previewLoading ? (
+                    {uploading || previewLoading || backgroundRemovalLoading ? (
                       <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/80">
                         <span className="text-[10px] font-medium text-rose-700">
-                          {uploading ? "업로드 중…" : "미리보기…"}
+                          {uploading
+                            ? "업로드 중…"
+                            : backgroundRemovalLoading
+                              ? "배경 제거 중…"
+                              : "미리보기…"}
                         </span>
                       </div>
                     ) : null}
@@ -1151,7 +1219,33 @@ export function AdminProductsTable({
                 </div>
 
                 {pendingImageFile ? (
-                  <div className="mt-3 space-y-2 rounded-lg border border-rose-100 bg-rose-50/40 p-3">
+                  <div className="mt-3 space-y-3 rounded-lg border border-rose-100 bg-rose-50/40 p-3">
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => void removeImageBackground()}
+                        disabled={
+                          uploading ||
+                          previewLoading ||
+                          backgroundRemovalLoading ||
+                          backgroundRemovalApplied
+                        }
+                        className={`w-full rounded-lg px-4 py-3 text-base font-bold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                          backgroundRemovalApplied
+                            ? "border-2 border-rose-300 bg-rose-100 text-rose-700"
+                            : "bg-rose-600 text-white hover:bg-rose-700"
+                        }`}
+                      >
+                        {backgroundRemovalLoading
+                          ? "배경 제거 중…"
+                          : backgroundRemovalApplied
+                            ? "배경 제거 완료"
+                            : "배경 제거하기"}
+                      </button>
+                      <p className="text-center text-xs font-medium text-rose-700/90">
+                        배경을 투명 PNG로 만들기
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <p className="text-[10px] font-medium text-zinc-500">원본</p>
@@ -1165,8 +1259,16 @@ export function AdminProductsTable({
                         </div>
                       </div>
                       <div>
-                        <p className="text-[10px] font-medium text-zinc-500">처리 미리보기</p>
-                        <div className="relative mt-1 aspect-square overflow-hidden rounded-md border border-zinc-200 bg-white">
+                        <p className="text-[10px] font-medium text-zinc-500">
+                          {backgroundRemovalApplied ? "배경 제거 미리보기" : "처리 미리보기"}
+                        </p>
+                        <div
+                          className={`relative mt-1 aspect-square overflow-hidden rounded-md border border-zinc-200 ${
+                            backgroundRemovalApplied
+                              ? "bg-[linear-gradient(45deg,#e4e4e7_25%,transparent_25%),linear-gradient(-45deg,#e4e4e7_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e4e4e7_75%),linear-gradient(-45deg,transparent_75%,#e4e4e7_75%)] bg-[length:12px_12px] bg-[position:0_0,0_6px,6px_-6px,-6px_0]"
+                              : "bg-white"
+                          }`}
+                        >
                           {normalizedPreviewUrl ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
@@ -1176,26 +1278,41 @@ export function AdminProductsTable({
                             />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[10px] text-zinc-400">
-                              {previewLoading ? "생성 중…" : "미리보기 없음"}
+                              {previewLoading || backgroundRemovalLoading
+                                ? "생성 중…"
+                                : "미리보기 없음"}
                             </div>
                           )}
+                          {backgroundRemovalLoading ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                              <span className="text-[10px] font-medium text-rose-700">
+                                배경 제거 중…
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                       <button
                         type="button"
-                        onClick={() => void uploadImageFile(pendingImageFile)}
-                        disabled={uploading || previewLoading}
-                        className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                        onClick={() =>
+                          void uploadImageFile(pendingImageFile, backgroundRemovalApplied)
+                        }
+                        disabled={uploading || previewLoading || backgroundRemovalLoading}
+                        className="w-full rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50 sm:w-auto"
                       >
-                        {uploading ? "업로드 중…" : "이 설정으로 업로드"}
+                        {uploading
+                          ? "업로드 중…"
+                          : backgroundRemovalApplied
+                            ? "투명 PNG 업로드"
+                            : "이 설정으로 업로드"}
                       </button>
                       <button
                         type="button"
                         onClick={clearPendingImage}
                         disabled={uploading}
-                        className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-600 hover:border-zinc-300 disabled:opacity-50"
+                        className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-zinc-600 hover:border-zinc-300 disabled:opacity-50 sm:w-auto"
                       >
                         선택 취소
                       </button>
