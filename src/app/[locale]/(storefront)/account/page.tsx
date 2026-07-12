@@ -1,4 +1,4 @@
-﻿import { updateProfileFullName } from "@/app/actions/profile";
+import { updateProfileFullName } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { ProfileForm } from "@/components/store/profile-form";

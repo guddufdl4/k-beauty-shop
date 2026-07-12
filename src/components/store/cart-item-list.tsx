@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState } from "react";
 import { Link } from "@/i18n/navigation";
@@ -7,12 +7,20 @@ import {
   updateQuantity,
   type CartActionState,
 } from "@/app/actions/cart";
-import { formatKRW } from "@/lib/utils";
+import { formatLocalePrice } from "@/lib/utils";
 import type { CartItemView } from "@/types/cart";
 
 const initialState: CartActionState = {};
 
-function CartItemRow({ item }: { item: CartItemView }) {
+function CartItemRow({
+  item,
+  locale,
+  usdKrwRate,
+}: {
+  item: CartItemView;
+  locale: string;
+  usdKrwRate: number;
+}) {
   const [updateState, updateAction, updatePending] = useActionState(updateQuantity, initialState);
   const [removeState, removeAction, removePending] = useActionState(removeFromCart, initialState);
 
@@ -27,7 +35,7 @@ function CartItemRow({ item }: { item: CartItemView }) {
             {item.name}
           </Link>
           <p className="mt-1 text-sm text-zinc-500">SKU {item.sku} · MOQ {item.moq}</p>
-          <p className="mt-2 text-lg font-bold">{formatKRW(item.lineTotal)}</p>
+          <p className="mt-2 text-lg font-bold">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p>
         </div>
 
         <div className="flex flex-col items-start gap-2 sm:items-end">
@@ -66,11 +74,19 @@ function CartItemRow({ item }: { item: CartItemView }) {
   );
 }
 
-export function CartItemList({ items }: { items: CartItemView[] }) {
+export function CartItemList({
+  items,
+  locale,
+  usdKrwRate,
+}: {
+  items: CartItemView[];
+  locale: string;
+  usdKrwRate: number;
+}) {
   return (
     <ul className="space-y-4">
       {items.map((item) => (
-        <CartItemRow key={item.productId} item={item} />
+        <CartItemRow key={item.productId} item={item} locale={locale} usdKrwRate={usdKrwRate} />
       ))}
     </ul>
   );

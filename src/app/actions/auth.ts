@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,11 +11,12 @@ export async function signUp(
   _prev: AuthState,
   formData: FormData
 ): Promise<AuthState> {
+  const t = await getTranslations("auth");
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    return { error: "이메일과 비밀번호를 입력해 주세요." };
+    return { error: t("emailPasswordRequired") };
   }
 
   const supabase = await createClient();
@@ -26,7 +27,7 @@ export async function signUp(
   }
 
   return {
-    success: "가입 요청이 완료되었습니다. 이메일 인증 후 로그인해 주세요.",
+    success: t("signupSuccess"),
   };
 }
 
@@ -34,11 +35,12 @@ export async function signIn(
   _prev: AuthState,
   formData: FormData
 ): Promise<AuthState> {
+  const t = await getTranslations("auth");
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    return { error: "이메일과 비밀번호를 입력해 주세요." };
+    return { error: t("emailPasswordRequired") };
   }
 
   const supabase = await createClient();

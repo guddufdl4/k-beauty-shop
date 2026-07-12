@@ -5,6 +5,15 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const handleI18nRouting = createIntlMiddleware(routing);
 
+function hasSupabaseAuthCookie(
+  cookies: Array<{ name: string; value: string }>,
+): boolean {
+  return cookies.some(
+    (cookie) =>
+      cookie.name.includes("-auth-token") && Boolean(cookie.value?.trim()),
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -13,6 +22,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const intlResponse = handleI18nRouting(request);
+
+  if (!hasSupabaseAuthCookie(request.cookies.getAll())) {
+    return intlResponse;
+  }
+
   return updateSession(request, intlResponse);
 }
 

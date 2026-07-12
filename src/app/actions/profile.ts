@@ -1,7 +1,7 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,14 +11,15 @@ export async function updateProfileFullName(
   _prev: ProfileState,
   formData: FormData,
 ): Promise<ProfileState> {
+  const t = await getTranslations("account");
   const fullName = String(formData.get("full_name") ?? "").trim();
 
   if (!fullName) {
-    return { error: "닉네임을 입력해 주세요." };
+    return { error: t("nicknameRequired") };
   }
 
   if (fullName.length > 50) {
-    return { error: "닉네임은 50자 이내로 입력해 주세요." };
+    return { error: t("nicknameTooLong") };
   }
 
   const supabase = await createClient();
@@ -28,7 +29,7 @@ export async function updateProfileFullName(
 
   if (!user) {
     redirect({ href: "/login", locale: await getLocale() });
-    return { error: "로그인이 필요합니다." };
+    return { error: t("loginRequiredError") };
   }
 
   const { error } = await supabase
@@ -42,5 +43,5 @@ export async function updateProfileFullName(
 
   revalidatePath("/", "layout");
   revalidatePath("/account");
-  return { success: "닉네임이 저장되었습니다." };
+  return { success: t("nicknameSaved") };
 }

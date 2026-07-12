@@ -1,11 +1,17 @@
 import { cookies } from "next/headers";
 import { formatKRW } from "@/lib/utils";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { getAuthUser } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
+import {
+  ensureSoftDeleteColumnProbed,
+  isSoftDeleteColumnAvailable,
+} from "@/lib/supabase/soft-delete";
 import {
   FALLBACK_PRODUCTS,
   type ProductWithRelations,
 } from "@/lib/supabase/products";
+import { enrichProductImages } from "@/lib/product-images";
 
 export const DEMO_CART_COOKIE = "kb_demo_cart";
 export const DEMO_ORDERS_COOKIE = "kb_demo_orders";
@@ -76,19 +82,7 @@ export function generateOrderNumber(): string {
 }
 
 export async function getCurrentUserId(): Promise<string | null> {
-  if (!isSupabaseConfigured()) {
-    return null;
-  }
-
-  const supabase = await createSafeClient();
-  if (!supabase) {
-    return null;
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   return user?.id ?? null;
 }
 
@@ -289,7 +283,9 @@ async function resolveProductForCart(
     return null;
   }
 
-  const { data } = await supabase
+  await ensureSoftDeleteColumnProbed(supabase);
+
+  let query = supabase
     .from("products")
     .select(
       `
@@ -299,8 +295,13 @@ async function resolveProductForCart(
     `,
     )
     .eq("id", productId)
-    .eq("status", "active")
-    .maybeSingle();
+    .eq("status", "active");
+
+  if (isSoftDeleteColumnAvailable()) {
+    query = query.is("deleted_at", null);
+  }
+
+  const { data } = await query.maybeSingle();
 
   if (!data) {
     return null;
@@ -310,7 +311,7 @@ async function resolveProductForCart(
   const categoryRaw = record.category as Record<string, unknown> | null;
   const imagesRaw = (record.images as Record<string, unknown>[] | null) ?? [];
 
-  return {
+  return enrichProductImages({
     id: String(record.id),
     category_id: record.category_id ? String(record.category_id) : null,
     name: String(record.name),
@@ -336,7 +337,8 @@ async function resolveProductForCart(
     country_of_origin: record.country_of_origin
       ? String(record.country_of_origin)
       : null,
-    status: "active",
+    status: "active" as const,
+    image_url: record.image_url ? String(record.image_url) : null,
     is_featured: Boolean(record.is_featured),
     created_at: String(record.created_at ?? new Date().toISOString()),
     updated_at: String(record.updated_at ?? new Date().toISOString()),
@@ -355,21 +357,40 @@ async function resolveProductForCart(
       sort_order: Number(image.sort_order ?? 0),
       is_primary: Boolean(image.is_primary),
     })),
-  };
+  }) as ProductWithRelations;
 }
+
+export type CartLibErrorCode =
+  | "invalid_quantity"
+  | "moq_not_met"
+  | "insufficient_stock"
+  | "product_not_found"
+  | "cart_unavailable"
+  | "cart_empty"
+  | "order_unavailable"
+  | "order_create_failed";
+
+export type CartLibResult = {
+  error?: string;
+  errorCode?: CartLibErrorCode;
+  errorParams?: Record<string, string | number>;
+};
 
 function validateQuantity(
   product: ProductWithRelations,
   quantity: number,
-): string | null {
+): CartLibResult | null {
   if (!Number.isFinite(quantity) || quantity < 1) {
-    return "수량을 올바르게 입력해 주세요.";
+    return { errorCode: "invalid_quantity" };
+  }
+  if (product.sold_out) {
+    return { errorCode: "insufficient_stock", errorParams: { stock: product.stock } };
   }
   if (quantity < product.moq) {
-    return `최소 주문 수량(MOQ)은 ${product.moq}개입니다.`;
+    return { errorCode: "moq_not_met", errorParams: { moq: product.moq } };
   }
   if (product.stock > 0 && quantity > product.stock) {
-    return `재고가 ${product.stock}개뿐입니다.`;
+    return { errorCode: "insufficient_stock", errorParams: { stock: product.stock } };
   }
   return null;
 }
@@ -377,15 +398,15 @@ function validateQuantity(
 export async function addToCart(
   productId: string,
   quantity: number,
-): Promise<{ error?: string }> {
+): Promise<CartLibResult> {
   const product = await resolveProductForCart(productId);
   if (!product) {
-    return { error: "상품을 찾을 수 없습니다." };
+    return { errorCode: "product_not_found" };
   }
 
   const validationError = validateQuantity(product, quantity);
   if (validationError) {
-    return { error: validationError };
+    return validationError;
   }
 
   const userId = await getCurrentUserId();
@@ -395,7 +416,7 @@ export async function addToCart(
   if (useDatabase && userId) {
     const supabase = await createSafeClient();
     if (!supabase) {
-      return { error: "장바구니를 사용할 수 없습니다." };
+      return { errorCode: "cart_unavailable" };
     }
 
     const { data: existing } = await supabase
@@ -409,7 +430,7 @@ export async function addToCart(
       const nextQuantity = Number(existing.quantity) + quantity;
       const nextValidation = validateQuantity(product, nextQuantity);
       if (nextValidation) {
-        return { error: nextValidation };
+        return nextValidation;
       }
 
       const { error } = await supabase
@@ -439,7 +460,7 @@ export async function addToCart(
   const nextQuantity = (cart[productId] ?? 0) + quantity;
   const nextValidation = validateQuantity(product, nextQuantity);
   if (nextValidation) {
-    return { error: nextValidation };
+    return nextValidation;
   }
 
   cart[productId] = nextQuantity;
@@ -450,15 +471,15 @@ export async function addToCart(
 export async function updateCartQuantity(
   productId: string,
   quantity: number,
-): Promise<{ error?: string }> {
+): Promise<CartLibResult> {
   const product = await resolveProductForCart(productId);
   if (!product) {
-    return { error: "상품을 찾을 수 없습니다." };
+    return { errorCode: "product_not_found" };
   }
 
   const validationError = validateQuantity(product, quantity);
   if (validationError) {
-    return { error: validationError };
+    return validationError;
   }
 
   const userId = await getCurrentUserId();
@@ -468,7 +489,7 @@ export async function updateCartQuantity(
   if (useDatabase && userId) {
     const supabase = await createSafeClient();
     if (!supabase) {
-      return { error: "장바구니를 사용할 수 없습니다." };
+      return { errorCode: "cart_unavailable" };
     }
 
     const { error } = await supabase
@@ -492,7 +513,7 @@ export async function updateCartQuantity(
 
 export async function removeFromCart(
   productId: string,
-): Promise<{ error?: string }> {
+): Promise<CartLibResult> {
   const userId = await getCurrentUserId();
   const useDatabase =
     Boolean(userId && isSupabaseConfigured()) && !isDemoProductId(productId);
@@ -500,7 +521,7 @@ export async function removeFromCart(
   if (useDatabase && userId) {
     const supabase = await createSafeClient();
     if (!supabase) {
-      return { error: "장바구니를 사용할 수 없습니다." };
+      return { errorCode: "cart_unavailable" };
     }
 
     const { error } = await supabase
@@ -541,10 +562,21 @@ export function calculateShippingCost(subtotal: number): number {
 
 export async function createOrder(
   shippingAddress: ShippingAddress,
-): Promise<{ error?: string; orderNumber?: string }> {
+): Promise<CartLibResult & { orderNumber?: string }> {
   const cart = await getCart();
   if (cart.items.length === 0) {
-    return { error: "장바구니가 비어 있습니다." };
+    return { errorCode: "cart_empty" };
+  }
+
+  for (const item of cart.items) {
+    const product = await resolveProductForCart(item.productId);
+    if (!product) {
+      return { errorCode: "product_not_found" };
+    }
+    const validationError = validateQuantity(product, item.quantity);
+    if (validationError) {
+      return validationError;
+    }
   }
 
   const subtotal = cart.subtotal;
@@ -556,7 +588,7 @@ export async function createOrder(
   if (userId && isSupabaseConfigured() && cart.source === "database") {
     const supabase = await createSafeClient();
     if (!supabase) {
-      return { error: "주문을 생성할 수 없습니다." };
+      return { errorCode: "order_unavailable" };
     }
 
     const { data: order, error: orderError } = await supabase
@@ -576,7 +608,10 @@ export async function createOrder(
       .single();
 
     if (orderError || !order) {
-      return { error: orderError?.message ?? "주문 생성에 실패했습니다." };
+      return {
+        error: orderError?.message,
+        errorCode: orderError ? undefined : "order_create_failed",
+      };
     }
 
     const orderItems = cart.items.map((item) => ({

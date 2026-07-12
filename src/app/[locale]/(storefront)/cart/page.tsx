@@ -1,9 +1,10 @@
-﻿import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { CartItemList } from "@/components/store/cart-item-list";
+import { getUsdKrwRate } from "@/lib/currency";
+import { formatLocalePrice } from "@/lib/utils";
 import {
   calculateShippingCost,
-  formatPrice,
   getCart,
   usesDatabaseCart,
 } from "@/lib/cart";
@@ -11,10 +12,12 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function CartPage() {
-  const [t, cart, dbCart] = await Promise.all([
+  const [t, cart, dbCart, locale, usdKrwRate] = await Promise.all([
     getTranslations("cart"),
     getCart(),
     usesDatabaseCart(),
+    getLocale(),
+    getUsdKrwRate(),
   ]);
 
   return (
@@ -36,21 +39,21 @@ export default async function CartPage() {
         </div>
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
-          <CartItemList items={cart.items} />
+          <CartItemList items={cart.items} locale={locale} usdKrwRate={usdKrwRate} />
 
           <aside className="h-fit rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
             <h2 className="text-lg font-semibold">{t("orderSummary")}</h2>
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-600">{t("subtotal")}</span>
-                <span>{formatPrice(cart.subtotal)}</span>
+                <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-600">{t("shipping")}</span>
                 <span>
                   {calculateShippingCost(cart.subtotal) === 0
                     ? t("freeShipping")
-                    : formatPrice(calculateShippingCost(cart.subtotal))}
+                    : formatLocalePrice(calculateShippingCost(cart.subtotal), locale, usdKrwRate)}
                 </span>
               </div>
               <p className="text-xs text-zinc-500">{t("freeShippingNote")}</p>

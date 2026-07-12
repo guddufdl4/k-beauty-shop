@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listAdminOrders } from "@/lib/admin/orders";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { storefrontHref } from "@/lib/store/storefront-href";
 import { formatKRW } from "@/lib/utils";
 
 function statusBadge(status: string) {
@@ -45,7 +46,7 @@ export default async function AdminOrdersPage() {
         <h1 className="text-2xl font-bold text-zinc-900">관리자 · 주문 관리</h1>
         <p className="mt-4 text-zinc-600">주문을 보려면 관리자 계정으로 로그인하세요.</p>
         <Link
-          href="/login"
+          href={storefrontHref("/login")}
           className="mt-6 inline-flex rounded-lg bg-rose-600 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-700"
         >
           로그인
@@ -59,7 +60,7 @@ export default async function AdminOrdersPage() {
       <main className="mx-auto max-w-5xl px-4 py-16">
         <h1 className="text-2xl font-bold text-zinc-900">관리자 · 주문 관리</h1>
         <p className="mt-4 text-zinc-600">관리자 권한이 필요합니다.</p>
-        <Link href="/" className="mt-6 inline-block text-sm text-rose-600 hover:underline">
+        <Link href={storefrontHref()} className="mt-6 inline-block text-sm text-rose-600 hover:underline">
           ← 홈으로
         </Link>
       </main>

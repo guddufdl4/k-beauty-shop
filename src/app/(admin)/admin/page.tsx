@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminStatCard } from "@/components/admin/stat-card";
 import { getAdminOrderStats } from "@/lib/admin/orders";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { storefrontHref } from "@/lib/store/storefront-href";
 import { getTossStatusMessage, isTossConfigured } from "@/lib/toss";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,7 @@ export default async function AdminDashboardPage() {
           </p>
         ) : null}
         <Link
-          href={user ? "/" : "/login"}
+          href={user ? storefrontHref() : storefrontHref("/login")}
           className="mt-6 inline-flex rounded-lg bg-rose-600 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-700"
         >
           {user ? "홈으로" : "로그인"}
@@ -66,6 +67,12 @@ export default async function AdminDashboardPage() {
           className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
         >
           상품 관리
+        </Link>
+        <Link
+          href="/admin/settings"
+          className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+        >
+          사이트 설정
         </Link>
       </nav>
 

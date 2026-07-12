@@ -1,3 +1,4 @@
+import { AdminShell } from "@/components/admin/admin-shell";
 import { requireAdminSession } from "@/lib/supabase/auth-helpers";
 
 export default async function AdminLayout({
@@ -7,5 +8,5 @@ export default async function AdminLayout({
 }) {
   await requireAdminSession();
 
-  return <div className="min-h-screen bg-zinc-100">{children}</div>;
+  return <AdminShell>{children}</AdminShell>;
 }

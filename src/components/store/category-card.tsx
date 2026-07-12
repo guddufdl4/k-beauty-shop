@@ -1,4 +1,5 @@
-﻿import { Link } from "@/i18n/navigation";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import type { Category } from "@/lib/supabase/products";
 
 type Props = {
@@ -13,7 +14,8 @@ const iconBySlug: Record<string, string> = {
   "body-care": "BC",
 };
 
-export function CategoryCard({ category }: Props) {
+export async function CategoryCard({ category }: Props) {
+  const t = await getTranslations("categories");
   const icon = iconBySlug[category.slug] ?? "CT";
 
   return (
@@ -28,7 +30,7 @@ export function CategoryCard({ category }: Props) {
       {category.description ? (
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500">{category.description}</p>
       ) : null}
-      <span className="mt-4 text-sm font-medium text-rose-600">View products -&gt;</span>
+      <span className="mt-4 text-sm font-medium text-rose-600">{t("viewProducts")}</span>
     </Link>
   );
 }

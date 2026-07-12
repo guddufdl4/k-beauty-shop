@@ -1,4 +1,4 @@
-﻿import { getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { signUp } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
 import { AuthForm } from "@/components/store/auth-form";

@@ -157,7 +157,7 @@ VALUES
     24, 120,
     NULL, NULL,
     'KR',
-    'active', TRUE
+    'active', FALSE
   ),
   (
     'b2000001-0001-4000-8000-000000000003',
@@ -189,7 +189,7 @@ VALUES
     'Zinc Oxide, Tocopherol, Centella Asiatica Extract',
     '외출 30분 전 적당량을 고르게 펴 바릅니다.',
     'KR',
-    'active', TRUE
+    'active', FALSE
   ),
   (
     'b2000001-0001-4000-8000-000000000005',
@@ -209,5 +209,55 @@ VALUES
   )
 ON CONFLICT (slug) DO NOTHING;
 
+-- Site settings (singleton defaults)
+INSERT INTO public.site_settings (
+  id,
+  store_name,
+  contact_email,
+  maintenance_enabled,
+  maintenance_message,
+  wholesale_price_label,
+  moq_label,
+  min_order_note
+)
+VALUES (
+  1,
+  'K-Beauty Shop',
+  NULL,
+  FALSE,
+  '',
+  NULL,
+  NULL,
+  NULL
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- Optional: promote a user to admin (uncomment and set email)
 -- UPDATE public.profiles SET role = 'admin' WHERE email = 'admin@example.com';
+
+-- =============================================================================
+-- Deactivate demo seed products (run in Supabase SQL editor when needed)
+-- =============================================================================
+-- BEGIN;
+-- UPDATE public.products
+-- SET status = 'draft', updated_at = NOW()
+-- WHERE status = 'active'
+--   AND (
+--     slug IN (
+--       'hydra-serum',
+--       'lumiere-rose-hydrating-essence',
+--       'han-river-velvet-lip-tint-set',
+--       'jeju-dew-green-tea-sleep-mask',
+--       'seoul-glow-airy-sun-fluid',
+--       'peach-blossom-snail-ampoule'
+--     )
+--     OR sku IN (
+--       'SG-HS-50',
+--       'LS-RE-150',
+--       'HRB-LT-SET',
+--       'JDC-GT-80',
+--       'SGL-SF-50',
+--       'PBK-SA-50'
+--     )
+--   );
+-- COMMIT;

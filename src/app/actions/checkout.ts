@@ -1,12 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import {
   createOrder,
   getOrderByNumber,
   markOrderPaid,
   type ShippingAddress,
 } from "@/lib/cart";
+import { formatCartLibError } from "@/lib/store/cart-messages";
 import {
   createCheckoutSession,
   isStripeConfigured,
@@ -24,6 +26,7 @@ export async function placeOrder(
   _prev: CheckoutState,
   formData: FormData,
 ): Promise<CheckoutState> {
+  const t = await getTranslations("checkout");
   const shippingAddress: ShippingAddress = {
     recipient_name: String(formData.get("recipient_name") ?? "").trim(),
     phone: String(formData.get("phone") ?? "").trim(),
@@ -44,12 +47,13 @@ export async function placeOrder(
     !shippingAddress.postal_code ||
     !shippingAddress.country_code
   ) {
-    return { error: "배송 정보를 모두 입력해 주세요." };
+    return { error: t("shippingRequired") };
   }
 
   const result = await createOrder(shippingAddress);
-  if (result.error || !result.orderNumber) {
-    return { error: result.error ?? "주문 생성에 실패했습니다." };
+  const orderError = formatCartLibError(result, await getTranslations("cart"));
+  if (orderError || !result.orderNumber) {
+    return { error: orderError ?? t("orderCreateFailed") };
   }
 
   revalidatePath("/cart");
@@ -67,7 +71,7 @@ export async function placeOrder(
   const { order } = await getOrderByNumber(result.orderNumber);
   if (!order) {
     return {
-      error: "주문 정보를 불러올 수 없습니다.",
+      error: t("orderLoadFailed"),
       orderNumber: result.orderNumber,
       demoMode: true,
     };
@@ -86,9 +90,7 @@ export async function placeOrder(
 
   if (!session.url) {
     return {
-      error:
-        session.error ??
-        "결제 세션 생성에 실패했습니다. Stripe 키를 확인해 주세요.",
+      error: session.error ?? t("stripeSessionFailed"),
       orderNumber: result.orderNumber,
       demoMode: true,
     };

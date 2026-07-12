@@ -5,6 +5,7 @@
 
 export type UserRole = "customer" | "admin" | "wholesale";
 export type ProductStatus = "draft" | "active" | "archived";
+export type ProductContentStatus = "pending" | "complete";
 export type OrderStatus =
   | "pending"
   | "paid"
@@ -59,14 +60,47 @@ export interface Product {
   compare_at_price: number | null;
   moq: number;
   stock: number;
+  sold_out: boolean;
   weight_grams: number | null;
   ingredients: string | null;
   how_to_use: string | null;
   country_of_origin: string | null;
   status: ProductStatus;
+  import_batch_id: string | null;
+  external_sku: string | null;
+  source_row: Record<string, unknown> | null;
+  image_url: string | null;
+  content_status: ProductContentStatus;
+  needs_image: boolean;
+  needs_description: boolean;
   is_featured: boolean;
   meta_title: string | null;
   meta_description: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductImportBatch {
+  id: string;
+  filename: string;
+  row_count: number;
+  imported_count: number;
+  failed_count: number;
+  status: "processing" | "success" | "partial" | "failed";
+  imported_at: string | null;
+  created_at: string;
+}
+
+export interface ProductContentJob {
+  id: string;
+  product_id: string;
+  import_batch_id: string | null;
+  job_type: "image" | "description";
+  status: "pending" | "processing" | "done" | "failed";
+  payload: Record<string, unknown> | null;
+  result: Record<string, unknown> | null;
+  error_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -155,6 +189,18 @@ export interface OrderItem {
   created_at: string;
 }
 
+export interface SiteSettings {
+  id: number;
+  store_name: string;
+  contact_email: string | null;
+  maintenance_enabled: boolean;
+  maintenance_message: string;
+  wholesale_price_label: string | null;
+  moq_label: string | null;
+  min_order_note: string | null;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -166,6 +212,16 @@ export interface Database {
         Insert: Partial<ProductImage>;
         Update: Partial<ProductImage>;
       };
+      product_import_batches: {
+        Row: ProductImportBatch;
+        Insert: Partial<ProductImportBatch>;
+        Update: Partial<ProductImportBatch>;
+      };
+      product_content_jobs: {
+        Row: ProductContentJob;
+        Insert: Partial<ProductContentJob>;
+        Update: Partial<ProductContentJob>;
+      };
       addresses: { Row: Address; Insert: Partial<Address>; Update: Partial<Address> };
       cart_items: { Row: CartItem; Insert: Partial<CartItem>; Update: Partial<CartItem> };
       orders: { Row: Order; Insert: Partial<Order>; Update: Partial<Order> };
@@ -174,6 +230,11 @@ export interface Database {
         Insert: Partial<OrderItem>;
         Update: Partial<OrderItem>;
       };
+      site_settings: {
+        Row: SiteSettings;
+        Insert: Partial<SiteSettings>;
+        Update: Partial<SiteSettings>;
+      };
     };
     Enums: {
       user_role: UserRole;
@@ -181,6 +242,7 @@ export interface Database {
       order_status: OrderStatus;
       address_type: AddressType;
       order_type: OrderType;
+      product_content_status: ProductContentStatus;
     };
   };
 }

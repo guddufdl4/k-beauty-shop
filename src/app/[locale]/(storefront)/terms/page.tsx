@@ -1,4 +1,5 @@
-﻿import { Link } from "@/i18n/navigation";
+import { getLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,7 +7,9 @@ export const metadata: Metadata = {
   description: "K-Beauty Shop terms of service",
 };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const locale = await getLocale();
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
       <p className="text-sm font-medium uppercase tracking-widest text-rose-500">Legal</p>
@@ -41,7 +44,7 @@ export default function TermsPage() {
         <Link href="/about" className="text-sm font-semibold text-rose-600 hover:underline">
           About →
         </Link>
-        <Link href="/" className="text-sm font-semibold text-zinc-600 hover:underline">
+        <Link href="/" locale={locale} className="text-sm font-semibold text-zinc-600 hover:underline">
           Home
         </Link>
       </div>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   placeOrder,
   type CheckoutState,
 } from "@/app/actions/checkout";
 import { useRouter } from "@/i18n/navigation";
-import { formatKRW } from "@/lib/utils";
+import { formatLocalePrice } from "@/lib/utils";
 import type { CartView } from "@/types/cart";
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
   total: number;
   stripeEnabled: boolean;
   stripeMessage: string;
+  locale: string;
+  usdKrwRate: number;
 };
 
 const initialState: CheckoutState = {};
@@ -25,7 +28,10 @@ export function CheckoutForm({
   total,
   stripeEnabled,
   stripeMessage,
+  locale,
+  usdKrwRate,
 }: Props) {
+  const t = useTranslations("checkout");
   const router = useRouter();
   const [state, formAction, pending] = useActionState(placeOrder, initialState);
 
@@ -43,10 +49,10 @@ export function CheckoutForm({
   return (
     <form action={formAction} className="space-y-6">
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">배송 정보</h2>
+        <h2 className="text-lg font-semibold">{t("shippingTitle")}</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">수령인</span>
+            <span className="text-sm text-zinc-600">{t("recipient")}</span>
             <input
               name="recipient_name"
               required
@@ -54,7 +60,7 @@ export function CheckoutForm({
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">연락처</span>
+            <span className="text-sm text-zinc-600">{t("phone")}</span>
             <input
               name="phone"
               type="tel"
@@ -64,7 +70,7 @@ export function CheckoutForm({
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">주소</span>
+            <span className="text-sm text-zinc-600">{t("address")}</span>
             <input
               name="line1"
               required
@@ -72,7 +78,7 @@ export function CheckoutForm({
             />
           </label>
           <label className="block">
-            <span className="text-sm text-zinc-600">도시</span>
+            <span className="text-sm text-zinc-600">{t("city")}</span>
             <input
               name="city"
               required
@@ -80,7 +86,7 @@ export function CheckoutForm({
             />
           </label>
           <label className="block">
-            <span className="text-sm text-zinc-600">우편번호</span>
+            <span className="text-sm text-zinc-600">{t("postalCode")}</span>
             <input
               name="postal_code"
               required
@@ -88,7 +94,7 @@ export function CheckoutForm({
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">국가 코드</span>
+            <span className="text-sm text-zinc-600">{t("countryCode")}</span>
             <input
               name="country_code"
               defaultValue="KR"
@@ -101,7 +107,7 @@ export function CheckoutForm({
       </div>
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">주문 요약</h2>
+        <h2 className="text-lg font-semibold">{t("summaryTitle")}</h2>
         <ul className="mt-4 space-y-3">
           {cart.items.map((item) => (
             <li
@@ -111,27 +117,27 @@ export function CheckoutForm({
               <div>
                 <p className="font-medium">{item.name}</p>
                 <p className="text-zinc-500">
-                  {item.quantity}개 × {formatKRW(item.unitPrice)}
+                  {t("lineItem", { quantity: item.quantity, price: formatLocalePrice(item.unitPrice, locale, usdKrwRate) })}
                 </p>
               </div>
-              <p className="font-medium">{formatKRW(item.lineTotal)}</p>
+              <p className="font-medium">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p>
             </li>
           ))}
         </ul>
         <div className="mt-4 space-y-2 border-t border-zinc-100 pt-4 text-sm">
           <div className="flex justify-between">
-            <span className="text-zinc-600">소계</span>
-            <span>{formatKRW(cart.subtotal)}</span>
+            <span className="text-zinc-600">{t("subtotal")}</span>
+            <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-zinc-600">배송비</span>
+            <span className="text-zinc-600">{t("shipping")}</span>
             <span>
-              {shippingCost === 0 ? "무료" : formatKRW(shippingCost)}
+              {shippingCost === 0 ? t("freeShipping") : formatLocalePrice(shippingCost, locale, usdKrwRate)}
             </span>
           </div>
           <div className="flex justify-between text-base font-bold">
-            <span>합계</span>
-            <span className="text-rose-700">{formatKRW(total)}</span>
+            <span>{t("total")}</span>
+            <span className="text-rose-700">{formatLocalePrice(total, locale, usdKrwRate)}</span>
           </div>
         </div>
         <p
@@ -153,10 +159,10 @@ export function CheckoutForm({
         className="w-full rounded-xl bg-rose-600 py-3 font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {pending
-          ? "처리 중…"
+          ? t("processing")
           : stripeEnabled
-            ? "Stripe로 결제하기"
-            : "주문하기 (데모 · 결제 없음)"}
+            ? t("payWithStripe")
+            : t("placeDemoOrder")}
       </button>
     </form>
   );

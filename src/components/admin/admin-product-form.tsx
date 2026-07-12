@@ -116,7 +116,7 @@ export function AdminProductForm({ action, categories }: Props) {
         </div>
         <div>
           <label htmlFor="moq" className="block text-sm font-medium text-zinc-700">
-            MOQ
+            박스 MOQ
           </label>
           <input
             id="moq"

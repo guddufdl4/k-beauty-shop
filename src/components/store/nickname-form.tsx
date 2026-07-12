@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import type { AuthState } from "@/app/actions/auth";
 
 type Props = {
@@ -9,13 +10,14 @@ type Props = {
 };
 
 export function NicknameForm({ action, defaultNickname }: Props) {
+  const t = useTranslations("account");
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
     <form action={formAction} className="mx-auto w-full max-w-md space-y-4">
       <div>
         <label htmlFor="nickname" className="block text-sm font-medium">
-          닉네임
+          {t("nickname")}
         </label>
         <input
           id="nickname"
@@ -24,12 +26,10 @@ export function NicknameForm({ action, defaultNickname }: Props) {
           required
           maxLength={30}
           defaultValue={defaultNickname ?? ""}
-          placeholder="헤더에 표시될 이름"
+          placeholder={t("nicknamePlaceholder")}
           className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
         />
-        <p className="mt-1 text-xs text-zinc-500">
-          고객 계정은 이 닉네임이 헤더에 표시됩니다.
-        </p>
+        <p className="mt-1 text-xs text-zinc-500">{t("nicknameHint")}</p>
       </div>
       {state.error ? (
         <p className="text-sm text-red-600">{state.error}</p>
@@ -42,7 +42,7 @@ export function NicknameForm({ action, defaultNickname }: Props) {
         disabled={pending}
         className="w-full rounded-lg bg-rose-600 py-2.5 text-white hover:bg-rose-700 disabled:opacity-50"
       >
-        {pending ? "저장 중…" : "닉네임 저장"}
+        {pending ? t("nicknameSaving") : t("nicknameSave")}
       </button>
     </form>
   );

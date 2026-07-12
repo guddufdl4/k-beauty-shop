@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import {
   addToCart as addToCartLib,
   removeFromCart as removeFromCartLib,
   updateCartQuantity as updateCartQuantityLib,
 } from "@/lib/cart";
+import { formatCartLibError } from "@/lib/store/cart-messages";
 
 export type CartActionState = { error?: string; success?: string };
 
@@ -19,58 +21,63 @@ export async function addToCart(
   _prev: CartActionState,
   formData: FormData,
 ): Promise<CartActionState> {
+  const t = await getTranslations("cart");
   const productId = String(formData.get("productId") ?? "").trim();
   const quantity = Number(formData.get("quantity") ?? 1);
 
   if (!productId) {
-    return { error: "상품 정보가 없습니다." };
+    return { error: t("errors.missingProduct") };
   }
 
   const result = await addToCartLib(productId, quantity);
-  if (result.error) {
-    return { error: result.error };
+  const error = formatCartLibError(result, t);
+  if (error) {
+    return { error };
   }
 
   revalidateCartPaths();
-  return { success: "장바구니에 담았습니다." };
+  return { success: t("addedSuccess") };
 }
 
 export async function updateQuantity(
   _prev: CartActionState,
   formData: FormData,
 ): Promise<CartActionState> {
+  const t = await getTranslations("cart");
   const productId = String(formData.get("productId") ?? "").trim();
   const quantity = Number(formData.get("quantity") ?? 1);
 
   if (!productId) {
-    return { error: "상품 정보가 없습니다." };
+    return { error: t("errors.missingProduct") };
   }
 
   const result = await updateCartQuantityLib(productId, quantity);
-  if (result.error) {
-    return { error: result.error };
+  const error = formatCartLibError(result, t);
+  if (error) {
+    return { error };
   }
 
   revalidateCartPaths();
-  return { success: "수량이 변경되었습니다." };
+  return { success: t("quantityUpdated") };
 }
 
 export async function removeFromCart(
   _prev: CartActionState,
   formData: FormData,
 ): Promise<CartActionState> {
+  const t = await getTranslations("cart");
   const productId = String(formData.get("productId") ?? "").trim();
 
   if (!productId) {
-    return { error: "상품 정보가 없습니다." };
+    return { error: t("errors.missingProduct") };
   }
 
   const result = await removeFromCartLib(productId);
-  if (result.error) {
-    return { error: result.error };
+  const error = formatCartLibError(result, t);
+  if (error) {
+    return { error };
   }
 
   revalidateCartPaths();
-  return { success: "상품을 삭제했습니다." };
+  return { success: t("itemRemoved") };
 }
-
