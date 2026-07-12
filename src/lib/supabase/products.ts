@@ -3,7 +3,11 @@ import { resolve } from "node:path";
 import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatKRW } from "@/lib/utils";
-import { enrichProductImages, productHasRealImage } from "@/lib/product-images";
+import {
+  enrichProductImages,
+  productHasRealImage,
+  type ProductImageSource,
+} from "@/lib/product-images";
 import type { ProductListSort } from "@/lib/store/products-url";
 import { isProductOnSale } from "@/lib/store/products-url";
 import { isSupabaseConfigured } from "./config";
@@ -736,6 +740,121 @@ const PRODUCT_SELECT = `
   images:product_images(id, product_id, url, alt_text, sort_order, is_primary)
 `;
 
+/** Lightweight select for image-first admin sorting (avoids loading full product graph). */
+const PRODUCT_IMAGE_SORT_SELECT = `
+  id,
+  created_at,
+  updated_at,
+  price,
+  compare_at_price,
+  image_url,
+  source_row,
+  category:categories(slug),
+  images:product_images(url)
+`;
+
+type ProductImageSortRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  price: number;
+  compare_at_price: number | null;
+  imageSource: ProductImageSource;
+};
+
+function mapProductImageSortRow(row: Record<string, unknown>): ProductImageSortRow {
+  const categoryRaw = row.category as Record<string, unknown> | null;
+  const imagesRaw = (row.images as Record<string, unknown>[] | null) ?? [];
+  const id = String(row.id);
+
+  return {
+    id,
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+    price: parseDecimal(row.price),
+    compare_at_price:
+      row.compare_at_price != null ? parseDecimal(row.compare_at_price) : null,
+    imageSource: {
+      id,
+      name: "",
+      image_url: row.image_url ? String(row.image_url) : null,
+      source_row:
+        row.source_row && typeof row.source_row === "object"
+          ? (row.source_row as Record<string, unknown>)
+          : null,
+      category: categoryRaw ? { slug: String(categoryRaw.slug) } : null,
+      images: imagesRaw.map((img, index) => ({
+        id: `sort-${id}-${index}`,
+        product_id: id,
+        url: String(img.url),
+        alt_text: null,
+        sort_order: index,
+        is_primary: index === 0,
+      })),
+    },
+  };
+}
+
+function compareProductImageSortRows(
+  a: ProductImageSortRow,
+  b: ProductImageSortRow,
+  options: ProductListOrderOptions,
+): number {
+  if (options.imageFirst === true) {
+    const aHasImage = productHasRealImage(a.imageSource) ? 1 : 0;
+    const bHasImage = productHasRealImage(b.imageSource) ? 1 : 0;
+    if (bHasImage !== aHasImage) {
+      return bHasImage - aHasImage;
+    }
+  }
+
+  if (options.sort === "sale") {
+    const aCompare = a.compare_at_price ?? 0;
+    const bCompare = b.compare_at_price ?? 0;
+    if (bCompare !== aCompare) {
+      return bCompare - aCompare;
+    }
+  }
+
+  return b[options.orderBy].localeCompare(a[options.orderBy]);
+}
+
+function sortProductImageSortRows(
+  rows: ProductImageSortRow[],
+  options: ProductListOrderOptions,
+): ProductImageSortRow[] {
+  return [...rows].sort((a, b) => compareProductImageSortRows(a, b, options));
+}
+
+async function fetchProductsByIds(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<ProductWithRelations[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .in("id", ids);
+
+  if (error || !data?.length) {
+    return [];
+  }
+
+  const byId = new Map(
+    data.map((row) => {
+      const mapped = mapProductWithRelations(row as Record<string, unknown>);
+      return [mapped.id, mapped] as const;
+    }),
+  );
+
+  return ids
+    .map((id) => byId.get(id))
+    .filter((product): product is ProductWithRelations => product != null);
+}
+
 export async function getCategories(): Promise<{
   categories: Category[];
   meta: FetchMeta;
@@ -962,7 +1081,7 @@ export async function getProducts(
     if (imageFirst) {
       const { data, error } = await fetchAllPages<Record<string, unknown>>(
         async (from, to) => {
-          let query = supabase.from("products").select(PRODUCT_SELECT);
+          let query = supabase.from("products").select(PRODUCT_IMAGE_SORT_SELECT);
           query = applyProductFilters(query, false) as typeof query;
           const result = await query.range(from, to);
           return {
@@ -984,19 +1103,21 @@ export async function getProducts(
         };
       }
 
-      let products = data.map((row) => mapProductWithRelations(row));
+      let sortRows = data.map((row) => mapProductImageSortRow(row));
 
       if (sort === "sale") {
-        products = products.filter((product) => isProductOnSale(product));
+        sortRows = sortRows.filter((row) => isProductOnSale(row));
       }
 
-      products = sortProductsForList(products, listOrderOptions);
-      const { products: pagedProducts, totalCount: imageFirstTotal } =
-        paginateStaticProducts(products);
+      sortRows = sortProductImageSortRows(sortRows, listOrderOptions);
+      const totalCount = sortRows.length;
+      const from = (listPage - 1) * listLimit;
+      const pageIds = sortRows.slice(from, from + listLimit).map((row) => row.id);
+      const products = await fetchProductsByIds(supabase, pageIds);
 
       return {
-        products: pagedProducts,
-        totalCount: imageFirstTotal,
+        products,
+        totalCount,
         meta: { source: "database", configured: true },
       };
     }

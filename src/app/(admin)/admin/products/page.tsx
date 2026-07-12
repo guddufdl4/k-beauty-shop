@@ -12,9 +12,8 @@ import {
 import { AdminProductsTable } from "@/components/admin/admin-products-table";
 import { ExcelImportSection } from "@/components/admin/excel-import-section";
 import { ProductImageBatchSection } from "@/components/admin/product-image-batch-section";
-import { getProductImageBatchStats } from "@/lib/admin/product-image-batch";
+import { getCachedProductImageBatchStats } from "@/lib/admin/product-image-batch";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { createSafeClient } from "@/lib/supabase/safe-server";
 import { getCategories, getProductImportBatches, getProducts, type ProductImportBatch } from "@/lib/supabase/products";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
@@ -262,26 +261,45 @@ export default async function AdminProductsPage({
     view: showDeleted ? ("deleted" as const) : ("active" as const),
     tab: activeTab,
   };
+  const needsCategories = activeTab === "list" || activeTab === "add";
+  const needsProducts = activeTab === "list";
+  const needsBatches = activeTab === "bulk";
+  const needsImageStats = activeTab === "bulk";
   const { configured, user, profile } = await getSessionProfile();
-  const supabase = await createSafeClient();
   const [{ categories }, { products, totalCount }, { batches }, imageStatsResult] =
     await Promise.all([
-      getCategories(),
-      getProducts({
-        includeDraft: true,
-        importBatchId: activeBatchId ?? undefined,
-        categorySlug: categoryFilter,
-        search: searchTerm,
-        brand: brandFilter,
-        limit: ADMIN_PRODUCTS_PAGE_SIZE,
-        page: currentPage,
-        orderBy: sortRecent ? "updated_at" : "created_at",
-        deletionFilter: showDeleted ? "deleted" : "active",
-        imageFirst: true,
-      }),
-      getProductImportBatches(),
-      supabase
-        ? getProductImageBatchStats(supabase)
+      needsCategories
+        ? getCategories()
+        : Promise.resolve({
+            categories: [],
+            meta: { source: "database" as const, configured: true },
+          }),
+      needsProducts
+        ? getProducts({
+            includeDraft: true,
+            importBatchId: activeBatchId ?? undefined,
+            categorySlug: categoryFilter,
+            search: searchTerm,
+            brand: brandFilter,
+            limit: ADMIN_PRODUCTS_PAGE_SIZE,
+            page: currentPage,
+            orderBy: sortRecent ? "updated_at" : "created_at",
+            deletionFilter: showDeleted ? "deleted" : "active",
+            imageFirst: true,
+          })
+        : Promise.resolve({
+            products: [],
+            totalCount: 0,
+            meta: { source: "database" as const, configured: true },
+          }),
+      needsBatches
+        ? getProductImportBatches()
+        : Promise.resolve({
+            batches: [],
+            meta: { source: "database" as const, configured: true },
+          }),
+      needsImageStats
+        ? getCachedProductImageBatchStats()
         : Promise.resolve({ stats: null, error: null }),
     ]);
   const imageStats = imageStatsResult.stats;

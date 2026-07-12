@@ -56,7 +56,7 @@ export function isCategoryPlaceholderUrl(url: string): boolean {
   return url.startsWith("/images/categories/");
 }
 
-type ProductImageSource = {
+export type ProductImageSource = {
   id: string;
   name: string;
   image_url?: string | null;

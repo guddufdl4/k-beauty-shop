@@ -3,8 +3,10 @@ import {
   type ImageResolveSource,
 } from "@/lib/admin/product-image-resolver";
 import { applyDeletedAtFilter, fetchExactCount } from "@/lib/supabase/products";
+import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
 import { ensureSoftDeleteColumnProbed } from "@/lib/supabase/soft-delete";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 
 const DEFAULT_BATCH_LIMIT = 1000;
 const MAX_BATCH_LIMIT = 1000;
@@ -162,6 +164,26 @@ export async function getProductImageBatchStats(
     },
     error: null,
   };
+}
+
+const IMAGE_BATCH_STATS_CACHE_SECONDS = 60;
+
+export async function getCachedProductImageBatchStats(): Promise<{
+  stats: ProductImageBatchStats;
+  error: string | null;
+}> {
+  return unstable_cache(
+    async () => {
+      const supabase = createServiceClient() ?? createPublicClient();
+      if (!supabase) {
+        return { stats: emptyStats(), error: "Supabase not configured" };
+      }
+
+      return getProductImageBatchStats(supabase);
+    },
+    ["admin-product-image-batch-stats"],
+    { revalidate: IMAGE_BATCH_STATS_CACHE_SECONDS },
+  )();
 }
 
 export async function runProductImageBatch(
