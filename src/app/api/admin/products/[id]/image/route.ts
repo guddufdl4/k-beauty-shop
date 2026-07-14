@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   buildProductImageStoragePath,
   PRODUCT_IMAGE_BUCKET,
+  readProductImageUploadEntry,
 } from "@/lib/admin/product-image-upload";
 import { parseProductImageNormalizeOptions } from "@/lib/admin/product-image-normalize-options";
 import { readAndValidateProductImageFile } from "@/lib/product-image-normalize";
@@ -11,6 +12,7 @@ import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -85,8 +87,8 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File)) {
+  const file = readProductImageUploadEntry(formData.get("file"));
+  if (!file) {
     return NextResponse.json(
       { error: "\uc5c5\ub85c\ub4dc\ud560 \uc774\ubbf8\uc9c0 \ud30c\uc77c\uc774 \ud544\uc694\ud569\ub2c8\ub2e4." },
       { status: 400 },
@@ -143,11 +145,16 @@ export async function POST(request: Request, context: RouteContext) {
     .from(PRODUCT_IMAGE_BUCKET)
     .upload(storagePath, validated.buffer, {
       contentType: validated.mimeType,
-      upsert: false,
+      upsert: true,
     });
 
   if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    const message = uploadError.message.toLowerCase();
+    const error =
+      message.includes("bucket") && message.includes("not found")
+        ? "Supabase Storage 버킷(product-images)이 없습니다. 006_product_images_storage.sql을 실행하세요."
+        : uploadError.message;
+    return NextResponse.json({ error }, { status: 500 });
   }
 
   const { data: publicData } = serviceClient.storage

@@ -548,15 +548,15 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   }, []);
 
   const uploadImageFile = useCallback(
-    async (file: File, withBackgroundRemoval = false) => {
+    async (file: File, withBackgroundRemoval = false): Promise<string | null> => {
       if (!editing) {
-        return;
+        return null;
       }
 
       const validationError = validateClientProductImageFile(file);
       if (validationError) {
         setError(validationError);
-        return;
+        return null;
       }
 
       setUploading(true);
@@ -576,14 +576,16 @@ export const AdminProductsTable = memo(function AdminProductsTable({
           body: formData,
         });
 
-        const data = (await response.json()) as {
-          image_url?: string;
-          error?: string;
-        };
+        let data: { image_url?: string; error?: string } | null = null;
+        try {
+          data = (await response.json()) as { image_url?: string; error?: string };
+        } catch {
+          data = null;
+        }
 
-        if (!response.ok || !data.image_url) {
-          setError(data.error ?? "이미지 업로드에 실패했습니다.");
-          return;
+        if (!response.ok || !data?.image_url) {
+          setError(data?.error ?? "이미지 업로드에 실패했습니다.");
+          return null;
         }
 
         const uploadedUrl = data.image_url;
@@ -618,8 +620,10 @@ export const AdminProductsTable = memo(function AdminProductsTable({
             : "이미지를 업로드하고 저장했습니다.",
         );
         router.refresh();
+        return uploadedUrl;
       } catch {
         setError("네트워크 오류로 이미지를 업로드하지 못했습니다.");
+        return null;
       } finally {
         setUploading(false);
       }
@@ -946,6 +950,19 @@ export const AdminProductsTable = memo(function AdminProductsTable({
     setError(null);
 
     try {
+      let imageUrlToSave = imageUrl.trim();
+
+      if (pendingImageFile) {
+        const uploadedUrl = await uploadImageFile(
+          pendingImageFile,
+          backgroundRemovalApplied,
+        );
+        if (!uploadedUrl) {
+          return;
+        }
+        imageUrlToSave = uploadedUrl;
+      }
+
       const response = await fetch(`/api/admin/products/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -953,7 +970,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
           name: name.trim(),
           barcode: barcode.trim(),
           wholesale_price: price.trim(),
-          image_url: imageUrl.trim(),
+          image_url: imageUrlToSave,
           category_id: categoryId.trim() || null,
           sold_out: soldOut,
         }),

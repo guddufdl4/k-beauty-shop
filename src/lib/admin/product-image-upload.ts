@@ -85,6 +85,45 @@ export function buildProductImageStoragePath(
   return `${productId}/${crypto.randomUUID()}.${ext}`;
 }
 
+const EXT_TO_MIME: Record<string, AllowedProductImageMimeType> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+function mimeTypeFromFilename(name: string): AllowedProductImageMimeType | null {
+  const ext = name.split(".").pop()?.toLowerCase();
+  if (!ext) {
+    return null;
+  }
+
+  return EXT_TO_MIME[ext] ?? null;
+}
+
+export function resolveClientProductImageMimeType(file: File): AllowedProductImageMimeType | null {
+  if (isAllowedProductImageMimeType(file.type)) {
+    return file.type;
+  }
+
+  return mimeTypeFromFilename(file.name);
+}
+
+/** Read multipart file entry (File or Blob) from admin upload FormData. */
+export function readProductImageUploadEntry(
+  entry: FormDataEntryValue | null,
+): File | null {
+  if (!entry || typeof entry === "string") {
+    return null;
+  }
+
+  if (!(entry instanceof File) || entry.size <= 0) {
+    return null;
+  }
+
+  return entry;
+}
+
 export function validateClientProductImageFile(file: File): string | null {
   if (file.size <= 0) {
     return "빈 파일은 업로드할 수 없습니다.";
@@ -94,7 +133,7 @@ export function validateClientProductImageFile(file: File): string | null {
     return "이미지 크기는 5MB 이하여야 합니다.";
   }
 
-  if (!isAllowedProductImageMimeType(file.type)) {
+  if (!resolveClientProductImageMimeType(file)) {
     return "JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.";
   }
 

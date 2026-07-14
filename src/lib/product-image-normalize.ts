@@ -178,7 +178,7 @@ export async function normalizeProductImageBufferTransparent(
 }
 
 export async function readAndValidateProductImageFile(
-  file: File,
+  file: File | Blob,
   options?: ProductImageNormalizeOptions,
   flags?: ProductImageProcessFlags,
 ): Promise<ProductImageUploadValidation> {
