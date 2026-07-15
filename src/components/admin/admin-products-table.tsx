@@ -1,19 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import {
   extractProductImageFileFromClipboard,
   validateClientProductImageFile,
 } from "@/lib/admin/product-image-upload";
-import { appendProductImageNormalizeOptionsToFormData } from "@/lib/admin/product-image-normalize-options";
-import type { ProductImageNormalizeOptions } from "@/lib/admin/product-image-normalize-options";
 import { isValidProductImageUrl } from "@/lib/admin/product-image-resolver";
-import {
-  useProductImageUploadSettings,
-} from "@/components/admin/product-image-upload-settings";
 import { resolveProductImageUrl } from "@/lib/product-images";
 import type { ProductWithRelations, Category } from "@/lib/supabase/products";
 import { ProductNameWithCopy } from "@/components/admin/product-name-with-copy";
@@ -27,23 +21,86 @@ type Props = {
 };
 
 const UNDO_DELETE_MS = 30_000;
-const PREVIEW_DEBOUNCE_MS = 500;
 
-const ProductImageUploadSettingsPanel = dynamic(
-  () =>
-    import("@/components/admin/product-image-upload-settings").then((module) => ({
-      default: module.ProductImageUploadSettingsPanel,
-    })),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        className="h-28 animate-pulse rounded-lg border border-zinc-200 bg-zinc-100/80"
-        aria-hidden
-      />
-    ),
-  },
-);
+type DialogOffset = { x: number; y: number };
+
+type DialogDragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  origX: number;
+  origY: number;
+};
+
+function useDraggableDialog(active: boolean) {
+  const [offset, setOffset] = useState<DialogOffset>({ x: 0, y: 0 });
+  const dragRef = useRef<DialogDragState | null>(null);
+
+  useEffect(() => {
+    if (!active) {
+      setOffset({ x: 0, y: 0 });
+      dragRef.current = null;
+    }
+  }, [active]);
+
+  const onDragHandlePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      const target = event.target as HTMLElement;
+      if (target.closest("button, a, input, select, textarea, label")) {
+        return;
+      }
+
+      event.preventDefault();
+      dragRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        origX: offset.x,
+        origY: offset.y,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [offset.x, offset.y],
+  );
+
+  const onDragHandlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    setOffset({
+      x: drag.origX + (event.clientX - drag.startX),
+      y: drag.origY + (event.clientY - drag.startY),
+    });
+  }, []);
+
+  const onDragHandlePointerUp = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, []);
+
+  return {
+    offset,
+    dragHandleProps: {
+      onPointerDown: onDragHandlePointerDown,
+      onPointerMove: onDragHandlePointerMove,
+      onPointerUp: onDragHandlePointerUp,
+      onPointerCancel: onDragHandlePointerUp,
+    },
+  };
+}
 
 type UndoDeleteEntry = {
   product: ProductWithRelations;
@@ -335,14 +392,9 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   const [dragOver, setDragOver] = useState(false);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
-  const [normalizedPreviewUrl, setNormalizedPreviewUrl] = useState<string | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [backgroundRemovalApplied, setBackgroundRemovalApplied] = useState(false);
   const [backgroundRemovalLoading, setBackgroundRemovalLoading] = useState(false);
-  const [imageSectionMounted, setImageSectionMounted] = useState(false);
-  const previewDebounceRef = useRef<number | null>(null);
-  const previewAbortRef = useRef<AbortController | null>(null);
-  const [uploadSettings, setUploadSettingsState] = useProductImageUploadSettings();
+  const { offset: modalOffset, dragHandleProps } = useDraggableDialog(Boolean(editing));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -424,23 +476,14 @@ export const AdminProductsTable = memo(function AdminProductsTable({
       if (localPreviewUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(localPreviewUrl);
       }
-      if (normalizedPreviewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(normalizedPreviewUrl);
-      }
     };
-  }, [localPreviewUrl, normalizedPreviewUrl]);
+  }, [localPreviewUrl]);
 
   const clearPendingImage = useCallback(() => {
     setPendingImageFile(null);
     setBackgroundRemovalApplied(false);
     setBackgroundRemovalLoading(false);
     setLocalPreviewUrl((current) => {
-      if (current?.startsWith("blob:")) {
-        URL.revokeObjectURL(current);
-      }
-      return null;
-    });
-    setNormalizedPreviewUrl((current) => {
       if (current?.startsWith("blob:")) {
         URL.revokeObjectURL(current);
       }
@@ -532,13 +575,6 @@ export const AdminProductsTable = memo(function AdminProductsTable({
     setMessage(null);
     setBackgroundRemovalApplied(false);
     setPendingImageFile(file);
-    setNormalizedPreviewUrl((current) => {
-      if (current?.startsWith("blob:")) {
-        URL.revokeObjectURL(current);
-      }
-      return null;
-    });
-    setPreviewLoading(false);
     setLocalPreviewUrl((current) => {
       if (current?.startsWith("blob:")) {
         URL.revokeObjectURL(current);
@@ -566,7 +602,6 @@ export const AdminProductsTable = memo(function AdminProductsTable({
       try {
         const formData = new FormData();
         formData.append("file", file);
-        appendProductImageNormalizeOptionsToFormData(formData, uploadSettings);
         if (withBackgroundRemoval) {
           formData.append("removeBackground", "true");
         }
@@ -628,117 +663,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
         setUploading(false);
       }
     },
-    [clearPendingImage, editing, router, uploadSettings],
-  );
-
-  useEffect(() => {
-    if (!editing) {
-      setImageSectionMounted(false);
-      return;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      setImageSectionMounted(true);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      setImageSectionMounted(false);
-    };
-  }, [editing?.id]);
-
-  const cancelScheduledPreview = useCallback(() => {
-    if (previewDebounceRef.current != null) {
-      window.clearTimeout(previewDebounceRef.current);
-      previewDebounceRef.current = null;
-    }
-    previewAbortRef.current?.abort();
-    previewAbortRef.current = null;
-  }, []);
-
-  const setUploadSettings = useCallback(
-    (options: ProductImageNormalizeOptions) => {
-      setUploadSettingsState(options);
-      setBackgroundRemovalApplied(false);
-      cancelScheduledPreview();
-      setNormalizedPreviewUrl((current) => {
-        if (current?.startsWith("blob:")) {
-          URL.revokeObjectURL(current);
-        }
-        return null;
-      });
-      setPreviewLoading(false);
-    },
-    [cancelScheduledPreview, setUploadSettingsState],
-  );
-
-  const runNormalizedPreview = useCallback(
-    async (options?: { immediate?: boolean }) => {
-      if (!editing || !pendingImageFile || backgroundRemovalApplied) {
-        return;
-      }
-
-      cancelScheduledPreview();
-
-      const execute = async () => {
-        const controller = new AbortController();
-        previewAbortRef.current = controller;
-        setPreviewLoading(true);
-
-        try {
-          const formData = new FormData();
-          formData.append("file", pendingImageFile);
-          formData.append("preview", "true");
-          appendProductImageNormalizeOptionsToFormData(formData, uploadSettings);
-
-          const response = await fetch(`/api/admin/products/${editing.id}/image`, {
-            method: "POST",
-            body: formData,
-            signal: controller.signal,
-          });
-
-          if (!response.ok) {
-            const data = (await response.json().catch(() => null)) as { error?: string } | null;
-            setError(data?.error ?? "미리보기 생성에 실패했습니다.");
-            return;
-          }
-
-          const blob = await response.blob();
-          setNormalizedPreviewUrl((current) => {
-            if (current?.startsWith("blob:")) {
-              URL.revokeObjectURL(current);
-            }
-            return URL.createObjectURL(blob);
-          });
-        } catch (error) {
-          if (!(error instanceof DOMException && error.name === "AbortError")) {
-            setError("미리보기를 불러오지 못했습니다.");
-          }
-        } finally {
-          if (previewAbortRef.current === controller) {
-            previewAbortRef.current = null;
-          }
-          setPreviewLoading(false);
-        }
-      };
-
-      if (options?.immediate) {
-        await execute();
-        return;
-      }
-
-      previewDebounceRef.current = window.setTimeout(() => {
-        previewDebounceRef.current = null;
-        void execute();
-      }, PREVIEW_DEBOUNCE_MS);
-    },
-    [
-      backgroundRemovalApplied,
-      cancelScheduledPreview,
-      editing,
-      pendingImageFile,
-      uploadSettings,
-    ],
+    [clearPendingImage, editing, router],
   );
 
   const removeImageBackground = useCallback(async () => {
@@ -746,7 +671,6 @@ export const AdminProductsTable = memo(function AdminProductsTable({
       return;
     }
 
-    cancelScheduledPreview();
     setBackgroundRemovalLoading(true);
     setError(null);
 
@@ -755,7 +679,6 @@ export const AdminProductsTable = memo(function AdminProductsTable({
       formData.append("file", pendingImageFile);
       formData.append("preview", "true");
       formData.append("removeBackground", "true");
-      appendProductImageNormalizeOptionsToFormData(formData, uploadSettings);
 
       const response = await fetch(`/api/admin/products/${editing.id}/image`, {
         method: "POST",
@@ -764,44 +687,25 @@ export const AdminProductsTable = memo(function AdminProductsTable({
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(data?.error ?? "배경 제거 미리보기 생성에 실패했습니다.");
+        setError(data?.error ?? "배경 제거에 실패했습니다.");
         return;
       }
 
       const blob = await response.blob();
-      setNormalizedPreviewUrl((current) => {
+      setLocalPreviewUrl((current) => {
         if (current?.startsWith("blob:")) {
           URL.revokeObjectURL(current);
         }
         return URL.createObjectURL(blob);
       });
       setBackgroundRemovalApplied(true);
-      setMessage("배경 제거 미리보기가 준비되었습니다. 확인 후 업로드하세요.");
+      setMessage("배경을 제거했습니다. 저장하면 반영됩니다.");
     } catch {
       setError("배경 제거 중 네트워크 오류가 발생했습니다. 원본 이미지를 유지합니다.");
     } finally {
       setBackgroundRemovalLoading(false);
     }
-  }, [cancelScheduledPreview, editing, pendingImageFile, uploadSettings]);
-
-  useEffect(() => {
-    if (!pendingImageFile) {
-      cancelScheduledPreview();
-      setNormalizedPreviewUrl((current) => {
-        if (current?.startsWith("blob:")) {
-          URL.revokeObjectURL(current);
-        }
-        return null;
-      });
-      setPreviewLoading(false);
-    }
-  }, [cancelScheduledPreview, pendingImageFile]);
-
-  useEffect(() => {
-    return () => {
-      cancelScheduledPreview();
-    };
-  }, [cancelScheduledPreview]);
+  }, [editing, pendingImageFile]);
 
   useEffect(() => {
     if (!editing || uploading) {
@@ -1215,9 +1119,15 @@ export const AdminProductsTable = memo(function AdminProductsTable({
             aria-modal="true"
             aria-labelledby="product-edit-title"
             className="w-full max-w-lg rounded-2xl border border-rose-100 bg-white p-6 shadow-xl"
+            style={{
+              transform: `translate(${modalOffset.x}px, ${modalOffset.y}px)`,
+            }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-4 flex items-start justify-between gap-3">
+            <div
+              className="mb-4 flex cursor-grab items-start justify-between gap-3 select-none active:cursor-grabbing"
+              {...dragHandleProps}
+            >
               <div>
                 <h3 id="product-edit-title" className="text-lg font-semibold text-zinc-900">
                   상품 편집
@@ -1230,7 +1140,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                 type="button"
                 onClick={closeEdit}
                 disabled={pending || uploading || deleting}
-                className="rounded-md px-2 py-1 text-sm text-zinc-400 hover:text-zinc-700 disabled:opacity-50"
+                className="cursor-pointer rounded-md px-2 py-1 text-sm text-zinc-400 hover:text-zinc-700 disabled:opacity-50"
                 aria-label="닫기"
               >
                 ✕
@@ -1349,25 +1259,23 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                 </div>
 
                 <div className="mt-2 flex gap-3">
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
+                  <div
+                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-zinc-200 ${
+                      backgroundRemovalApplied
+                        ? "bg-[linear-gradient(45deg,#e4e4e7_25%,transparent_25%),linear-gradient(-45deg,#e4e4e7_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e4e4e7_75%),linear-gradient(-45deg,transparent_75%,#e4e4e7_75%)] bg-[length:12px_12px] bg-[position:0_0,0_6px,6px_-6px,-6px_0]"
+                        : "bg-zinc-50"
+                    }`}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={
-                        normalizedPreviewUrl ??
-                        localPreviewUrl ??
-                        editPreviewUrl(editing, imageUrl)
-                      }
+                      src={localPreviewUrl ?? editPreviewUrl(editing, imageUrl)}
                       alt=""
                       className="absolute inset-0 h-full w-full object-contain"
                     />
-                    {uploading || previewLoading || backgroundRemovalLoading ? (
+                    {uploading || backgroundRemovalLoading ? (
                       <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/80">
                         <span className="text-[10px] font-medium text-rose-700">
-                          {uploading
-                            ? "업로드 중…"
-                            : backgroundRemovalLoading
-                              ? "배경 제거 중…"
-                              : "미리보기…"}
+                          {uploading ? "업로드 중…" : "배경 제거 중…"}
                         </span>
                       </div>
                     ) : null}
@@ -1410,7 +1318,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                         이미지를 드래그하거나 클릭하여 선택
                       </p>
                       <p className="mt-1 text-[11px] text-zinc-400">
-                        Ctrl+V로 캡처 붙여넣기
+                        Ctrl+V로 캡처 붙여넣기 · 저장 시 자동 업로드
                       </p>
                       <p className="mt-0.5 text-[11px] text-zinc-400">
                         JPG · PNG · WEBP · 최대 5MB
@@ -1424,41 +1332,20 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                       className="hidden"
                       onChange={handleImageInputChange}
                     />
-
-                    <div>
-                      <label
-                        htmlFor="edit-image-url"
-                        className="block text-[11px] font-medium text-zinc-500"
-                      >
-                        또는 URL 직접 입력
-                      </label>
-                      <input
-                        id="edit-image-url"
-                        type="url"
-                        value={imageUrl}
-                        onChange={(event) => setImageUrl(event.target.value)}
-                        maxLength={2048}
-                        placeholder="https://… 또는 비워두면 카테고리 플레이스홀더"
-                        className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                      />
-                    </div>
                   </div>
                 </div>
 
                 {pendingImageFile ? (
-                  <div className="mt-3 space-y-1 rounded-lg border border-rose-200 bg-rose-50/60 p-3">
+                  <div className="mt-3 space-y-2">
                     <button
                       type="button"
                       onClick={() => void removeImageBackground()}
                       disabled={
-                        uploading ||
-                        previewLoading ||
-                        backgroundRemovalLoading ||
-                        backgroundRemovalApplied
+                        uploading || backgroundRemovalLoading || backgroundRemovalApplied
                       }
-                      className={`w-full rounded-lg px-4 py-3 text-base font-bold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                         backgroundRemovalApplied
-                          ? "border-2 border-rose-300 bg-rose-100 text-rose-700"
+                          ? "border border-rose-300 bg-rose-100 text-rose-700"
                           : "bg-rose-600 text-white hover:bg-rose-700"
                       }`}
                     >
@@ -1466,107 +1353,14 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                         ? "배경 제거 중…"
                         : backgroundRemovalApplied
                           ? "배경 제거 완료"
-                          : "배경 제거하기"}
+                          : "배경 제거하기 (선택)"}
                     </button>
-                    <p className="text-center text-xs font-medium text-rose-700/90">
-                      배경을 투명 PNG로 만들기
-                    </p>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-xs text-zinc-500">
-                    새 이미지를 선택하면 배경 제거 가능
-                  </p>
-                )}
-
-                {imageSectionMounted ? (
-                  <div className="mt-3">
-                    <ProductImageUploadSettingsPanel
-                      options={uploadSettings}
-                      onChange={setUploadSettings}
-                      disabled={uploading}
-                    />
-                  </div>
-                ) : null}
-
-                {pendingImageFile ? (
-                  <div className="mt-3 space-y-3 rounded-lg border border-rose-100 bg-rose-50/40 p-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-[10px] font-medium text-zinc-500">원본</p>
-                        <div className="relative mt-1 aspect-square overflow-hidden rounded-md border border-zinc-200 bg-white">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={localPreviewUrl ?? ""}
-                            alt=""
-                            className="absolute inset-0 h-full w-full object-contain"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-medium text-zinc-500">
-                          {backgroundRemovalApplied ? "배경 제거 미리보기" : "처리 미리보기"}
-                        </p>
-                        <div
-                          className={`relative mt-1 aspect-square overflow-hidden rounded-md border border-zinc-200 ${
-                            backgroundRemovalApplied
-                              ? "bg-[linear-gradient(45deg,#e4e4e7_25%,transparent_25%),linear-gradient(-45deg,#e4e4e7_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e4e4e7_75%),linear-gradient(-45deg,transparent_75%,#e4e4e7_75%)] bg-[length:12px_12px] bg-[position:0_0,0_6px,6px_-6px,-6px_0]"
-                              : "bg-white"
-                          }`}
-                        >
-                          {normalizedPreviewUrl ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={normalizedPreviewUrl}
-                              alt=""
-                              className="absolute inset-0 h-full w-full object-contain"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-[10px] text-zinc-400">
-                              {previewLoading || backgroundRemovalLoading
-                                ? "생성 중…"
-                                : "미리보기 없음"}
-                            </div>
-                          )}
-                          {backgroundRemovalLoading ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-                              <span className="text-[10px] font-medium text-rose-700">
-                                배경 제거 중…
-                              </span>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                      {!backgroundRemovalApplied ? (
-                        <button
-                          type="button"
-                          onClick={() => void runNormalizedPreview({ immediate: true })}
-                          disabled={uploading || previewLoading || backgroundRemovalLoading}
-                          className="w-full rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50 sm:w-auto"
-                        >
-                          {previewLoading ? "미리보기 생성 중…" : "미리보기"}
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void uploadImageFile(pendingImageFile, backgroundRemovalApplied)
-                        }
-                        disabled={uploading || previewLoading || backgroundRemovalLoading}
-                        className="w-full rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50 sm:w-auto"
-                      >
-                        {uploading
-                          ? "업로드 중…"
-                          : backgroundRemovalApplied
-                            ? "투명 PNG 업로드"
-                            : "이 설정으로 업로드"}
-                      </button>
+                    <div className="flex justify-end">
                       <button
                         type="button"
                         onClick={clearPendingImage}
-                        disabled={uploading}
-                        className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-zinc-600 hover:border-zinc-300 disabled:opacity-50 sm:w-auto"
+                        disabled={uploading || backgroundRemovalLoading}
+                        className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-600 hover:border-zinc-300 disabled:opacity-50"
                       >
                         선택 취소
                       </button>
