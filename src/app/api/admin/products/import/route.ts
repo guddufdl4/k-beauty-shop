@@ -8,6 +8,11 @@ import {
   normalizeCategoryKey,
   resolveHanmiCategory,
 } from "@/lib/admin/hanmi-category-map";
+import {
+  barcodeVariants,
+  canonicalBarcode,
+  normalizeImportSku,
+} from "@/lib/admin/product-dedupe";
 import { fetchAllPages } from "@/lib/supabase/products";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
@@ -47,6 +52,7 @@ type ProductRow = {
   id: string;
   sku: string;
   slug: string;
+  barcode: string | null;
 };
 
 type ProductPayload = {
@@ -141,6 +147,50 @@ function dedupePayloadsBySku(payloads: ProductPayload[]): ProductPayload[] {
   return Array.from(bySku.values());
 }
 
+function registerExistingProduct(
+  product: ProductRow,
+  productsBySku: Map<string, ProductRow>,
+  productsByBarcode: Map<string, ProductRow>,
+) {
+  productsBySku.set(product.sku.trim(), product);
+
+  const barcode =
+    canonicalBarcode(product.barcode) ?? canonicalBarcode(product.sku);
+  if (!barcode) {
+    return;
+  }
+
+  for (const variant of barcodeVariants(barcode)) {
+    productsByBarcode.set(variant, product);
+  }
+}
+
+function lookupExistingProduct(
+  sku: string,
+  barcode: string | null,
+  productsBySku: Map<string, ProductRow>,
+  productsByBarcode: Map<string, ProductRow>,
+): ProductRow | undefined {
+  const normalizedSku = normalizeImportSku(sku, barcode);
+  const directMatch = productsBySku.get(normalizedSku);
+  if (directMatch) {
+    return directMatch;
+  }
+
+  const canonical =
+    canonicalBarcode(barcode) ?? canonicalBarcode(sku);
+  if (canonical) {
+    for (const variant of barcodeVariants(canonical)) {
+      const match = productsByBarcode.get(variant);
+      if (match) {
+        return match;
+      }
+    }
+  }
+
+  return productsBySku.get(sku.trim());
+}
+
 export async function POST(request: Request) {
   const { configured, profile } = await getSessionProfile();
 
@@ -221,7 +271,7 @@ export async function POST(request: Request) {
     fetchAllPages<ProductRow>(async (from, to) => {
       const result = await supabase
         .from("products")
-        .select("id, sku, slug")
+        .select("id, sku, slug, barcode")
         .range(from, to);
       return { data: (result.data ?? []) as ProductRow[], error: result.error };
     }),
@@ -239,10 +289,10 @@ export async function POST(request: Request) {
   const categories = (categoriesResult.data ?? []) as CategoryRow[];
 
   const productsBySku = new Map<string, ProductRow>();
+  const productsByBarcode = new Map<string, ProductRow>();
   const reservedSlugs = new Set<string>();
   for (const product of existingProducts) {
-    const sku = product.sku.trim();
-    productsBySku.set(sku, product);
+    registerExistingProduct(product, productsBySku, productsByBarcode);
     reservedSlugs.add(product.slug);
   }
 
@@ -378,17 +428,29 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const existing = productsBySku.get(sku);
+    const normalizedSku = normalizeImportSku(sku, barcode);
+    const normalizedBarcode = canonicalBarcode(barcode) ?? barcode;
+    const existing = lookupExistingProduct(
+      sku,
+      barcode,
+      productsBySku,
+      productsByBarcode,
+    );
     const categoryId = lookupCategoryId(category);
-    const resolvedSlug = buildUniqueSlug(name, sku, reservedSlugs, existing?.slug);
+    const resolvedSlug = buildUniqueSlug(
+      name,
+      normalizedSku,
+      reservedSlugs,
+      existing?.slug,
+    );
 
     payloads.push({
       name,
       brand,
-      sku,
+      sku: normalizedSku,
       slug: resolvedSlug,
       category_id: categoryId,
-      barcode,
+      barcode: normalizedBarcode,
       description,
       short_description: volume,
       image_url,
@@ -409,11 +471,13 @@ export async function POST(request: Request) {
     });
 
     if (!existing) {
-      productsBySku.set(sku, {
+      const placeholder: ProductRow = {
         id: "",
-        sku,
+        sku: normalizedSku,
         slug: resolvedSlug,
-      });
+        barcode: normalizedBarcode,
+      };
+      registerExistingProduct(placeholder, productsBySku, productsByBarcode);
     }
   }
 
@@ -430,7 +494,7 @@ export async function POST(request: Request) {
     const { data: upsertedRows, error: upsertError } = await supabase
       .from("products")
       .upsert(uniqueBatch, { onConflict: "sku" })
-      .select("id, sku, slug, name, image_url");
+      .select("id, sku, slug, name, image_url, barcode");
 
     if (upsertError || !upsertedRows?.length) {
       failedCount += uniqueBatch.length;
@@ -450,8 +514,18 @@ export async function POST(request: Request) {
       slug: string;
       name: string;
       image_url: string | null;
+      barcode: string | null;
     }>) {
-      productsBySku.set(upserted.sku, upserted);
+      registerExistingProduct(
+        {
+          id: upserted.id,
+          sku: upserted.sku,
+          slug: upserted.slug,
+          barcode: upserted.barcode,
+        },
+        productsBySku,
+        productsByBarcode,
+      );
       reservedSlugs.add(upserted.slug);
 
       if (upserted.image_url) {
