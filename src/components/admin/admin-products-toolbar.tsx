@@ -6,15 +6,16 @@ import {
   buildAdminProductsHref,
   type AdminProductsFilters,
 } from "@/lib/admin/admin-products-url";
-import type { Category } from "@/lib/supabase/products";
+import type { Category, ProductImportBatch } from "@/lib/supabase/products";
 
 type Props = {
   filters: AdminProductsFilters;
   categories: Category[];
+  batches: ProductImportBatch[];
   totalCount: number;
 };
 
-export function AdminProductsToolbar({ filters, categories, totalCount }: Props) {
+export function AdminProductsToolbar({ filters, categories, batches, totalCount }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState(filters.q ?? "");
   const [brand, setBrand] = useState(filters.brand ?? "");
@@ -79,6 +80,17 @@ export function AdminProductsToolbar({ filters, categories, totalCount }: Props)
       brand: filters.brand,
       category: filters.category,
       sort,
+      view: filters.view,
+    });
+  }
+
+  function handleBatchChange(batchId: string) {
+    navigate({
+      batchId: batchId.trim() || null,
+      q: filters.q,
+      brand: filters.brand,
+      category: filters.category,
+      sort: filters.sort,
       view: filters.view,
     });
   }
@@ -188,7 +200,23 @@ export function AdminProductsToolbar({ filters, categories, totalCount }: Props)
           </button>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="block sm:col-span-2 lg:col-span-1">
+            <span className="mb-1 block text-xs font-medium text-zinc-500">출처 엑셀</span>
+            <select
+              name="batch"
+              value={filters.batchId ?? ""}
+              onChange={(event) => handleBatchChange(event.target.value)}
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+            >
+              <option value="">전체</option>
+              {batches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {batch.filename} ({batch.imported_count.toLocaleString("ko-KR")}건)
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-zinc-500">브랜드</span>
             <input

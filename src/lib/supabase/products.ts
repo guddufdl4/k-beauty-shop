@@ -84,8 +84,11 @@ export type Product = {
   updated_at: string;
 };
 
+export type ProductImportBatchSummary = Pick<ProductImportBatch, "id" | "filename">;
+
 export type ProductWithRelations = Product & {
   category: Pick<Category, "id" | "name" | "slug"> | null;
+  import_batch: ProductImportBatchSummary | null;
   images: ProductImage[];
 };
 
@@ -166,6 +169,7 @@ function staticProduct(
     created_at: string;
     updated_at: string;
     category: Pick<Category, "id" | "name" | "slug"> | null;
+    import_batch?: ProductImportBatchSummary | null;
   },
 ): ProductWithRelations {
   return {
@@ -189,6 +193,7 @@ function staticProduct(
     needs_image: partial.needs_image ?? false,
     needs_description: partial.needs_description ?? false,
     deleted_at: partial.deleted_at ?? null,
+    import_batch: partial.import_batch ?? null,
     images: [],
   };
 }
@@ -610,8 +615,22 @@ function mapImportBatch(row: Record<string, unknown>): ProductImportBatch {
   };
 }
 
+function mapImportBatchSummary(
+  row: Record<string, unknown> | null,
+): ProductImportBatchSummary | null {
+  if (!row?.id) {
+    return null;
+  }
+
+  return {
+    id: String(row.id),
+    filename: String(row.filename),
+  };
+}
+
 function mapProductWithRelations(row: Record<string, unknown>): ProductWithRelations {
   const categoryRaw = row.category as Record<string, unknown> | null;
+  const importBatchRaw = row.import_batch as Record<string, unknown> | null;
   const imagesRaw = (row.images as Record<string, unknown>[] | null) ?? [];
 
   return enrichProductImages({
@@ -623,6 +642,7 @@ function mapProductWithRelations(row: Record<string, unknown>): ProductWithRelat
           slug: String(categoryRaw.slug),
         }
       : null,
+    import_batch: mapImportBatchSummary(importBatchRaw),
     images: imagesRaw
       .map((img) => mapImage(img))
       .sort((a, b) => a.sort_order - b.sort_order),
@@ -742,7 +762,7 @@ const PRODUCT_SELECT = `
 
 /** Lightweight select for admin product list table (skips heavy text/json columns). */
 const ADMIN_LIST_SELECT =
-  "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, moq, stock, sold_out, status, image_url, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
+  "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, moq, stock, sold_out, status, image_url, import_batch_id, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), import_batch:product_import_batches(id, filename), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
 
 export async function getCategories(): Promise<{
   categories: Category[];

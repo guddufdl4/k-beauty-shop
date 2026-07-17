@@ -264,7 +264,7 @@ export default async function AdminProductsPage({
   };
   const needsCategories = activeTab === "list" || activeTab === "add";
   const needsProducts = activeTab === "list";
-  const needsBatches = activeTab === "bulk";
+  const needsBatches = activeTab === "bulk" || activeTab === "list";
   const needsImageStats = activeTab === "bulk";
   const [
     { configured, user, profile },
@@ -319,14 +319,21 @@ export default async function AdminProductsPage({
     redirect(buildAdminProductsHref(listFilters, totalPages));
   }
   const safePage = currentPage;
+  const activeBatch = activeBatchId
+    ? batches.find((batch) => batch.id === activeBatchId) ?? null
+    : null;
   const hasListFilters = Boolean(searchTerm || brandFilter || categoryFilter);
   const emptyMessage = showDeleted
-    ? hasListFilters
+    ? hasListFilters || activeBatchId
       ? "검색 조건에 맞는 삭제된 상품이 없습니다."
       : "삭제된 상품이 없습니다."
-    : hasListFilters
-      ? "검색 조건에 맞는 상품이 없습니다."
-      : "등록된 상품이 없습니다. seed SQL을 실행하거나 폼으로 추가하세요.";
+    : activeBatchId
+      ? hasListFilters
+        ? "선택한 엑셀 배치에서 검색 조건에 맞는 상품이 없습니다."
+        : "선택한 엑셀 배치에 등록된 상품이 없습니다."
+      : hasListFilters
+        ? "검색 조건에 맞는 상품이 없습니다."
+        : "등록된 상품이 없습니다. seed SQL을 실행하거나 폼으로 추가하세요.";
 
   if (!configured) {
     return (
@@ -447,13 +454,15 @@ export default async function AdminProductsPage({
               <AdminProductsToolbar
                 filters={listFilters}
                 categories={categories}
+                batches={batches}
                 totalCount={totalCount}
               />
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs">
                 <div className="text-zinc-600">
-                  {activeBatchId ? (
+                  {activeBatch ? (
                     <span>
-                      배치 필터 적용 중
+                      <span className="font-medium text-zinc-800">{activeBatch.filename}</span>
+                      {" "}배치 · 이미지 있는 상품 우선 정렬
                       {totalCount > 0
                         ? ` · 총 ${totalCount.toLocaleString("ko-KR")}건 · 페이지 ${safePage} / ${totalPages}`
                         : null}
@@ -461,7 +470,7 @@ export default async function AdminProductsPage({
                   ) : (
                     <span>
                       {totalCount > 0
-                        ? `총 ${totalCount.toLocaleString("ko-KR")}건 · 페이지 ${safePage} / ${totalPages}`
+                        ? `총 ${totalCount.toLocaleString("ko-KR")}건 · 이미지 있는 상품 우선 · 페이지 ${safePage} / ${totalPages}`
                         : "목록이 비어 있습니다"}
                     </span>
                   )}
@@ -481,7 +490,7 @@ export default async function AdminProductsPage({
                       })}
                       className="text-zinc-500 hover:underline"
                     >
-                      배치 필터 해제
+                      엑셀 필터 해제
                     </Link>
                   ) : null}
                 </div>

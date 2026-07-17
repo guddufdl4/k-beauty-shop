@@ -337,6 +337,18 @@ const ProductTableRow = memo(function ProductTableRow({
       <td className="px-3 py-2.5 align-top text-xs text-zinc-600">
         {product.category?.name ?? "—"}
       </td>
+      <td className="max-w-[10rem] px-3 py-2.5 align-top">
+        {product.import_batch?.filename ? (
+          <p
+            className="truncate text-[11px] text-zinc-700"
+            title={product.import_batch.filename}
+          >
+            {product.import_batch.filename}
+          </p>
+        ) : (
+          <span className="text-xs text-zinc-400">—</span>
+        )}
+      </td>
       <td className="px-3 py-2.5 align-top">{statusBadge(product.status)}</td>
       <td className="px-3 py-2.5 align-top">
         <p className="whitespace-nowrap text-[11px] text-zinc-700">
@@ -1078,6 +1090,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
               <th className="min-w-[4rem] px-3 py-2.5 font-semibold">재고</th>
               <th className="min-w-[4rem] px-3 py-2.5 font-semibold">품절</th>
               <th className="min-w-[5rem] px-3 py-2.5 font-semibold">카테고리</th>
+              <th className="min-w-[7rem] px-3 py-2.5 font-semibold">출처 엑셀</th>
               <th className="min-w-[4rem] px-3 py-2.5 font-semibold">상태</th>
               <th className="min-w-[7rem] px-3 py-2.5 font-semibold">업로드/수정</th>
               <th className="w-16 px-3 py-2.5 font-semibold">편집</th>
