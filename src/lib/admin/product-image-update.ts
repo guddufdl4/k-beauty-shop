@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveNeedsImageFromFields } from "@/lib/product-images";
 
 export type UpdatedProductImageRow = {
   id: string;
@@ -31,7 +32,7 @@ export async function updateProductImageUrl(
 
   const updatePayload = {
     image_url: imageUrl,
-    needs_image: !imageUrl,
+    needs_image: resolveNeedsImageFromFields({ image_url: imageUrl }),
     content_status:
       imageUrl && existing.description?.trim() ? "complete" : "pending",
   };

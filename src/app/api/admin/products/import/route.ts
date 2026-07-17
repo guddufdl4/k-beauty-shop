@@ -16,6 +16,7 @@ import {
 import { fetchAllPages } from "@/lib/supabase/products";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
+import { resolveNeedsImageFromFields } from "@/lib/product-images";
 
 export const runtime = "nodejs";
 /** Large Hanmi workbooks (~18k rows) need several minutes even with batch upsert. */
@@ -466,7 +467,7 @@ export async function POST(request: Request) {
         __sheet: row.sourceSheet,
       },
       content_status: image_url && description ? "complete" : "pending",
-      needs_image: !image_url,
+      needs_image: resolveNeedsImageFromFields({ image_url, source_row: row.sourceRow }),
       needs_description: !description,
     });
 

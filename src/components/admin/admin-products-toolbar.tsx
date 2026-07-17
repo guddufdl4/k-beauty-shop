@@ -21,6 +21,17 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
   const [brand, setBrand] = useState(filters.brand ?? "");
   const [category, setCategory] = useState(filters.category ?? "");
 
+  function formatBatchLabel(batch: ProductImportBatch): string {
+    const count = (batch.product_count ?? 0).toLocaleString("ko-KR");
+    const date = new Date(batch.created_at).toLocaleDateString("ko-KR", {
+      month: "numeric",
+      day: "numeric",
+    });
+    return `${batch.filename} (${count}건 · ${date})`;
+  }
+
+  const selectableBatches = batches.filter((batch) => batch.product_count > 0);
+
   const hasActiveFilters = useMemo(
     () => Boolean(filters.q?.trim() || filters.brand?.trim() || filters.category?.trim()),
     [filters.brand, filters.category, filters.q],
@@ -210,9 +221,9 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
             >
               <option value="">전체</option>
-              {batches.map((batch) => (
+              {selectableBatches.map((batch) => (
                 <option key={batch.id} value={batch.id}>
-                  {batch.filename} ({batch.imported_count.toLocaleString("ko-KR")}건)
+                  {formatBatchLabel(batch)}
                 </option>
               ))}
             </select>

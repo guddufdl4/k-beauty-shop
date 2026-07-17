@@ -98,6 +98,8 @@ export type ProductImportBatch = {
   row_count: number;
   imported_count: number;
   failed_count: number;
+  /** Products currently linked via products.import_batch_id */
+  product_count: number;
   status: "processing" | "success" | "partial" | "failed";
   imported_at: string | null;
   created_at: string;
@@ -595,7 +597,10 @@ function mapImage(row: Record<string, unknown>): ProductImage {
   };
 }
 
-function mapImportBatch(row: Record<string, unknown>): ProductImportBatch {
+function mapImportBatch(
+  row: Record<string, unknown>,
+  productCount = 0,
+): ProductImportBatch {
   const status = String(row.status ?? "processing");
   return {
     id: String(row.id),
@@ -603,6 +608,7 @@ function mapImportBatch(row: Record<string, unknown>): ProductImportBatch {
     row_count: Number(row.row_count ?? 0),
     imported_count: Number(row.imported_count ?? 0),
     failed_count: Number(row.failed_count ?? 0),
+    product_count: productCount,
     status:
       status === "success" ||
       status === "partial" ||
@@ -839,6 +845,8 @@ export async function getProducts(
         deletionFilter?: ProductDeletionFilter;
         imageFirst?: boolean;
         lightSelect?: boolean;
+        /** Use service role for admin list (RLS-safe joins + filters). */
+        privileged?: boolean;
       },
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
   const options =
@@ -904,7 +912,10 @@ export async function getProducts(
     return staticProductsResult();
   }
 
-  const supabase = await createSafeClient();
+  const privileged = options?.privileged === true;
+  const supabase = privileged
+    ? createServiceClient() ?? (await createSafeClient())
+    : await createSafeClient();
   if (!supabase) {
     return staticProductsResult();
   }
@@ -1334,9 +1345,26 @@ async function fetchProductImportBatchesFromSource(): Promise<{
     };
   }
 
+  const rows = data ?? [];
+  const productCounts = await Promise.all(
+    rows.map(async (row) => {
+      const batchId = String((row as Record<string, unknown>).id);
+      const { count, error: countError } = await supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("import_batch_id", batchId);
+
+      if (countError) {
+        return 0;
+      }
+
+      return count ?? 0;
+    }),
+  );
+
   return {
-    batches: (data ?? []).map((row) =>
-      mapImportBatch(row as Record<string, unknown>),
+    batches: rows.map((row, index) =>
+      mapImportBatch(row as Record<string, unknown>, productCounts[index] ?? 0),
     ),
     meta: { source: "database", configured: true },
   };

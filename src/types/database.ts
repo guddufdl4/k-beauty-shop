@@ -87,6 +87,7 @@ export interface ProductImportBatch {
   row_count: number;
   imported_count: number;
   failed_count: number;
+  product_count?: number;
   status: "processing" | "success" | "partial" | "failed";
   imported_at: string | null;
   created_at: string;

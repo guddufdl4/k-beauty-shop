@@ -283,6 +283,7 @@ export default async function AdminProductsPage({
     needsProducts
       ? getProducts({
           includeDraft: true,
+          privileged: true,
           importBatchId: activeBatchId ?? undefined,
           categorySlug: categoryFilter,
           search: searchTerm,
@@ -310,6 +311,22 @@ export default async function AdminProductsPage({
       : Promise.resolve({ stats: null, error: null }),
   ]);
   const imageStats = imageStatsResult.stats;
+  const batchById = new Map(batches.map((batch) => [batch.id, batch]));
+  const listProducts = products.map((product) => {
+    if (product.import_batch?.filename || !product.import_batch_id) {
+      return product;
+    }
+
+    const batch = batchById.get(product.import_batch_id);
+    if (!batch) {
+      return product;
+    }
+
+    return {
+      ...product,
+      import_batch: { id: batch.id, filename: batch.filename },
+    };
+  });
   const lastCollectedAt = batches[0]?.created_at ?? null;
   const totalPages = Math.max(
     1,
@@ -500,7 +517,7 @@ export default async function AdminProductsPage({
             <div className="min-h-0 flex-1 overflow-auto">
               <AdminProductsTable
                 key={`${safePage}-${activeBatchId ?? ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
-                products={products}
+                products={listProducts}
                 categories={categories}
                 emptyMessage={emptyMessage}
                 viewMode={showDeleted ? "deleted" : "active"}

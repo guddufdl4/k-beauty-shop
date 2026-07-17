@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { parseProductInventoryPatch, parseProductPatch } from "@/lib/admin/product-patch";
+import { resolveNeedsImageFromFields } from "@/lib/product-images";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 
@@ -156,7 +157,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (imageUrlProvided) {
     updatePayload.image_url = parsed.patch.image_url;
-    updatePayload.needs_image = !parsed.patch.image_url;
+    updatePayload.needs_image = resolveNeedsImageFromFields({
+      image_url: parsed.patch.image_url,
+    });
     updatePayload.content_status =
       parsed.patch.image_url && existingDescription?.trim()
         ? "complete"

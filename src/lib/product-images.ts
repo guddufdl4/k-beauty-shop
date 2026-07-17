@@ -206,9 +206,30 @@ function scoreProductImageUrl(url: string): number {
   return score;
 }
 
-function isRealProductImageUrl(url: string | null | undefined): boolean {
+export function isRealProductImageUrl(url: string | null | undefined): boolean {
   const trimmed = url?.trim();
   if (!trimmed || isCategoryPlaceholderUrl(trimmed)) {
+    return false;
+  }
+
+  return true;
+}
+
+/** DB/import helper: true when no real product image exists in known fields. */
+export function resolveNeedsImageFromFields(input: {
+  image_url?: string | null;
+  source_row?: Record<string, unknown> | null;
+  images?: Array<{ url: string }>;
+}): boolean {
+  if (input.images?.some((image) => isRealProductImageUrl(image.url))) {
+    return false;
+  }
+
+  if (isRealProductImageUrl(input.image_url)) {
+    return false;
+  }
+
+  if (isRealProductImageUrl(extractSourceRowImageUrl(input.source_row))) {
     return false;
   }
 
