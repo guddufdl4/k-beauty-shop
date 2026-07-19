@@ -1154,6 +1154,8 @@ type PriorityBrandListFetchOptions = {
   privileged?: boolean;
   listOrderOptions: ProductListOrderOptions;
   configured: boolean;
+  /** Pre-built client for unstable_cache callbacks (no cookies). */
+  supabase?: SupabaseClient | null;
 };
 
 function paginateProductList(
@@ -1224,6 +1226,7 @@ async function fetchPriorityBrandListProducts(
     privileged,
     listOrderOptions,
     configured,
+    supabase: providedSupabase,
   } = options;
 
   function finalize(products: ProductWithRelations[]) {
@@ -1270,9 +1273,12 @@ async function fetchPriorityBrandListProducts(
     return finalize(products);
   }
 
-  const supabase = privileged
-    ? createServiceClient() ?? (await createSafeClient())
-    : await createSafeClient();
+  let supabase = providedSupabase ?? null;
+  if (!supabase) {
+    supabase = privileged
+      ? createServiceClient() ?? (await createSafeClient())
+      : await createSafeClient();
+  }
 
   if (!supabase) {
     let products = filterPriorityProducts(STATIC_PRODUCTS);
@@ -1316,20 +1322,39 @@ async function fetchPriorityBrandListProducts(
   return finalize(products);
 }
 
-export async function getBrandPriorityListStats(): Promise<{
+async function fetchBrandPriorityListStatsFromSource(): Promise<{
   targetCount: number;
   matchedCount: number;
 }> {
   const targetCount = getBrandPriorityListTargetCount();
+  const configured = isSupabaseConfigured();
+
+  if (!configured) {
+    return { targetCount, matchedCount: 0 };
+  }
+
+  const supabase = createServiceClient() ?? createPublicClient();
+  if (!supabase) {
+    return { targetCount, matchedCount: 0 };
+  }
+
   const { totalCount } = await fetchPriorityBrandListProducts({
     includeDraft: true,
     privileged: true,
     deletionFilter: "active",
     listOrderOptions: { orderBy: "created_at", imageFirst: false },
-    configured: isSupabaseConfigured(),
+    configured: true,
+    supabase,
   });
 
   return { targetCount, matchedCount: totalCount };
+}
+
+export async function getBrandPriorityListStats(): Promise<{
+  targetCount: number;
+  matchedCount: number;
+}> {
+  return fetchBrandPriorityListStatsFromSource();
 }
 
 export async function getCachedBrandPriorityListStats(): Promise<{
@@ -1337,7 +1362,7 @@ export async function getCachedBrandPriorityListStats(): Promise<{
   matchedCount: number;
 }> {
   return unstable_cache(
-    getBrandPriorityListStats,
+    fetchBrandPriorityListStatsFromSource,
     ["admin-brand-priority-list-stats"],
     { revalidate: CACHE_REVALIDATE_SECONDS },
   )();
