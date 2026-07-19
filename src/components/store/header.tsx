@@ -34,15 +34,18 @@ function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
   const acronym = raw.replace(/\s+/g, "").toUpperCase();
   const isAcronym = acronym.length <= 5 && !raw.includes(" ");
 
+  const wordmarkClass =
+    "block font-black italic leading-none tracking-[-0.03em] text-[1.75rem] sm:text-3xl lg:text-[2.125rem]";
+
   if (isAcronym) {
     return (
-      <span className="inline-flex flex-col gap-1">
-        <span className="text-xl font-semibold tracking-[0.22em] sm:text-2xl lg:tracking-[0.28em]">
+      <span className="inline-flex min-w-[3.25rem] flex-col gap-1.5 sm:min-w-[4rem]">
+        <span className={wordmarkClass}>
           <span className="text-accent">{acronym.charAt(0)}</span>
           <span className="text-zinc-900">{acronym.slice(1)}</span>
         </span>
         <span
-          className="h-px w-full max-w-[3.25rem] bg-gradient-to-r from-accent via-accent/50 to-transparent sm:max-w-[3.75rem]"
+          className="h-[2px] w-full max-w-[2.75rem] bg-gradient-to-r from-accent/70 via-accent/25 to-transparent sm:max-w-[3.25rem]"
           aria-hidden
         />
       </span>
@@ -52,17 +55,17 @@ function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
   const parts = raw.split(/\s+/);
 
   return (
-    <span className="inline-flex min-w-0 flex-col gap-1">
-      <span className="truncate text-lg font-semibold leading-none tracking-tight text-zinc-900 sm:text-xl lg:text-2xl">
+    <span className="inline-flex min-w-0 max-w-[min(100%,14rem)] flex-col gap-1.5 sm:max-w-none">
+      <span className={`${wordmarkClass} truncate not-italic sm:not-italic`}>
         {parts.map((part, index) => (
           <span key={`${part}-${index}`}>
             {index > 0 ? " " : null}
-            <span className={index === 0 ? "text-accent" : undefined}>{part}</span>
+            <span className={index === 0 ? "text-accent" : "text-zinc-900"}>{part.toUpperCase()}</span>
           </span>
         ))}
       </span>
       <span
-        className="h-px w-full max-w-[4rem] bg-gradient-to-r from-accent via-accent/50 to-transparent"
+        className="h-[2px] w-full max-w-[3rem] bg-gradient-to-r from-accent/70 via-accent/25 to-transparent"
         aria-hidden
       />
     </span>
@@ -215,12 +218,12 @@ export async function StoreHeader({ storeName }: Props) {
         }}
       >
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6">
-          <div className="flex items-center gap-3 py-3 sm:gap-4 sm:py-4 lg:gap-8">
+          <div className="flex items-center gap-3 py-3.5 sm:gap-5 sm:py-4 lg:gap-10 lg:py-5">
 
           <Link
             href="/"
             locale={locale}
-            className="group shrink-0 py-0.5 transition-opacity hover:opacity-85"
+            className="group shrink-0 py-1 pr-2 transition-opacity hover:opacity-85 sm:pr-4 lg:pr-6"
             aria-label={brandLabel}
           >
             <StoreBrandLogo brandLabel={brandLabel} />
