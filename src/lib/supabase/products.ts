@@ -1349,6 +1349,27 @@ function filterPriorityProducts(products: ProductWithRelations[]): ProductWithRe
   );
 }
 
+function getActiveStaticProducts(): ProductWithRelations[] {
+  return STATIC_PRODUCTS.filter(
+    (product) => product.status === "active" && !isDemoProduct(product),
+  ).map((product) => enrichProductImages(product));
+}
+
+function sortHomepagePriorityProducts(products: ProductWithRelations[]): ProductWithRelations[] {
+  return sortProductsForList(products, { orderBy: "created_at", imageFirst: true });
+}
+
+function getStaticHomepageFallbackProducts(limit: number): ProductWithRelations[] {
+  return sortHomepagePriorityProducts(getActiveStaticProducts()).slice(0, limit);
+}
+
+function finalizeHomepageProducts(
+  products: ProductWithRelations[],
+  limit: number,
+): ProductWithRelations[] {
+  return sortHomepagePriorityProducts(products).slice(0, limit);
+}
+
 function quoteInFilterValues(values: string[]): string {
   return values.map((value) => `"${value.replace(/"/g, '\\"')}"`).join(",");
 }
@@ -1457,7 +1478,7 @@ async function fetchPriorityBrandProductsFromSource(
   const configured = isSupabaseConfigured();
 
   if (!configured) {
-    const products = filterPriorityProducts(STATIC_PRODUCTS).slice(0, limit);
+    const products = getStaticHomepageFallbackProducts(limit);
     return {
       products,
       totalCount: products.length,
@@ -1467,7 +1488,7 @@ async function fetchPriorityBrandProductsFromSource(
 
   const supabase = createPublicClient();
   if (!supabase) {
-    const products = filterPriorityProducts(STATIC_PRODUCTS).slice(0, limit);
+    const products = getStaticHomepageFallbackProducts(limit);
     return {
       products,
       totalCount: products.length,
@@ -1478,40 +1499,56 @@ async function fetchPriorityBrandProductsFromSource(
   await ensureSoftDeleteColumnProbed(supabase);
 
   const priorityKeys = [...getBrandPriorityKeySet()];
+  let dbProducts: ProductWithRelations[] = [];
+
   if (priorityKeys.length === 0) {
-    return fetchHomepageProductsFromDatabase(supabase, limit);
-  }
+    const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit);
+    dbProducts = homepageResult.products;
+  } else {
+    const rowsById = new Map<string, Record<string, unknown>>();
 
-  const rowsById = new Map<string, Record<string, unknown>>();
+    for (let index = 0; index < priorityKeys.length; index += PRIORITY_SKU_QUERY_BATCH) {
+      const batch = priorityKeys.slice(index, index + PRIORITY_SKU_QUERY_BATCH);
+      const batchRows = await fetchProductsByIdentifierBatch(
+        supabase,
+        batch,
+        PRODUCT_SELECT,
+        null,
+        false,
+      );
 
-  for (let index = 0; index < priorityKeys.length; index += PRIORITY_SKU_QUERY_BATCH) {
-    const batch = priorityKeys.slice(index, index + PRIORITY_SKU_QUERY_BATCH);
-    const batchRows = await fetchProductsByIdentifierBatch(
-      supabase,
-      batch,
-      PRODUCT_SELECT,
-      null,
-      false,
-    );
-
-    for (const row of batchRows) {
-      const id = String(row.id);
-      if (!rowsById.has(id)) {
-        rowsById.set(id, row);
+      for (const row of batchRows) {
+        const id = String(row.id);
+        if (!rowsById.has(id)) {
+          rowsById.set(id, row);
+        }
       }
+    }
+
+    dbProducts = [...rowsById.values()]
+      .map((row) => mapProductWithRelations(row))
+      .filter((product) => !isDemoProduct(product) && productMatchesBrandPriority(product));
+
+    if (dbProducts.length === 0) {
+      const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit);
+      dbProducts = homepageResult.products;
     }
   }
 
-  const products = [...rowsById.values()]
-    .map((row) => mapProductWithRelations(row))
-    .filter((product) => !isDemoProduct(product) && productMatchesBrandPriority(product))
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, limit);
+  if (dbProducts.length > 0) {
+    const products = finalizeHomepageProducts(dbProducts, limit);
+    return {
+      products,
+      totalCount: products.length,
+      meta: { source: "database", configured: true },
+    };
+  }
 
+  const products = getStaticHomepageFallbackProducts(limit);
   return {
     products,
     totalCount: products.length,
-    meta: { source: "database", configured: true },
+    meta: { source: "static", configured: true },
   };
 }
 

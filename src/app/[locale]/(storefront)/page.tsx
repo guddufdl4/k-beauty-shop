@@ -50,7 +50,7 @@ export default async function HomePage() {
     featuredProducts.length > 0 ? featuredProducts : products,
   ).slice(0, 8);
   const mostViewed = sortHomeProducts(products).slice(0, 8);
-  const tabEmptyMessage = meta.source === "static" ? t("supabaseWarning") : t("tabEmpty");
+  const tabEmptyMessage = t("tabEmpty");
   const newArrivals = sortHomeProducts(products).slice(0, 8);
   const allProducts = sortHomeProducts(products).slice(0, 8);
 
@@ -136,22 +136,13 @@ export default async function HomePage() {
           </p>
         ) : null}
 
-        {products.length > 0 ? (
-          <HomeProductTabs
-            sections={sections}
-            emptyMessage={tabEmptyMessage}
-            badgeLabels={{ hot: t("badgeHot"), new: t("badgeNew") }}
-            locale={locale}
-            usdKrwRate={usdKrwRate}
-          />
-        ) : (
-          <div className="border border-zinc-200 bg-white p-10 text-center">
-            <p className="text-zinc-600">{t("supabaseWarning")}</p>
-            <Link href="/products" className="mt-4 inline-flex text-sm font-semibold text-accent hover:underline">
-              {t("viewProducts")}
-            </Link>
-          </div>
-        )}
+        <HomeProductTabs
+          sections={sections}
+          emptyMessage={tabEmptyMessage}
+          badgeLabels={{ hot: t("badgeHot"), new: t("badgeNew") }}
+          locale={locale}
+          usdKrwRate={usdKrwRate}
+        />
 
         {uniqueBrands.length > 0 ? (
           <section className="mt-16 border-t border-zinc-200 pt-12">
