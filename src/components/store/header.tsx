@@ -179,7 +179,7 @@ export async function StoreHeader({ storeName }: Props) {
 
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-lg font-bold text-white">
 
-              K
+              {brandLabel.charAt(0).toUpperCase()}
 
             </span>
 

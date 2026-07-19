@@ -17,7 +17,7 @@ export async function StoreFooter({ contactEmail, storeName }: Props) {
         <div>
           <div className="mb-4 flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
-              K
+              {brand.charAt(0).toUpperCase()}
             </span>
             <span className="text-base font-bold text-zinc-900">{brand}</span>
           </div>
@@ -123,7 +123,7 @@ export async function StoreFooter({ contactEmail, storeName }: Props) {
 
       <div className="border-t border-zinc-100 bg-surface-muted px-4 py-5 text-center text-xs text-zinc-500">
         <ViewModeToggle />
-        <p className="mt-4">{t("copyright")}</p>
+        <p className="mt-4">{t("copyright", { brand })}</p>
       </div>
     </footer>
   );

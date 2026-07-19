@@ -4,6 +4,9 @@ import type { SiteSettings } from "@/types/database";
 
 const CACHE_REVALIDATE_SECONDS = 300;
 
+/** Data cache tag for `unstable_cache`; invalidate via `revalidateTag` after admin saves. */
+export const SITE_SETTINGS_CACHE_TAG = "site-settings";
+
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   id: 1,
   store_name: "K-Beauty Shop",
@@ -37,8 +40,8 @@ function normalizeSettings(row: Partial<SiteSettings> | null): SiteSettings {
 export async function getSiteSettings(): Promise<SiteSettings> {
   return unstable_cache(
     fetchSiteSettingsFromSource,
-    ["site-settings"],
-    { revalidate: CACHE_REVALIDATE_SECONDS },
+    [SITE_SETTINGS_CACHE_TAG],
+    { revalidate: CACHE_REVALIDATE_SECONDS, tags: [SITE_SETTINGS_CACHE_TAG] },
   )();
 }
 

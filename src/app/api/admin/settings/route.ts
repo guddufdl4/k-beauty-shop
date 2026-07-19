@@ -1,8 +1,9 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import {
   getSiteSettings,
   parseSiteSettingsPatch,
+  SITE_SETTINGS_CACHE_TAG,
 } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
@@ -89,6 +90,7 @@ export async function PATCH(request: Request) {
     );
   }
 
+  revalidateTag(SITE_SETTINGS_CACHE_TAG, "max");
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
   revalidatePath("/en", "layout");
