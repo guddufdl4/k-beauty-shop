@@ -50,6 +50,7 @@
     "featuredSubtitle": "{count}개 상품 · B2B 도매·B2C 소매",
     "viewAll": "전체 보기 →",
     "supabaseWarning": "Supabase 미연결 — 샘플 상품을 표시합니다.",
+    "tabEmpty": "표시할 상품이 없습니다.",
     "b2bTitle": "B2B 도매",
     "b2bDescription": "MOQ 기준 도매가·재고 확인, 바이어 문의 대응",
     "b2cTitle": "B2C 소매",

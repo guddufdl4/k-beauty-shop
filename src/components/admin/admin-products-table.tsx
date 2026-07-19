@@ -246,11 +246,11 @@ const ProductTableRow = memo(function ProductTableRow({
           </p>
         ) : null}
       </td>
-      <td className="px-3 py-2.5 align-top">
+      <td className="max-w-[14rem] px-3 py-2.5 align-top">
         <ProductNameWithCopy
           name={product.name}
           href={`/en/products/${product.slug}`}
-          linkClassName="line-clamp-2 font-medium leading-snug text-zinc-900 hover:text-rose-700"
+          linkClassName="truncate font-medium text-zinc-900 hover:text-rose-700"
         />
         <p className="mt-0.5 select-none text-[10px] text-zinc-400">MOQ {product.moq}</p>
       </td>

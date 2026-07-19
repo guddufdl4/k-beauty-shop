@@ -50,6 +50,7 @@
     "featuredSubtitle": "{count} 件商品 · B2B 批发 · B2C 零售",
     "viewAll": "查看全部 →",
     "supabaseWarning": "未连接 Supabase — 显示示例商品。",
+    "tabEmpty": "此标签页暂无商品。",
     "b2bTitle": "B2B 批发",
     "b2bDescription": "按 MOQ 查看批发价与库存，响应买家咨询",
     "b2cTitle": "B2C 零售",

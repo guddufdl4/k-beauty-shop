@@ -50,6 +50,7 @@
     "featuredSubtitle": "{count}件 · B2B卸売・B2C小売",
     "viewAll": "すべて見る →",
     "supabaseWarning": "Supabase未接続 — サンプル商品を表示しています。",
+    "tabEmpty": "このタブに表示する商品がありません。",
     "b2bTitle": "B2B卸売",
     "b2bDescription": "MOQ基準の卸売価格・在庫確認、バイヤー対応",
     "b2cTitle": "B2C小売",

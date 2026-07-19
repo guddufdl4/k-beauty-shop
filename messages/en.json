@@ -50,6 +50,7 @@
     "featuredSubtitle": "{count} products · B2B wholesale · B2C retail",
     "viewAll": "View all →",
     "supabaseWarning": "Supabase disconnected — showing sample products.",
+    "tabEmpty": "No products to show in this tab.",
     "b2bTitle": "B2B wholesale",
     "b2bDescription": "MOQ-based wholesale pricing and stock checks for buyer inquiries",
     "b2cTitle": "B2C retail",

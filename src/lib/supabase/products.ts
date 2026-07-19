@@ -24,6 +24,7 @@ export const formatUsd = formatKRW;
 const SUPABASE_PAGE_SIZE = 1000;
 export const STOREFRONT_PRODUCTS_PAGE_SIZE = 48;
 const CACHE_REVALIDATE_SECONDS = 300;
+export const STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG = "storefront-priority-products";
 
 export type ProductStatus = "draft" | "active" | "archived";
 export type ProductContentStatus = "pending" | "complete";
@@ -1396,23 +1397,71 @@ export async function getPriorityBrandProducts(options?: {
   const limit = options?.limit ?? 200;
   return unstable_cache(
     () => fetchPriorityBrandProductsFromSource(limit),
-    ["storefront-priority-products", String(limit)],
-    { revalidate: CACHE_REVALIDATE_SECONDS },
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, String(limit)],
+    {
+      revalidate: CACHE_REVALIDATE_SECONDS,
+      tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],
+    },
   )();
+}
+
+function hasProductDisplayImage(product: { image_url: string | null }): boolean {
+  const imageUrl = product.image_url?.trim();
+  if (!imageUrl) {
+    return false;
+  }
+
+  return !imageUrl.includes("/images/categories/");
+}
+
+async function fetchHomepageProductsFromDatabase(
+  supabase: NonNullable<ReturnType<typeof createPublicClient>>,
+  limit: number,
+): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
+  let query = supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("status", "active")
+    .not("image_url", "is", null)
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (isSoftDeleteColumnAvailable()) {
+    query = query.is("deleted_at", null);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) {
+    return {
+      products: [],
+      totalCount: 0,
+      meta: { source: "database", configured: true },
+    };
+  }
+
+  const products = (data as unknown as Record<string, unknown>[])
+    .map((row) => mapProductWithRelations(row))
+    .filter((product) => !isDemoProduct(product) && hasProductDisplayImage(product));
+
+  return {
+    products,
+    totalCount: products.length,
+    meta: { source: "database", configured: true },
+  };
 }
 
 async function fetchPriorityBrandProductsFromSource(
   limit: number,
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
   const configured = isSupabaseConfigured();
-  const priorityKeys = [...getBrandPriorityKeySet()];
 
-  if (!configured || priorityKeys.length === 0) {
+  if (!configured) {
     const products = filterPriorityProducts(STATIC_PRODUCTS).slice(0, limit);
     return {
       products,
       totalCount: products.length,
-      meta: { source: "static", configured },
+      meta: { source: "static", configured: false },
     };
   }
 
@@ -1427,6 +1476,11 @@ async function fetchPriorityBrandProductsFromSource(
   }
 
   await ensureSoftDeleteColumnProbed(supabase);
+
+  const priorityKeys = [...getBrandPriorityKeySet()];
+  if (priorityKeys.length === 0) {
+    return fetchHomepageProductsFromDatabase(supabase, limit);
+  }
 
   const rowsById = new Map<string, Record<string, unknown>>();
 

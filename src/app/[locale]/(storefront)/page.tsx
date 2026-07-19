@@ -2,16 +2,29 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
 import { getUsdKrwRate } from "@/lib/currency";
+import { productHasRealImage } from "@/lib/product-images";
 import { getSiteSettings } from "@/lib/site-settings";
-import { getPriorityBrandProducts } from "@/lib/supabase/products";
+import { getPriorityBrandProducts, type ProductWithRelations } from "@/lib/supabase/products";
 import { buildProductsHref } from "@/lib/store/products-url";
 
 function isExternalHref(href: string): boolean {
   return href.startsWith("http://") || href.startsWith("https://");
 }
 
+function sortHomeProducts(products: ProductWithRelations[]): ProductWithRelations[] {
+  return [...products].sort((a, b) => {
+    const aHasImage = productHasRealImage(a) ? 1 : 0;
+    const bHasImage = productHasRealImage(b) ? 1 : 0;
+    if (bHasImage !== aHasImage) {
+      return bHasImage - aHasImage;
+    }
+
+    return b.created_at.localeCompare(a.created_at);
+  });
+}
+
 export default async function HomePage() {
-  const [t, { products }, locale, usdKrwRate, siteSettings] = await Promise.all([
+  const [t, { products, meta }, locale, usdKrwRate, siteSettings] = await Promise.all([
     getTranslations("home"),
     getPriorityBrandProducts({ limit: 200 }),
     getLocale(),
@@ -33,12 +46,13 @@ export default async function HomePage() {
     : undefined;
 
   const featuredProducts = products.filter((product) => product.is_featured);
-  const bestSellers = (featuredProducts.length > 0 ? featuredProducts : products).slice(0, 8);
-  const mostViewed = [...products].slice(0, 8);
-  const newArrivals = [...products]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 8);
-  const allProducts = products.slice(0, 8);
+  const bestSellers = sortHomeProducts(
+    featuredProducts.length > 0 ? featuredProducts : products,
+  ).slice(0, 8);
+  const mostViewed = sortHomeProducts(products).slice(0, 8);
+  const tabEmptyMessage = meta.source === "static" ? t("supabaseWarning") : t("tabEmpty");
+  const newArrivals = sortHomeProducts(products).slice(0, 8);
+  const allProducts = sortHomeProducts(products).slice(0, 8);
 
   const uniqueBrands = [...new Set(products.map((product) => product.brand).filter(Boolean))].slice(0, 8);
 
@@ -116,10 +130,16 @@ export default async function HomePage() {
       </section>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
+        {!meta.configured || meta.source === "static" ? (
+          <p className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {t("supabaseWarning")}
+          </p>
+        ) : null}
+
         {products.length > 0 ? (
           <HomeProductTabs
             sections={sections}
-            emptyMessage={t("supabaseWarning")}
+            emptyMessage={tabEmptyMessage}
             badgeLabels={{ hot: t("badgeHot"), new: t("badgeNew") }}
             locale={locale}
             usdKrwRate={usdKrwRate}
