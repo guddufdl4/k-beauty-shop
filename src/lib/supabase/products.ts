@@ -24,7 +24,6 @@ export const formatUsd = formatKRW;
 const SUPABASE_PAGE_SIZE = 1000;
 export const STOREFRONT_PRODUCTS_PAGE_SIZE = 48;
 const CACHE_REVALIDATE_SECONDS = 300;
-const ADMIN_IMPORT_BATCHES_CACHE_SECONDS = 60;
 
 export type ProductStatus = "draft" | "active" | "archived";
 export type ProductContentStatus = "pending" | "complete";
@@ -397,6 +396,10 @@ function getBrandPriorityKeySet(): Set<string> {
   return cachedPriorityKeys;
 }
 
+export function getBrandPrioritySkuTargetCount(): number {
+  return getBrandPriorityKeySet().size;
+}
+
 function barcodeVariants(value: string): string[] {
   const digits = value.replace(/\D/g, "");
   if (!digits) {
@@ -439,11 +442,25 @@ function productMatchesBrandPriority(product: {
   return candidates.some((candidate) => priorityKeys.has(candidate));
 }
 
-function filterPriorityProducts(products: ProductWithRelations[]): ProductWithRelations[] {
-  return products.filter(
-    (product) => !isDemoProduct(product) && productMatchesBrandPriority(product),
-  );
+function getBrandPriorityListTargetCount(): number {
+  const manifestPath = resolve("data/priority-batches/manifest.json");
+  if (existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+        total_rows?: number;
+      };
+      if (typeof manifest.total_rows === "number" && manifest.total_rows > 0) {
+        return manifest.total_rows;
+      }
+    } catch {
+      // fall through to key-set size
+    }
+  }
+
+  return getBrandPriorityKeySet().size;
 }
+
+export { getBrandPriorityListTargetCount };
 
 type PageResult<T> = {
   data: T[] | null;
@@ -845,6 +862,8 @@ export async function getProducts(
         deletionFilter?: ProductDeletionFilter;
         imageFirst?: boolean;
         lightSelect?: boolean;
+        /** Match products whose SKU/barcode is in brand-priority-skus.json. */
+        priorityBrandList?: boolean;
         /** Use service role for admin list (RLS-safe joins + filters). */
         privileged?: boolean;
       },
@@ -871,6 +890,27 @@ export async function getProducts(
     sort,
     imageFirst,
   };
+
+  if (options?.priorityBrandList) {
+    return fetchPriorityBrandListProducts({
+      categorySlug,
+      includeDraft: options.includeDraft,
+      importBatchId,
+      search: searchTerm,
+      brand: brandFilter,
+      brandExact,
+      sort,
+      limit: listLimit,
+      page: listPage,
+      orderBy,
+      deletionFilter,
+      imageFirst,
+      lightSelect,
+      privileged: options.privileged,
+      listOrderOptions,
+      configured,
+    });
+  }
 
   function paginateStaticProducts(products: ProductWithRelations[]) {
     if (listLimit == null) {
@@ -1096,6 +1136,218 @@ export async function getProducts(
 
 const PRIORITY_SKU_QUERY_BATCH = 500;
 
+type PriorityBrandListFetchOptions = {
+  categorySlug?: string;
+  includeDraft?: boolean;
+  importBatchId?: string;
+  search?: string;
+  brand?: string;
+  brandExact?: boolean;
+  sort?: ProductListSort;
+  limit?: number;
+  page?: number;
+  orderBy?: "created_at" | "updated_at";
+  deletionFilter?: ProductDeletionFilter;
+  imageFirst?: boolean;
+  lightSelect?: boolean;
+  privileged?: boolean;
+  listOrderOptions: ProductListOrderOptions;
+  configured: boolean;
+};
+
+function paginateProductList(
+  products: ProductWithRelations[],
+  limit: number | undefined,
+  page: number,
+): { products: ProductWithRelations[]; totalCount: number } {
+  if (limit == null) {
+    return { products, totalCount: products.length };
+  }
+
+  const from = (page - 1) * limit;
+  return {
+    products: products.slice(from, from + limit),
+    totalCount: products.length,
+  };
+}
+
+async function fetchProductsByIdentifierBatchAdmin(
+  supabase: SupabaseClient,
+  values: string[],
+  selectClause: string,
+  options: {
+    includeDraft?: boolean;
+    deletionFilter?: ProductDeletionFilter;
+  },
+): Promise<Record<string, unknown>[]> {
+  if (values.length === 0) {
+    return [];
+  }
+
+  const inList = quoteInFilterValues(values);
+  let query = supabase
+    .from("products")
+    .select(selectClause)
+    .or(`sku.in.(${inList}),barcode.in.(${inList})`);
+
+  if (!options.includeDraft) {
+    query = query.eq("status", "active");
+  }
+
+  query = applyDeletedAtFilter(query, options.deletionFilter ?? "active");
+
+  const result = await query;
+  if (result.error) {
+    return [];
+  }
+
+  return (result.data ?? []) as unknown as Record<string, unknown>[];
+}
+
+async function fetchPriorityBrandListProducts(
+  options: PriorityBrandListFetchOptions,
+): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
+  const priorityKeys = [...getBrandPriorityKeySet()];
+  const {
+    categorySlug,
+    includeDraft,
+    importBatchId,
+    search,
+    brand,
+    brandExact,
+    sort,
+    limit,
+    page = 1,
+    deletionFilter = "active",
+    lightSelect,
+    privileged,
+    listOrderOptions,
+    configured,
+  } = options;
+
+  function finalize(products: ProductWithRelations[]) {
+    let filtered = filterStaticProducts(products, {
+      categorySlug,
+      search,
+      brand,
+      brandExact,
+      importBatchId,
+      sort,
+    });
+
+    if (sort === "sale") {
+      filtered = filtered.filter((product) => isProductOnSale(product));
+    }
+
+    const sorted = sortProductsForList(filtered, listOrderOptions);
+    const { products: pagedProducts, totalCount } = paginateProductList(
+      sorted,
+      limit,
+      page,
+    );
+
+    return {
+      products: pagedProducts,
+      totalCount,
+      meta: { source: "database" as const, configured },
+    };
+  }
+
+  if (priorityKeys.length === 0) {
+    return {
+      products: [],
+      totalCount: 0,
+      meta: { source: "static", configured },
+    };
+  }
+
+  if (!configured) {
+    let products = filterPriorityProducts(STATIC_PRODUCTS);
+    if (deletionFilter === "deleted") {
+      products = [];
+    }
+    return finalize(products);
+  }
+
+  const supabase = privileged
+    ? createServiceClient() ?? (await createSafeClient())
+    : await createSafeClient();
+
+  if (!supabase) {
+    let products = filterPriorityProducts(STATIC_PRODUCTS);
+    if (deletionFilter === "deleted") {
+      products = [];
+    }
+    return {
+      ...finalize(products),
+      meta: { source: "static", configured: false },
+    };
+  }
+
+  await ensureSoftDeleteColumnProbed(supabase);
+
+  const selectClause = lightSelect ? ADMIN_LIST_SELECT : PRODUCT_SELECT;
+  const rowsById = new Map<string, Record<string, unknown>>();
+
+  for (let index = 0; index < priorityKeys.length; index += PRIORITY_SKU_QUERY_BATCH) {
+    const batch = priorityKeys.slice(index, index + PRIORITY_SKU_QUERY_BATCH);
+    const batchRows = await fetchProductsByIdentifierBatchAdmin(
+      supabase,
+      batch,
+      selectClause,
+      { includeDraft, deletionFilter },
+    );
+
+    for (const row of batchRows) {
+      const id = String(row.id);
+      if (!rowsById.has(id)) {
+        rowsById.set(id, row);
+      }
+    }
+  }
+
+  const products = [...rowsById.values()]
+    .map((row) => mapProductWithRelations(row))
+    .filter(
+      (product) => !isDemoProduct(product) && productMatchesBrandPriority(product),
+    );
+
+  return finalize(products);
+}
+
+export async function getBrandPriorityListStats(): Promise<{
+  targetCount: number;
+  matchedCount: number;
+}> {
+  const targetCount = getBrandPriorityListTargetCount();
+  const { totalCount } = await fetchPriorityBrandListProducts({
+    includeDraft: true,
+    privileged: true,
+    deletionFilter: "active",
+    listOrderOptions: { orderBy: "created_at", imageFirst: false },
+    configured: isSupabaseConfigured(),
+  });
+
+  return { targetCount, matchedCount: totalCount };
+}
+
+export async function getCachedBrandPriorityListStats(): Promise<{
+  targetCount: number;
+  matchedCount: number;
+}> {
+  return unstable_cache(
+    getBrandPriorityListStats,
+    ["admin-brand-priority-list-stats"],
+    { revalidate: CACHE_REVALIDATE_SECONDS },
+  )();
+}
+
+function filterPriorityProducts(products: ProductWithRelations[]): ProductWithRelations[] {
+  return products.filter(
+    (product) => !isDemoProduct(product) && productMatchesBrandPriority(product),
+  );
+}
+
 function quoteInFilterValues(values: string[]): string {
   return values.map((value) => `"${value.replace(/"/g, '\\"')}"`).join(",");
 }
@@ -1304,11 +1556,20 @@ export async function getProductImportBatches(): Promise<{
   batches: ProductImportBatch[];
   meta: FetchMeta;
 }> {
-  return unstable_cache(
-    fetchProductImportBatchesFromSource,
-    ["admin-product-import-batches"],
-    { revalidate: ADMIN_IMPORT_BATCHES_CACHE_SECONDS },
-  )();
+  return fetchProductImportBatchesFromSource();
+}
+
+async function createAdminSupabaseClient(): Promise<SupabaseClient | null> {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const serviceClient = createServiceClient();
+  if (serviceClient) {
+    return serviceClient;
+  }
+
+  return createSafeClient();
 }
 
 async function fetchProductImportBatchesFromSource(): Promise<{
@@ -1324,7 +1585,7 @@ async function fetchProductImportBatchesFromSource(): Promise<{
     };
   }
 
-  const supabase = createServiceClient() ?? createPublicClient();
+  const supabase = await createAdminSupabaseClient();
   if (!supabase) {
     return {
       batches: [],
@@ -1355,7 +1616,7 @@ async function fetchProductImportBatchesFromSource(): Promise<{
         .eq("import_batch_id", batchId);
 
       if (countError) {
-        return 0;
+        return null;
       }
 
       return count ?? 0;
@@ -1363,11 +1624,37 @@ async function fetchProductImportBatchesFromSource(): Promise<{
   );
 
   return {
-    batches: rows.map((row, index) =>
-      mapImportBatch(row as Record<string, unknown>, productCounts[index] ?? 0),
+    batches: dedupeImportBatchesForAdmin(
+      rows.map((row, index) => {
+        const record = row as Record<string, unknown>;
+        const linkedCount = productCounts[index];
+        const importedCount = Number(record.imported_count ?? 0);
+        const displayCount =
+          linkedCount != null && linkedCount > 0 ? linkedCount : importedCount;
+        return mapImportBatch(record, displayCount);
+      }),
     ),
     meta: { source: "database", configured: true },
   };
+}
+
+function dedupeImportBatchesForAdmin(
+  batches: ProductImportBatch[],
+): ProductImportBatch[] {
+  const seenFilenames = new Set<string>();
+
+  return batches.filter((batch) => {
+    if (batch.product_count <= 0 && batch.imported_count <= 0) {
+      return false;
+    }
+
+    if (seenFilenames.has(batch.filename)) {
+      return false;
+    }
+
+    seenFilenames.add(batch.filename);
+    return true;
+  });
 }
 
 export async function getProductBrands(): Promise<{

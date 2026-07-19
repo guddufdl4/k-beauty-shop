@@ -13,9 +13,19 @@ type Props = {
   categories: Category[];
   batches: ProductImportBatch[];
   totalCount: number;
+  priorityStats: {
+    targetCount: number;
+    matchedCount: number;
+  };
 };
 
-export function AdminProductsToolbar({ filters, categories, batches, totalCount }: Props) {
+export function AdminProductsToolbar({
+  filters,
+  categories,
+  batches,
+  totalCount,
+  priorityStats,
+}: Props) {
   const router = useRouter();
   const [query, setQuery] = useState(filters.q ?? "");
   const [brand, setBrand] = useState(filters.brand ?? "");
@@ -30,7 +40,7 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
     return `${batch.filename} (${count}건 · ${date})`;
   }
 
-  const selectableBatches = batches.filter((batch) => batch.product_count > 0);
+  const selectableBatches = batches;
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.q?.trim() || filters.brand?.trim() || filters.category?.trim()),
@@ -50,6 +60,7 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
     event.preventDefault();
     navigate({
       batchId: filters.batchId,
+      brandPriority: filters.brandPriority,
       q: query.trim() || null,
       brand: brand.trim() || null,
       category: category.trim() || null,
@@ -62,6 +73,7 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
     setQuery("");
     navigate({
       batchId: filters.batchId,
+      brandPriority: filters.brandPriority,
       q: null,
       brand: brand.trim() || null,
       category: category.trim() || null,
@@ -76,6 +88,7 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
     setCategory("");
     navigate({
       batchId: filters.batchId,
+      brandPriority: filters.brandPriority,
       q: null,
       brand: null,
       category: null,
@@ -87,6 +100,7 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
   function handleSortChange(sort: AdminProductsFilters["sort"]) {
     navigate({
       batchId: filters.batchId,
+      brandPriority: filters.brandPriority,
       q: filters.q,
       brand: filters.brand,
       category: filters.category,
@@ -98,6 +112,7 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
   function handleBatchChange(batchId: string) {
     navigate({
       batchId: batchId.trim() || null,
+      brandPriority: filters.brandPriority,
       q: filters.q,
       brand: filters.brand,
       category: filters.category,
@@ -109,6 +124,7 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
   function handleViewChange(view: AdminProductsFilters["view"]) {
     navigate({
       batchId: filters.batchId,
+      brandPriority: filters.brandPriority,
       q: filters.q,
       brand: filters.brand,
       category: filters.category,
@@ -117,11 +133,28 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
     });
   }
 
+  function handleBrandPriorityToggle() {
+    navigate({
+      batchId: null,
+      brandPriority: !filters.brandPriority,
+      q: filters.q,
+      brand: filters.brand,
+      category: filters.category,
+      sort: filters.sort,
+      view: filters.view,
+      tab: "list",
+    });
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <p className="text-sm font-semibold text-zinc-900">
-          {filters.view === "deleted" ? "삭제된 상품" : "전체 목록"}
+          {filters.brandPriority
+            ? "Brand 우선 순위 리스트"
+            : filters.view === "deleted"
+              ? "삭제된 상품"
+              : "전체 목록"}
         </p>
         <label className="flex items-center gap-2 text-xs text-zinc-500">
           <span className="hidden sm:inline">정렬</span>
@@ -139,6 +172,24 @@ export function AdminProductsToolbar({ filters, categories, batches, totalCount 
       </div>
 
       <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleBrandPriorityToggle}
+          className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+            filters.brandPriority
+              ? "border-violet-300 bg-violet-50 text-violet-800 shadow-sm"
+              : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-800"
+          }`}
+          aria-pressed={filters.brandPriority}
+        >
+          Brand 우선 순위 리스트
+          <span className="ml-1.5 text-xs font-medium opacity-80">
+            ({priorityStats.targetCount.toLocaleString("ko-KR")}개 중 DB{" "}
+            {priorityStats.matchedCount.toLocaleString("ko-KR")}개)
+          </span>
+        </button>
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-zinc-700">
           {totalCount.toLocaleString("ko-KR")}개 상품 찾음

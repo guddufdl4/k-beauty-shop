@@ -6,6 +6,7 @@ export type AdminProductsTab = "bulk" | "add" | "list";
 
 export type AdminProductsFilters = {
   batchId: string | null;
+  brandPriority: boolean;
   q: string | null;
   brand: string | null;
   category: string | null;
@@ -13,6 +14,12 @@ export type AdminProductsFilters = {
   view: AdminProductsView;
   tab?: AdminProductsTab | null;
 };
+
+export function resolveAdminProductsBrandPriority(
+  priority: string | undefined | null,
+): boolean {
+  return priority?.trim() === "brand";
+}
 
 export function resolveAdminProductsTab(
   tab: string | undefined | null,
@@ -64,6 +71,9 @@ export function buildAdminProductsHref(
   const params = new URLSearchParams();
   if (filters.batchId) {
     params.set("batch", filters.batchId);
+  }
+  if (filters.brandPriority) {
+    params.set("priority", "brand");
   }
   if (filters.q?.trim()) {
     params.set("q", filters.q.trim());

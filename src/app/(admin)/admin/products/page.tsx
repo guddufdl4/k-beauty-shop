@@ -5,6 +5,7 @@ import { AdminProductForm } from "@/components/admin/admin-product-form";
 import { AdminProductsToolbar } from "@/components/admin/admin-products-toolbar";
 import {
   buildAdminProductsHref,
+  resolveAdminProductsBrandPriority,
   resolveAdminProductsTab,
   type AdminProductsFilters,
   type AdminProductsTab,
@@ -15,7 +16,7 @@ import { ExcelImportSection } from "@/components/admin/excel-import-section";
 import { ProductImageBatchSection } from "@/components/admin/product-image-batch-section";
 import { getCachedProductImageBatchStats } from "@/lib/admin/product-image-batch";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { getCategories, getProductImportBatches, getProducts, type ProductImportBatch } from "@/lib/supabase/products";
+import { getCategories, getCachedBrandPriorityListStats, getProductImportBatches, getProducts, type ProductImportBatch } from "@/lib/supabase/products";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
 const ADMIN_PRODUCTS_PAGE_SIZE = 10;
@@ -39,6 +40,7 @@ type AdminProductsPageProps = {
     sort?: string;
     view?: string;
     tab?: string;
+    priority?: string;
   }>;
 };
 
@@ -244,6 +246,7 @@ export default async function AdminProductsPage({
     sort: sortQuery,
     view: viewQuery,
     tab: tabQuery,
+    priority: priorityQuery,
   } = await searchParams;
   const activeBatchId = batchQuery?.trim() || null;
   const searchTerm = searchQuery?.trim() || undefined;
@@ -251,10 +254,12 @@ export default async function AdminProductsPage({
   const categoryFilter = categoryQuery?.trim() || undefined;
   const sortRecent = sortQuery?.trim() === "recent";
   const showDeleted = viewQuery?.trim() === "deleted";
+  const brandPriority = resolveAdminProductsBrandPriority(priorityQuery);
   const activeTab = resolveAdminProductsTab(tabQuery);
   const currentPage = Math.max(1, Number.parseInt(pageQuery ?? "1", 10) || 1);
   const listFilters: AdminProductsFilters = {
     batchId: activeBatchId,
+    brandPriority,
     q: searchTerm ?? null,
     brand: brandFilter ?? null,
     category: categoryFilter ?? null,
@@ -266,12 +271,14 @@ export default async function AdminProductsPage({
   const needsProducts = activeTab === "list";
   const needsBatches = activeTab === "bulk" || activeTab === "list";
   const needsImageStats = activeTab === "bulk";
+  const needsPriorityStats = activeTab === "list";
   const [
     { configured, user, profile },
     { categories },
     { products, totalCount },
     { batches },
     imageStatsResult,
+    priorityStats,
   ] = await Promise.all([
     getSessionProfile(),
     needsCategories
@@ -284,6 +291,7 @@ export default async function AdminProductsPage({
       ? getProducts({
           includeDraft: true,
           privileged: true,
+          priorityBrandList: brandPriority,
           importBatchId: activeBatchId ?? undefined,
           categorySlug: categoryFilter,
           search: searchTerm,
@@ -309,6 +317,9 @@ export default async function AdminProductsPage({
     needsImageStats
       ? getCachedProductImageBatchStats()
       : Promise.resolve({ stats: null, error: null }),
+    needsPriorityStats
+      ? getCachedBrandPriorityListStats()
+      : Promise.resolve({ targetCount: 0, matchedCount: 0 }),
   ]);
   const imageStats = imageStatsResult.stats;
   const batchById = new Map(batches.map((batch) => [batch.id, batch]));
@@ -341,10 +352,14 @@ export default async function AdminProductsPage({
     : null;
   const hasListFilters = Boolean(searchTerm || brandFilter || categoryFilter);
   const emptyMessage = showDeleted
-    ? hasListFilters || activeBatchId
+    ? hasListFilters || activeBatchId || brandPriority
       ? "검색 조건에 맞는 삭제된 상품이 없습니다."
       : "삭제된 상품이 없습니다."
-    : activeBatchId
+    : brandPriority
+      ? hasListFilters || activeBatchId
+        ? "Brand 우선 순위 리스트에서 검색 조건에 맞는 상품이 없습니다."
+        : "Brand 우선 순위 리스트에 해당하는 DB 상품이 없습니다."
+      : activeBatchId
       ? hasListFilters
         ? "선택한 엑셀 배치에서 검색 조건에 맞는 상품이 없습니다."
         : "선택한 엑셀 배치에 등록된 상품이 없습니다."
@@ -473,10 +488,25 @@ export default async function AdminProductsPage({
                 categories={categories}
                 batches={batches}
                 totalCount={totalCount}
+                priorityStats={priorityStats}
               />
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs">
                 <div className="text-zinc-600">
-                  {activeBatch ? (
+                  {brandPriority ? (
+                    <span>
+                      <span className="font-medium text-violet-800">Brand 우선 순위 리스트</span>
+                      {" · "}
+                      목록 {priorityStats.targetCount.toLocaleString("ko-KR")}개 중 DB에{" "}
+                      {priorityStats.matchedCount.toLocaleString("ko-KR")}개
+                      {hasListFilters || activeBatchId
+                        ? ` · 필터 적용 ${totalCount.toLocaleString("ko-KR")}건`
+                        : null}
+                      {" · "}이미지 있는 상품 우선 정렬
+                      {totalCount > 0
+                        ? ` · 페이지 ${safePage} / ${totalPages}`
+                        : null}
+                    </span>
+                  ) : activeBatch ? (
                     <span>
                       <span className="font-medium text-zinc-800">{activeBatch.filename}</span>
                       {" "}배치 · 이미지 있는 상품 우선 정렬
@@ -499,15 +529,16 @@ export default async function AdminProductsPage({
                   >
                     스토어 보기
                   </Link>
-                  {activeBatchId ? (
+                  {brandPriority || activeBatchId ? (
                     <Link
                       href={buildAdminProductsHref({
                         ...listFilters,
                         batchId: null,
+                        brandPriority: false,
                       })}
                       className="text-zinc-500 hover:underline"
                     >
-                      엑셀 필터 해제
+                      {brandPriority ? "우선순위 필터 해제" : "엑셀 필터 해제"}
                     </Link>
                   ) : null}
                 </div>
@@ -516,7 +547,7 @@ export default async function AdminProductsPage({
 
             <div className="min-h-0 flex-1 overflow-auto">
               <AdminProductsTable
-                key={`${safePage}-${activeBatchId ?? ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
+                key={`${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
                 products={listProducts}
                 categories={categories}
                 emptyMessage={emptyMessage}
