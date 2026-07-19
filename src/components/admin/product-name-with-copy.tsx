@@ -78,7 +78,7 @@ export function ProductNameWithCopy({
   }, []);
 
   return (
-    <span className="group/name relative inline-flex min-w-0 max-w-full items-start gap-1">
+    <span className="relative inline-flex min-w-0 max-w-full items-start gap-1">
       {href ? (
         <Link href={href} className={resolvedTextClass}>
           {name}
@@ -91,7 +91,7 @@ export function ProductNameWithCopy({
         type="button"
         onClick={handleCopy}
         aria-label={"\uC0C1\uD488\uBA85 \uBCF5\uC0AC"}
-        className="mt-0.5 shrink-0 rounded border border-transparent p-0.5 text-zinc-400 opacity-0 transition-opacity hover:border-zinc-200 hover:bg-zinc-50 hover:text-rose-600 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-200 group-hover/name:opacity-100"
+        className="mt-0.5 shrink-0 rounded border border-transparent p-0.5 text-zinc-400 transition-colors hover:border-zinc-200 hover:bg-zinc-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-200"
       >
         <CopyIcon className="h-3.5 w-3.5" />
       </button>
