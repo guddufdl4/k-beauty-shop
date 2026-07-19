@@ -16,6 +16,12 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   wholesale_price_label: null,
   moq_label: null,
   min_order_note: null,
+  hero_image_url: null,
+  hero_badge: null,
+  hero_title: null,
+  hero_subtitle: null,
+  hero_button_text: null,
+  hero_button_link: null,
   updated_at: new Date(0).toISOString(),
 };
 
@@ -33,6 +39,12 @@ function normalizeSettings(row: Partial<SiteSettings> | null): SiteSettings {
     wholesale_price_label: row.wholesale_price_label?.trim() || null,
     moq_label: row.moq_label?.trim() || null,
     min_order_note: row.min_order_note?.trim() || null,
+    hero_image_url: row.hero_image_url?.trim() || null,
+    hero_badge: row.hero_badge?.trim() || null,
+    hero_title: row.hero_title?.trim() || null,
+    hero_subtitle: row.hero_subtitle?.trim() || null,
+    hero_button_text: row.hero_button_text?.trim() || null,
+    hero_button_link: row.hero_button_link?.trim() || null,
     updated_at: row.updated_at ?? DEFAULT_SITE_SETTINGS.updated_at,
   };
 }
@@ -74,8 +86,31 @@ export type SiteSettingsPatch = Partial<
     | "wholesale_price_label"
     | "moq_label"
     | "min_order_note"
+    | "hero_image_url"
+    | "hero_badge"
+    | "hero_title"
+    | "hero_subtitle"
+    | "hero_button_text"
+    | "hero_button_link"
   >
 >;
+
+function isValidHeroButtonLink(value: string | null): boolean {
+  if (value === null) {
+    return true;
+  }
+
+  if (value.startsWith("/")) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null {
   if (!body || typeof body !== "object") {
@@ -141,6 +176,86 @@ export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null 
       patch.min_order_note = null;
     } else if (typeof record.min_order_note === "string") {
       patch.min_order_note = record.min_order_note.trim() || null;
+    } else {
+      return null;
+    }
+  }
+
+  if (
+    "hero_image_url" in record &&
+    (record.hero_image_url === null ||
+      record.hero_image_url === "" ||
+      typeof record.hero_image_url === "string")
+  ) {
+    patch.hero_image_url =
+      record.hero_image_url === null || record.hero_image_url === ""
+        ? null
+        : String(record.hero_image_url).trim() || null;
+  } else if ("hero_image_url" in record) {
+    return null;
+  }
+
+  if (
+    "hero_badge" in record &&
+    (record.hero_badge === null || record.hero_badge === "" || typeof record.hero_badge === "string")
+  ) {
+    patch.hero_badge =
+      record.hero_badge === null || record.hero_badge === ""
+        ? null
+        : String(record.hero_badge).trim() || null;
+  } else if ("hero_badge" in record) {
+    return null;
+  }
+
+  if (
+    "hero_title" in record &&
+    (record.hero_title === null || record.hero_title === "" || typeof record.hero_title === "string")
+  ) {
+    patch.hero_title =
+      record.hero_title === null || record.hero_title === ""
+        ? null
+        : String(record.hero_title).trim() || null;
+  } else if ("hero_title" in record) {
+    return null;
+  }
+
+  if (
+    "hero_subtitle" in record &&
+    (record.hero_subtitle === null ||
+      record.hero_subtitle === "" ||
+      typeof record.hero_subtitle === "string")
+  ) {
+    patch.hero_subtitle =
+      record.hero_subtitle === null || record.hero_subtitle === ""
+        ? null
+        : String(record.hero_subtitle).trim() || null;
+  } else if ("hero_subtitle" in record) {
+    return null;
+  }
+
+  if (
+    "hero_button_text" in record &&
+    (record.hero_button_text === null ||
+      record.hero_button_text === "" ||
+      typeof record.hero_button_text === "string")
+  ) {
+    patch.hero_button_text =
+      record.hero_button_text === null || record.hero_button_text === ""
+        ? null
+        : String(record.hero_button_text).trim() || null;
+  } else if ("hero_button_text" in record) {
+    return null;
+  }
+
+  if ("hero_button_link" in record) {
+    if (record.hero_button_link === null || record.hero_button_link === "") {
+      patch.hero_button_link = null;
+    } else if (typeof record.hero_button_link === "string") {
+      const trimmed = record.hero_button_link.trim();
+      patch.hero_button_link = trimmed || null;
+      if (!isValidHeroButtonLink(patch.hero_button_link)) {
+        return null;
+      }
     } else {
       return null;
     }

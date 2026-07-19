@@ -92,11 +92,16 @@ export async function PATCH(request: Request) {
 
   revalidateTag(SITE_SETTINGS_CACHE_TAG, "max");
   revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/hero");
   revalidatePath("/admin");
   revalidatePath("/en", "layout");
   revalidatePath("/ko", "layout");
   revalidatePath("/ja", "layout");
   revalidatePath("/zh", "layout");
+  revalidatePath("/en");
+  revalidatePath("/ko");
+  revalidatePath("/ja");
+  revalidatePath("/zh");
 
   return NextResponse.json({ settings: data });
 }

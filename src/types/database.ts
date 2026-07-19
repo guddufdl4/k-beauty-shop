@@ -199,6 +199,12 @@ export interface SiteSettings {
   wholesale_price_label: string | null;
   moq_label: string | null;
   min_order_note: string | null;
+  hero_image_url: string | null;
+  hero_badge: string | null;
+  hero_title: string | null;
+  hero_subtitle: string | null;
+  hero_button_text: string | null;
+  hero_button_link: string | null;
   updated_at: string;
 }
 

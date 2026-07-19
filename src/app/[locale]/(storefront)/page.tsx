@@ -2,16 +2,35 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
 import { getUsdKrwRate } from "@/lib/currency";
+import { getSiteSettings } from "@/lib/site-settings";
 import { getPriorityBrandProducts } from "@/lib/supabase/products";
 import { buildProductsHref } from "@/lib/store/products-url";
 
+function isExternalHref(href: string): boolean {
+  return href.startsWith("http://") || href.startsWith("https://");
+}
+
 export default async function HomePage() {
-  const [t, { products }, locale, usdKrwRate] = await Promise.all([
+  const [t, { products }, locale, usdKrwRate, siteSettings] = await Promise.all([
     getTranslations("home"),
     getPriorityBrandProducts({ limit: 200 }),
     getLocale(),
     getUsdKrwRate(),
+    getSiteSettings(),
   ]);
+
+  const heroBadge = siteSettings.hero_badge ?? t("heroWholesale");
+  const heroTitle = siteSettings.hero_title ?? t("heroDiscount");
+  const heroSubtitle = siteSettings.hero_subtitle ?? t("description");
+  const heroButtonText = siteSettings.hero_button_text ?? t("heroCta");
+  const heroButtonLink = siteSettings.hero_button_link ?? "/products";
+  const heroBackgroundStyle = siteSettings.hero_image_url
+    ? {
+        backgroundImage: `linear-gradient(135deg, rgba(250,250,250,0.88) 0%, rgba(245,245,245,0.82) 45%, rgba(252,228,236,0.78) 100%), url(${siteSettings.hero_image_url})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : undefined;
 
   const featuredProducts = products.filter((product) => product.is_featured);
   const bestSellers = (featuredProducts.length > 0 ? featuredProducts : products).slice(0, 8);
@@ -64,20 +83,34 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]">
+      <section
+        className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]"
+        style={heroBackgroundStyle}
+      >
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
           <div className="max-w-xl text-center lg:text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">{t("heroWholesale")}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">{heroBadge}</p>
             <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-4xl lg:text-6xl">
-              {t("heroDiscount")}
+              {heroTitle}
             </h1>
-            <p className="mt-4 text-base leading-relaxed text-zinc-600">{t("description")}</p>
-            <Link
-              href="/products"
-              className="mt-6 inline-flex min-h-11 items-center bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:mt-8 sm:px-8"
-            >
-              {t("heroCta")}
-            </Link>
+            <p className="mt-4 text-base leading-relaxed text-zinc-600">{heroSubtitle}</p>
+            {isExternalHref(heroButtonLink) ? (
+              <a
+                href={heroButtonLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex min-h-11 items-center bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:mt-8 sm:px-8"
+              >
+                {heroButtonText}
+              </a>
+            ) : (
+              <Link
+                href={heroButtonLink}
+                className="mt-6 inline-flex min-h-11 items-center bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:mt-8 sm:px-8"
+              >
+                {heroButtonText}
+              </Link>
+            )}
           </div>
         </div>
       </section>
