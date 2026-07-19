@@ -83,27 +83,8 @@ export default async function HomePage() {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-7xl flex-1 px-4 pt-12 pb-8 sm:px-6 sm:pt-16 sm:pb-10">
-        {products.length > 0 ? (
-          <HomeProductTabs
-            sections={sections}
-            emptyMessage={t("supabaseWarning")}
-            badgeLabels={{ hot: t("badgeHot"), new: t("badgeNew") }}
-            locale={locale}
-            usdKrwRate={usdKrwRate}
-          />
-        ) : (
-          <div className="border border-zinc-200 bg-white p-10 text-center">
-            <p className="text-zinc-600">{t("supabaseWarning")}</p>
-            <Link href="/products" className="mt-4 inline-flex text-sm font-semibold text-accent hover:underline">
-              {t("viewProducts")}
-            </Link>
-          </div>
-        )}
-      </div>
-
       <section
-        className="overflow-hidden border-y border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]"
+        className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]"
         style={heroBackgroundStyle}
       >
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
@@ -135,6 +116,23 @@ export default async function HomePage() {
       </section>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
+        {products.length > 0 ? (
+          <HomeProductTabs
+            sections={sections}
+            emptyMessage={t("supabaseWarning")}
+            badgeLabels={{ hot: t("badgeHot"), new: t("badgeNew") }}
+            locale={locale}
+            usdKrwRate={usdKrwRate}
+          />
+        ) : (
+          <div className="border border-zinc-200 bg-white p-10 text-center">
+            <p className="text-zinc-600">{t("supabaseWarning")}</p>
+            <Link href="/products" className="mt-4 inline-flex text-sm font-semibold text-accent hover:underline">
+              {t("viewProducts")}
+            </Link>
+          </div>
+        )}
+
         {uniqueBrands.length > 0 ? (
           <section className="mt-16 border-t border-zinc-200 pt-12">
             <h2 className="mb-8 text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-800">

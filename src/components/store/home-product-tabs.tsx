@@ -83,7 +83,7 @@ function TabbedSection({
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>(section.primaryTab);
   const products = section.products[activeTab] ?? [];
-  const tabs: TabKey[] = [section.primaryTab, section.secondaryTab];
+  const tabs: TabKey[] = [section.secondaryTab, section.primaryTab];
 
   return (
     <section className="border-b border-zinc-200 pb-12">
