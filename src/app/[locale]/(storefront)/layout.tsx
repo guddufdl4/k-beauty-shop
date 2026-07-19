@@ -7,7 +7,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
-  const storeName = settings.store_name.trim() || "K-Beauty Shop";
+  const storeName = settings.store_name.trim() || "HMT";
 
   return {
     title: storeName,

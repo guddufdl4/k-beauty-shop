@@ -29,6 +29,48 @@ type Props = {
 
 
 
+function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
+  const raw = brandLabel.trim() || "HMT";
+  const acronym = raw.replace(/\s+/g, "").toUpperCase();
+  const isAcronym = acronym.length <= 5 && !raw.includes(" ");
+
+  if (isAcronym) {
+    return (
+      <span className="inline-flex flex-col gap-1">
+        <span className="text-xl font-semibold tracking-[0.22em] sm:text-2xl lg:tracking-[0.28em]">
+          <span className="text-accent">{acronym.charAt(0)}</span>
+          <span className="text-zinc-900">{acronym.slice(1)}</span>
+        </span>
+        <span
+          className="h-px w-full max-w-[3.25rem] bg-gradient-to-r from-accent via-accent/50 to-transparent sm:max-w-[3.75rem]"
+          aria-hidden
+        />
+      </span>
+    );
+  }
+
+  const parts = raw.split(/\s+/);
+
+  return (
+    <span className="inline-flex min-w-0 flex-col gap-1">
+      <span className="truncate text-lg font-semibold leading-none tracking-tight text-zinc-900 sm:text-xl lg:text-2xl">
+        {parts.map((part, index) => (
+          <span key={`${part}-${index}`}>
+            {index > 0 ? " " : null}
+            <span className={index === 0 ? "text-accent" : undefined}>{part}</span>
+          </span>
+        ))}
+      </span>
+      <span
+        className="h-px w-full max-w-[4rem] bg-gradient-to-r from-accent via-accent/50 to-transparent"
+        aria-hidden
+      />
+    </span>
+  );
+}
+
+
+
 function IconLink({
 
   href,
@@ -175,38 +217,13 @@ export async function StoreHeader({ storeName }: Props) {
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6">
           <div className="flex items-center gap-3 py-3 sm:gap-4 sm:py-4 lg:gap-8">
 
-          <Link href="/" locale={locale} className="flex shrink-0 items-center gap-2">
-
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-lg font-bold text-white">
-
-              {brandLabel.charAt(0).toUpperCase()}
-
-            </span>
-
-            <span className="hidden text-lg font-bold tracking-tight text-zinc-900 sm:block">
-
-              {brandLabel.split(" ").map((part, index) =>
-
-                index === 0 ? (
-
-                  <span key={part}>
-
-                    <span className="text-accent">{part.charAt(0)}</span>
-
-                    {part.slice(1)}
-
-                  </span>
-
-                ) : (
-
-                  <span key={part}> {part}</span>
-
-                ),
-
-              )}
-
-            </span>
-
+          <Link
+            href="/"
+            locale={locale}
+            className="group shrink-0 py-0.5 transition-opacity hover:opacity-85"
+            aria-label={brandLabel}
+          >
+            <StoreBrandLogo brandLabel={brandLabel} />
           </Link>
 
 

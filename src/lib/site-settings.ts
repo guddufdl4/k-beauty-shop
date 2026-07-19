@@ -9,7 +9,7 @@ export const SITE_SETTINGS_CACHE_TAG = "site-settings";
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   id: 1,
-  store_name: "K-Beauty Shop",
+  store_name: "HMT",
   contact_email: null,
   maintenance_enabled: false,
   maintenance_message: "",

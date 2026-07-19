@@ -9,17 +9,19 @@ type Props = {
 
 export async function StoreFooter({ contactEmail, storeName }: Props) {
   const t = await getTranslations("footer");
-  const brand = storeName?.trim() || "K-Beauty Shop";
+  const brand = storeName?.trim() || "HMT";
+  const acronym = brand.replace(/\s+/g, "").toUpperCase();
 
   return (
     <footer className="border-t border-zinc-200 bg-white">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-10 sm:grid-cols-2 sm:gap-10 sm:px-6 sm:py-12 lg:grid-cols-4">
         <div>
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
-              {brand.charAt(0).toUpperCase()}
+          <div className="mb-4 inline-flex flex-col gap-1">
+            <span className="text-lg font-semibold tracking-[0.2em] sm:text-xl">
+              <span className="text-accent">{acronym.charAt(0)}</span>
+              <span className="text-zinc-900">{acronym.slice(1)}</span>
             </span>
-            <span className="text-base font-bold text-zinc-900">{brand}</span>
+            <span className="h-px w-10 bg-gradient-to-r from-accent via-accent/50 to-transparent" aria-hidden />
           </div>
           <p className="text-sm leading-relaxed text-zinc-500">{t("address")}</p>
           {contactEmail ? (
