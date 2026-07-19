@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { ProductCard } from "@/components/store/product-card";
 import { EmptyState } from "@/components/store/empty-state";
 import { ProductCategoryFilter } from "@/components/store/product-category-filter";
+import { RelatedSearchTerms } from "@/components/store/related-search-terms";
 import { buildProductsHref } from "@/lib/store/products-url";
 import { parseProductListSort } from "@/lib/store/products-url";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
@@ -125,6 +126,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           activeCategorySlug={categorySlug}
           searchQuery={searchTerm}
         />
+      ) : null}
+
+      {searchTerm && totalCount <= 3 ? (
+        <RelatedSearchTerms query={searchTerm} />
       ) : null}
 
       {products.length === 0 ? (

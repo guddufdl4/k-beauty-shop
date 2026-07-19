@@ -16,8 +16,12 @@
     "shopTrending": "Trending",
     "shopLatest": "Latest",
     "about": "ABOUT",
-    "searchPlaceholder": "Search brands or products",
+    "searchPlaceholder": "Search brands, products, or SKU",
     "searchButton": "Search",
+    "searchSuggestionsLoading": "Loading suggestions…",
+    "searchNoSuggestions": "No matching suggestions",
+    "searchSuggestionProducts": "Products",
+    "searchSuggestionBrands": "Brands",
     "followUs": "Follow us",
     "cartSummary": "{count} items · {total}",
     "closeMenu": "Close menu"
@@ -120,6 +124,8 @@
     "brandCatalog": "Brand",
     "productCountWithBrand": "{count} products · {brand}",
     "backToBrands": "Back to brands",
+    "relatedSearchTitle": "Related searches",
+    "relatedSearchDescription": "Try searching with similar keywords.",
     "prevPage": "← Previous",
     "nextPage": "Next →",
     "imagePending": "{brand} {name} — image coming soon"

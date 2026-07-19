@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scripts"]
+  "exclude": ["node_modules", "scripts", "src/components/admin/hero-settings-form.tsx", "src/lib/admin/hero-image-upload.ts"]
 }

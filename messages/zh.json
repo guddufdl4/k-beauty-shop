@@ -16,8 +16,12 @@
     "shopTrending": "热门",
     "shopLatest": "最新",
     "about": "ABOUT",
-    "searchPlaceholder": "搜索品牌或商品",
+    "searchPlaceholder": "搜索品牌、商品或 SKU",
     "searchButton": "搜索",
+    "searchSuggestionsLoading": "正在加载建议…",
+    "searchNoSuggestions": "没有匹配的建议",
+    "searchSuggestionProducts": "商品",
+    "searchSuggestionBrands": "品牌",
     "followUs": "关注我们",
     "cartSummary": "{count} 件 · {total}",
     "closeMenu": "关闭菜单"
@@ -116,7 +120,9 @@
     "description": "商品说明",
     "ingredients": "成分",
     "howToUse": "使用方法",
-    "viewProducts": "查看商品 →"
+    "viewProducts": "查看商品 →",
+    "relatedSearchTitle": "相关搜索",
+    "relatedSearchDescription": "试试用相似关键词再次搜索。"
   },
   "categories": {
     "browse": "Browse",

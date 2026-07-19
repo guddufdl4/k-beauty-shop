@@ -1005,7 +1005,7 @@ export async function getProducts(
     if (searchTerm) {
       const escaped = escapeIlikePattern(searchTerm);
       filtered = filtered.or(
-        `name.ilike.%${escaped}%,sku.ilike.%${escaped}%,brand.ilike.%${escaped}%`,
+        `name.ilike.%${escaped}%,sku.ilike.%${escaped}%,brand.ilike.%${escaped}%,barcode.ilike.%${escaped}%`,
       );
     }
 

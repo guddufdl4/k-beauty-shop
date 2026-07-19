@@ -16,8 +16,12 @@
     "shopTrending": "Trending",
     "shopLatest": "Latest",
     "about": "ABOUT",
-    "searchPlaceholder": "브랜드·상품명 검색",
+    "searchPlaceholder": "브랜드·상품명·SKU 검색",
     "searchButton": "검색",
+    "searchSuggestionsLoading": "검색어 불러오는 중…",
+    "searchNoSuggestions": "일치하는 추천 검색어가 없습니다",
+    "searchSuggestionProducts": "상품",
+    "searchSuggestionBrands": "브랜드",
     "followUs": "팔로우",
     "cartSummary": "{count}개 · {total}",
     "closeMenu": "메뉴 닫기"
@@ -120,6 +124,8 @@
     "brandCatalog": "브랜드",
     "productCountWithBrand": "{count}개 상품 · {brand}",
     "backToBrands": "브랜드 목록으로",
+    "relatedSearchTitle": "연관 검색어",
+    "relatedSearchDescription": "비슷한 키워드로 다시 검색해 보세요.",
     "prevPage": "← 이전",
     "nextPage": "다음 →",
     "imagePending": "{brand} {name} — 이미지 준비 중"
