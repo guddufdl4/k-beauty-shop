@@ -15,6 +15,8 @@ import { normalizeProductImageBuffer } from "./lib/normalize-product-image.mjs";
 
 const ROOT = process.cwd();
 const BUCKET = "product-images";
+const LOGS_DIR = path.join(ROOT, "logs");
+const UNMATCHED_LOG = path.join(LOGS_DIR, "unmatched-desktop-images.json");
 const IMAGE_EXTENSIONS = new Set([
   ".jpg",
   ".jpeg",
@@ -23,6 +25,11 @@ const IMAGE_EXTENSIONS = new Set([
   ".jfif",
   ".avif",
   ".gif",
+  ".bmp",
+  ".tif",
+  ".tiff",
+  ".heic",
+  ".heif",
 ]);
 
 function parseCliArgs(argv) {
@@ -69,17 +76,41 @@ function normalizeKey(input) {
     .replace(/[^a-z0-9가-힣]/g, "");
 }
 
-function cleanFilenameStem(stem) {
-  return stem
-    .replace(/\(\d+\)$/g, "")
-    .replace(/\s*\(R\d+\)\s*$/i, "")
-    .replace(/\s*\(REFILL\)\s*$/i, "")
-    .replace(/\s*\(VEGAN\)\s*$/i, "")
-    .replace(/\s*\[Duty Free\]\s*/i, "")
-    .replace(/\s*\(S\)\s*/i, "")
-    .replace(/\s*\(F\)\s*$/i, "")
+function stripEmbeddedExtensions(stem) {
+  return String(stem ?? "").replace(
+    /\.(jpe?g|png|webp|jfif|gif|avif|bmp|tiff?|heic|heif)$/i,
+    "",
+  );
+}
+
+function stripSizeAndSampleSuffixes(stem) {
+  return stripEmbeddedExtensions(stem)
+    .replace(/\(\s*\d+\s*pcs?\s*\)/gi, "")
+    .replace(/\(\s*\d+\s*\)/g, "")
+    .replace(/\b\d+\s*pcs?\b/gi, "")
+    .replace(/\b\d+\s*ea\b/gi, "")
+    .replace(/\b\d+(\.\d+)?\s*ml\b/gi, "")
+    .replace(/\b\d+(\.\d+)?\s*g\b/gi, "")
+    .replace(/[_\s-]+\d+(\.\d+)?\s*ml\b/gi, "")
+    .replace(/\s*\(\s*S\s*\)\s*/gi, " ")
+    .replace(/\s*\(\s*F\s*\)\s*$/gi, "")
+    .replace(/\s*\(\s*GWP\s*\)\s*/gi, " ")
+    .replace(/\s*\(\s*R\d+\s*\)\s*$/gi, "")
+    .replace(/\s*\(\s*REFILL\s*\)\s*$/gi, "")
+    .replace(/\s*\(\s*VEGAN\s*\)\s*$/gi, "")
+    .replace(/\s*\[\s*Duty\s*Free\s*\]\s*/gi, " ")
+    .replace(/\s*_N\b/gi, "")
+    .replace(/\s*_AD\b/gi, "")
     .replace(/\.NEW$/i, "")
     .replace(/\.\.+$/g, "")
+    .replace(/\s+[FR]\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanFilenameStem(stem) {
+  return stripSizeAndSampleSuffixes(stem)
+    .replace(/\(\d+\)$/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -127,6 +158,10 @@ function extensionScore(ext) {
   return 0;
 }
 
+function fileQuality(entry) {
+  return extensionScore(entry.ext) * 1_000_000_000 + entry.size;
+}
+
 function collectLocalImages(imagesDir) {
   const entries = [];
 
@@ -147,9 +182,11 @@ function collectLocalImages(imagesDir) {
       if (!IMAGE_EXTENSIONS.has(ext)) continue;
       const rawStem = path.basename(name, ext);
       const cleanedStem = cleanFilenameStem(rawStem);
+      const relativePath = path.relative(imagesDir, full);
       entries.push({
         file: name,
         full,
+        relativePath,
         ext,
         rawStem,
         cleanedStem,
@@ -161,27 +198,7 @@ function collectLocalImages(imagesDir) {
   }
 
   walk(imagesDir);
-
-  const byNormalized = new Map();
-  for (const entry of entries) {
-    const key = entry.normalizedStem;
-    if (!key) continue;
-    if (!byNormalized.has(key)) byNormalized.set(key, []);
-    byNormalized.get(key).push(entry);
-  }
-
-  const chosen = new Map();
-  for (const [key, group] of byNormalized) {
-    group.sort((a, b) => {
-      if (a.duplicateHint !== b.duplicateHint) return a.duplicateHint ? 1 : -1;
-      const extDiff = extensionScore(b.ext) - extensionScore(a.ext);
-      if (extDiff !== 0) return extDiff;
-      return b.size - a.size;
-    });
-    chosen.set(key, group[0]);
-  }
-
-  return { all: entries, chosen };
+  return entries;
 }
 
 async function fetchAllProducts(supabase) {
@@ -210,19 +227,34 @@ function buildProductLookups(products) {
   const byName = new Map();
   const byBrandName = new Map();
   const nameList = [];
+  const tokenIndex = new Map();
+
+  const indexTokens = (item) => {
+    const tokens = item.key.match(/[a-z0-9가-힣]{2,}/g) ?? [];
+    for (const token of tokens) {
+      if (!tokenIndex.has(token)) tokenIndex.set(token, []);
+      tokenIndex.get(token).push(item);
+    }
+  };
 
   for (const p of products) {
-    const nameKey = normalizeKey(p.name);
-    const brandNameKey = normalizeKey(`${p.brand ?? ""}${p.name ?? ""}`);
+    const nameKey = normalizeKey(cleanFilenameStem(p.name));
+    const brandNameKey = normalizeKey(
+      cleanFilenameStem(`${p.brand ?? ""} ${p.name ?? ""}`.trim()),
+    );
     if (nameKey) {
       if (!byName.has(nameKey)) byName.set(nameKey, []);
       byName.get(nameKey).push(p);
-      nameList.push({ key: nameKey, product: p, kind: "name" });
+      const item = { key: nameKey, product: p, kind: "name" };
+      nameList.push(item);
+      indexTokens(item);
     }
-    if (brandNameKey) {
+    if (brandNameKey && brandNameKey !== nameKey) {
       if (!byBrandName.has(brandNameKey)) byBrandName.set(brandNameKey, []);
       byBrandName.get(brandNameKey).push(p);
-      nameList.push({ key: brandNameKey, product: p, kind: "brandName" });
+      const item = { key: brandNameKey, product: p, kind: "brandName" };
+      nameList.push(item);
+      indexTokens(item);
     }
     for (const [field, map] of [
       [p.sku, bySku],
@@ -233,10 +265,11 @@ function buildProductLookups(products) {
       const val = String(field).trim();
       map.set(val, p);
       map.set(val.toLowerCase(), p);
+      map.set(normalizeKey(val), p);
     }
   }
 
-  return { bySku, byBarcode, bySlug, byName, byBrandName, nameList };
+  return { bySku, byBarcode, bySlug, byName, byBrandName, nameList, tokenIndex };
 }
 
 function tokenOverlapScore(a, b) {
@@ -249,68 +282,210 @@ function tokenOverlapScore(a, b) {
   return overlap / Math.max(ta.length, tb.length);
 }
 
-function findProductForImage(imageEntry, lookups) {
-  const { bySku, byBarcode, bySlug, byName, byBrandName, nameList } = lookups;
-  const candidates = [
-    imageEntry.rawStem,
-    imageEntry.cleanedStem,
-    imageEntry.normalizedStem,
-  ];
+function levenshteinRatio(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const rows = b.length + 1;
+  const cols = a.length + 1;
+  const matrix = Array.from({ length: rows }, () => Array(cols).fill(0));
+  for (let i = 0; i < rows; i += 1) matrix[i][0] = i;
+  for (let j = 0; j < cols; j += 1) matrix[0][j] = j;
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      const cost = b.charAt(i - 1) === a.charAt(j - 1) ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      );
+    }
+  }
+  const distance = matrix[b.length][a.length];
+  return 1 - distance / Math.max(a.length, b.length);
+}
 
-  for (const candidate of candidates) {
-    const trimmed = String(candidate ?? "").trim();
-    if (!trimmed) continue;
-    for (const map of [bySku, byBarcode, bySlug]) {
-      if (map.has(trimmed)) return { product: map.get(trimmed), method: "exact-id" };
-      if (map.has(trimmed.toLowerCase())) {
-        return { product: map.get(trimmed.toLowerCase()), method: "exact-id" };
+function buildMatchCandidates(imageEntry, imagesDir) {
+  const seen = new Set();
+  const candidates = [];
+
+  const addText = (text, source) => {
+    const raw = String(text ?? "").trim();
+    if (!raw) return;
+    for (const variant of [raw, cleanFilenameStem(raw), stripSizeAndSampleSuffixes(raw)]) {
+      const cleaned = cleanFilenameStem(variant);
+      const norm = normalizeKey(cleaned);
+      if (!norm || seen.has(`${source}:${norm}`)) continue;
+      seen.add(`${source}:${norm}`);
+      candidates.push({ raw: variant, cleaned, norm, source });
+    }
+    for (const num of raw.match(/\d{8,14}/g) ?? []) {
+      if (seen.has(`${source}:id:${num}`)) continue;
+      seen.add(`${source}:id:${num}`);
+      candidates.push({ raw: num, cleaned: num, norm: num, source: `${source}-numeric` });
+    }
+  };
+
+  addText(imageEntry.rawStem, "filename");
+  addText(imageEntry.cleanedStem, "filename-clean");
+
+  const relDir = path.dirname(imageEntry.relativePath);
+  if (relDir && relDir !== ".") {
+    for (const part of relDir.split(path.sep).filter(Boolean)) {
+      addText(part, "folder");
+    }
+  }
+
+  return candidates;
+}
+
+function resolveAmbiguous(matches, norm) {
+  if (matches.length === 1) return matches[0];
+  const sorted = [...matches].sort((a, b) => {
+    const aExact = normalizeKey(a.name) === norm ? 1 : 0;
+    const bExact = normalizeKey(b.name) === norm ? 1 : 0;
+    if (aExact !== bExact) return bExact - aExact;
+    return (a.name?.length ?? 0) - (b.name?.length ?? 0);
+  });
+  return sorted[0];
+}
+
+function getFuzzyCandidates(norm, tokenIndex) {
+  const tokens = norm.match(/[a-z0-9가-힣]{2,}/g) ?? [];
+  if (!tokens.length) return [];
+  const seen = new Set();
+  const items = [];
+  for (const token of tokens) {
+    for (const item of tokenIndex.get(token) ?? []) {
+      if (seen.has(item.key)) continue;
+      seen.add(item.key);
+      items.push(item);
+    }
+  }
+  return items;
+}
+
+function scoreCandidateAgainstProducts(candidate, lookups) {
+  const { bySku, byBarcode, bySlug, byName, byBrandName, tokenIndex } = lookups;
+  const trimmed = String(candidate.raw ?? "").trim();
+  const norm = candidate.norm;
+
+  for (const map of [bySku, byBarcode, bySlug]) {
+    for (const key of [trimmed, trimmed.toLowerCase(), norm]) {
+      if (key && map.has(key)) {
+        return {
+          product: map.get(key),
+          method: "exact-id",
+          score: 1,
+          matchedKey: key,
+          candidate,
+        };
       }
     }
   }
 
-  const norm = imageEntry.normalizedStem;
-  if (!norm) return null;
-
-  if (byName.has(norm)) {
+  if (norm && byName.has(norm)) {
     const matches = byName.get(norm);
-    if (matches.length === 1) return { product: matches[0], method: "exact-name" };
-    return { product: matches[0], method: "exact-name-ambiguous", ambiguous: matches };
+    return {
+      product: resolveAmbiguous(matches, norm),
+      method: matches.length === 1 ? "exact-name" : "exact-name-ambiguous",
+      score: 0.99,
+      matchedKey: norm,
+      candidate,
+    };
   }
-  if (byBrandName.has(norm)) {
+
+  if (norm && byBrandName.has(norm)) {
     const matches = byBrandName.get(norm);
-    if (matches.length === 1) return { product: matches[0], method: "exact-brand-name" };
-    return { product: matches[0], method: "exact-brand-name-ambiguous", ambiguous: matches };
+    return {
+      product: resolveAmbiguous(matches, norm),
+      method: matches.length === 1 ? "exact-brand-name" : "exact-brand-name-ambiguous",
+      score: 0.985,
+      matchedKey: norm,
+      candidate,
+    };
   }
 
   let best = null;
   let bestScore = 0;
-  for (const item of nameList) {
+  const fuzzyItems = getFuzzyCandidates(norm, tokenIndex);
+
+  for (const item of fuzzyItems) {
     const productKey = item.key;
-    if (!productKey) continue;
+    if (!productKey || !norm) continue;
+
+    if (productKey === norm) {
+      return {
+        product: item.product,
+        method: "normalized-equality",
+        score: 0.98,
+        matchedKey: productKey,
+        candidate,
+      };
+    }
+
     if (productKey.includes(norm) || norm.includes(productKey)) {
       const shorter = Math.min(productKey.length, norm.length);
       const longer = Math.max(productKey.length, norm.length);
       const containScore = shorter / longer;
-      const score = containScore * (item.kind === "name" ? 0.98 : 0.95);
+      const score = containScore * (item.kind === "name" ? 0.97 : 0.94);
       if (score > bestScore) {
         bestScore = score;
-        best = { product: item.product, method: "contains-name", score };
+        best = {
+          product: item.product,
+          method: "contains-name",
+          score,
+          matchedKey: productKey,
+          candidate,
+        };
+      }
+    }
+
+    const overlap = tokenOverlapScore(norm, productKey);
+    if (overlap > bestScore) {
+      bestScore = overlap;
+      best = {
+        product: item.product,
+        method: "token-overlap",
+        score: overlap,
+        matchedKey: productKey,
+        candidate,
+      };
+    }
+
+    if (bestScore < 0.72) {
+      const ratio = levenshteinRatio(norm, productKey);
+      const ratioScore = ratio * 0.96;
+      if (ratioScore > bestScore && ratio >= 0.82) {
+        bestScore = ratioScore;
+        best = {
+          product: item.product,
+          method: "fuzzy-ratio",
+          score: ratioScore,
+          matchedKey: productKey,
+          candidate,
+        };
       }
     }
   }
 
-  if (best && bestScore >= 0.72) return best;
+  if (best && bestScore >= 0.62) return best;
+  return null;
+}
 
-  for (const item of nameList) {
-    const score = tokenOverlapScore(norm, item.key);
-    if (score > bestScore && score >= 0.75) {
-      bestScore = score;
-      best = { product: item.product, method: "token-overlap", score };
-    }
+function findProductForImage(imageEntry, lookups, imagesDir) {
+  const candidates = buildMatchCandidates(imageEntry, imagesDir);
+  let best = null;
+
+  for (const candidate of candidates) {
+    const match = scoreCandidateAgainstProducts(candidate, lookups);
+    if (!match) continue;
+    const sourceBoost =
+      candidate.source.startsWith("filename") ? 0.02 : candidate.source.startsWith("folder") ? -0.01 : 0;
+    match.score += sourceBoost;
+    if (!best || match.score > best.score) best = match;
   }
 
-  if (best && bestScore >= 0.72) return best;
-  return null;
+  return best;
 }
 
 function sanitizeStorageKey(sku) {
@@ -360,6 +535,10 @@ async function updateProductImage(supabase, product, publicUrl) {
   if (insertError) throw new Error(insertError.message);
 }
 
+function ensureLogsDir() {
+  if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
+}
+
 async function main() {
   const { dryRun, overwrite, imagesDir } = parseCliArgs(process.argv.slice(2));
   if (!imagesDir) {
@@ -383,7 +562,7 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { all, chosen } = collectLocalImages(imagesDir);
+  const allImages = collectLocalImages(imagesDir);
   const products = await fetchAllProducts(supabase);
   const lookups = buildProductLookups(products);
 
@@ -391,54 +570,114 @@ async function main() {
     dryRun,
     overwrite,
     imagesDir,
-    totalImageFiles: all.length,
-    uniqueNameKeys: chosen.size,
-    matched: 0,
+    totalImageFiles: allImages.length,
+    productCount: products.length,
+    matchedFiles: 0,
+    selectedForUpload: 0,
     uploaded: 0,
+    overwritten: 0,
     skippedHasImage: 0,
-    skippedNoMatch: [],
+    duplicateProductMatches: 0,
+    unmatched: [],
     invalidImage: [],
     uploadErrors: [],
     updatedProducts: [],
     matchMethods: {},
   };
 
-  const usedProductIds = new Set();
-
-  for (const [normalizedStem, imageEntry] of chosen) {
-    const match = findProductForImage(imageEntry, lookups);
+  const fileMatches = [];
+  console.error(`Matching ${allImages.length} files against ${products.length} products...`);
+  let processed = 0;
+  for (const imageEntry of allImages) {
+    const match = findProductForImage(imageEntry, lookups, imagesDir);
     if (!match?.product) {
-      report.skippedNoMatch.push({
-        file: imageEntry.file,
+      report.unmatched.push({
+        file: imageEntry.relativePath,
+        filename: imageEntry.file,
         stem: imageEntry.cleanedStem,
-        normalizedStem,
+        normalizedStem: imageEntry.normalizedStem,
+        reason: "no-product-match",
+        triedCandidates: buildMatchCandidates(imageEntry, imagesDir).slice(0, 8).map((c) => ({
+          source: c.source,
+          cleaned: c.cleaned,
+          norm: c.norm,
+        })),
       });
       continue;
     }
 
-    report.matched += 1;
+    report.matchedFiles += 1;
+    fileMatches.push({ imageEntry, match });
+    processed += 1;
+    if (processed % 250 === 0) {
+      console.error(`  matched pass: ${processed}/${allImages.length}`);
+    }
+  }
+  console.error(`Match pass done: ${report.matchedFiles} matched, ${report.unmatched.length} unmatched`);
+
+  const bestByProduct = new Map();
+  for (const item of fileMatches) {
+    const productId = item.match.product.id;
+    const existing = bestByProduct.get(productId);
+    if (!existing) {
+      bestByProduct.set(productId, item);
+      continue;
+    }
+
+    report.duplicateProductMatches += 1;
+    const better =
+      item.match.score > existing.match.score ||
+      (item.match.score === existing.match.score &&
+        fileQuality(item.imageEntry) > fileQuality(existing.imageEntry))
+        ? item
+        : existing;
+    const worse = better === item ? existing : item;
+    bestByProduct.set(productId, better);
+    report.unmatched.push({
+      file: worse.imageEntry.relativePath,
+      filename: worse.imageEntry.file,
+      stem: worse.imageEntry.cleanedStem,
+      reason: "duplicate-product-match",
+      matchedProduct: worse.match.product.name,
+      matchedSku: worse.match.product.sku,
+      score: worse.match.score,
+      method: worse.match.method,
+      keptFile: better.imageEntry.relativePath,
+    });
+  }
+
+  report.selectedForUpload = bestByProduct.size;
+  console.error(`Uploading ${report.selectedForUpload} products...`);
+  let uploadProgress = 0;
+
+  for (const { imageEntry, match } of bestByProduct.values()) {
+    const product = match.product;
     report.matchMethods[match.method] = (report.matchMethods[match.method] ?? 0) + 1;
 
-    const product = match.product;
-    if (usedProductIds.has(product.id)) {
-      report.skippedNoMatch.push({
-        file: imageEntry.file,
-        stem: imageEntry.cleanedStem,
-        reason: "duplicate-product-match",
-        product: product.name,
-      });
+    const hadImage = hasRealImageUrl(product.image_url);
+    if (!overwrite && hadImage) {
+      report.skippedHasImage += 1;
       continue;
     }
 
-    if (!overwrite && hasRealImageUrl(product.image_url)) {
-      report.skippedHasImage += 1;
+    if (dryRun) {
+      report.updatedProducts.push({
+        sku: product.sku,
+        name: product.name,
+        file: imageEntry.relativePath,
+        method: match.method,
+        score: match.score,
+        storagePath: `${sanitizeStorageKey(product.sku || product.barcode || product.id)}.jpg`,
+        wouldOverwrite: hadImage,
+      });
+      if (hadImage) report.overwritten += 1;
       continue;
     }
 
     const rawBuffer = fs.readFileSync(imageEntry.full);
     const mimeType = detectMimeType(rawBuffer);
     if (!mimeType) {
-      report.invalidImage.push({ file: imageEntry.file, reason: "unknown mime" });
+      report.invalidImage.push({ file: imageEntry.relativePath, reason: "unknown mime" });
       continue;
     }
 
@@ -446,23 +685,11 @@ async function main() {
     try {
       buffer = await normalizeProductImageBuffer(rawBuffer);
     } catch {
-      report.invalidImage.push({ file: imageEntry.file, reason: "normalize failed" });
+      report.invalidImage.push({ file: imageEntry.relativePath, reason: "normalize failed" });
       continue;
     }
 
     const storagePath = `${sanitizeStorageKey(product.sku || product.barcode || product.id)}.jpg`;
-
-    if (dryRun) {
-      usedProductIds.add(product.id);
-      report.updatedProducts.push({
-        sku: product.sku,
-        name: product.name,
-        file: imageEntry.file,
-        method: match.method,
-        storagePath,
-      });
-      continue;
-    }
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
@@ -472,7 +699,7 @@ async function main() {
       report.uploadErrors.push({
         sku: product.sku,
         name: product.name,
-        file: imageEntry.file,
+        file: imageEntry.relativePath,
         error: uploadError.message,
       });
       continue;
@@ -484,7 +711,7 @@ async function main() {
       report.uploadErrors.push({
         sku: product.sku,
         name: product.name,
-        file: imageEntry.file,
+        file: imageEntry.relativePath,
         error: "public URL missing",
       });
       continue;
@@ -492,42 +719,88 @@ async function main() {
 
     try {
       await updateProductImage(supabase, product, publicUrl);
-      usedProductIds.add(product.id);
       report.uploaded += 1;
+      if (hadImage) report.overwritten += 1;
       report.updatedProducts.push({
         sku: product.sku,
         name: product.name,
-        file: imageEntry.file,
+        file: imageEntry.relativePath,
         method: match.method,
+        score: match.score,
         image_url: publicUrl,
+        overwritten: hadImage,
       });
+      uploadProgress += 1;
+      if (uploadProgress % 50 === 0) {
+        console.error(`  uploaded ${uploadProgress}/${report.selectedForUpload}`);
+      }
     } catch (err) {
       report.uploadErrors.push({
         sku: product.sku,
         name: product.name,
-        file: imageEntry.file,
+        file: imageEntry.relativePath,
         error: err instanceof Error ? err.message : String(err),
       });
     }
+  }
+
+  ensureLogsDir();
+  const unmatchedOnly = report.unmatched.filter((u) => u.reason === "no-product-match");
+  const unmatchedPayload = JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      imagesDir,
+      totalImageFiles: report.totalImageFiles,
+      unmatchedCount: unmatchedOnly.length,
+      duplicateProductMatchCount: report.duplicateProductMatches,
+      items: report.unmatched,
+    },
+    null,
+    2,
+  );
+  try {
+    fs.writeFileSync(UNMATCHED_LOG, unmatchedPayload, "utf8");
+  } catch (err) {
+    const fallback = path.join(
+      LOGS_DIR,
+      `unmatched-desktop-images-${Date.now()}.json`,
+    );
+    fs.writeFileSync(fallback, unmatchedPayload, "utf8");
+    console.error(`Wrote unmatched log to ${fallback}: ${err instanceof Error ? err.message : err}`);
+  }
+
+  const reportPayload = `${JSON.stringify(report, null, 2)}\n`;
+  const reportPath = path.join(LOGS_DIR, "upload-desktop-images.log");
+  try {
+    fs.writeFileSync(reportPath, reportPayload, "utf8");
+  } catch (err) {
+    const fallback = path.join(LOGS_DIR, `upload-desktop-images-${Date.now()}.log`);
+    fs.writeFileSync(fallback, reportPayload, "utf8");
+    console.error(`Wrote report log to ${fallback}: ${err instanceof Error ? err.message : err}`);
   }
 
   console.log(
     JSON.stringify(
       {
         dryRun: report.dryRun,
+        overwrite: report.overwrite,
         imagesDir: report.imagesDir,
         totalImageFiles: report.totalImageFiles,
-        uniqueNameKeys: report.uniqueNameKeys,
-        matched: report.matched,
+        productCount: report.productCount,
+        matchedFiles: report.matchedFiles,
+        selectedForUpload: report.selectedForUpload,
         uploaded: report.uploaded,
+        overwritten: report.overwritten,
         skippedHasImage: report.skippedHasImage,
-        unmatchedCount: report.skippedNoMatch.length,
+        duplicateProductMatches: report.duplicateProductMatches,
+        unmatchedCount: unmatchedOnly.length,
         invalidImageCount: report.invalidImage.length,
         uploadErrorCount: report.uploadErrors.length,
         matchMethods: report.matchMethods,
-        unmatchedSample: report.skippedNoMatch.slice(0, 30),
-        uploadErrors: report.uploadErrors,
+        unmatchedSample: unmatchedOnly.slice(0, 30),
+        uploadErrors: report.uploadErrors.slice(0, 20),
         sampleUpdated: report.updatedProducts.slice(0, 15),
+        unmatchedLog: UNMATCHED_LOG,
       },
       null,
       2,
