@@ -338,9 +338,20 @@ function buildMatchCandidates(imageEntry, imagesDir) {
   return candidates;
 }
 
+function brandMatchBoost(product, norm) {
+  const brandKey = normalizeKey(String(product.brand ?? ""));
+  if (!brandKey || brandKey.length < 2) return 0;
+  if (norm.startsWith(brandKey)) return 0.05;
+  if (norm.includes(brandKey)) return 0.03;
+  return 0;
+}
+
 function resolveAmbiguous(matches, norm) {
   if (matches.length === 1) return matches[0];
   const sorted = [...matches].sort((a, b) => {
+    const aBrand = brandMatchBoost(a, norm) > 0 ? 1 : 0;
+    const bBrand = brandMatchBoost(b, norm) > 0 ? 1 : 0;
+    if (aBrand !== bBrand) return bBrand - aBrand;
     const aExact = normalizeKey(a.name) === norm ? 1 : 0;
     const bExact = normalizeKey(b.name) === norm ? 1 : 0;
     if (aExact !== bExact) return bExact - aExact;
@@ -427,7 +438,8 @@ function scoreCandidateAgainstProducts(candidate, lookups) {
       const shorter = Math.min(productKey.length, norm.length);
       const longer = Math.max(productKey.length, norm.length);
       const containScore = shorter / longer;
-      const score = containScore * (item.kind === "name" ? 0.97 : 0.94);
+      const score =
+        containScore * (item.kind === "name" ? 0.97 : 0.94) + brandMatchBoost(item.product, norm);
       if (score > bestScore) {
         bestScore = score;
         best = {
@@ -440,7 +452,8 @@ function scoreCandidateAgainstProducts(candidate, lookups) {
       }
     }
 
-    const overlap = tokenOverlapScore(norm, productKey);
+    let overlap = tokenOverlapScore(norm, productKey);
+    overlap += brandMatchBoost(item.product, norm);
     if (overlap > bestScore) {
       bestScore = overlap;
       best = {
