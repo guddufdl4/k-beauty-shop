@@ -6,6 +6,8 @@ export type AdminOrderRow = {
   order_number: string;
   status: string;
   total: number;
+  payment_provider: string | null;
+  paid_at: string | null;
   created_at: string;
   source: "database" | "cookie";
 };
@@ -26,7 +28,7 @@ export async function listAdminOrders(): Promise<{
     if (supabase) {
       const { data, error } = await supabase
         .from("orders")
-        .select("order_number, status, total, created_at")
+        .select("order_number, status, total, payment_provider, paid_at, created_at")
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -37,6 +39,8 @@ export async function listAdminOrders(): Promise<{
             order_number: String(row.order_number),
             status: String(row.status),
             total: Number(row.total),
+            payment_provider: row.payment_provider ? String(row.payment_provider) : null,
+            paid_at: row.paid_at ? String(row.paid_at) : null,
             created_at: String(row.created_at),
             source: "database" as const,
           })),
@@ -53,6 +57,8 @@ export async function listAdminOrders(): Promise<{
       order_number: order.order_number,
       status: order.status,
       total: order.total,
+      payment_provider: order.status === "paid" ? "demo" : null,
+      paid_at: order.status === "paid" ? order.created_at : null,
       created_at: order.created_at,
       source: "cookie" as const,
     })),

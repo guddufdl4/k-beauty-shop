@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   createOrder,
   getOrderByNumber,
   markOrderPaid,
+  saveStripeSessionId,
   type ShippingAddress,
 } from "@/lib/cart";
 import { formatCartLibError } from "@/lib/store/cart-messages";
@@ -27,6 +28,7 @@ export async function placeOrder(
   formData: FormData,
 ): Promise<CheckoutState> {
   const t = await getTranslations("checkout");
+  const locale = await getLocale();
   const shippingAddress: ShippingAddress = {
     recipient_name: String(formData.get("recipient_name") ?? "").trim(),
     phone: String(formData.get("phone") ?? "").trim(),
@@ -79,6 +81,7 @@ export async function placeOrder(
 
   const session = await createCheckoutSession({
     orderNumber: order.order_number,
+    locale,
     total: order.total,
     shippingCost: order.shipping_cost,
     lineItems: order.items.map((item) => ({
@@ -94,6 +97,10 @@ export async function placeOrder(
       orderNumber: result.orderNumber,
       demoMode: true,
     };
+  }
+
+  if (session.sessionId) {
+    await saveStripeSessionId(result.orderNumber, session.sessionId);
   }
 
   return {

@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   notes TEXT,
   payment_provider TEXT,
   payment_intent_id TEXT,
+  stripe_session_id TEXT,
   paid_at TIMESTAMPTZ,
   shipped_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,

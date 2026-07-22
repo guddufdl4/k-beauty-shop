@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { routing } from "@/i18n/routing";
 
 export function isStripeConfigured(): boolean {
   return Boolean(
@@ -65,16 +66,22 @@ type CheckoutLineItem = {
 
 export async function createCheckoutSession(input: {
   orderNumber: string;
+  locale?: string;
   total: number;
   shippingCost: number;
   lineItems: CheckoutLineItem[];
-}): Promise<{ url: string | null; error?: string }> {
+}): Promise<{ url: string | null; sessionId?: string; error?: string }> {
   const stripe = getStripe();
   if (!stripe) {
     return { url: null, error: "Stripe가 설정되지 않았습니다." };
   }
 
   const baseUrl = getAppBaseUrl();
+  const locale = routing.locales.includes(
+    input.locale as (typeof routing.locales)[number],
+  )
+    ? input.locale
+    : routing.defaultLocale;
   const productLines = input.lineItems.map((item) => ({
     price_data: {
       currency: "krw",
@@ -106,11 +113,11 @@ export async function createCheckoutSession(input: {
       payment_method_types: ["card"],
       line_items: lineItems,
       metadata: { order_number: input.orderNumber },
-      success_url: `${baseUrl}/orders/${input.orderNumber}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/checkout?cancelled=1`,
+      success_url: `${baseUrl}/${locale}/orders/${input.orderNumber}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/${locale}/checkout?cancelled=1`,
     });
 
-    return { url: session.url };
+    return { url: session.url, sessionId: session.id };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "결제 세션 생성에 실패했습니다.";

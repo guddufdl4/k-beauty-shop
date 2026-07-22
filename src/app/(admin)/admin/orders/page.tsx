@@ -4,6 +4,19 @@ import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
 import { formatKRW } from "@/lib/utils";
 
+function paymentLabel(order: Awaited<ReturnType<typeof listAdminOrders>>["orders"][number]) {
+  if (order.status !== "paid") {
+    return "—";
+  }
+  if (order.payment_provider === "stripe") {
+    return "Stripe";
+  }
+  if (order.payment_provider === "demo") {
+    return "데모";
+  }
+  return order.payment_provider ?? "—";
+}
+
 function statusBadge(status: string) {
   const paid = status === "paid";
   return (
@@ -99,6 +112,7 @@ function OrdersTable({ orders }: { orders: Awaited<ReturnType<typeof listAdminOr
           <tr>
             <th className="px-4 py-3">주문번호</th>
             <th className="px-4 py-3">상태</th>
+            <th className="px-4 py-3">결제</th>
             <th className="px-4 py-3">합계</th>
             <th className="px-4 py-3">일시</th>
             <th className="px-4 py-3">출처</th>
@@ -116,6 +130,7 @@ function OrdersTable({ orders }: { orders: Awaited<ReturnType<typeof listAdminOr
                 </Link>
               </td>
               <td className="px-4 py-3">{statusBadge(order.status)}</td>
+              <td className="px-4 py-3 text-zinc-600">{paymentLabel(order)}</td>
               <td className="px-4 py-3 font-medium">{formatKRW(order.total)}</td>
               <td className="px-4 py-3 text-zinc-600">
                 {new Date(order.created_at).toLocaleString("ko-KR")}

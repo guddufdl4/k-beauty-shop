@@ -69,6 +69,45 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
             </li>
           ))}
         </ul>
+        <div className="mt-4 space-y-2 border-t border-zinc-100 pt-4 text-sm">
+          <div className="flex justify-between">
+            <span className="text-zinc-600">{t("subtotal")}</span>
+            <span>{formatLocalePrice(order.subtotal, locale, usdKrwRate)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-zinc-600">{t("shipping")}</span>
+            <span>
+              {order.shipping_cost === 0
+                ? t("freeShipping")
+                : formatLocalePrice(order.shipping_cost, locale, usdKrwRate)}
+            </span>
+          </div>
+          <div className="flex justify-between text-base font-bold">
+            <span>{t("total")}</span>
+            <span className="text-rose-700">{formatLocalePrice(order.total, locale, usdKrwRate)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">{t("shippingAddressTitle")}</h2>
+        <dl className="mt-4 space-y-2 text-sm">
+          <div>
+            <dt className="text-zinc-500">{t("recipient")}</dt>
+            <dd className="font-medium">{order.shipping_address.recipient_name}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("phone")}</dt>
+            <dd className="font-medium">{order.shipping_address.phone}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">{t("address")}</dt>
+            <dd className="font-medium">
+              {order.shipping_address.line1}, {order.shipping_address.city}{" "}
+              {order.shipping_address.postal_code} ({order.shipping_address.country_code})
+            </dd>
+          </div>
+        </dl>
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">

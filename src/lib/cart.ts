@@ -777,6 +777,7 @@ export async function markOrderPaid(
           status: "paid",
           payment_provider: payment.provider,
           payment_intent_id: payment.sessionId,
+          stripe_session_id: payment.sessionId,
           paid_at: new Date().toISOString(),
         })
         .eq("order_number", orderNumber);
@@ -790,5 +791,21 @@ export async function markOrderPaid(
   if (index >= 0 && orders[index].status !== "paid") {
     orders[index] = { ...orders[index], status: "paid" };
     await writeDemoOrders(orders);
+  }
+}
+
+export async function saveStripeSessionId(
+  orderNumber: string,
+  sessionId: string,
+): Promise<void> {
+  const { createServiceClient } = await import("@/lib/supabase/service");
+  const service = createServiceClient();
+
+  if (service) {
+    await service
+      .from("orders")
+      .update({ stripe_session_id: sessionId })
+      .eq("order_number", orderNumber)
+      .eq("status", "pending");
   }
 }

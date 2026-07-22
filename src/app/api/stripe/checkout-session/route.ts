@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOrderByNumber } from "@/lib/cart";
+import { getOrderByNumber, saveStripeSessionId } from "@/lib/cart";
 import { createCheckoutSession, isStripeConfigured } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -12,9 +12,9 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { orderNumber?: string };
+  let body: { orderNumber?: string; locale?: string };
   try {
-    body = (await request.json()) as { orderNumber?: string };
+    body = (await request.json()) as { orderNumber?: string; locale?: string };
   } catch {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
 
   const result = await createCheckoutSession({
     orderNumber: order.order_number,
+    locale: body.locale,
     total: order.total,
     shippingCost: order.shipping_cost,
     lineItems: order.items.map((item) => ({
@@ -49,6 +50,10 @@ export async function POST(request: Request) {
       { error: result.error ?? "결제 세션 생성에 실패했습니다." },
       { status: 500 },
     );
+  }
+
+  if (result.sessionId) {
+    await saveStripeSessionId(orderNumber, result.sessionId);
   }
 
   return NextResponse.json({ url: result.url });
