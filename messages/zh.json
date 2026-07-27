@@ -123,7 +123,13 @@
     "howToUse": "使用方法",
     "viewProducts": "查看商品 →",
     "relatedSearchTitle": "相关搜索",
-    "relatedSearchDescription": "试试用相似关键词再次搜索。"
+    "relatedSearchDescription": "试试用相似关键词再次搜索。",
+    "prevPage": "← 上一页",
+    "nextPage": "下一页 →",
+    "paginationLabel": "商品列表分页",
+    "pageJumpLabel": "跳转页面",
+    "pageJumpInput": "页码",
+    "pageJumpGo": "跳转"
   },
   "categories": {
     "browse": "Browse",

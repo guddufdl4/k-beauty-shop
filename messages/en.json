@@ -129,6 +129,10 @@
     "relatedSearchDescription": "Try searching with similar keywords.",
     "prevPage": "← Previous",
     "nextPage": "Next →",
+    "paginationLabel": "Product list pagination",
+    "pageJumpLabel": "Go to page",
+    "pageJumpInput": "Page number",
+    "pageJumpGo": "Go",
     "imagePending": "{brand} {name} — image coming soon"
   },
   "brands": {

@@ -123,7 +123,13 @@
     "howToUse": "使用方法",
     "viewProducts": "商品を見る →",
     "relatedSearchTitle": "関連検索",
-    "relatedSearchDescription": "似たキーワードでもう一度検索してみてください。"
+    "relatedSearchDescription": "似たキーワードでもう一度検索してみてください。",
+    "prevPage": "← 前へ",
+    "nextPage": "次へ →",
+    "paginationLabel": "商品一覧ページ",
+    "pageJumpLabel": "ページ移動",
+    "pageJumpInput": "ページ番号",
+    "pageJumpGo": "移動"
   },
   "categories": {
     "browse": "Browse",

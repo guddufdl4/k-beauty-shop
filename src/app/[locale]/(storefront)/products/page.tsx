@@ -3,8 +3,8 @@ import { Link } from "@/i18n/navigation";
 import { ProductCard } from "@/components/store/product-card";
 import { EmptyState } from "@/components/store/empty-state";
 import { ProductCategoryFilter } from "@/components/store/product-category-filter";
+import { ProductsPagination } from "@/components/store/products-pagination";
 import { RelatedSearchTerms } from "@/components/store/related-search-terms";
-import { buildProductsHref } from "@/lib/store/products-url";
 import { parseProductListSort } from "@/lib/store/products-url";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
@@ -162,31 +162,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </div>
 
           {totalPages > 1 ? (
-            <div className="mt-10 flex items-center justify-between gap-3 border-t border-zinc-100 pt-6">
-              {safePage > 1 ? (
-                <Link
-                  href={buildProductsHref({ ...listHrefOptions, page: safePage - 1 })}
-                  className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
-                >
-                  {t("prevPage")}
-                </Link>
-              ) : (
-                <span className="text-sm text-zinc-300">{t("prevPage")}</span>
-              )}
-              <p className="text-sm text-zinc-500">
-                {safePage} / {totalPages}
-              </p>
-              {safePage < totalPages ? (
-                <Link
-                  href={buildProductsHref({ ...listHrefOptions, page: safePage + 1 })}
-                  className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
-                >
-                  {t("nextPage")}
-                </Link>
-              ) : (
-                <span className="text-sm text-zinc-300">{t("nextPage")}</span>
-              )}
-            </div>
+            <ProductsPagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              listHrefOptions={listHrefOptions}
+            />
           ) : null}
         </>
       )}
