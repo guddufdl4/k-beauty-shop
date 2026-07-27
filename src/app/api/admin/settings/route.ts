@@ -2,8 +2,11 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import {
   getSiteSettings,
+  getSiteSettingsFresh,
   parseSiteSettingsPatch,
+  saveHeroSettings,
   SITE_SETTINGS_CACHE_TAG,
+  splitSiteSettingsPatch,
 } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
@@ -76,18 +79,28 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
-    .from("site_settings")
-    .update(patch)
-    .eq("id", 1)
-    .select("*")
-    .single();
+  const { dbPatch, heroPatch } = splitSiteSettingsPatch(patch);
 
-  if (error || !data) {
-    return NextResponse.json(
-      { error: error?.message ?? "\uc124\uc815 \uc800\uc7a5\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4." },
-      { status: 500 },
-    );
+  if (Object.keys(dbPatch).length > 0) {
+    const { error } = await supabase.from("site_settings").update(dbPatch).eq("id", 1);
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message ?? "\uc124\uc815 \uc800\uc7a5\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4." },
+        { status: 500 },
+      );
+    }
+  }
+
+  if (Object.keys(heroPatch).length > 0) {
+    const { error: heroError } = await saveHeroSettings(heroPatch);
+
+    if (heroError) {
+      return NextResponse.json(
+        { error: heroError ?? "\ubc30\ub108 \uc124\uc815 \uc800\uc7a5\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4." },
+        { status: 500 },
+      );
+    }
   }
 
   revalidateTag(SITE_SETTINGS_CACHE_TAG, "max");
@@ -103,5 +116,6 @@ export async function PATCH(request: Request) {
   revalidatePath("/ja");
   revalidatePath("/zh");
 
-  return NextResponse.json({ settings: data });
+  const settings = await getSiteSettingsFresh();
+  return NextResponse.json({ settings });
 }

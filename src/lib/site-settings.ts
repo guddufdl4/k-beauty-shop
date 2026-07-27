@@ -1,6 +1,185 @@
 import { unstable_cache } from "next/cache";
-import { createPublicClient } from "@/lib/supabase/service";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
 import type { SiteSettings } from "@/types/database";
+
+const HERO_SETTINGS_BUCKET = "site-config";
+const HERO_SETTINGS_PATH = "hero.json";
+
+const HERO_SETTING_KEYS = [
+  "hero_image_url",
+  "hero_badge",
+  "hero_title",
+  "hero_subtitle",
+  "hero_button_text",
+  "hero_button_link",
+] as const satisfies readonly (keyof SiteSettings)[];
+
+type HeroSettingKey = (typeof HERO_SETTING_KEYS)[number];
+type HeroSettingsRecord = Pick<SiteSettings, HeroSettingKey>;
+export type HeroSettingsPatch = Partial<HeroSettingsRecord>;
+
+type StoredHeroSettings = HeroSettingsRecord & { updated_at: string };
+
+const DEFAULT_STORED_HERO: StoredHeroSettings = {
+  hero_image_url: null,
+  hero_badge: null,
+  hero_title: null,
+  hero_subtitle: null,
+  hero_button_text: null,
+  hero_button_link: null,
+  updated_at: new Date(0).toISOString(),
+};
+
+function normalizeStoredHero(raw: unknown): StoredHeroSettings {
+  if (!raw || typeof raw !== "object") {
+    return { ...DEFAULT_STORED_HERO };
+  }
+
+  const record = raw as Record<string, unknown>;
+  const trimOrNull = (value: unknown): string | null =>
+    typeof value === "string" && value.trim() ? value.trim() : null;
+
+  return {
+    hero_image_url: trimOrNull(record.hero_image_url),
+    hero_badge: trimOrNull(record.hero_badge),
+    hero_title: trimOrNull(record.hero_title),
+    hero_subtitle: trimOrNull(record.hero_subtitle),
+    hero_button_text: trimOrNull(record.hero_button_text),
+    hero_button_link: trimOrNull(record.hero_button_link),
+    updated_at:
+      typeof record.updated_at === "string" && record.updated_at
+        ? record.updated_at
+        : DEFAULT_STORED_HERO.updated_at,
+  };
+}
+
+let heroBucketEnsurePromise: Promise<boolean> | null = null;
+
+async function ensureHeroSettingsBucket(): Promise<boolean> {
+  if (!heroBucketEnsurePromise) {
+    heroBucketEnsurePromise = ensureHeroSettingsBucketOnce().catch((error) => {
+      heroBucketEnsurePromise = null;
+      throw error;
+    });
+  }
+
+  return heroBucketEnsurePromise;
+}
+
+async function ensureHeroSettingsBucketOnce(): Promise<boolean> {
+  const service = createServiceClient();
+  if (!service) {
+    return false;
+  }
+
+  const { data: buckets, error: listError } = await service.storage.listBuckets();
+  if (!listError) {
+    const exists = buckets?.some(
+      (bucket) => bucket.id === HERO_SETTINGS_BUCKET || bucket.name === HERO_SETTINGS_BUCKET,
+    );
+    if (exists) {
+      return true;
+    }
+  }
+
+  const { error: createError } = await service.storage.createBucket(HERO_SETTINGS_BUCKET, {
+    public: true,
+    fileSizeLimit: 65536,
+    allowedMimeTypes: ["application/json"],
+  });
+
+  if (!createError) {
+    return true;
+  }
+
+  const message = createError.message.toLowerCase();
+  return message.includes("already exists") || message.includes("duplicate");
+}
+
+async function fetchHeroSettings(supabase: SupabaseClient): Promise<StoredHeroSettings> {
+  const { data: publicData } = supabase.storage
+    .from(HERO_SETTINGS_BUCKET)
+    .getPublicUrl(HERO_SETTINGS_PATH);
+
+  const publicUrl = publicData.publicUrl?.trim();
+  if (!publicUrl) {
+    return { ...DEFAULT_STORED_HERO };
+  }
+
+  try {
+    const response = await fetch(publicUrl, { cache: "no-store" });
+    if (!response.ok) {
+      return { ...DEFAULT_STORED_HERO };
+    }
+
+    const parsed = (await response.json()) as unknown;
+    return normalizeStoredHero(parsed);
+  } catch {
+    return { ...DEFAULT_STORED_HERO };
+  }
+}
+
+export async function saveHeroSettings(
+  patch: HeroSettingsPatch,
+): Promise<{ data: StoredHeroSettings | null; error: string | null }> {
+  const service = createServiceClient();
+  if (!service) {
+    return { data: null, error: "Supabase service client unavailable." };
+  }
+
+  const bucketReady = await ensureHeroSettingsBucket();
+  if (!bucketReady) {
+    return {
+      data: null,
+      error: "Could not prepare hero settings storage (site-config bucket).",
+    };
+  }
+
+  const current = await fetchHeroSettings(service);
+  const next: StoredHeroSettings = {
+    ...current,
+    ...patch,
+    updated_at: new Date().toISOString(),
+  };
+
+  const payload = JSON.stringify(next);
+  const { error } = await service.storage
+    .from(HERO_SETTINGS_BUCKET)
+    .upload(HERO_SETTINGS_PATH, payload, {
+      contentType: "application/json",
+      upsert: true,
+    });
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: next, error: null };
+}
+
+function mergeHeroIntoSiteSettings(
+  settings: SiteSettings,
+  hero: StoredHeroSettings,
+): SiteSettings {
+  const heroUpdatedAt = hero.updated_at;
+  const settingsUpdatedAt = settings.updated_at;
+  const updatedAt =
+    new Date(heroUpdatedAt).getTime() >= new Date(settingsUpdatedAt).getTime()
+      ? heroUpdatedAt
+      : settingsUpdatedAt;
+
+  return {
+    ...settings,
+    hero_image_url: hero.hero_image_url,
+    hero_badge: hero.hero_badge,
+    hero_title: hero.hero_title,
+    hero_subtitle: hero.hero_subtitle,
+    hero_button_text: hero.hero_button_text,
+    hero_button_link: hero.hero_button_link,
+    updated_at: updatedAt,
+  };
+}
 
 const CACHE_REVALIDATE_SECONDS = 300;
 
@@ -63,17 +242,41 @@ async function fetchSiteSettingsFromSource(): Promise<SiteSettings> {
     return { ...DEFAULT_SITE_SETTINGS };
   }
 
-  const { data, error } = await supabase
-    .from("site_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
+  const [{ data, error }, heroSettings] = await Promise.all([
+    supabase.from("site_settings").select("*").eq("id", 1).maybeSingle(),
+    fetchHeroSettings(supabase),
+  ]);
 
   if (error || !data) {
-    return { ...DEFAULT_SITE_SETTINGS };
+    return mergeHeroIntoSiteSettings({ ...DEFAULT_SITE_SETTINGS }, heroSettings);
   }
 
-  return normalizeSettings(data as SiteSettings);
+  return mergeHeroIntoSiteSettings(normalizeSettings(data as SiteSettings), heroSettings);
+}
+
+/** Bypasses Next.js data cache — use after admin writes in the same request. */
+export async function getSiteSettingsFresh(): Promise<SiteSettings> {
+  return fetchSiteSettingsFromSource();
+}
+
+export function splitSiteSettingsPatch(patch: SiteSettingsPatch): {
+  dbPatch: SiteSettingsDbPatch;
+  heroPatch: HeroSettingsPatch;
+} {
+  const dbPatch = { ...patch } as Record<string, unknown>;
+  const heroPatch: HeroSettingsPatch = {};
+
+  for (const key of HERO_SETTING_KEYS) {
+    if (key in patch) {
+      heroPatch[key] = patch[key];
+      delete dbPatch[key];
+    }
+  }
+
+  return {
+    dbPatch: dbPatch as SiteSettingsDbPatch,
+    heroPatch,
+  };
 }
 
 export type SiteSettingsPatch = Partial<
@@ -93,6 +296,16 @@ export type SiteSettingsPatch = Partial<
     | "hero_button_text"
     | "hero_button_link"
   >
+>;
+
+export type SiteSettingsDbPatch = Omit<
+  SiteSettingsPatch,
+  | "hero_image_url"
+  | "hero_badge"
+  | "hero_title"
+  | "hero_subtitle"
+  | "hero_button_text"
+  | "hero_button_link"
 >;
 
 function isValidHeroButtonLink(value: string | null): boolean {

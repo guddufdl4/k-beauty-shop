@@ -6,7 +6,11 @@ import {
   readAndValidateHeroImageFile,
 } from "@/lib/admin/hero-image-upload";
 import { readProductImageUploadEntry } from "@/lib/admin/product-image-upload";
-import { SITE_SETTINGS_CACHE_TAG } from "@/lib/site-settings";
+import {
+  getSiteSettingsFresh,
+  saveHeroSettings,
+  SITE_SETTINGS_CACHE_TAG,
+} from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 
@@ -121,28 +125,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
-    .from("site_settings")
-    .update({ hero_image_url: publicUrl })
-    .eq("id", 1)
-    .select("*")
-    .single();
+  const { error: heroSaveError } = await saveHeroSettings({ hero_image_url: publicUrl });
 
-  if (error || !data) {
+  if (heroSaveError) {
     await supabase.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
-    const dbMessage = error?.message?.toLowerCase() ?? "";
-    const dbError =
-      dbMessage.includes("hero_image_url") ||
-      (dbMessage.includes("column") && dbMessage.includes("site_settings"))
-        ? "site_settings에 hero 컬럼이 없습니다. supabase/migrations/010_hero_settings.sql을 실행하세요."
-        : (error?.message ?? "배너 이미지 URL 저장에 실패했습니다.");
-    return NextResponse.json({ error: dbError }, { status: 500 });
+    return NextResponse.json(
+      { error: heroSaveError ?? "배너 이미지 URL 저장에 실패했습니다." },
+      { status: 500 },
+    );
   }
 
   revalidateHeroPaths();
 
+  const settings = await getSiteSettingsFresh();
+
   return NextResponse.json({
     hero_image_url: publicUrl,
-    settings: data,
+    settings,
   });
 }
