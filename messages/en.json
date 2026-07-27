@@ -133,6 +133,7 @@
     "pageJumpLabel": "Go to page",
     "pageJumpInput": "Page number",
     "pageJumpGo": "Go",
+    "pageNumberLabel": "Page {page}",
     "imagePending": "{brand} {name} — image coming soon"
   },
   "brands": {

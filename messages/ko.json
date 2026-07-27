@@ -133,6 +133,7 @@
     "pageJumpLabel": "페이지 이동",
     "pageJumpInput": "페이지 번호",
     "pageJumpGo": "이동",
+    "pageNumberLabel": "{page}페이지",
     "imagePending": "{brand} {name} — 이미지 준비 중"
   },
   "categories": {

@@ -129,7 +129,8 @@
     "paginationLabel": "商品一覧ページ",
     "pageJumpLabel": "ページ移動",
     "pageJumpInput": "ページ番号",
-    "pageJumpGo": "移動"
+    "pageJumpGo": "移動",
+    "pageNumberLabel": "{page}ページ"
   },
   "categories": {
     "browse": "Browse",

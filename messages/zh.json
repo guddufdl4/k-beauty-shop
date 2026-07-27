@@ -129,7 +129,8 @@
     "paginationLabel": "商品列表分页",
     "pageJumpLabel": "跳转页面",
     "pageJumpInput": "页码",
-    "pageJumpGo": "跳转"
+    "pageJumpGo": "跳转",
+    "pageNumberLabel": "第 {page} 页"
   },
   "categories": {
     "browse": "Browse",
