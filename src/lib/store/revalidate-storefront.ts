@@ -1,6 +1,9 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { routing } from "@/i18n/routing";
-import { STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG } from "@/lib/supabase/products";
+import {
+  STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG,
+  STOREFRONT_PRODUCTS_CACHE_TAG,
+} from "@/lib/supabase/products";
 
 /** Revalidate a storefront path for every supported locale (e.g. "/products"). */
 export function revalidateStorefrontPath(path: string): void {
@@ -20,4 +23,13 @@ export function revalidateStorefrontLayout(): void {
 export function revalidateStorefrontHome(): void {
   revalidateTag(STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "max");
   revalidateStorefrontPath("/");
+}
+
+/** Revalidate storefront catalog after product images are uploaded or changed. */
+export function revalidateStorefrontCatalog(): void {
+  revalidateTag(STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "max");
+  revalidateTag(STOREFRONT_PRODUCTS_CACHE_TAG, "max");
+  revalidateStorefrontPath("/");
+  revalidateStorefrontPath("/products");
+  revalidatePath("/admin/products");
 }

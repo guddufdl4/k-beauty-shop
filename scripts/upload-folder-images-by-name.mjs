@@ -5,7 +5,7 @@
  * Usage:
  *   node scripts/upload-folder-images-by-name.mjs --dir "C:\path\to\images"
  *   node scripts/upload-folder-images-by-name.mjs --dir "..." --dry-run
- *   node scripts/upload-folder-images-by-name.mjs --dir "..." --overwrite
+ *   node scripts/upload-folder-images-by-name.mjs --dir "..." --audit
  */
 
 import fs from "fs";
@@ -35,15 +35,178 @@ const IMAGE_EXTENSIONS = new Set([
 function parseCliArgs(argv) {
   let dryRun = false;
   let overwrite = false;
+  let auditOnly = false;
   let imagesDir = null;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--dry-run") dryRun = true;
     else if (arg === "--overwrite") overwrite = true;
+    else if (arg === "--audit") auditOnly = true;
     else if (arg === "--dir" && argv[i + 1]) imagesDir = argv[++i].trim();
     else if (arg.startsWith("--dir=")) imagesDir = arg.slice("--dir=".length).trim();
   }
-  return { dryRun, overwrite, imagesDir };
+  return { dryRun, overwrite, auditOnly, imagesDir };
+}
+
+function classifyImageUrl(url) {
+  const trimmed = String(url ?? "").trim();
+  if (!trimmed) return "empty";
+  if (trimmed.startsWith("/images/categories/")) return "placeholder";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return "uploaded";
+  return "other";
+}
+
+function productAuditSummary(product) {
+  return {
+    id: product.id,
+    sku: product.sku,
+    name: product.name,
+    brand: product.brand,
+    image_url: product.image_url ?? null,
+    imageStatus: classifyImageUrl(product.image_url),
+    needs_image: product.needs_image ?? null,
+  };
+}
+
+function buildAuditSummaryText(audit) {
+  const lines = [];
+  lines.push("Desktop Images Audit Summary");
+  lines.push("=".repeat(60));
+  lines.push(`Generated: ${audit.generatedAt}`);
+  lines.push(`Folder: ${audit.imagesDir}`);
+  lines.push("");
+  lines.push("Counts");
+  lines.push("-".repeat(40));
+  lines.push(`Total image files scanned:        ${audit.summary.totalFilesScanned}`);
+  lines.push(`Products in DB:                   ${audit.summary.productCount}`);
+  lines.push(`Matched files (any product):      ${audit.summary.matchedFiles}`);
+  lines.push(`Unique products matched:            ${audit.summary.uniqueProductsMatched}`);
+  lines.push("");
+  lines.push(`OK (matched + has uploaded image): ${audit.summary.okFiles}`);
+  lines.push(`  unique products with image:      ${audit.summary.okProducts}`);
+  lines.push(`Missing/wrong image (needs upload): ${audit.summary.missingFiles}`);
+  lines.push(`  unique products missing image:   ${audit.summary.missingProducts}`);
+  lines.push(`Unmatched (no product):             ${audit.summary.unmatchedFiles}`);
+  lines.push(`Duplicate (same product, extra file): ${audit.summary.duplicateFiles}`);
+  lines.push("");
+  lines.push(`Coverage: ${audit.summary.coveragePercent}% of files map to products with real images`);
+  lines.push(`Gap count (missing + unmatched): ${audit.summary.gapCount}`);
+  lines.push("");
+
+  if (audit.missingOrWrong.length) {
+    lines.push("Missing / wrong image samples:");
+    for (const item of audit.missingOrWrong.slice(0, 20)) {
+      lines.push(`  - ${item.file}`);
+      lines.push(`    -> ${item.product.sku} | ${item.product.name}`);
+      lines.push(`    image: ${item.product.imageStatus} (${item.product.image_url ?? "null"})`);
+    }
+    lines.push("");
+  }
+
+  if (audit.unmatched.length) {
+    lines.push("Unmatched filename samples:");
+    for (const item of audit.unmatched.slice(0, 20)) {
+      lines.push(`  - ${item.file} (${item.stem})`);
+    }
+    lines.push("");
+  }
+
+  if (audit.duplicates.length) {
+    lines.push("Duplicate file samples:");
+    for (const item of audit.duplicates.slice(0, 20)) {
+      lines.push(`  - ${item.file}`);
+      lines.push(`    -> ${item.matchedSku} | kept: ${item.keptFile}`);
+    }
+    lines.push("");
+  }
+
+  if (audit.summary.missingProducts > 10) {
+    lines.push("Recommendation:");
+    lines.push("  Significant missing-image gaps. Upload missing only (no --overwrite):");
+    lines.push(`  node scripts/upload-folder-images-by-name.mjs --dir "${audit.imagesDir}"`);
+  } else if (audit.summary.gapCount > 0) {
+    lines.push("Recommendation:");
+    lines.push("  Small gap count. Upload missing only:");
+    lines.push(`  node scripts/upload-folder-images-by-name.mjs --dir "${audit.imagesDir}"`);
+  } else {
+    lines.push("All scanned files are accounted for. No upload action needed.");
+  }
+
+  return lines.join("\n");
+}
+
+function writeAuditReport({ imagesDir, allImages, fileMatches, bestByProduct, unmatchedAll, products }) {
+  const unmatched = unmatchedAll.filter((u) => u.reason === "no-product-match");
+  const duplicates = unmatchedAll.filter((u) => u.reason === "duplicate-product-match");
+
+  const ok = [];
+  const missingOrWrong = [];
+
+  for (const { imageEntry, match } of bestByProduct.values()) {
+    const product = match.product;
+    const hasImage = hasRealImageUrl(product.image_url);
+    const entry = {
+      file: imageEntry.relativePath,
+      filename: imageEntry.file,
+      stem: imageEntry.cleanedStem,
+      method: match.method,
+      score: match.score,
+      product: productAuditSummary(product),
+    };
+    if (hasImage) ok.push(entry);
+    else {
+      missingOrWrong.push({
+        ...entry,
+        issue: classifyImageUrl(product.image_url) === "placeholder" ? "placeholder-image" : "missing-image",
+      });
+    }
+  }
+
+  const duplicateOkCount = duplicates.filter((d) => {
+    const kept = [...bestByProduct.values()].find((v) => v.imageEntry.relativePath === d.keptFile);
+    return kept ? hasRealImageUrl(kept.match.product.image_url) : false;
+  }).length;
+
+  const okFiles = ok.length + duplicateOkCount;
+  const gapCount = missingOrWrong.length + unmatched.length;
+  const coveragePercent =
+    allImages.length > 0 ? Math.round((okFiles / allImages.length) * 10000) / 100 : 100;
+
+  const matchMethods = {};
+  for (const { match } of bestByProduct.values()) {
+    matchMethods[match.method] = (matchMethods[match.method] ?? 0) + 1;
+  }
+
+  const audit = {
+    generatedAt: new Date().toISOString(),
+    imagesDir,
+    summary: {
+      totalFilesScanned: allImages.length,
+      productCount: products.length,
+      matchedFiles: fileMatches.length,
+      uniqueProductsMatched: bestByProduct.size,
+      okFiles,
+      okProducts: ok.length,
+      missingFiles: missingOrWrong.length,
+      missingProducts: missingOrWrong.length,
+      unmatchedFiles: unmatched.length,
+      duplicateFiles: duplicates.length,
+      gapCount,
+      coveragePercent,
+      matchMethods,
+    },
+    ok,
+    missingOrWrong,
+    unmatched,
+    duplicates,
+  };
+
+  ensureLogsDir();
+  const auditJson = path.join(LOGS_DIR, "desktop-images-audit.json");
+  const auditSummary = path.join(LOGS_DIR, "desktop-images-audit-summary.txt");
+  fs.writeFileSync(auditJson, `${JSON.stringify(audit, null, 2)}\n`, "utf8");
+  fs.writeFileSync(auditSummary, `${buildAuditSummaryText(audit)}\n`, "utf8");
+  return { auditJson, auditSummary, audit };
 }
 
 function loadEnvLocal() {
@@ -552,10 +715,42 @@ function ensureLogsDir() {
   if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
 }
 
+async function triggerStorefrontRevalidation() {
+  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
+  if (!serviceKey) {
+    return;
+  }
+
+  const rawBase =
+    process.env.REVALIDATE_BASE_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.VERCEL_URL ??
+    "http://localhost:3000";
+  const baseUrl = rawBase.startsWith("http") ? rawBase : `https://${rawBase}`;
+
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/admin/storefront/revalidate`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceKey}` },
+    });
+    if (!response.ok) {
+      console.error(`Storefront revalidation failed: HTTP ${response.status}`);
+    } else {
+      console.error("Storefront cache revalidated.");
+    }
+  } catch (err) {
+    console.error(
+      `Storefront revalidation skipped: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
 async function main() {
-  const { dryRun, overwrite, imagesDir } = parseCliArgs(process.argv.slice(2));
+  const { dryRun, overwrite, auditOnly, imagesDir } = parseCliArgs(process.argv.slice(2));
   if (!imagesDir) {
-    console.error("Usage: node scripts/upload-folder-images-by-name.mjs --dir <folder> [--dry-run] [--overwrite]");
+    console.error(
+      "Usage: node scripts/upload-folder-images-by-name.mjs --dir <folder> [--dry-run] [--overwrite] [--audit]",
+    );
     process.exit(1);
   }
   if (!fs.existsSync(imagesDir)) {
@@ -660,6 +855,33 @@ async function main() {
   }
 
   report.selectedForUpload = bestByProduct.size;
+
+  if (auditOnly) {
+    const { auditJson, auditSummary, audit } = writeAuditReport({
+      imagesDir,
+      allImages,
+      fileMatches,
+      bestByProduct,
+      unmatchedAll: report.unmatched,
+      products,
+    });
+    console.log(
+      JSON.stringify(
+        {
+          auditJson,
+          auditSummary,
+          ...audit.summary,
+          unmatchedSample: audit.unmatched.slice(0, 20),
+          missingSample: audit.missingOrWrong.slice(0, 20),
+          duplicateSample: audit.duplicates.slice(0, 20),
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
   console.error(`Uploading ${report.selectedForUpload} products...`);
   let uploadProgress = 0;
 
@@ -790,6 +1012,10 @@ async function main() {
     const fallback = path.join(LOGS_DIR, `upload-desktop-images-${Date.now()}.log`);
     fs.writeFileSync(fallback, reportPayload, "utf8");
     console.error(`Wrote report log to ${fallback}: ${err instanceof Error ? err.message : err}`);
+  }
+
+  if (!dryRun && report.uploaded > 0) {
+    await triggerStorefrontRevalidation();
   }
 
   console.log(

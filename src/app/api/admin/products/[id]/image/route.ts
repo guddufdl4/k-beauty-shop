@@ -8,7 +8,7 @@ import {
 import { parseProductImageNormalizeOptions } from "@/lib/admin/product-image-normalize-options";
 import { readAndValidateProductImageFile } from "@/lib/product-image-normalize";
 import { updateProductImageUrl } from "@/lib/admin/product-image-update";
-import { revalidateStorefrontHome } from "@/lib/store/revalidate-storefront";
+import { revalidateStorefrontCatalog } from "@/lib/store/revalidate-storefront";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -44,13 +44,8 @@ async function requireAdminApi() {
 }
 
 function revalidateProductPaths() {
-  revalidatePath("/admin/products");
-  revalidatePath("/products");
-  revalidatePath("/en/products");
-  revalidatePath("/ko/products");
-  revalidatePath("/ja/products");
-  revalidatePath("/zh/products");
-  revalidateStorefrontHome();
+  revalidatePath("/admin/products/images");
+  revalidateStorefrontCatalog();
 }
 
 export async function POST(request: Request, context: RouteContext) {

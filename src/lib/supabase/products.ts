@@ -25,6 +25,7 @@ const SUPABASE_PAGE_SIZE = 1000;
 export const STOREFRONT_PRODUCTS_PAGE_SIZE = 48;
 const CACHE_REVALIDATE_SECONDS = 300;
 export const STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG = "storefront-priority-products";
+export const STOREFRONT_PRODUCTS_CACHE_TAG = "storefront-products";
 
 export type ProductStatus = "draft" | "active" | "archived";
 export type ProductContentStatus = "pending" | "complete";
@@ -696,9 +697,14 @@ function filterStaticProducts(
     brandExact?: boolean;
     importBatchId?: string;
     sort?: ProductListSort;
+    requireRealImage?: boolean;
   },
 ): ProductWithRelations[] {
   let filtered = products;
+
+  if (options?.requireRealImage) {
+    filtered = filtered.filter((product) => productHasRealImage(product));
+  }
 
   if (options?.categorySlug) {
     filtered = filtered.filter((p) => p.category?.slug === options.categorySlug);
@@ -867,6 +873,8 @@ export async function getProducts(
         priorityBrandList?: boolean;
         /** Use service role for admin list (RLS-safe joins + filters). */
         privileged?: boolean;
+        /** Storefront: hide products without uploaded images. */
+        requireRealImage?: boolean;
       },
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
   const options =
@@ -884,6 +892,7 @@ export async function getProducts(
   const deletionFilter = options?.deletionFilter ?? "active";
   const imageFirst = options?.imageFirst === true;
   const lightSelect = options?.lightSelect === true;
+  const requireRealImage = options?.requireRealImage === true;
   const listLimit = options?.limit;
   const listPage = Math.max(1, options?.page ?? 1);
   const listOrderOptions: ProductListOrderOptions = {
@@ -933,6 +942,7 @@ export async function getProducts(
       brandExact,
       importBatchId,
       sort,
+      requireRealImage,
     });
 
     if (deletionFilter === "deleted") {
@@ -1019,6 +1029,10 @@ export async function getProducts(
       }
     }
 
+    if (requireRealImage) {
+      filtered = filtered.eq("needs_image", false);
+    }
+
     if (sort === "trending") {
       filtered = filtered.eq("is_featured", true);
     }
@@ -1089,6 +1103,10 @@ export async function getProducts(
       products = products.filter((product) => isProductOnSale(product));
     }
 
+    if (requireRealImage) {
+      products = products.filter((product) => productHasRealImage(product));
+    }
+
     return {
       products,
       totalCount,
@@ -1124,6 +1142,10 @@ export async function getProducts(
 
   if (sort === "sale") {
     products = products.filter((product) => isProductOnSale(product));
+  }
+
+  if (requireRealImage) {
+    products = products.filter((product) => productHasRealImage(product));
   }
 
   products = sortProductsForList(products, listOrderOptions);
@@ -1376,7 +1398,10 @@ function filterPriorityProducts(products: ProductWithRelations[]): ProductWithRe
 
 function getActiveStaticProducts(): ProductWithRelations[] {
   return STATIC_PRODUCTS.filter(
-    (product) => product.status === "active" && !isDemoProduct(product),
+    (product) =>
+      product.status === "active" &&
+      !isDemoProduct(product) &&
+      productHasRealImage(product),
   ).map((product) => enrichProductImages(product));
 }
 
@@ -1392,7 +1417,9 @@ function finalizeHomepageProducts(
   products: ProductWithRelations[],
   limit: number,
 ): ProductWithRelations[] {
-  return sortHomepagePriorityProducts(products).slice(0, limit);
+  return sortHomepagePriorityProducts(
+    products.filter((product) => productHasRealImage(product)),
+  ).slice(0, limit);
 }
 
 function quoteInFilterValues(values: string[]): string {
@@ -1451,15 +1478,6 @@ export async function getPriorityBrandProducts(options?: {
   )();
 }
 
-function hasProductDisplayImage(product: { image_url: string | null }): boolean {
-  const imageUrl = product.image_url?.trim();
-  if (!imageUrl) {
-    return false;
-  }
-
-  return !imageUrl.includes("/images/categories/");
-}
-
 async function fetchHomepageProductsFromDatabase(
   supabase: NonNullable<ReturnType<typeof createPublicClient>>,
   limit: number,
@@ -1468,6 +1486,7 @@ async function fetchHomepageProductsFromDatabase(
     .from("products")
     .select(PRODUCT_SELECT)
     .eq("status", "active")
+    .eq("needs_image", false)
     .not("image_url", "is", null)
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false })
@@ -1488,7 +1507,7 @@ async function fetchHomepageProductsFromDatabase(
 
   const products = (data as unknown as Record<string, unknown>[])
     .map((row) => mapProductWithRelations(row))
-    .filter((product) => !isDemoProduct(product) && hasProductDisplayImage(product));
+    .filter((product) => !isDemoProduct(product) && productHasRealImage(product));
 
   return {
     products,

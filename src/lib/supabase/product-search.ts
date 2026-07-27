@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { productHasRealImage } from "@/lib/product-images";
 import { isSupabaseConfigured } from "./config";
 import { createSafeClient } from "./safe-server";
 import { createPublicClient } from "./service";
@@ -108,7 +109,7 @@ function buildSuggestionsFromProducts(
 ): SearchSuggestions {
   const normalizedQuery = normalizeQuery(query);
   const rankedProducts = products
-    .filter((product) => productMatchesQuery(product, query))
+    .filter((product) => productHasRealImage(product) && productMatchesQuery(product, query))
     .map((product) => ({
       product,
       score: scoreProductMatch(product, query),
@@ -159,8 +160,9 @@ async function fetchSuggestionsFromDatabase(
   const escaped = escapeIlikePattern(query);
   let productQuery = supabase
     .from("products")
-    .select("id, name, brand, slug, sku, barcode, status")
+    .select("id, name, brand, slug, sku, barcode, status, image_url")
     .eq("status", "active")
+    .eq("needs_image", false)
     .or(
       `name.ilike.%${escaped}%,sku.ilike.%${escaped}%,brand.ilike.%${escaped}%,barcode.ilike.%${escaped}%`,
     )
@@ -184,6 +186,7 @@ async function fetchSuggestionsFromDatabase(
     sku: String(row.sku),
     barcode: row.barcode ? String(row.barcode) : null,
     status: "active" as const,
+    image_url: row.image_url ? String(row.image_url) : null,
   }));
 
   return buildSuggestionsFromProducts(
@@ -205,7 +208,6 @@ async function fetchSuggestionsFromDatabase(
       import_batch_id: null,
       external_sku: null,
       source_row: null,
-      image_url: null,
       content_status: "complete" as const,
       needs_image: false,
       needs_description: false,

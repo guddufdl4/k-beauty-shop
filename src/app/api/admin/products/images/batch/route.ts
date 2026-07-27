@@ -4,7 +4,7 @@ import {
   getProductImageBatchStats,
   runProductImageBatch,
 } from "@/lib/admin/product-image-batch";
-import { revalidateStorefrontHome } from "@/lib/store/revalidate-storefront";
+import { revalidateStorefrontCatalog } from "@/lib/store/revalidate-storefront";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 
@@ -95,11 +95,8 @@ export async function POST(request: Request) {
     );
   }
 
-  revalidatePath("/admin/products");
   revalidatePath("/admin/products/images");
-  revalidatePath("/en/products");
-  revalidatePath("/ko/products");
-  revalidateStorefrontHome();
+  revalidateStorefrontCatalog();
 
   const { stats } = await getProductImageBatchStats(supabase);
 

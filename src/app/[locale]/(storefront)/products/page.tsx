@@ -46,6 +46,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       sort,
       limit: STOREFRONT_PRODUCTS_PAGE_SIZE,
       page: currentPage,
+      requireRealImage: true,
     }),
     getCategories(),
   ]);

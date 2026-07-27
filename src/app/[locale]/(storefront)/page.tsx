@@ -45,16 +45,18 @@ export default async function HomePage() {
       }
     : undefined;
 
-  const featuredProducts = products.filter((product) => product.is_featured);
-  const bestSellers = sortHomeProducts(
-    featuredProducts.length > 0 ? featuredProducts : products,
-  ).slice(0, 8);
-  const mostViewed = sortHomeProducts(products).slice(0, 8);
-  const tabEmptyMessage = t("tabEmpty");
-  const newArrivals = sortHomeProducts(products).slice(0, 8);
-  const allProducts = sortHomeProducts(products).slice(0, 8);
+  const visibleProducts = products.filter((product) => productHasRealImage(product));
 
-  const uniqueBrands = [...new Set(products.map((product) => product.brand).filter(Boolean))].slice(0, 8);
+  const featuredProducts = visibleProducts.filter((product) => product.is_featured);
+  const bestSellers = sortHomeProducts(
+    featuredProducts.length > 0 ? featuredProducts : visibleProducts,
+  ).slice(0, 8);
+  const mostViewed = sortHomeProducts(visibleProducts).slice(0, 8);
+  const tabEmptyMessage = t("tabEmpty");
+  const newArrivals = sortHomeProducts(visibleProducts).slice(0, 8);
+  const allProducts = sortHomeProducts(visibleProducts).slice(0, 8);
+
+  const uniqueBrands = [...new Set(visibleProducts.map((product) => product.brand).filter(Boolean))].slice(0, 8);
 
   const sections = [
     {
