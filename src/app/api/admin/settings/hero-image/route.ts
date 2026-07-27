@@ -102,9 +102,9 @@ export async function POST(request: Request) {
     const message = uploadError.message.toLowerCase();
     const error =
       message.includes("bucket") && message.includes("not found")
-        ? "Supabase Storage 버킷(site-assets)이 없습니다. supabase/migrations/010_hero_settings.sql을 실행하세요."
+        ? "Supabase Storage 버킷(product-images)이 없습니다. supabase/migrations/006_product_images_storage.sql을 실행하세요."
         : message.includes("row-level security") || message.includes("permission")
-          ? "Storage 업로드 권한이 없습니다. 관리자로 로그인했는지 확인하고 010_hero_settings.sql 마이그레이션을 실행하세요."
+          ? "Storage 업로드 권한이 없습니다. 관리자로 로그인했는지 확인하고 006_product_images_storage.sql 마이그레이션을 실행하세요."
           : uploadError.message;
     return NextResponse.json({ error }, { status: 500 });
   }
@@ -130,10 +130,13 @@ export async function POST(request: Request) {
 
   if (error || !data) {
     await supabase.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
-    return NextResponse.json(
-      { error: error?.message ?? "\ubc30\ub108 \uc774\ubbf8\uc9c0 URL \uc800\uc7a5\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4." },
-      { status: 500 },
-    );
+    const dbMessage = error?.message?.toLowerCase() ?? "";
+    const dbError =
+      dbMessage.includes("hero_image_url") ||
+      (dbMessage.includes("column") && dbMessage.includes("site_settings"))
+        ? "site_settings에 hero 컬럼이 없습니다. supabase/migrations/010_hero_settings.sql을 실행하세요."
+        : (error?.message ?? "배너 이미지 URL 저장에 실패했습니다.");
+    return NextResponse.json({ error: dbError }, { status: 500 });
   }
 
   revalidateHeroPaths();

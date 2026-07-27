@@ -3,10 +3,12 @@ import {
   detectProductImageMimeType,
   extensionForProductImageMime,
   MAX_PRODUCT_IMAGE_BYTES,
+  PRODUCT_IMAGE_BUCKET,
   type AllowedProductImageMimeType,
 } from "@/lib/admin/product-image-upload";
 
-export const HERO_IMAGE_BUCKET = "site-assets";
+/** Hero backgrounds live under `hero/` in the shared product-images bucket (006). */
+export const HERO_IMAGE_BUCKET = PRODUCT_IMAGE_BUCKET;
 
 const HERO_MAX_WIDTH = 1920;
 const HERO_JPEG_QUALITY = 85;
