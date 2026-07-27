@@ -202,7 +202,10 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
         </div>
       </section>
 
-      <section className="space-y-4 border-t border-zinc-100 pt-6">
+      <section
+        key={settings.updated_at}
+        className="space-y-4 border-t border-zinc-100 pt-6"
+      >
         <div>
           <h2 className="text-lg font-semibold text-zinc-900">배너 문구</h2>
           <p className="mt-1 text-sm text-zinc-500">

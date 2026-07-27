@@ -42,6 +42,11 @@ function revalidateHeroPaths() {
   revalidateTag(SITE_SETTINGS_CACHE_TAG, "max");
   revalidatePath("/admin/settings/hero");
   revalidatePath("/admin/settings");
+  revalidatePath("/admin");
+  revalidatePath("/en", "layout");
+  revalidatePath("/ko", "layout");
+  revalidatePath("/ja", "layout");
+  revalidatePath("/zh", "layout");
   revalidatePath("/en");
   revalidatePath("/ko");
   revalidatePath("/ja");
@@ -101,7 +106,7 @@ export async function POST(request: Request) {
     const message = uploadError.message.toLowerCase();
     const error =
       message.includes("bucket") && message.includes("not found")
-        ? "Supabase Storage \ubc84\ud2b7(site-assets)\uc774 \uc5c6\uc2b5\ub2c8\ub2e4. 009_hero_settings.sql\uc744 \uc2e4\ud589\ud558\uc138\uc694."
+        ? "Supabase Storage 버킷(site-assets)이 없습니다. supabase/migrations/010_hero_settings.sql을 실행하세요."
         : uploadError.message;
     return NextResponse.json({ error }, { status: 500 });
   }
