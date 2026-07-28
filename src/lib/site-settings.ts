@@ -125,14 +125,18 @@ export async function saveHeroSettings(
 ): Promise<{ data: StoredHeroSettings | null; error: string | null }> {
   const service = createServiceClient();
   if (!service) {
-    return { data: null, error: "Supabase service client unavailable." };
+    return {
+      data: null,
+      error:
+        "SUPABASE_SERVICE_ROLE_KEY가 설정되지 않아 배너 설정을 저장할 수 없습니다.",
+    };
   }
 
   const bucketReady = await ensureHeroSettingsBucket();
   if (!bucketReady) {
     return {
       data: null,
-      error: "Could not prepare hero settings storage (site-config bucket).",
+      error: "Storage 버킷(site-config)을 준비하지 못했습니다.",
     };
   }
 

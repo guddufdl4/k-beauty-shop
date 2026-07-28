@@ -5,14 +5,17 @@ import {
   HERO_IMAGE_BUCKET,
   readAndValidateHeroImageFile,
 } from "@/lib/admin/hero-image-upload";
-import { readProductImageUploadEntry } from "@/lib/admin/product-image-upload";
+import {
+  ensureProductImagesBucket,
+  readProductImageUploadEntry,
+} from "@/lib/admin/product-image-upload";
 import {
   getSiteSettingsFresh,
   saveHeroSettings,
   SITE_SETTINGS_CACHE_TAG,
 } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { createSafeClient } from "@/lib/supabase/safe-server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -62,10 +65,21 @@ export async function POST(request: Request) {
     return auth.error;
   }
 
-  const supabase = await createSafeClient();
-  if (!supabase) {
+  const serviceClient = createServiceClient();
+  if (!serviceClient) {
     return NextResponse.json(
-      { error: "Supabase \ud074\ub77c\uc774\uc5b8\ud2b8\ub97c \uc0dd\uc131\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4." },
+      {
+        error:
+          "SUPABASE_SERVICE_ROLE_KEY\uac00 \uc124\uc815\ub418\uc9c0 \uc54a\uc544 Storage \uc5c5\ub85c\ub4dc\ub97c \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
+      },
+      { status: 500 },
+    );
+  }
+
+  const bucketReady = await ensureProductImagesBucket();
+  if (!bucketReady) {
+    return NextResponse.json(
+      { error: "Storage \ubc84\ud0b7(product-images)\uc744 \uc900\ube44\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4." },
       { status: 500 },
     );
   }
@@ -95,7 +109,7 @@ export async function POST(request: Request) {
 
   const storagePath = buildHeroImageStoragePath(validated.mimeType);
 
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await serviceClient.storage
     .from(HERO_IMAGE_BUCKET)
     .upload(storagePath, validated.buffer, {
       contentType: validated.mimeType,
@@ -103,17 +117,10 @@ export async function POST(request: Request) {
     });
 
   if (uploadError) {
-    const message = uploadError.message.toLowerCase();
-    const error =
-      message.includes("bucket") && message.includes("not found")
-        ? "Supabase Storage 버킷(product-images)이 없습니다. supabase/migrations/006_product_images_storage.sql을 실행하세요."
-        : message.includes("row-level security") || message.includes("permission")
-          ? "Storage 업로드 권한이 없습니다. 관리자로 로그인했는지 확인하고 006_product_images_storage.sql 마이그레이션을 실행하세요."
-          : uploadError.message;
-    return NextResponse.json({ error }, { status: 500 });
+    return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
-  const { data: publicData } = supabase.storage
+  const { data: publicData } = serviceClient.storage
     .from(HERO_IMAGE_BUCKET)
     .getPublicUrl(storagePath);
 
@@ -128,7 +135,7 @@ export async function POST(request: Request) {
   const { error: heroSaveError } = await saveHeroSettings({ hero_image_url: publicUrl });
 
   if (heroSaveError) {
-    await supabase.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
+    await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
     return NextResponse.json(
       { error: heroSaveError ?? "배너 이미지 URL 저장에 실패했습니다." },
       { status: 500 },

@@ -1,3 +1,5 @@
+import { createServiceClient } from "@/lib/supabase/service";
+
 export const PRODUCT_IMAGE_BUCKET = "product-images";
 
 export const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -122,6 +124,50 @@ export function readProductImageUploadEntry(
   }
 
   return entry;
+}
+
+let productImagesBucketEnsurePromise: Promise<boolean> | null = null;
+
+/** Ensures the public product-images bucket exists (service role; no SQL migration required). */
+export async function ensureProductImagesBucket(): Promise<boolean> {
+  if (!productImagesBucketEnsurePromise) {
+    productImagesBucketEnsurePromise = ensureProductImagesBucketOnce().catch((error) => {
+      productImagesBucketEnsurePromise = null;
+      throw error;
+    });
+  }
+
+  return productImagesBucketEnsurePromise;
+}
+
+async function ensureProductImagesBucketOnce(): Promise<boolean> {
+  const service = createServiceClient();
+  if (!service) {
+    return false;
+  }
+
+  const { data: buckets, error: listError } = await service.storage.listBuckets();
+  if (!listError) {
+    const exists = buckets?.some(
+      (bucket) => bucket.id === PRODUCT_IMAGE_BUCKET || bucket.name === PRODUCT_IMAGE_BUCKET,
+    );
+    if (exists) {
+      return true;
+    }
+  }
+
+  const { error: createError } = await service.storage.createBucket(PRODUCT_IMAGE_BUCKET, {
+    public: true,
+    fileSizeLimit: MAX_PRODUCT_IMAGE_BYTES,
+    allowedMimeTypes: [...ALLOWED_PRODUCT_IMAGE_MIME_TYPES],
+  });
+
+  if (!createError) {
+    return true;
+  }
+
+  const message = createError.message.toLowerCase();
+  return message.includes("already exists") || message.includes("duplicate");
 }
 
 export function validateClientProductImageFile(file: File): string | null {

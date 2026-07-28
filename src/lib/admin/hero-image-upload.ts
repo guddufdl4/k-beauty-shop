@@ -7,7 +7,7 @@ import {
   type AllowedProductImageMimeType,
 } from "@/lib/admin/product-image-upload";
 
-/** Hero backgrounds live under `hero/` in the shared product-images bucket (006). */
+/** Hero backgrounds live under `hero/` in the shared product-images bucket. */
 export const HERO_IMAGE_BUCKET = PRODUCT_IMAGE_BUCKET;
 
 const HERO_MAX_WIDTH = 1920;

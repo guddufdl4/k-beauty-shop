@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import {
   buildProductImageStoragePath,
+  ensureProductImagesBucket,
   PRODUCT_IMAGE_BUCKET,
   readProductImageUploadEntry,
 } from "@/lib/admin/product-image-upload";
@@ -70,6 +71,14 @@ export async function POST(request: Request, context: RouteContext) {
         error:
           "SUPABASE_SERVICE_ROLE_KEY\uac00 \uc124\uc815\ub418\uc9c0 \uc54a\uc544 Storage \uc5c5\ub85c\ub4dc\ub97c \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
       },
+      { status: 500 },
+    );
+  }
+
+  const bucketReady = await ensureProductImagesBucket();
+  if (!bucketReady) {
+    return NextResponse.json(
+      { error: "Storage \ubc84\ud0b7(product-images)\uc744 \uc900\ube44\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4." },
       { status: 500 },
     );
   }
@@ -146,12 +155,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
   if (uploadError) {
-    const message = uploadError.message.toLowerCase();
-    const error =
-      message.includes("bucket") && message.includes("not found")
-        ? "Supabase Storage 버킷(product-images)이 없습니다. 006_product_images_storage.sql을 실행하세요."
-        : uploadError.message;
-    return NextResponse.json({ error }, { status: 500 });
+    return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
   const { data: publicData } = serviceClient.storage
