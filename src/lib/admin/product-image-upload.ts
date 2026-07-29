@@ -1,4 +1,4 @@
-import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
+import { describeServiceClientMisconfiguration, describeByteStringFetchError } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export type BucketEnsureResult = { ok: true } | { ok: false; error: string };
@@ -137,6 +137,11 @@ export function formatStorageAuthHint(message: string): string {
     return `${message} — SUPABASE_SERVICE_ROLE_KEY(sb_secret_... 또는 legacy service_role JWT)와 NEXT_PUBLIC_SUPABASE_URL 프로젝트가 일치하는지, Vercel 재배포 후 다시 시도하세요.`;
   }
 
+  const byteStringHint = describeByteStringFetchError(new Error(message));
+  if (byteStringHint) {
+    return byteStringHint;
+  }
+
   return message;
 }
 
@@ -161,36 +166,52 @@ async function ensureProductImagesBucketOnce(): Promise<BucketEnsureResult> {
     };
   }
 
-  const { data: buckets, error: listError } = await service.storage.listBuckets();
-  if (!listError) {
-    const exists = buckets?.some(
-      (bucket) => bucket.id === PRODUCT_IMAGE_BUCKET || bucket.name === PRODUCT_IMAGE_BUCKET,
-    );
-    if (exists) {
+  try {
+    const { data: buckets, error: listError } = await service.storage.listBuckets();
+    if (!listError) {
+      const exists = buckets?.some(
+        (bucket) => bucket.id === PRODUCT_IMAGE_BUCKET || bucket.name === PRODUCT_IMAGE_BUCKET,
+      );
+      if (exists) {
+        return { ok: true };
+      }
+    }
+
+    const { error: createError } = await service.storage.createBucket(PRODUCT_IMAGE_BUCKET, {
+      public: true,
+      fileSizeLimit: MAX_PRODUCT_IMAGE_BYTES,
+      allowedMimeTypes: [...ALLOWED_PRODUCT_IMAGE_MIME_TYPES],
+    });
+
+    if (!createError) {
       return { ok: true };
     }
+
+    const message = createError.message.toLowerCase();
+    if (message.includes("already exists") || message.includes("duplicate")) {
+      return { ok: true };
+    }
+
+    const detail = listError?.message ?? createError.message;
+    return {
+      ok: false,
+      error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET})을 준비하지 못했습니다: ${formatStorageAuthHint(detail)}`,
+    };
+  } catch (error) {
+    const byteStringHint = describeByteStringFetchError(error);
+    if (byteStringHint) {
+      return {
+        ok: false,
+        error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET})을 준비하지 못했습니다: ${byteStringHint}`,
+      };
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET})을 준비하지 못했습니다: ${formatStorageAuthHint(message)}`,
+    };
   }
-
-  const { error: createError } = await service.storage.createBucket(PRODUCT_IMAGE_BUCKET, {
-    public: true,
-    fileSizeLimit: MAX_PRODUCT_IMAGE_BYTES,
-    allowedMimeTypes: [...ALLOWED_PRODUCT_IMAGE_MIME_TYPES],
-  });
-
-  if (!createError) {
-    return { ok: true };
-  }
-
-  const message = createError.message.toLowerCase();
-  if (message.includes("already exists") || message.includes("duplicate")) {
-    return { ok: true };
-  }
-
-  const detail = listError?.message ?? createError.message;
-  return {
-    ok: false,
-    error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET})을 준비하지 못했습니다: ${formatStorageAuthHint(detail)}`,
-  };
 }
 
 export function validateClientProductImageFile(file: File): string | null {

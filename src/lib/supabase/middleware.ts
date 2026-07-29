@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getSupabaseAnonKey, getSupabaseProjectUrl } from "./config";
+import { createSsrSupabaseFetch } from "./service";
 
 export async function updateSession(
   request: NextRequest,
@@ -7,14 +9,15 @@ export async function updateSession(
 ) {
   const supabaseResponse = response ?? NextResponse.next({ request });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = getSupabaseProjectUrl();
+  const key = getSupabaseAnonKey();
 
   if (!url || !key) {
     return supabaseResponse;
   }
 
   const supabase = createServerClient(url, key, {
+    global: { fetch: createSsrSupabaseFetch(key) },
     cookies: {
       getAll() {
         return request.cookies.getAll();

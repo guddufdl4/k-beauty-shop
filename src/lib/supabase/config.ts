@@ -3,6 +3,14 @@ const SUPABASE_OPAQUE_SECRET_KEY_PATTERN = /sb_secret_[A-Za-z0-9_-]+/;
 const SUPABASE_OPAQUE_PUBLISHABLE_KEY_PATTERN = /sb_publishable_[A-Za-z0-9_-]+/;
 const SUPABASE_JWT_KEY_PATTERN = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/;
 
+export const SUPABASE_ENV_VARS = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
+] as const;
+
+export type SupabaseEnvVarName = (typeof SUPABASE_ENV_VARS)[number];
+
 /** HTTP headers must be ByteString (Latin-1). Strip characters Fetch rejects. */
 export function toHttpHeaderValue(value: string): string {
   let result = "";
@@ -13,6 +21,51 @@ export function toHttpHeaderValue(value: string): string {
     }
   }
   return result;
+}
+
+/** True when raw env still contains non-Latin-1 characters (e.g. copied "Settings →"). */
+export function rawEnvHasNonAscii(raw: string | undefined): boolean {
+  if (raw == null || !raw) {
+    return false;
+  }
+
+  return raw !== toHttpHeaderValue(raw);
+}
+
+/** Which Supabase env var still contains pasted UI junk / non-ASCII (no secret values returned). */
+export function findCorruptedSupabaseEnvVar(): SupabaseEnvVarName | null {
+  if (rawEnvHasNonAscii(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+    return "NEXT_PUBLIC_SUPABASE_URL";
+  }
+
+  if (rawEnvHasNonAscii(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+    return "NEXT_PUBLIC_SUPABASE_ANON_KEY";
+  }
+
+  if (rawEnvHasNonAscii(process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    return "SUPABASE_SERVICE_ROLE_KEY";
+  }
+
+  return null;
+}
+
+export function describeCorruptedSupabaseEnvVar(name: SupabaseEnvVarName): string {
+  return `${name}에 "Settings →" 같은 UI 텍스트나 특수문자(→ 등)가 포함되어 있습니다. Vercel Environment Variables에서 해당 변수를 삭제한 뒤 Supabase Dashboard에서 값만 다시 붙여넣고 Production 재배포하세요.`;
+}
+
+/** Map Fetch ByteString failures to the likely corrupted env var (without exposing secrets). */
+export function describeByteStringFetchError(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!/ByteString|greater than 255/i.test(message)) {
+    return null;
+  }
+
+  const corrupted = findCorruptedSupabaseEnvVar();
+  if (corrupted) {
+    return describeCorruptedSupabaseEnvVar(corrupted);
+  }
+
+  return "Supabase 환경 변수 중 하나에 비ASCII 문자(→ 등)가 포함되어 fetch 요청이 실패했습니다. SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY를 Vercel에서 확인하세요.";
 }
 
 /** Trim env values and strip optional wrapping quotes (common Vercel copy/paste mistake). */
@@ -37,8 +90,44 @@ export function parseEnvSecret(raw: string | undefined): string | null {
     value = value.slice(1, -1).trim();
   }
 
+  value = stripLeadingUiJunk(value);
+
   const ascii = toHttpHeaderValue(value).trim();
   return ascii || null;
+}
+
+/** Drop Supabase Dashboard UI text copied before the real value (e.g. "Settings → sb_secret_..."). */
+function stripLeadingUiJunk(value: string): string {
+  const patterns = [
+    SUPABASE_URL_PATTERN,
+    SUPABASE_OPAQUE_SECRET_KEY_PATTERN,
+    SUPABASE_OPAQUE_PUBLISHABLE_KEY_PATTERN,
+    SUPABASE_JWT_KEY_PATTERN,
+  ];
+
+  let earliest: { index: number; token: string } | null = null;
+
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+    if (!match?.[0]) {
+      continue;
+    }
+
+    const index = match.index ?? value.indexOf(match[0]);
+    if (index < 0) {
+      continue;
+    }
+
+    if (!earliest || index < earliest.index) {
+      earliest = { index, token: match[0] };
+    }
+  }
+
+  if (earliest && earliest.index > 0) {
+    return earliest.token;
+  }
+
+  return value;
 }
 
 function extractSupabaseApiKey(
@@ -67,15 +156,7 @@ export function getSupabaseProjectUrl(): string | null {
   }
 
   const match = url.match(SUPABASE_URL_PATTERN);
-  if (match?.[0]) {
-    return match[0];
-  }
-
-  if (url.includes("supabase.co")) {
-    return url;
-  }
-
-  return null;
+  return match?.[0] ?? null;
 }
 
 export function getSupabaseAnonKey(): string | null {
@@ -103,6 +184,11 @@ export function isSupabaseConfigured(): boolean {
 
 /** Human-readable reason when `createServiceClient()` cannot run. */
 export function describeServiceClientMisconfiguration(): string {
+  const corrupted = findCorruptedSupabaseEnvVar();
+  if (corrupted) {
+    return describeCorruptedSupabaseEnvVar(corrupted);
+  }
+
   const url = parseEnvSecret(process.env.NEXT_PUBLIC_SUPABASE_URL);
   if (!url) {
     return "NEXT_PUBLIC_SUPABASE_URL이 설정되지 않았습니다.";

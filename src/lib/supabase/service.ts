@@ -32,33 +32,126 @@ function buildFetchInit(init: RequestInit | undefined, headers: Headers): Reques
   return requestInit;
 }
 
+function sanitizeFetchInput(input: RequestInfo | URL): RequestInfo | URL {
+  if (typeof input === "string") {
+    return toHttpHeaderValue(input);
+  }
+
+  if (input instanceof URL) {
+    const href = toHttpHeaderValue(input.href);
+    return href === input.href ? input : new URL(href);
+  }
+
+  if (input instanceof Request) {
+    const url = toHttpHeaderValue(input.url);
+    if (url === input.url) {
+      return input;
+    }
+
+    return new Request(url, input);
+  }
+
+  return input;
+}
+
+function mergeSanitizedHeaders(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  omitAuthorization: boolean,
+): Headers {
+  const headers = new Headers();
+
+  const append = (name: string, value: string) => {
+    const safeName = toHttpHeaderValue(name);
+    const safeValue = toHttpHeaderValue(value);
+    if (!safeName || !safeValue) {
+      return;
+    }
+
+    if (omitAuthorization && safeName.toLowerCase() === "authorization") {
+      return;
+    }
+
+    headers.set(safeName, safeValue);
+  };
+
+  if (input instanceof Request) {
+    input.headers.forEach((value, name) => {
+      append(name, value);
+    });
+  }
+
+  if (init?.headers) {
+    new Headers(init.headers).forEach((value, name) => {
+      append(name, value);
+    });
+  }
+
+  if (omitAuthorization) {
+    headers.delete("authorization");
+  }
+
+  return headers;
+}
+
 /**
  * Supabase opaque `sb_secret_` keys must not be sent as `Authorization: Bearer`
  * (Supabase parses that header as JWT and returns "Invalid JWT").
- * @supabase/supabase-js always adds Authorization; strip it for opaque keys.
+ * @supabase/supabase-js always adds Authorization via fetchWithAuth; strip it for opaque keys.
  *
- * Also normalizes header values to Latin-1 — Fetch rejects Unicode (e.g. "Settings →"
+ * Also normalizes header values and URLs to Latin-1 — Fetch rejects Unicode (e.g. "Settings →"
  * copy-pasted into env vars) with "Cannot convert argument to a ByteString".
  */
-function createServiceRoleFetch(serviceKey: string): typeof fetch {
-  const stripAuth = isOpaqueSupabaseSecretKey(serviceKey);
+function createSupabaseFetch(apiKey: string, omitAuthorization: boolean): typeof fetch {
+  const safeApiKey = toHttpHeaderValue(apiKey);
 
   return async (input, init) => {
-    const headers = new Headers();
+    const headers = mergeSanitizedHeaders(input, init, omitAuthorization);
 
-    if (init?.headers) {
-      const source = new Headers(init.headers);
-      source.forEach((value, name) => {
-        if (stripAuth && name.toLowerCase() === "authorization") {
-          return;
-        }
+    headers.set("apikey", safeApiKey);
 
-        headers.set(name, toHttpHeaderValue(value));
-      });
+    if (omitAuthorization) {
+      headers.delete("authorization");
+    } else if (!headers.has("authorization")) {
+      headers.set("authorization", `Bearer ${safeApiKey}`);
     }
 
-    return fetch(input, buildFetchInit(init, headers));
+    const sanitizedInput = sanitizeFetchInput(input);
+    const nextInit = buildFetchInit(init, headers);
+    const url =
+      typeof sanitizedInput === "string"
+        ? sanitizedInput
+        : sanitizedInput instanceof URL
+          ? sanitizedInput.href
+          : sanitizedInput.url;
+
+    const requestInit: RequestInit & { duplex?: "half" } = {
+      method: nextInit.method ?? (input instanceof Request ? input.method : "GET"),
+      headers,
+      body: nextInit.body,
+      signal: nextInit.signal,
+      credentials: nextInit.credentials,
+      cache: nextInit.cache,
+      redirect: nextInit.redirect,
+      referrer: nextInit.referrer,
+      referrerPolicy: nextInit.referrerPolicy,
+      integrity: nextInit.integrity,
+      keepalive: nextInit.keepalive,
+      mode: nextInit.mode,
+    };
+
+    const duplex = (nextInit as RequestInit & { duplex?: "half" }).duplex;
+    if (duplex) {
+      requestInit.duplex = duplex;
+    }
+
+    return fetch(new Request(url, requestInit));
   };
+}
+
+/** Sanitized fetch for cookie-based SSR clients (@supabase/ssr). */
+export function createSsrSupabaseFetch(apiKey: string): typeof fetch {
+  return createSupabaseFetch(apiKey, isOpaqueSupabaseSecretKey(apiKey));
 }
 
 /** Anonymous read-only client for cached storefront queries (no cookies). */
@@ -75,6 +168,7 @@ export function createPublicClient(): SupabaseClient | null {
 
   return createClient(url, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: createSupabaseFetch(anonKey, false) },
   });
 }
 
@@ -90,8 +184,10 @@ export function createServiceClient(): SupabaseClient | null {
     return null;
   }
 
+  const omitAuthorization = isOpaqueSupabaseSecretKey(serviceKey);
+
   return createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: createServiceRoleFetch(serviceKey) },
+    global: { fetch: createSupabaseFetch(serviceKey, omitAuthorization) },
   });
 }

@@ -1,6 +1,7 @@
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { isSupabaseConfigured } from "./config";
+import { getSupabaseAnonKey, getSupabaseProjectUrl, isSupabaseConfigured } from "./config";
+import { createSsrSupabaseFetch } from "./service";
 
 export async function createClient() {
   if (!isSupabaseConfigured()) {
@@ -10,10 +11,11 @@ export async function createClient() {
   }
 
   const cookieStore = await cookies();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const url = getSupabaseProjectUrl()!;
+  const anonKey = getSupabaseAnonKey()!;
 
   return createSupabaseServerClient(url, anonKey, {
+    global: { fetch: createSsrSupabaseFetch(anonKey) },
     cookies: {
       getAll() {
         return cookieStore.getAll();
