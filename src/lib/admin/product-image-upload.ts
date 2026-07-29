@@ -25,6 +25,32 @@ export function withStorageImageCacheBuster(url: string, version: string): strin
   return `${url}${separator}v=${encodeURIComponent(version)}`;
 }
 
+/** True when the value is an absolute http(s) URL suitable for img/background-image src. */
+export function isPublicImageUrl(url: string | null | undefined): url is string {
+  if (!url?.trim()) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/** Resolve a storefront-safe hero image src, or null when the URL is missing/invalid. */
+export function resolveHeroImageSrc(
+  url: string | null | undefined,
+  version: string,
+): string | null {
+  if (!isPublicImageUrl(url)) {
+    return null;
+  }
+
+  return withStorageImageCacheBuster(url.trim(), version);
+}
+
 /** Build a Supabase Storage public object URL from sanitized project URL. */
 export function buildStoragePublicUrl(bucket: string, objectPath: string): string | null {
   const projectUrl = getSupabaseProjectUrl();

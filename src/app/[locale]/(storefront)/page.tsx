@@ -1,11 +1,14 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
+import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { productHasRealImage } from "@/lib/product-images";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getPriorityBrandProducts, type ProductWithRelations } from "@/lib/supabase/products";
 import { buildProductsHref } from "@/lib/store/products-url";
+
+export const revalidate = 60;
 
 function isExternalHref(href: string): boolean {
   return href.startsWith("http://") || href.startsWith("https://");
@@ -37,10 +40,10 @@ export default async function HomePage() {
   const heroSubtitle = siteSettings.hero_subtitle ?? t("description");
   const heroButtonText = siteSettings.hero_button_text ?? t("heroCta");
   const heroButtonLink = siteSettings.hero_button_link ?? "/products";
-  const heroImageUrl = siteSettings.hero_image_url?.trim() || null;
-  const heroImageSrc =
-    heroImageUrl &&
-    `${heroImageUrl}${heroImageUrl.includes("?") ? "&" : "?"}v=${encodeURIComponent(siteSettings.updated_at)}`;
+  const heroImageSrc = resolveHeroImageSrc(
+    siteSettings.hero_image_url,
+    siteSettings.updated_at,
+  );
 
   const visibleProducts = products.filter((product) => productHasRealImage(product));
 
@@ -98,21 +101,17 @@ export default async function HomePage() {
     <>
       <section
         className={
-          heroImageUrl
+          heroImageSrc
             ? "relative isolate overflow-hidden border-b border-zinc-200 min-h-[280px] sm:min-h-[340px] lg:min-h-[400px]"
             : "overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]"
         }
       >
         {heroImageSrc ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={heroImageSrc}
-              alt=""
+            <div
               aria-hidden
-              fetchPriority="high"
-              decoding="async"
-              className="absolute inset-0 z-0 h-full w-full object-cover object-center"
+              className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${JSON.stringify(heroImageSrc)})` }}
             />
             <div
               aria-hidden
@@ -123,7 +122,7 @@ export default async function HomePage() {
         <div className="relative z-[2] mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
           <div
             className={
-              heroImageUrl
+              heroImageSrc
                 ? "max-w-xl text-center lg:text-left [text-shadow:0_1px_8px_rgba(255,255,255,0.85),0_0_2px_rgba(255,255,255,0.9)]"
                 : "max-w-xl text-center lg:text-left"
             }
