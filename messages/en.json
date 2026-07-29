@@ -137,7 +137,22 @@
     "pageJumpInput": "Page number",
     "pageJumpGo": "Go",
     "pageNumberLabel": "Page {page}",
-    "imagePending": "{brand} {name} — image coming soon"
+    "imagePending": "{brand} {name} — image coming soon",
+    "adminEdit": {
+      "badge": "Admin",
+      "hint": "You can edit this product on the storefront.",
+      "edit": "Edit product",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "saved": "Product updated.",
+      "saveError": "Failed to save product.",
+      "networkError": "Network error. Could not save.",
+      "nameLabel": "Product name",
+      "noCategory": "No category",
+      "soldOutLabel": "Availability",
+      "available": "Available"
+    }
   },
   "brands": {
     "browse": "Browse",

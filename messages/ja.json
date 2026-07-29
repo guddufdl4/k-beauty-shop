@@ -133,7 +133,22 @@
     "pageJumpLabel": "ページ移動",
     "pageJumpInput": "ページ番号",
     "pageJumpGo": "移動",
-    "pageNumberLabel": "{page}ページ"
+    "pageNumberLabel": "{page}ページ",
+    "adminEdit": {
+      "badge": "管理者",
+      "hint": "ストアの商品ページから直接編集できます。",
+      "edit": "商品を編集",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "saving": "保存中…",
+      "saved": "商品情報を保存しました。",
+      "saveError": "保存に失敗しました。",
+      "networkError": "ネットワークエラーで保存できませんでした。",
+      "nameLabel": "商品名",
+      "noCategory": "カテゴリーなし",
+      "soldOutLabel": "販売状態",
+      "available": "販売中"
+    }
   },
   "categories": {
     "browse": "Browse",

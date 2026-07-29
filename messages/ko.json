@@ -137,7 +137,22 @@
     "pageJumpInput": "페이지 번호",
     "pageJumpGo": "이동",
     "pageNumberLabel": "{page}페이지",
-    "imagePending": "{brand} {name} — 이미지 준비 중"
+    "imagePending": "{brand} {name} — 이미지 준비 중",
+    "adminEdit": {
+      "badge": "관리자",
+      "hint": "스토어 상품 페이지에서 바로 수정할 수 있습니다.",
+      "edit": "상품 수정",
+      "save": "저장",
+      "cancel": "취소",
+      "saving": "저장 중…",
+      "saved": "상품 정보를 저장했습니다.",
+      "saveError": "저장에 실패했습니다.",
+      "networkError": "네트워크 오류로 저장하지 못했습니다.",
+      "nameLabel": "상품명",
+      "noCategory": "카테고리 없음",
+      "soldOutLabel": "판매 상태",
+      "available": "판매 가능"
+    }
   },
   "categories": {
     "browse": "Browse",

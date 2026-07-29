@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
+import { ProductAdminDetailPanel } from "@/components/store/product-admin-detail-panel";
 import { ProductImagePlaceholder } from "@/components/store/product-image-placeholder";
 import {
   isCategoryPlaceholderUrl,
@@ -12,21 +13,25 @@ import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
 import { formatLocalePrice, formatLocaleProductPrice } from "@/lib/utils";
 import { getSiteSettings } from "@/lib/site-settings";
-import { getProductBySlug } from "@/lib/supabase/products";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { getCategories, getProductBySlug } from "@/lib/supabase/products";
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const [{ slug }, t, locale, siteSettings, usdKrwRate] = await Promise.all([
+  const [{ slug }, t, locale, siteSettings, usdKrwRate, session] = await Promise.all([
     params,
     getTranslations("products"),
     getLocale(),
     getSiteSettings(),
     getUsdKrwRate(),
+    getSessionProfile(),
   ]);
   const { product, meta } = await getProductBySlug(slug);
+  const isAdmin = session.profile?.role === "admin";
+  const categoriesResult = isAdmin ? await getCategories() : null;
 
   if (!product) {
     notFound();
@@ -103,94 +108,108 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         </div>
 
         <div className="flex min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-          <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">{product.brand}</p>
-          <h1 className="mt-2 text-balance break-words text-3xl font-bold tracking-tight text-zinc-900">
-            {product.name}
-          </h1>
-          {product.short_description ? (
-            <p className="mt-3 break-words text-lg text-zinc-600">{product.short_description}</p>
-          ) : null}
-
-          <div className="mt-8 min-w-0 space-y-4 rounded-2xl border border-rose-100 bg-white p-6">
-            <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t("retailPrice")}</p>
-                <p className="text-2xl font-bold text-zinc-900">{formatLocaleProductPrice(product.price, locale, usdKrwRate)}</p>
-                {product.compare_at_price ? (
-                  <p className="text-sm text-zinc-400 line-through">{formatLocalePrice(product.compare_at_price, locale, usdKrwRate)}</p>
-                ) : null}
-              </div>
-              {product.wholesale_price ? (
-                <div className="min-w-0 text-right">
-                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{wholesaleLabel}</p>
-                  <p className="text-xl font-bold text-rose-700">{formatLocaleProductPrice(product.wholesale_price, locale, usdKrwRate)}</p>
-                </div>
-              ) : null}
-            </div>
-
-            <dl className="grid min-w-0 grid-cols-2 gap-4 border-t border-rose-50 pt-4 text-sm">
-              <div className="min-w-0">
-                <dt className="text-zinc-500">{moqLabel}</dt>
-                <dd className="font-semibold text-zinc-900">{t("moqUnit", { count: product.moq })}</dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-zinc-500">{t("stock")}</dt>
-                <dd className={`font-semibold ${inStock ? "text-emerald-600" : "text-red-600"}`}>
-                  {inStock ? t("inStock", { count: product.stock }) : t("outOfStock")}
-                </dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-zinc-500">{t("sku")}</dt>
-                <dd className="break-all font-mono text-zinc-800">{product.sku}</dd>
-              </div>
+          {isAdmin && categoriesResult ? (
+            <ProductAdminDetailPanel
+              product={product}
+              categories={categoriesResult.categories}
+              locale={locale}
+              wholesaleLabel={wholesaleLabel}
+              moqLabel={moqLabel}
+              usdKrwRate={usdKrwRate}
+              minOrderNote={siteSettings.min_order_note}
+            />
+          ) : (
+            <>
+              <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">{product.brand}</p>
+              <h1 className="mt-2 text-balance break-words text-3xl font-bold tracking-tight text-zinc-900">
+                {product.name}
+              </h1>
               {product.short_description ? (
-                <div className="min-w-0">
-                  <dt className="text-zinc-500">{t("volume")}</dt>
-                  <dd className="break-words font-semibold text-zinc-900">{product.short_description}</dd>
-                </div>
+                <p className="mt-3 break-words text-lg text-zinc-600">{product.short_description}</p>
               ) : null}
-              {product.country_of_origin ? (
-                <div className="min-w-0">
-                  <dt className="text-zinc-500">{t("origin")}</dt>
-                  <dd className="break-words font-semibold text-zinc-900">{product.country_of_origin}</dd>
+
+              <div className="mt-8 min-w-0 space-y-4 rounded-2xl border border-rose-100 bg-white p-6">
+                <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t("retailPrice")}</p>
+                    <p className="text-2xl font-bold text-zinc-900">{formatLocaleProductPrice(product.price, locale, usdKrwRate)}</p>
+                    {product.compare_at_price ? (
+                      <p className="text-sm text-zinc-400 line-through">{formatLocalePrice(product.compare_at_price, locale, usdKrwRate)}</p>
+                    ) : null}
+                  </div>
+                  {product.wholesale_price ? (
+                    <div className="min-w-0 text-right">
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{wholesaleLabel}</p>
+                      <p className="text-xl font-bold text-rose-700">{formatLocaleProductPrice(product.wholesale_price, locale, usdKrwRate)}</p>
+                    </div>
+                  ) : null}
                 </div>
+
+                <dl className="grid min-w-0 grid-cols-2 gap-4 border-t border-rose-50 pt-4 text-sm">
+                  <div className="min-w-0">
+                    <dt className="text-zinc-500">{moqLabel}</dt>
+                    <dd className="font-semibold text-zinc-900">{t("moqUnit", { count: product.moq })}</dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-zinc-500">{t("stock")}</dt>
+                    <dd className={`font-semibold ${inStock ? "text-emerald-600" : "text-red-600"}`}>
+                      {inStock ? t("inStock", { count: product.stock }) : t("outOfStock")}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-zinc-500">{t("sku")}</dt>
+                    <dd className="break-all font-mono text-zinc-800">{product.sku}</dd>
+                  </div>
+                  {product.short_description ? (
+                    <div className="min-w-0">
+                      <dt className="text-zinc-500">{t("volume")}</dt>
+                      <dd className="break-words font-semibold text-zinc-900">{product.short_description}</dd>
+                    </div>
+                  ) : null}
+                  {product.country_of_origin ? (
+                    <div className="min-w-0">
+                      <dt className="text-zinc-500">{t("origin")}</dt>
+                      <dd className="break-words font-semibold text-zinc-900">{product.country_of_origin}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </div>
+
+              <AddToCartForm
+                productId={product.id}
+                moq={product.moq}
+                stock={product.stock}
+                soldOut={product.sold_out}
+              />
+
+              {siteSettings.min_order_note ? (
+                <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm text-zinc-600">
+                  {siteSettings.min_order_note}
+                </p>
               ) : null}
-            </dl>
-          </div>
 
-          <AddToCartForm
-            productId={product.id}
-            moq={product.moq}
-            stock={product.stock}
-            soldOut={product.sold_out}
-          />
+              {product.description ? (
+                <section className="mt-10 min-w-0">
+                  <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
+                  <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">{product.description}</p>
+                </section>
+              ) : null}
 
-          {siteSettings.min_order_note ? (
-            <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm text-zinc-600">
-              {siteSettings.min_order_note}
-            </p>
-          ) : null}
+              {product.ingredients ? (
+                <section className="mt-8 min-w-0">
+                  <h2 className="text-lg font-semibold text-zinc-900">{t("ingredients")}</h2>
+                  <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{product.ingredients}</p>
+                </section>
+              ) : null}
 
-          {product.description ? (
-            <section className="mt-10 min-w-0">
-              <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
-              <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">{product.description}</p>
-            </section>
-          ) : null}
-
-          {product.ingredients ? (
-            <section className="mt-8 min-w-0">
-              <h2 className="text-lg font-semibold text-zinc-900">{t("ingredients")}</h2>
-              <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{product.ingredients}</p>
-            </section>
-          ) : null}
-
-          {product.how_to_use ? (
-            <section className="mt-8 min-w-0">
-              <h2 className="text-lg font-semibold text-zinc-900">{t("howToUse")}</h2>
-              <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{product.how_to_use}</p>
-            </section>
-          ) : null}
+              {product.how_to_use ? (
+                <section className="mt-8 min-w-0">
+                  <h2 className="text-lg font-semibold text-zinc-900">{t("howToUse")}</h2>
+                  <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{product.how_to_use}</p>
+                </section>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
     </main>

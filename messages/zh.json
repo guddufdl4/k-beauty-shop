@@ -133,7 +133,22 @@
     "pageJumpLabel": "跳转页面",
     "pageJumpInput": "页码",
     "pageJumpGo": "跳转",
-    "pageNumberLabel": "第 {page} 页"
+    "pageNumberLabel": "第 {page} 页",
+    "adminEdit": {
+      "badge": "管理员",
+      "hint": "可在店铺商品页直接编辑。",
+      "edit": "编辑商品",
+      "save": "保存",
+      "cancel": "取消",
+      "saving": "保存中…",
+      "saved": "商品信息已保存。",
+      "saveError": "保存失败。",
+      "networkError": "网络错误，无法保存。",
+      "nameLabel": "商品名称",
+      "noCategory": "无分类",
+      "soldOutLabel": "销售状态",
+      "available": "可售"
+    }
   },
   "categories": {
     "browse": "Browse",

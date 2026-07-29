@@ -4,6 +4,12 @@ export type ProductPatch = {
   name: string;
   barcode: string | null;
   wholesale_price: number;
+  price?: number;
+  brand?: string;
+  description?: string | null;
+  short_description?: string | null;
+  moq?: number;
+  country_of_origin?: string | null;
   image_url?: string | null;
   category_id?: string | null;
   sold_out?: boolean;
@@ -16,6 +22,9 @@ export type ProductPatchResult =
 const MAX_NAME_LENGTH = 200;
 const MAX_BARCODE_LENGTH = 64;
 const MAX_IMAGE_URL_LENGTH = 2048;
+const MAX_BRAND_LENGTH = 120;
+const MAX_TEXT_LENGTH = 10000;
+const MAX_SHORT_TEXT_LENGTH = 500;
 
 export function parseProductPatch(body: unknown): ProductPatchResult {
   if (!body || typeof body !== "object") {
@@ -110,12 +119,106 @@ export function parseProductPatch(body: unknown): ProductPatchResult {
     sold_out = record.sold_out;
   }
 
+  let price: number | undefined;
+  if (record.price !== undefined && record.price !== null && record.price !== "") {
+    price = Number(record.price);
+    if (!Number.isFinite(price) || price < 0) {
+      return { ok: false, error: "소매가는 0 이상의 숫자여야 합니다." };
+    }
+  }
+
+  let brand: string | undefined;
+  if (record.brand !== undefined) {
+    if (typeof record.brand !== "string") {
+      return { ok: false, error: "브랜드 형식이 올바르지 않습니다." };
+    }
+    const trimmedBrand = record.brand.trim();
+    if (!trimmedBrand) {
+      return { ok: false, error: "브랜드는 필수입니다." };
+    }
+    if (trimmedBrand.length > MAX_BRAND_LENGTH) {
+      return {
+        ok: false,
+        error: `브랜드는 ${MAX_BRAND_LENGTH}자 이하여야 합니다.`,
+      };
+    }
+    brand = trimmedBrand;
+  }
+
+  let moq: number | undefined;
+  if (record.moq !== undefined && record.moq !== null && record.moq !== "") {
+    moq = Number(record.moq);
+    if (!Number.isFinite(moq) || !Number.isInteger(moq) || moq < 1) {
+      return { ok: false, error: "MOQ는 1 이상의 정수여야 합니다." };
+    }
+  }
+
+  let description: string | null | undefined;
+  if (record.description !== undefined) {
+    if (record.description === null) {
+      description = null;
+    } else if (typeof record.description !== "string") {
+      return { ok: false, error: "상품 설명 형식이 올바르지 않습니다." };
+    } else {
+      const trimmed = record.description.trim();
+      if (trimmed.length > MAX_TEXT_LENGTH) {
+        return {
+          ok: false,
+          error: `상품 설명은 ${MAX_TEXT_LENGTH}자 이하여야 합니다.`,
+        };
+      }
+      description = trimmed || null;
+    }
+  }
+
+  let short_description: string | null | undefined;
+  if (record.short_description !== undefined) {
+    if (record.short_description === null) {
+      short_description = null;
+    } else if (typeof record.short_description !== "string") {
+      return { ok: false, error: "용량/요약 형식이 올바르지 않습니다." };
+    } else {
+      const trimmed = record.short_description.trim();
+      if (trimmed.length > MAX_SHORT_TEXT_LENGTH) {
+        return {
+          ok: false,
+          error: `용량/요약은 ${MAX_SHORT_TEXT_LENGTH}자 이하여야 합니다.`,
+        };
+      }
+      short_description = trimmed || null;
+    }
+  }
+
+  let country_of_origin: string | null | undefined;
+  if (record.country_of_origin !== undefined) {
+    if (record.country_of_origin === null) {
+      country_of_origin = null;
+    } else if (typeof record.country_of_origin !== "string") {
+      return { ok: false, error: "원산지 형식이 올바르지 않습니다." };
+    } else {
+      const trimmed = record.country_of_origin.trim();
+      if (trimmed.length > MAX_SHORT_TEXT_LENGTH) {
+        return {
+          ok: false,
+          error: `원산지는 ${MAX_SHORT_TEXT_LENGTH}자 이하여야 합니다.`,
+        };
+      }
+      country_of_origin = trimmed || null;
+    }
+  }
+
   return {
     ok: true,
     patch: {
       name,
       barcode,
       wholesale_price,
+      ...(price !== undefined ? { price } : {}),
+      ...(brand !== undefined ? { brand } : {}),
+      ...(description !== undefined ? { description } : {}),
+      ...(short_description !== undefined ? { short_description } : {}),
+      ...(moq !== undefined ? { moq } : {}),
+      ...(country_of_origin !== undefined ? { country_of_origin } : {}),
       ...(image_url !== undefined ? { image_url } : {}),
       ...(category_id !== undefined ? { category_id } : {}),
       ...(sold_out !== undefined ? { sold_out } : {}),
@@ -170,4 +273,45 @@ export function parseProductInventoryPatch(
   }
 
   return { ok: true, patch, isInventoryOnly: true };
+}
+
+export type OptionalInventoryFields = {
+  stock?: number;
+  sold_out?: boolean;
+};
+
+export function parseOptionalInventoryFields(
+  body: unknown,
+): { ok: true; fields: OptionalInventoryFields } | { ok: false; error: string } {
+  if (!body || typeof body !== "object") {
+    return { ok: true, fields: {} };
+  }
+
+  const record = body as Record<string, unknown>;
+  const fields: OptionalInventoryFields = {};
+
+  if (record.stock !== undefined) {
+    const stock = Number(record.stock);
+    if (!Number.isFinite(stock) || !Number.isInteger(stock) || stock < 0) {
+      return { ok: false, error: "재고는 0 이상의 정수여야 합니다." };
+    }
+    fields.stock = stock;
+  }
+
+  if (record.sold_out !== undefined) {
+    if (typeof record.sold_out !== "boolean") {
+      return { ok: false, error: "품절 여부는 true/false여야 합니다." };
+    }
+    fields.sold_out = record.sold_out;
+  }
+
+  return { ok: true, fields };
+}
+
+export function isInventoryOnlyBody(body: unknown): boolean {
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+  const keys = Object.keys(body as Record<string, unknown>);
+  return keys.length > 0 && keys.every((key) => INVENTORY_KEYS.has(key));
 }

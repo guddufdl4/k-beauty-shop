@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { parseProductInventoryPatch, parseProductPatch } from "@/lib/admin/product-patch";
+import { parseProductInventoryPatch, parseProductPatch, parseOptionalInventoryFields, isInventoryOnlyBody } from "@/lib/admin/product-patch";
 import { resolveNeedsImageFromFields } from "@/lib/product-images";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
@@ -35,13 +35,21 @@ async function requireAdminApi() {
   return { error: null };
 }
 
-function revalidateProductPaths() {
+function revalidateProductPaths(slug?: string | null) {
   revalidatePath("/admin/products");
   revalidatePath("/products");
   revalidatePath("/en/products");
   revalidatePath("/ko/products");
   revalidatePath("/ja/products");
   revalidatePath("/zh/products");
+
+  if (slug) {
+    revalidatePath(`/products/${slug}`);
+    revalidatePath(`/en/products/${slug}`);
+    revalidatePath(`/ko/products/${slug}`);
+    revalidatePath(`/ja/products/${slug}`);
+    revalidatePath(`/zh/products/${slug}`);
+  }
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -70,9 +78,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const parsed = parseProductPatch(body);
-  const inventoryParsed = parseProductInventoryPatch(body);
+  const inventoryOnly = isInventoryOnlyBody(body);
+  const inventoryParsed = inventoryOnly ? parseProductInventoryPatch(body) : null;
+  const optionalInventory = parseOptionalInventoryFields(body);
 
-  if (inventoryParsed.ok) {
+  if (!optionalInventory.ok) {
+    return NextResponse.json({ error: optionalInventory.error }, { status: 400 });
+  }
+
+  if (inventoryOnly && inventoryParsed?.ok) {
     const supabase = await createSafeClient();
     if (!supabase) {
       return NextResponse.json(
@@ -85,7 +99,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       .from("products")
       .update(inventoryParsed.patch)
       .eq("id", productId)
-      .select("id, stock, sold_out")
+      .select("id, stock, sold_out, slug")
       .maybeSingle();
 
     if (error) {
@@ -99,7 +113,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    revalidateProductPaths();
+    revalidateProductPaths(data.slug);
     return NextResponse.json({ product: data });
   }
 
@@ -147,12 +161,47 @@ export async function PATCH(request: Request, context: RouteContext) {
     wholesale_price: parsed.patch.wholesale_price,
   };
 
+  if (parsed.patch.price !== undefined) {
+    updatePayload.price = parsed.patch.price;
+  }
+
+  if (parsed.patch.brand !== undefined) {
+    updatePayload.brand = parsed.patch.brand;
+  }
+
+  if (parsed.patch.description !== undefined) {
+    updatePayload.description = parsed.patch.description;
+  }
+
+  if (parsed.patch.short_description !== undefined) {
+    updatePayload.short_description = parsed.patch.short_description;
+  }
+
+  if (parsed.patch.moq !== undefined) {
+    updatePayload.moq = parsed.patch.moq;
+  }
+
+  if (parsed.patch.country_of_origin !== undefined) {
+    updatePayload.country_of_origin = parsed.patch.country_of_origin;
+  }
+
   if (parsed.patch.category_id !== undefined) {
     updatePayload.category_id = parsed.patch.category_id;
   }
 
   if (parsed.patch.sold_out !== undefined) {
     updatePayload.sold_out = parsed.patch.sold_out;
+  }
+
+  if (optionalInventory.fields.stock !== undefined) {
+    updatePayload.stock = optionalInventory.fields.stock;
+  }
+
+  if (
+    optionalInventory.fields.sold_out !== undefined &&
+    parsed.patch.sold_out === undefined
+  ) {
+    updatePayload.sold_out = optionalInventory.fields.sold_out;
   }
 
   if (imageUrlProvided) {
@@ -171,7 +220,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update(updatePayload)
     .eq("id", productId)
     .select(
-      "id, name, barcode, wholesale_price, sku, slug, image_url, category_id, sold_out, category:categories(id, name, slug)",
+      "id, name, barcode, brand, price, wholesale_price, moq, stock, sku, slug, description, short_description, country_of_origin, image_url, category_id, sold_out, category:categories(id, name, slug)",
     )
     .maybeSingle();
 
@@ -208,7 +257,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
-  revalidateProductPaths();
+  revalidateProductPaths(data.slug);
 
   return NextResponse.json({ product: data });
 }
