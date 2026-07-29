@@ -30,9 +30,15 @@ export function isJpegBuffer(bytes: Uint8Array | Buffer): boolean {
   return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
 }
 
-/** Avoid Buffer→string coercion in Storage upload (0xFF bytes become U+FFFD / efbfbd). */
-export function toBinaryUploadBody(buffer: Buffer): Uint8Array {
-  return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+/** True when bytes match JPEG, PNG, or WEBP magic headers. */
+export function isAllowedImageBuffer(bytes: Uint8Array | Buffer): boolean {
+  const view = bytes instanceof Buffer ? new Uint8Array(bytes) : bytes;
+  return detectProductImageMimeType(view) !== null;
+}
+
+/** Copy image bytes into a standalone ArrayBuffer for Storage upload (no shared-pool views). */
+export function toBinaryUploadBody(buffer: Buffer): ArrayBuffer {
+  return Uint8Array.from(buffer).buffer;
 }
 
 /** True when the value is an absolute http(s) URL suitable for img/background-image src. */
@@ -109,8 +115,8 @@ export async function verifyPublicStorageUrl(
   return { ok: false, status: 403 };
 }
 
-/** GET-check that a public URL returns valid JPEG bytes (not just HTTP 200). */
-export async function verifyPublicJpegUrl(
+/** GET-check that a public URL returns valid image bytes (JPEG, PNG, or WEBP). */
+export async function verifyPublicImageUrl(
   url: string,
   options?: { retries?: number; delayMs?: number },
 ): Promise<PublicStorageVerifyResult> {
@@ -120,17 +126,13 @@ export async function verifyPublicJpegUrl(
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
       const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) {
-        if (response.status !== 403 && response.status !== 404) {
-          return { ok: false, status: response.status };
-        }
-      } else {
+      if (response.ok) {
         const bytes = new Uint8Array(await response.arrayBuffer());
-        if (isJpegBuffer(bytes)) {
+        if (isAllowedImageBuffer(bytes)) {
           return { ok: true };
         }
-
-        return { ok: false, error: "stored object is not a valid JPEG" };
+      } else if (response.status !== 403 && response.status !== 404) {
+        return { ok: false, status: response.status };
       }
     } catch (error) {
       if (attempt === retries - 1) {
@@ -146,7 +148,30 @@ export async function verifyPublicJpegUrl(
     }
   }
 
-  return { ok: false, status: 403 };
+  return { ok: false, status: 403, error: "stored object is not a valid image" };
+}
+
+/** @deprecated Use verifyPublicImageUrl — kept for callers expecting JPEG-only naming. */
+export const verifyPublicJpegUrl = verifyPublicImageUrl;
+
+/** Download a storage object and verify its bytes (avoids public CDN timing/ACL issues). */
+export async function verifyStoredImageObject(
+  download: () => PromiseLike<{
+    data: Blob | null;
+    error: { message: string } | null;
+  }>,
+): Promise<PublicStorageVerifyResult> {
+  const { data, error } = await download();
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "download failed" };
+  }
+
+  const bytes = new Uint8Array(await data.arrayBuffer());
+  if (isAllowedImageBuffer(bytes)) {
+    return { ok: true };
+  }
+
+  return { ok: false, error: "stored object is not a valid image" };
 }
 
 export type BucketEnsureResult = { ok: true } | { ok: false; error: string };

@@ -2,7 +2,6 @@ import sharp from "sharp";
 import {
   detectProductImageMimeType,
   extensionForProductImageMime,
-  isJpegBuffer,
   MAX_PRODUCT_IMAGE_BYTES,
   PRODUCT_IMAGE_BUCKET,
   type AllowedProductImageMimeType,
@@ -39,17 +38,23 @@ export async function readAndValidateHeroImageFile(file: File): Promise<HeroImag
   }
 
   try {
-    const buffer = await sharp(input)
+    const pipeline = sharp(input)
       .rotate()
-      .resize({ width: HERO_MAX_WIDTH, withoutEnlargement: true })
-      .jpeg({ quality: HERO_JPEG_QUALITY })
-      .toBuffer();
+      .resize({ width: HERO_MAX_WIDTH, withoutEnlargement: true });
 
-    if (!isJpegBuffer(buffer)) {
-      return { ok: false, error: "이미지를 JPEG로 변환하지 못했습니다." };
+    const buffer =
+      mimeType === "image/png"
+        ? await pipeline.png({ compressionLevel: 6 }).toBuffer()
+        : mimeType === "image/webp"
+          ? await pipeline.webp({ quality: HERO_JPEG_QUALITY }).toBuffer()
+          : await pipeline.jpeg({ quality: HERO_JPEG_QUALITY }).toBuffer();
+
+    const outputMimeType = detectProductImageMimeType(new Uint8Array(buffer));
+    if (!outputMimeType) {
+      return { ok: false, error: "이미지 처리 후 형식을 확인하지 못했습니다." };
     }
 
-    return { ok: true, buffer, mimeType: "image/jpeg" };
+    return { ok: true, buffer, mimeType: outputMimeType };
   } catch {
     return { ok: false, error: "이미지를 처리하지 못했습니다." };
   }

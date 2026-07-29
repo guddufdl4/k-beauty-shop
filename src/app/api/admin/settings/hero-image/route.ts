@@ -7,12 +7,11 @@ import {
 } from "@/lib/admin/hero-image-upload";
 import {
   ensureProductImagesBucket,
-  buildStoragePublicUrl,
   formatStorageAuthHint,
   readProductImageUploadEntry,
   toBinaryUploadBody,
-  verifyPublicJpegUrl,
-  verifyPublicStorageUrl,
+  verifyPublicImageUrl,
+  verifyStoredImageObject,
 } from "@/lib/admin/product-image-upload";
 import {
   getSiteSettingsFresh,
@@ -117,7 +116,7 @@ export async function GET(request: Request) {
   let heroImageProbe: { ok: boolean; status?: number; error?: string } | null = null;
 
   if (heroImageUrl) {
-    const verified = await verifyPublicStorageUrl(heroImageUrl);
+    const verified = await verifyPublicImageUrl(heroImageUrl);
     heroImageProbe = verified.ok
       ? { ok: true }
       : { ok: false, status: verified.status, error: verified.error };
@@ -180,7 +179,7 @@ export async function POST(request: Request) {
   const { error: uploadError } = await serviceClient.storage
     .from(HERO_IMAGE_BUCKET)
     .upload(storagePath, toBinaryUploadBody(validated.buffer), {
-      contentType: "image/jpeg",
+      contentType: validated.mimeType,
       upsert: true,
     });
 
@@ -191,32 +190,38 @@ export async function POST(request: Request) {
     );
   }
 
-  const publicUrl = buildStoragePublicUrl(HERO_IMAGE_BUCKET, storagePath);
+  let verified = await verifyStoredImageObject(() =>
+    serviceClient.storage.from(HERO_IMAGE_BUCKET).download(storagePath),
+  );
+  if (!verified.ok) {
+    await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
+    return NextResponse.json(
+      {
+        error: `업로드된 이미지가 손상되었습니다. 다시 업로드해 주세요.${verified.error ? ` ${verified.error}` : ""}`,
+      },
+      { status: 500 },
+    );
+  }
+
+  const { data: publicData } = serviceClient.storage
+    .from(HERO_IMAGE_BUCKET)
+    .getPublicUrl(storagePath);
+
+  const publicUrl = publicData.publicUrl?.trim();
   if (!publicUrl) {
+    await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
     return NextResponse.json(
       { error: "\uc5c5\ub85c\ub4dc\ub41c \uc774\ubbf8\uc9c0 URL\uc744 \uc0dd\uc131\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4." },
       { status: 500 },
     );
   }
 
-  let verified = await verifyPublicJpegUrl(publicUrl);
-  if (!verified.ok) {
-    const bucketReadyRetry = await ensureProductImagesBucket();
-    if (!bucketReadyRetry.ok) {
-      await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
-      return NextResponse.json({ error: bucketReadyRetry.error }, { status: 500 });
-    }
-
-    verified = await verifyPublicJpegUrl(publicUrl, { retries: 6, delayMs: 500 });
-    if (!verified.ok) {
-      await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
-      return NextResponse.json(
-        {
-          error: `업로드된 이미지가 손상되었거나 공개 URL로 불러올 수 없습니다. 다시 업로드해 주세요.${verified.status ? ` (HTTP ${verified.status})` : ""}${verified.error ? ` ${verified.error}` : ""}`,
-        },
-        { status: 500 },
-      );
-    }
+  const publicVerified = await verifyPublicImageUrl(publicUrl, { retries: 6, delayMs: 500 });
+  if (!publicVerified.ok) {
+    console.warn(
+      "[hero-image] public URL not yet serving image bytes:",
+      publicVerified.status ?? publicVerified.error,
+    );
   }
 
   let previewUrl = publicUrl;
