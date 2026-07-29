@@ -249,6 +249,11 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
           <h2 className="text-lg font-semibold text-zinc-900">배너 배경 이미지</h2>
           <p className="mt-1 text-sm text-zinc-500">
             홈페이지 상단 히어로 영역 배경으로 표시됩니다. JPG, PNG, WEBP (최대 5MB).
+            {heroImageUrl ? (
+              <span className="mt-1 block text-zinc-600">
+                이미지가 등록되면 홈페이지에는 배너 이미지만 표시됩니다. 아래 문구는 이미지가 없을 때만 사용됩니다.
+              </span>
+            ) : null}
           </p>
         </div>
 
