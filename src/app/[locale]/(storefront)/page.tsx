@@ -37,13 +37,7 @@ export default async function HomePage() {
   const heroSubtitle = siteSettings.hero_subtitle ?? t("description");
   const heroButtonText = siteSettings.hero_button_text ?? t("heroCta");
   const heroButtonLink = siteSettings.hero_button_link ?? "/products";
-  const heroBackgroundStyle = siteSettings.hero_image_url
-    ? {
-        backgroundImage: `linear-gradient(135deg, rgba(250,250,250,0.72) 0%, rgba(245,245,245,0.65) 45%, rgba(252,228,236,0.58) 100%), url("${siteSettings.hero_image_url}")`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }
-    : undefined;
+  const heroImageUrl = siteSettings.hero_image_url?.trim() || null;
 
   const visibleProducts = products.filter((product) => productHasRealImage(product));
 
@@ -100,10 +94,26 @@ export default async function HomePage() {
   return (
     <>
       <section
-        className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]"
-        style={heroBackgroundStyle}
+        className={
+          heroImageUrl
+            ? "relative overflow-hidden border-b border-zinc-200"
+            : "overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]"
+        }
       >
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
+        {heroImageUrl ? (
+          <>
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url('${heroImageUrl}')` }}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-br from-white/45 via-white/25 to-pink-50/20"
+            />
+          </>
+        ) : null}
+        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
           <div className="max-w-xl text-center lg:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">{heroBadge}</p>
             <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-4xl lg:text-6xl">
