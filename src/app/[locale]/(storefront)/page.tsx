@@ -1,10 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { HomeHeroBanner } from "@/components/store/home-hero-banner";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { productHasRealImage } from "@/lib/product-images";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteSettingsFresh } from "@/lib/site-settings";
 import { getPriorityBrandProducts, type ProductWithRelations } from "@/lib/supabase/products";
 import { buildProductsHref } from "@/lib/store/products-url";
 
@@ -32,7 +33,7 @@ export default async function HomePage() {
     getPriorityBrandProducts({ limit: 200 }),
     getLocale(),
     getUsdKrwRate(),
-    getSiteSettings(),
+    getSiteSettingsFresh(),
   ]);
 
   const heroBadge = siteSettings.hero_badge ?? t("heroWholesale");
@@ -100,14 +101,7 @@ export default async function HomePage() {
   return (
     <>
       {heroImageSrc ? (
-        <section className="overflow-hidden border-b border-zinc-200">
-          <div
-            className="min-h-[280px] w-full bg-cover bg-center bg-no-repeat sm:min-h-[340px] lg:min-h-[400px]"
-            style={{ backgroundImage: `url(${JSON.stringify(heroImageSrc)})` }}
-            role="img"
-            aria-label=""
-          />
-        </section>
+        <HomeHeroBanner imageSrc={heroImageSrc} />
       ) : (
         <section className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
