@@ -149,7 +149,7 @@ export async function StoreHeader({ storeName }: Props) {
 
   return (
 
-    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 overflow-visible border-b border-zinc-200 bg-white shadow-sm">
 
       <div className="hidden border-b border-zinc-100 bg-surface-muted lg:block">
 
@@ -282,7 +282,7 @@ export async function StoreHeader({ storeName }: Props) {
 
         <MobileNavPanels />
 
-        <nav className="hidden items-stretch justify-between border-t border-zinc-100 py-0 lg:flex">
+        <nav className="relative hidden items-stretch justify-between overflow-visible border-t border-zinc-100 py-0 lg:flex">
 
           <div className="flex items-stretch">
 

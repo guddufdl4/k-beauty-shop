@@ -1,14 +1,132 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
+import { CategoryIcon, DownArrowIcon } from "@/lib/store/category-icons";
 import { buildCategoryTree } from "@/lib/store/category-tree";
+import {
+  getEnglishCategoryName,
+  getLocalizedCategoryName,
+} from "@/lib/store/localized-category";
 import { buildProductsHref } from "@/lib/store/products-url";
 import type { Category } from "@/lib/supabase/products";
 
+const HOME_CATEGORY_SLUGS = [
+  "skincare",
+  "makeup",
+  "mask-pack",
+  "suncare",
+  "haircare",
+  "bodycare",
+  "body-care",
+] as const;
+
+function pickHomeCategories(categories: Category[]): Category[] {
+  const { topLevel } = buildCategoryTree(categories);
+  const bySlug = new Map(topLevel.map((category) => [category.slug, category]));
+
+  const ordered: Category[] = [];
+  for (const slug of HOME_CATEGORY_SLUGS) {
+    const category = bySlug.get(slug);
+    if (category) {
+      ordered.push(category);
+      bySlug.delete(slug);
+    }
+  }
+
+  for (const category of topLevel) {
+    if (bySlug.has(category.slug)) {
+      ordered.push(category);
+    }
+  }
+
+  return ordered.slice(0, 6);
+}
+
+type StripPanelProps = {
+  categories: Category[];
+  promoImageUrl?: string | null;
+  onNavigate?: () => void;
+};
+
+function CategoryNavStripPanel({ categories, promoImageUrl, onNavigate }: StripPanelProps) {
+  const locale = useLocale();
+  const tHome = useTranslations("home");
+
+  const visibleCategories = pickHomeCategories(categories);
+  if (visibleCategories.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex overflow-hidden bg-white">
+      <div className="flex min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {visibleCategories.map((category, index) => {
+          const englishName = getEnglishCategoryName(category);
+          const localizedName = getLocalizedCategoryName(category, locale);
+          const subtitle = tHome("categoryNavSubtitle", { category: localizedName });
+
+          return (
+            <Link
+              key={category.id}
+              href={buildProductsHref({ category: category.slug })}
+              className={`group flex min-w-[7.5rem] flex-1 flex-col items-center px-3 py-5 text-center transition-colors hover:bg-accent-soft/40 sm:min-w-[8.5rem] sm:px-4 sm:py-6 lg:min-w-0 ${
+                index < visibleCategories.length - 1 ? "border-r border-zinc-200" : ""
+              }`}
+              onClick={onNavigate}
+            >
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent transition-colors group-hover:bg-accent group-hover:text-white sm:h-16 sm:w-16">
+                <CategoryIcon slug={category.slug} className="h-7 w-7 sm:h-8 sm:w-8" />
+              </span>
+              <span className="mt-3 text-xs font-bold uppercase tracking-wide text-zinc-900 sm:text-sm">
+                {englishName}
+              </span>
+              <span className="mt-1 text-[10px] text-zinc-500 sm:text-xs">{subtitle}</span>
+              <span className="mt-2 text-accent transition-transform group-hover:translate-y-0.5">
+                <DownArrowIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <Link
+        href={buildProductsHref({ sort: "sale" })}
+        className="relative hidden w-[11.5rem] shrink-0 flex-col justify-end overflow-hidden border-l border-zinc-200 bg-zinc-900 p-4 text-white transition-opacity hover:opacity-95 sm:w-[13rem] lg:flex xl:w-[15rem]"
+        onClick={onNavigate}
+      >
+        {promoImageUrl ? (
+          <Image
+            src={promoImageUrl}
+            alt=""
+            fill
+            className="object-cover opacity-60"
+            sizes="240px"
+          />
+        ) : (
+          <span
+            className="absolute inset-0 bg-[linear-gradient(135deg,#fce4ec_0%,#ec407a_55%,#880e4f_100%)]"
+            aria-hidden
+          />
+        )}
+        <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" aria-hidden />
+        <span className="relative text-[10px] font-semibold uppercase tracking-[0.15em] text-white/90">
+          {tHome("promoBestProducts")}
+        </span>
+        <span className="relative mt-1 text-lg font-bold leading-tight">{tHome("heroDiscount")}</span>
+        <span className="relative mt-3 inline-flex w-fit items-center bg-accent px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-accent-hover">
+          {tHome("promoShopNow")}
+        </span>
+      </Link>
+    </div>
+  );
+}
+
 type Props = {
   categories: Category[];
+  promoImageUrl?: string | null;
 };
 
 function HamburgerIcon() {
@@ -19,39 +137,17 @@ function HamburgerIcon() {
   );
 }
 
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-const subLinkClass =
-  "block rounded-md px-2 py-1.5 text-sm font-medium leading-snug text-zinc-800 transition-colors hover:bg-accent-soft hover:text-accent-hover";
-
-export function CategoryMegaMenu({ categories }: Props) {
+function CategoryMegaMenuInner({ categories, promoImageUrl }: Props) {
   const tNav = useTranslations("nav");
-  const tProducts = useTranslations("products");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const { columns } = useMemo(() => buildCategoryTree(categories), [categories]);
-  const columnCount = Math.min(columns.length, 6);
 
-  const syncPanelTop = useCallback(() => {
-    if (!rootRef.current || !panelRef.current) {
-      return;
-    }
-    panelRef.current.style.top = `${rootRef.current.getBoundingClientRect().bottom}px`;
-  }, []);
+  const visibleCategories = pickHomeCategories(categories);
 
   useEffect(() => {
     if (!open) {
       return;
     }
-
-    syncPanelTop();
 
     function handlePointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -65,32 +161,23 @@ export function CategoryMegaMenu({ categories }: Props) {
       }
     }
 
-    window.addEventListener("scroll", syncPanelTop, true);
-    window.addEventListener("resize", syncPanelTop);
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("scroll", syncPanelTop, true);
-      window.removeEventListener("resize", syncPanelTop);
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, syncPanelTop]);
+  }, [open]);
 
-  if (columns.length === 0) {
+  if (visibleCategories.length === 0) {
     return null;
   }
-
-  const panelVisible = open;
 
   return (
     <div
       ref={rootRef}
-      className="group relative flex self-stretch"
-      onMouseEnter={() => {
-        syncPanelTop();
-        setOpen(true);
-      }}
+      className="relative flex self-stretch"
+      onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
       <button
@@ -98,77 +185,31 @@ export function CategoryMegaMenu({ categories }: Props) {
         className={`flex items-center gap-2 border-r border-accent-hover/30 px-5 py-3 text-xs font-semibold uppercase tracking-wide transition-colors hover:text-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${open ? "text-accent-hover" : "text-zinc-900"}`}
         aria-expanded={open}
         aria-haspopup="true"
-        onClick={() => {
-          syncPanelTop();
-          setOpen((value) => !value);
-        }}
+        onClick={() => setOpen((value) => !value)}
       >
         <HamburgerIcon />
         {tNav("categories")}
       </button>
 
       <div
-        ref={panelRef}
-        className={`fixed inset-x-0 z-50 border-t-2 border-accent-hover bg-white shadow-[0_8px_30px_rgba(0,0,0,0.06)] ${panelVisible ? "block" : "hidden group-hover:block"}`}
+        className={`absolute left-0 top-full z-[60] min-w-[min(100vw-2rem,64rem)] border border-zinc-200 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-[opacity,transform] duration-200 ease-out ${
+          open
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-1 opacity-0"
+        }`}
+        aria-hidden={!open}
       >
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-          <div className="flex items-center justify-end border-b border-accent-hover/30 py-2.5">
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-800"
-              aria-label={tNav("closeMenu")}
-              onClick={() => setOpen(false)}
-            >
-              <CloseIcon />
-              <span className="hidden sm:inline">{tNav("closeMenu")}</span>
-            </button>
-          </div>
-
-          <div className="flex w-full items-stretch">
-            {columns.slice(0, columnCount).map(({ parent, children }, index) => (
-              <div
-                key={parent.id}
-                className={`min-w-0 flex-1 py-8 px-4 first:pl-0 last:pr-0 sm:px-5 lg:first:pl-0 lg:last:pr-0 ${index < columnCount - 1 ? "border-r-2 border-accent-hover" : ""}`}
-              >
-                <Link
-                  href={buildProductsHref({ category: parent.slug })}
-                  className="group/header inline-block border-b-2 border-transparent pb-2 text-sm font-semibold tracking-tight text-zinc-900 transition-colors hover:border-accent-hover hover:text-accent-hover"
-                  onClick={() => setOpen(false)}
-                >
-                  {parent.name}
-                </Link>
-                {children.length > 0 ? (
-                  <ul
-                    className={`mt-3 max-w-[14rem] ${children.length > 6 ? "columns-2 gap-x-3" : ""}`}
-                  >
-                    {children.map((child) => (
-                      <li key={child.id} className="break-inside-avoid">
-                        <Link
-                          href={buildProductsHref({ category: child.slug })}
-                          className={subLinkClass}
-                          onClick={() => setOpen(false)}
-                        >
-                          {child.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 max-w-[14rem]">
-                    <Link
-                      href={buildProductsHref({ category: parent.slug })}
-                      className={subLinkClass}
-                      onClick={() => setOpen(false)}
-                    >
-                      {tProducts("allInCategory", { category: parent.name })}
-                    </Link>
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <CategoryNavStripPanel
+          categories={categories}
+          promoImageUrl={promoImageUrl}
+          onNavigate={() => setOpen(false)}
+        />
       </div>
     </div>
   );
+}
+
+export function CategoryMegaMenu(props: Props) {
+  const pathname = usePathname();
+  return <CategoryMegaMenuInner key={pathname} {...props} />;
 }

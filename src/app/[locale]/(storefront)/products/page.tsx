@@ -113,6 +113,15 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               </span>
             ) : null}
           </p>
+          {!brandFilter ? (
+            <div className="mt-4">
+              <ProductCategoryFilter
+                categories={localizeCategories(categories, locale)}
+                activeCategorySlug={categorySlug}
+                searchQuery={searchTerm}
+              />
+            </div>
+          ) : null}
         </div>
         {!meta.configured ? (
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -120,14 +129,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </p>
         ) : null}
       </div>
-
-      {!brandFilter ? (
-        <ProductCategoryFilter
-          categories={localizeCategories(categories, locale)}
-          activeCategorySlug={categorySlug}
-          searchQuery={searchTerm}
-        />
-      ) : null}
 
       {searchTerm && totalCount <= 3 ? (
         <RelatedSearchTerms query={searchTerm} />

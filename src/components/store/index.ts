@@ -1,7 +1,7 @@
 export { StoreHeader } from "./header";
 export { ProductCard } from "./product-card";
 export { CategoryCard } from "./category-card";
-export { CategoryNavStrip } from "./category-nav-strip";
+export { CategoryMegaMenu } from "./category-mega-menu";
 export { ProductImagePlaceholder } from "./product-image-placeholder";
 export { AddToCartButton } from "./add-to-cart-button";
 export { AddToCartForm } from "./add-to-cart-form";

@@ -14,7 +14,7 @@ type Props = {
 };
 
 const selectClassName =
-  "w-full min-w-0 appearance-none rounded-md border-2 border-accent-hover/50 bg-white bg-[length:0.875rem] bg-[position:right_0.875rem_center] bg-no-repeat px-3.5 py-2.5 pr-9 text-sm font-medium text-zinc-900 shadow-sm transition-colors hover:border-accent-hover focus:border-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-soft sm:min-w-[13rem]";
+  "w-full min-w-0 appearance-none rounded-md border-2 border-accent-hover/50 bg-white bg-[length:0.875rem] bg-[position:right_0.875rem_center] bg-no-repeat px-3.5 py-2.5 pr-9 text-sm font-medium text-zinc-900 shadow-sm transition-colors hover:border-accent-hover focus:border-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-soft";
 
 function ChevronBackground() {
   return (
@@ -47,8 +47,8 @@ function SelectField({
   children: ReactNode;
 }) {
   return (
-    <label htmlFor={id} className="block min-w-0 flex-1 sm:flex-none">
-      <span className="mb-2 block text-xs font-semibold tracking-wide text-zinc-800">
+    <label htmlFor={id} className="block w-full min-w-0 sm:w-auto sm:max-w-[280px]">
+      <span className="mb-1.5 block text-xs font-semibold tracking-wide text-zinc-600">
         {label}
       </span>
       <div className="relative">
@@ -134,7 +134,7 @@ export function ProductCategoryFilter({
 
   if (!hasHierarchy) {
     return (
-      <div className="mb-8 rounded-lg border-2 border-accent-hover bg-zinc-50/80 p-4 sm:p-5">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-start">
         <SelectField
           id="product-category"
           label={t("categoryFilter")}
@@ -153,38 +153,36 @@ export function ProductCategoryFilter({
   }
 
   return (
-    <div className="mb-8 rounded-lg border-2 border-accent-hover bg-zinc-50/80 p-4 sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
+    <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-start sm:gap-4">
+      <SelectField
+        id="product-category"
+        label={t("categoryFilter")}
+        value={mainValue}
+        onChange={handleMainChange}
+      >
+        <option value="">{t("all")}</option>
+        {topLevel.map((category) => (
+          <option key={category.id} value={category.slug}>
+            {category.name}
+          </option>
+        ))}
+      </SelectField>
+
+      {showSubcategory ? (
         <SelectField
-          id="product-category"
-          label={t("categoryFilter")}
-          value={mainValue}
-          onChange={handleMainChange}
+          id="product-subcategory"
+          label={t("subcategoryFilter")}
+          value={subValue}
+          onChange={handleSubChange}
         >
-          <option value="">{t("all")}</option>
-          {topLevel.map((category) => (
+          <option value={activeParent!.slug}>{t("allInCategory", { category: activeParent!.name })}</option>
+          {subcategories.map((category) => (
             <option key={category.id} value={category.slug}>
               {category.name}
             </option>
           ))}
         </SelectField>
-
-        {showSubcategory ? (
-          <SelectField
-            id="product-subcategory"
-            label={t("subcategoryFilter")}
-            value={subValue}
-            onChange={handleSubChange}
-          >
-            <option value={activeParent!.slug}>{t("allInCategory", { category: activeParent!.name })}</option>
-            {subcategories.map((category) => (
-              <option key={category.id} value={category.slug}>
-                {category.name}
-              </option>
-            ))}
-          </SelectField>
-        ) : null}
-      </div>
+      ) : null}
     </div>
   );
 }

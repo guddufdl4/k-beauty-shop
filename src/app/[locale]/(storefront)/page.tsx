@@ -1,14 +1,12 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { CategoryNavStrip } from "@/components/store/category-nav-strip";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
 import { HeroBannerSlider } from "@/components/store/hero-banner-slider";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
-import { productHasRealImage, resolveProductImageUrl } from "@/lib/product-images";
+import { productHasRealImage } from "@/lib/product-images";
 import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettingsFresh } from "@/lib/site-settings";
-import { getPriorityBrandProducts, getCategories, type ProductWithRelations } from "@/lib/supabase/products";
-import { localizeCategories } from "@/lib/store/localized-category";
+import { getPriorityBrandProducts, type ProductWithRelations } from "@/lib/supabase/products";
 import { buildProductsHref } from "@/lib/store/products-url";
 
 export const revalidate = 60;
@@ -82,15 +80,12 @@ function HeroTextFallback({
 }
 
 export default async function HomePage() {
-  const [t, { products, meta }, { categories }, locale, usdKrwRate] = await Promise.all([
+  const [t, { products, meta }, locale, usdKrwRate] = await Promise.all([
     getTranslations("home"),
     getPriorityBrandProducts({ limit: 200 }),
-    getCategories(),
     getLocale(),
     getUsdKrwRate(),
   ]);
-
-  const localizedCategories = localizeCategories(categories, locale);
 
   const siteSettings = await loadSiteSettingsSafely();
 
@@ -119,9 +114,6 @@ export default async function HomePage() {
   const allProducts = sortHomeProducts(visibleProducts).slice(0, 8);
 
   const uniqueBrands = [...new Set(visibleProducts.map((product) => product.brand).filter(Boolean))].slice(0, 8);
-
-  const promoProduct = bestSellers[0] ?? visibleProducts[0];
-  const promoImageUrl = promoProduct ? resolveProductImageUrl(promoProduct) : null;
 
   const sections = [
     {
@@ -164,12 +156,6 @@ export default async function HomePage() {
 
   return (
     <>
-      <CategoryNavStrip
-        categories={localizedCategories}
-        locale={locale}
-        promoImageUrl={promoImageUrl}
-      />
-
       {hasHeroSlides ? (
         <HeroBannerSlider slides={heroSlides} />
       ) : (
