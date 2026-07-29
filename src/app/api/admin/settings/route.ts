@@ -103,7 +103,7 @@ export async function PATCH(request: Request) {
     }
   }
 
-  revalidateTag(SITE_SETTINGS_CACHE_TAG, { expire: 0 });
+  revalidateTag(SITE_SETTINGS_CACHE_TAG, "max");
   revalidatePath("/admin/settings");
   revalidatePath("/admin/settings/hero");
   revalidatePath("/admin");
