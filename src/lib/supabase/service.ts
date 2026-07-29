@@ -5,23 +5,59 @@ import {
   getSupabaseServiceRoleKey,
   isOpaqueSupabaseSecretKey,
   isSupabaseConfigured,
+  toHttpHeaderValue,
 } from "./config";
+
+function buildFetchInit(init: RequestInit | undefined, headers: Headers): RequestInit {
+  const requestInit: RequestInit & { duplex?: "half" } = {
+    method: init?.method,
+    body: init?.body,
+    signal: init?.signal,
+    credentials: init?.credentials,
+    cache: init?.cache,
+    redirect: init?.redirect,
+    referrer: init?.referrer,
+    referrerPolicy: init?.referrerPolicy,
+    integrity: init?.integrity,
+    keepalive: init?.keepalive,
+    mode: init?.mode,
+    headers,
+  };
+
+  const duplex = (init as RequestInit & { duplex?: "half" } | undefined)?.duplex;
+  if (duplex) {
+    requestInit.duplex = duplex;
+  }
+
+  return requestInit;
+}
 
 /**
  * Supabase opaque `sb_secret_` keys must not be sent as `Authorization: Bearer`
  * (Supabase parses that header as JWT and returns "Invalid JWT").
  * @supabase/supabase-js always adds Authorization; strip it for opaque keys.
+ *
+ * Also normalizes header values to Latin-1 — Fetch rejects Unicode (e.g. "Settings →"
+ * copy-pasted into env vars) with "Cannot convert argument to a ByteString".
  */
 function createServiceRoleFetch(serviceKey: string): typeof fetch {
   const stripAuth = isOpaqueSupabaseSecretKey(serviceKey);
 
   return async (input, init) => {
-    const headers = new Headers(init?.headers);
-    if (stripAuth) {
-      headers.delete("Authorization");
+    const headers = new Headers();
+
+    if (init?.headers) {
+      const source = new Headers(init.headers);
+      source.forEach((value, name) => {
+        if (stripAuth && name.toLowerCase() === "authorization") {
+          return;
+        }
+
+        headers.set(name, toHttpHeaderValue(value));
+      });
     }
 
-    return fetch(input, { ...init, headers });
+    return fetch(input, buildFetchInit(init, headers));
   };
 }
 
