@@ -62,10 +62,19 @@ export function describeByteStringFetchError(error: unknown): string | null {
 
   const corrupted = findCorruptedSupabaseEnvVar();
   if (corrupted) {
-    return describeCorruptedSupabaseEnvVar(corrupted);
+    return `${describeCorruptedSupabaseEnvVar(corrupted)}\n${describeSupabaseEnvDiagnostics()}`;
   }
 
-  return "Supabase 환경 변수 중 하나에 비ASCII 문자(→ 등)가 포함되어 fetch 요청이 실패했습니다. SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY를 Vercel에서 확인하세요.";
+  const failing = SUPABASE_ENV_VARS.filter((name) => {
+    const snapshot = describeSupabaseEnvVarSnapshot(name);
+    return snapshot.configured && !snapshot.passesHeaderSafeCheck;
+  });
+
+  if (failing.length > 0) {
+    return `Supabase env parse produced non-ASCII header values in: ${failing.join(", ")}. Vercel에서 값만 다시 붙여넣고 재배포하세요.\n${describeSupabaseEnvDiagnostics()}`;
+  }
+
+  return `Supabase fetch ByteString 오류 — 환경 변수에 비ASCII 문자(→ 등)가 남아 있을 수 있습니다.\n${describeSupabaseEnvDiagnostics()}`;
 }
 
 /** Trim env values and strip optional wrapping quotes (common Vercel copy/paste mistake). */
@@ -149,6 +158,94 @@ function extractSupabaseApiKey(
   return parsed;
 }
 
+export type SanitizedSupabaseConfig = {
+  url: string;
+  anonKey: string;
+  serviceKey: string;
+};
+
+/** True when a value is safe for Fetch Headers (Latin-1 / ByteString only). */
+export function isHttpHeaderSafe(value: string): boolean {
+  return value === toHttpHeaderValue(value);
+}
+
+function requireHttpHeaderSafe(value: string | null): string | null {
+  if (!value || !isHttpHeaderSafe(value)) {
+    return null;
+  }
+
+  return value;
+}
+
+/**
+ * Single source of truth for Supabase env — url and keys are ASCII-only and safe for Headers.set().
+ * fetchWithAuth in @supabase/supabase-js calls Headers.set(apikey) before our custom fetch runs;
+ * non-Latin-1 characters (e.g. pasted "Settings →") throw there unless values are sanitized first.
+ */
+export function getSanitizedSupabaseConfig(): SanitizedSupabaseConfig | null {
+  const url = requireHttpHeaderSafe(getSupabaseProjectUrl());
+  const anonKey = requireHttpHeaderSafe(getSupabaseAnonKey());
+  const serviceKey = requireHttpHeaderSafe(getSupabaseServiceRoleKey());
+
+  if (!url || !anonKey || !serviceKey) {
+    return null;
+  }
+
+  return { url, anonKey, serviceKey };
+}
+
+/** Safe prefix + length for diagnostics (never exposes full secrets). */
+export function describeSupabaseEnvVarSnapshot(name: SupabaseEnvVarName): {
+  name: SupabaseEnvVarName;
+  configured: boolean;
+  rawLength: number;
+  prefix: string;
+  rawHasNonAscii: boolean;
+  sanitizedLength: number | null;
+  sanitizedPrefix: string | null;
+  passesHeaderSafeCheck: boolean;
+} {
+  const raw = process.env[name]?.trim() ?? "";
+  const sanitized =
+    name === "NEXT_PUBLIC_SUPABASE_URL"
+      ? getSupabaseProjectUrl()
+      : name === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+        ? getSupabaseAnonKey()
+        : getSupabaseServiceRoleKey();
+
+  return {
+    name,
+    configured: raw.length > 0,
+    rawLength: raw.length,
+    prefix: raw.slice(0, 10),
+    rawHasNonAscii: rawEnvHasNonAscii(raw),
+    sanitizedLength: sanitized?.length ?? null,
+    sanitizedPrefix: sanitized?.slice(0, 10) ?? null,
+    passesHeaderSafeCheck: sanitized ? isHttpHeaderSafe(sanitized) : false,
+  };
+}
+
+export function describeSupabaseEnvDiagnostics(): string {
+  const snapshots = SUPABASE_ENV_VARS.map(describeSupabaseEnvVarSnapshot);
+  const corrupted = findCorruptedSupabaseEnvVar();
+  const lines = snapshots.map((snapshot) => {
+    const status = snapshot.passesHeaderSafeCheck
+      ? "ok"
+      : snapshot.rawHasNonAscii
+        ? "non-ascii in raw"
+        : snapshot.configured
+          ? "parse failed"
+          : "missing";
+    return `${snapshot.name}: ${status} (raw len=${snapshot.rawLength}, prefix="${snapshot.prefix}", sanitized prefix="${snapshot.sanitizedPrefix ?? "—"}")`;
+  });
+
+  if (corrupted) {
+    lines.unshift(describeCorruptedSupabaseEnvVar(corrupted));
+  }
+
+  return lines.join("\n");
+}
+
 export function getSupabaseProjectUrl(): string | null {
   const url = parseEnvSecret(process.env.NEXT_PUBLIC_SUPABASE_URL);
   if (!url) {
@@ -212,6 +309,10 @@ export function describeServiceClientMisconfiguration(): string {
     !serviceKey.startsWith("eyJ")
   ) {
     return "SUPABASE_SERVICE_ROLE_KEY 형식을 확인하세요. Supabase Dashboard > API Keys의 sb_secret_... 또는 Legacy service_role(JWT) 키를 사용해야 합니다.";
+  }
+
+  if (!getSanitizedSupabaseConfig()) {
+    return `Supabase 환경 변수를 HTTP 헤더로 사용할 수 없습니다 (비ASCII 문자 또는 파싱 실패).\n${describeSupabaseEnvDiagnostics()}`;
   }
 
   return "SUPABASE_SERVICE_ROLE_KEY는 설정되어 있으나 Supabase 클라이언트를 만들지 못했습니다.";

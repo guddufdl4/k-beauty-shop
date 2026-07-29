@@ -1,8 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
-  getSupabaseAnonKey,
-  getSupabaseProjectUrl,
-  getSupabaseServiceRoleKey,
+  getSanitizedSupabaseConfig,
   isOpaqueSupabaseSecretKey,
   isSupabaseConfigured,
   toHttpHeaderValue,
@@ -97,10 +95,9 @@ function mergeSanitizedHeaders(
 /**
  * Supabase opaque `sb_secret_` keys must not be sent as `Authorization: Bearer`
  * (Supabase parses that header as JWT and returns "Invalid JWT").
- * @supabase/supabase-js always adds Authorization via fetchWithAuth; strip it for opaque keys.
  *
- * Also normalizes header values and URLs to Latin-1 — Fetch rejects Unicode (e.g. "Settings →"
- * copy-pasted into env vars) with "Cannot convert argument to a ByteString".
+ * @supabase/supabase-js fetchWithAuth calls Headers.set(apikey, supabaseKey) before this runs;
+ * createClient must receive ASCII-only keys from getSanitizedSupabaseConfig().
  */
 function createSupabaseFetch(apiKey: string, omitAuthorization: boolean): typeof fetch {
   const safeApiKey = toHttpHeaderValue(apiKey);
@@ -160,15 +157,19 @@ export function createPublicClient(): SupabaseClient | null {
     return null;
   }
 
-  const url = getSupabaseProjectUrl();
-  const anonKey = getSupabaseAnonKey();
-  if (!url || !anonKey) {
+  const config = getSanitizedSupabaseConfig();
+  if (!config) {
     return null;
   }
 
+  const { url, anonKey } = config;
+
   return createClient(url, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: createSupabaseFetch(anonKey, false) },
+    global: {
+      headers: { apikey: anonKey },
+      fetch: createSupabaseFetch(anonKey, false),
+    },
   });
 }
 
@@ -178,16 +179,19 @@ export function createServiceClient(): SupabaseClient | null {
     return null;
   }
 
-  const url = getSupabaseProjectUrl();
-  const serviceKey = getSupabaseServiceRoleKey();
-  if (!url || !serviceKey) {
+  const config = getSanitizedSupabaseConfig();
+  if (!config) {
     return null;
   }
 
+  const { url, serviceKey } = config;
   const omitAuthorization = isOpaqueSupabaseSecretKey(serviceKey);
 
   return createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: createSupabaseFetch(serviceKey, omitAuthorization) },
+    global: {
+      headers: { apikey: serviceKey },
+      fetch: createSupabaseFetch(serviceKey, omitAuthorization),
+    },
   });
 }

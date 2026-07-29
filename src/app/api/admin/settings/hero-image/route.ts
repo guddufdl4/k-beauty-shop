@@ -16,7 +16,12 @@ import {
   SITE_SETTINGS_CACHE_TAG,
 } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
+import {
+  describeServiceClientMisconfiguration,
+  describeSupabaseEnvDiagnostics,
+  describeSupabaseEnvVarSnapshot,
+  SUPABASE_ENV_VARS,
+} from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -59,6 +64,43 @@ function revalidateHeroPaths() {
   revalidatePath("/ko");
   revalidatePath("/ja");
   revalidatePath("/zh");
+}
+
+export async function GET(request: Request) {
+  const auth = await requireAdminApi();
+  if (auth.error) {
+    return auth.error;
+  }
+
+  const { searchParams } = new URL(request.url);
+  if (searchParams.get("diagnostic") !== "supabase") {
+    return NextResponse.json(
+      { error: "Add ?diagnostic=supabase for env diagnostics." },
+      { status: 400 },
+    );
+  }
+
+  const serviceClient = createServiceClient();
+  let bucketProbe: { ok: boolean; error?: string } = { ok: false, error: "service client unavailable" };
+
+  if (serviceClient) {
+    try {
+      const { error } = await serviceClient.storage.listBuckets();
+      bucketProbe = error ? { ok: false, error: error.message } : { ok: true };
+    } catch (error) {
+      bucketProbe = {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  return NextResponse.json({
+    env: SUPABASE_ENV_VARS.map((name) => describeSupabaseEnvVarSnapshot(name)),
+    diagnostics: describeSupabaseEnvDiagnostics(),
+    serviceClientReady: Boolean(serviceClient),
+    bucketListProbe: bucketProbe,
+  });
 }
 
 export async function POST(request: Request) {

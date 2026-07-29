@@ -1,6 +1,6 @@
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getSupabaseAnonKey, getSupabaseProjectUrl, isSupabaseConfigured } from "./config";
+import { getSanitizedSupabaseConfig, isSupabaseConfigured } from "./config";
 import { createSsrSupabaseFetch } from "./service";
 
 export async function createClient() {
@@ -10,12 +10,21 @@ export async function createClient() {
     );
   }
 
+  const config = getSanitizedSupabaseConfig();
+  if (!config) {
+    throw new Error(
+      "Supabase env vars contain non-ASCII characters. Re-paste values from Supabase Dashboard."
+    );
+  }
+
   const cookieStore = await cookies();
-  const url = getSupabaseProjectUrl()!;
-  const anonKey = getSupabaseAnonKey()!;
+  const { url, anonKey } = config;
 
   return createSupabaseServerClient(url, anonKey, {
-    global: { fetch: createSsrSupabaseFetch(anonKey) },
+    global: {
+      headers: { apikey: anonKey },
+      fetch: createSsrSupabaseFetch(anonKey),
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();

@@ -1,4 +1,8 @@
-import { describeServiceClientMisconfiguration, describeByteStringFetchError } from "@/lib/supabase/config";
+import {
+  describeByteStringFetchError,
+  describeServiceClientMisconfiguration,
+  describeSupabaseEnvDiagnostics,
+} from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export type BucketEnsureResult = { ok: true } | { ok: false; error: string };
@@ -207,9 +211,10 @@ async function ensureProductImagesBucketOnce(): Promise<BucketEnsureResult> {
     }
 
     const message = error instanceof Error ? error.message : String(error);
+    const isByteString = /ByteString|greater than 255/i.test(message);
     return {
       ok: false,
-      error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET})을 준비하지 못했습니다: ${formatStorageAuthHint(message)}`,
+      error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET})을 준비하지 못했습니다: ${formatStorageAuthHint(message)}${isByteString ? `\n${describeSupabaseEnvDiagnostics()}` : ""}`,
     };
   }
 }

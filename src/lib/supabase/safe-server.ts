@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getSupabaseAnonKey, getSupabaseProjectUrl, isSupabaseConfigured } from "./config";
+import { getSanitizedSupabaseConfig, isSupabaseConfigured } from "./config";
 import { createSsrSupabaseFetch } from "./service";
 
 export async function createSafeClient() {
@@ -8,12 +8,19 @@ export async function createSafeClient() {
     return null;
   }
 
+  const config = getSanitizedSupabaseConfig();
+  if (!config) {
+    return null;
+  }
+
   const cookieStore = await cookies();
-  const url = getSupabaseProjectUrl()!;
-  const anonKey = getSupabaseAnonKey()!;
+  const { url, anonKey } = config;
 
   return createServerClient(url, anonKey, {
-    global: { fetch: createSsrSupabaseFetch(anonKey) },
+    global: {
+      headers: { apikey: anonKey },
+      fetch: createSsrSupabaseFetch(anonKey),
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();
