@@ -101,13 +101,11 @@ export default async function HomePage() {
     <>
       {heroImageSrc ? (
         <section className="overflow-hidden border-b border-zinc-200">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroImageSrc}
-            alt=""
-            fetchPriority="high"
-            decoding="async"
-            className="block min-h-[280px] w-full object-cover object-center sm:min-h-[340px] lg:min-h-[400px]"
+          <div
+            className="min-h-[280px] w-full bg-cover bg-center bg-no-repeat sm:min-h-[340px] lg:min-h-[400px]"
+            style={{ backgroundImage: `url(${JSON.stringify(heroImageSrc)})` }}
+            role="img"
+            aria-label=""
           />
         </section>
       ) : (
