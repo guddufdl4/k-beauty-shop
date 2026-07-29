@@ -38,7 +38,7 @@ export default async function HomePage() {
   const heroButtonText = siteSettings.hero_button_text ?? t("heroCta");
   const heroButtonLink = siteSettings.hero_button_link ?? "/products";
   const heroImageUrl = siteSettings.hero_image_url?.trim() || null;
-  const heroImageBackground =
+  const heroImageSrc =
     heroImageUrl &&
     `${heroImageUrl}${heroImageUrl.includes("?") ? "&" : "?"}v=${encodeURIComponent(siteSettings.updated_at)}`;
 
@@ -99,25 +99,35 @@ export default async function HomePage() {
       <section
         className={
           heroImageUrl
-            ? "relative overflow-hidden border-b border-zinc-200 min-h-[240px] sm:min-h-[300px] lg:min-h-[360px]"
+            ? "relative isolate overflow-hidden border-b border-zinc-200 min-h-[280px] sm:min-h-[340px] lg:min-h-[400px]"
             : "overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]"
         }
       >
-        {heroImageBackground ? (
+        {heroImageSrc ? (
           <>
-            <div
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImageSrc}
+              alt=""
               aria-hidden
-              className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url('${heroImageBackground}')` }}
+              fetchPriority="high"
+              decoding="async"
+              className="absolute inset-0 z-0 h-full w-full object-cover object-center"
             />
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-full max-w-2xl bg-gradient-to-r from-white/40 via-white/10 to-transparent lg:max-w-xl"
+              className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-full max-w-md bg-gradient-to-r from-black/10 via-black/5 to-transparent sm:max-w-lg lg:max-w-xl"
             />
           </>
         ) : null}
         <div className="relative z-[2] mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
-          <div className="max-w-xl text-center lg:text-left">
+          <div
+            className={
+              heroImageUrl
+                ? "max-w-xl text-center lg:text-left [text-shadow:0_1px_8px_rgba(255,255,255,0.85),0_0_2px_rgba(255,255,255,0.9)]"
+                : "max-w-xl text-center lg:text-left"
+            }
+          >
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">{heroBadge}</p>
             <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-4xl lg:text-6xl">
               {heroTitle}
