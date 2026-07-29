@@ -2,16 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { SiteSettings } from "@/types/database";
-import { validateClientProductImageFile } from "@/lib/admin/product-image-upload";
+import {
+  validateClientProductImageFile,
+  withStorageImageCacheBuster,
+} from "@/lib/admin/product-image-upload";
 
 type Props = {
   initialSettings: SiteSettings;
 };
-
-function withCacheBuster(url: string, version: string): string {
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}v=${encodeURIComponent(version)}`;
-}
 
 export function AdminHeroSettingsForm({ initialSettings }: Props) {
   const [settings, setSettings] = useState(initialSettings);
@@ -23,6 +21,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const localPreviewRef = useRef<string | null>(null);
+  const awaitingServerPreviewRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -53,7 +52,37 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
   const heroImageUrl = settings.hero_image_url?.trim() ?? null;
   const displayImageSrc =
     previewSrc ??
-    (heroImageUrl ? withCacheBuster(heroImageUrl, previewVersion || settings.updated_at) : null);
+    (heroImageUrl
+      ? withStorageImageCacheBuster(heroImageUrl, previewVersion || settings.updated_at)
+      : null);
+
+  function handlePreviewLoad() {
+    if (!awaitingServerPreviewRef.current) {
+      return;
+    }
+
+    awaitingServerPreviewRef.current = false;
+    clearLocalPreview();
+  }
+
+  function handlePreviewError() {
+    if (!awaitingServerPreviewRef.current) {
+      return;
+    }
+
+    awaitingServerPreviewRef.current = false;
+
+    if (localPreviewRef.current) {
+      setPreviewSrc(localPreviewRef.current);
+      return;
+    }
+
+    if (heroImageUrl) {
+      setPreviewSrc(
+        withStorageImageCacheBuster(heroImageUrl, previewVersion || settings.updated_at),
+      );
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,6 +139,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     setUploadPending(true);
     setMessage(null);
     setError(null);
+    awaitingServerPreviewRef.current = false;
     setLocalPreview(file);
 
     const formData = new FormData();
@@ -129,6 +159,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
       };
 
       if (!response.ok) {
+        awaitingServerPreviewRef.current = false;
         clearLocalPreview();
         setPreviewSrc(null);
         setError(data.error ?? "배너 이미지 업로드에 실패했습니다.");
@@ -136,9 +167,10 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
       }
 
       const nextHeroUrl = data.hero_image_url?.trim() ?? data.settings?.hero_image_url?.trim() ?? null;
-      const nextPreviewUrl =
-        data.hero_image_preview_url?.trim() ?? nextHeroUrl ?? null;
       const nextUpdatedAt = data.settings?.updated_at ?? new Date().toISOString();
+      const nextPreviewUrl = nextHeroUrl
+        ? withStorageImageCacheBuster(nextHeroUrl, nextUpdatedAt)
+        : data.hero_image_preview_url?.trim() ?? null;
 
       if (data.settings) {
         setSettings({
@@ -154,11 +186,12 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
         }));
       }
 
-      clearLocalPreview();
+      awaitingServerPreviewRef.current = Boolean(nextPreviewUrl);
       setPreviewVersion(nextUpdatedAt);
-      setPreviewSrc(nextPreviewUrl ? withCacheBuster(nextPreviewUrl, nextUpdatedAt) : null);
+      setPreviewSrc(nextPreviewUrl);
       setMessage("배너 이미지를 업로드했습니다.");
     } catch {
+      awaitingServerPreviewRef.current = false;
       clearLocalPreview();
       setPreviewSrc(null);
       setError("네트워크 오류로 이미지를 업로드하지 못했습니다.");
@@ -228,6 +261,8 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                 src={displayImageSrc}
                 alt="현재 메인 배너 배경"
                 className="absolute inset-0 h-full w-full object-cover"
+                onLoad={handlePreviewLoad}
+                onError={handlePreviewError}
               />
             </div>
           </div>

@@ -54,7 +54,7 @@ async function requireAdminApi() {
 }
 
 function revalidateHeroPaths() {
-  revalidateTag(SITE_SETTINGS_CACHE_TAG, "max");
+  revalidateTag(SITE_SETTINGS_CACHE_TAG, { expire: 0 });
   revalidatePath("/admin/settings/hero");
   revalidatePath("/admin/settings");
   revalidatePath("/admin");

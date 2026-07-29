@@ -10,6 +10,21 @@ export type PublicStorageVerifyResult =
   | { ok: true }
   | { ok: false; status?: number; error?: string };
 
+/** True when the URL is a Supabase signed object URL (extra query params break the signature). */
+export function isSignedStorageUrl(url: string): boolean {
+  return /\/object\/sign\//.test(url) || /[?&]token=/.test(url);
+}
+
+/** Append a cache-buster query param for public storage URLs only. */
+export function withStorageImageCacheBuster(url: string, version: string): string {
+  if (isSignedStorageUrl(url)) {
+    return url;
+  }
+
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+}
+
 /** Build a Supabase Storage public object URL from sanitized project URL. */
 export function buildStoragePublicUrl(bucket: string, objectPath: string): string | null {
   const projectUrl = getSupabaseProjectUrl();
