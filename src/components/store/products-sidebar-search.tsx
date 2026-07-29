@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { buildCategoryTree } from "@/lib/store/category-tree";
-import { getCategorySortLocale } from "@/lib/store/localized-category";
 import { buildProductsHref, type ProductListSort } from "@/lib/store/products-url";
 import type { Category } from "@/lib/supabase/products";
 type Props = {
@@ -141,17 +140,10 @@ function CategoryNavList({
 }: CatalogSidebarProps & { className?: string }) {
   const t = useTranslations("products");
   const locale = useLocale();
-  const sortLocale = getCategorySortLocale(locale);
-
-  const { topLevel, childrenByParentId, hasHierarchy } = useMemo(() => {
-    const tree = buildCategoryTree(categories);
-    return {
-      ...tree,
-      topLevel: [...tree.topLevel].sort(
-        (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, sortLocale),
-      ),
-    };
-  }, [categories, sortLocale]);
+  const { topLevel, childrenByParentId, hasHierarchy } = useMemo(
+    () => buildCategoryTree(categories, locale),
+    [categories, locale],
+  );
 
   const activeCategory = activeCategorySlug
     ? categories.find((category) => category.slug === activeCategorySlug)
@@ -238,9 +230,11 @@ export function ProductCatalogSidebar({
   sort,
 }: CatalogSidebarProps) {
   const t = useTranslations("products");
-  const topLevelCategories = categories
-    .filter((category) => !category.parent_id)
-    .sort((a, b) => a.sort_order - b.sort_order);
+  const locale = useLocale();
+  const topLevelCategories = useMemo(
+    () => buildCategoryTree(categories, locale).topLevel,
+    [categories, locale],
+  );
 
   return (
     <>

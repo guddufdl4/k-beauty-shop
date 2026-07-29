@@ -37,5 +37,19 @@ export function localizeCategories(categories: Category[], locale: string): Cate
 }
 
 export function getCategorySortLocale(locale: string): string {
-  return locale === "ko" ? "ko" : "en";
+  if (locale === "ko") return "ko";
+  if (locale === "ja") return "ja";
+  if (locale === "zh") return "zh";
+  return "en";
+}
+
+export function compareCategoriesByDisplayName(
+  a: Pick<Category, "name">,
+  b: Pick<Category, "name">,
+  locale: string,
+): number {
+  return a.name.localeCompare(b.name, getCategorySortLocale(locale), {
+    sensitivity: "base",
+    numeric: true,
+  });
 }

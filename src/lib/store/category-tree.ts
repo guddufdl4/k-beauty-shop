@@ -1,11 +1,12 @@
 import type { Category } from "@/lib/supabase/products";
+import { compareCategoriesByDisplayName } from "@/lib/store/localized-category";
 
 export type CategoryColumn = {
   parent: Category;
   children: Category[];
 };
 
-export function buildCategoryTree(categories: Category[]): {
+export function buildCategoryTree(categories: Category[], locale = "en"): {
   topLevel: Category[];
   childrenByParentId: Map<string, Category[]>;
   columns: CategoryColumn[];
@@ -13,7 +14,7 @@ export function buildCategoryTree(categories: Category[]): {
 } {
   const topLevel = categories
     .filter((category) => !category.parent_id)
-    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, "ko"));
+    .sort((a, b) => compareCategoriesByDisplayName(a, b, locale));
 
   const childrenByParentId = new Map<string, Category[]>();
 
@@ -27,7 +28,7 @@ export function buildCategoryTree(categories: Category[]): {
   }
 
   for (const siblings of childrenByParentId.values()) {
-    siblings.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, "ko"));
+    siblings.sort((a, b) => compareCategoriesByDisplayName(a, b, locale));
   }
 
   const columns: CategoryColumn[] = topLevel.map((parent) => ({
