@@ -1422,6 +1422,53 @@ function finalizeHomepageProducts(
   ).slice(0, limit);
 }
 
+export type HomepageTabKey = "bestSellers" | "mostViewed" | "newArrivals" | "allProducts";
+
+const HOMEPAGE_TAB_LIMIT = 8;
+
+function compareBestSellers(a: ProductWithRelations, b: ProductWithRelations): number {
+  const aHasImage = productHasRealImage(a) ? 1 : 0;
+  const bHasImage = productHasRealImage(b) ? 1 : 0;
+  if (bHasImage !== aHasImage) {
+    return bHasImage - aHasImage;
+  }
+
+  if (Number(b.is_featured) !== Number(a.is_featured)) {
+    return Number(b.is_featured) - Number(a.is_featured);
+  }
+
+  const aCompare = a.compare_at_price ?? 0;
+  const bCompare = b.compare_at_price ?? 0;
+  if (bCompare !== aCompare) {
+    return bCompare - aCompare;
+  }
+
+  return b.created_at.localeCompare(a.created_at);
+}
+
+/** Pick homepage tab products from a shared pool with tab-specific sort/filter rules. */
+export function selectHomepageTabProducts(
+  pool: ProductWithRelations[],
+  tab: HomepageTabKey,
+  limit = HOMEPAGE_TAB_LIMIT,
+): ProductWithRelations[] {
+  const visible = pool.filter((product) => productHasRealImage(product));
+
+  switch (tab) {
+    case "bestSellers":
+      return [...visible].sort(compareBestSellers).slice(0, limit);
+    case "mostViewed":
+      return sortProductsForList(visible, { orderBy: "updated_at", imageFirst: true }).slice(0, limit);
+    case "newArrivals":
+      return sortProductsForList(visible, { orderBy: "created_at", imageFirst: true }).slice(0, limit);
+    case "allProducts": {
+      const sorted = sortProductsForList(visible, { orderBy: "created_at", imageFirst: true });
+      const nextPage = sorted.slice(limit, limit * 2);
+      return nextPage.length >= limit ? nextPage : sorted.slice(0, limit);
+    }
+  }
+}
+
 function quoteInFilterValues(values: string[]): string {
   return values.map((value) => `"${value.replace(/"/g, '\\"')}"`).join(",");
 }

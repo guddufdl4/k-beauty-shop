@@ -11,7 +11,7 @@ type SectionConfig = {
   id: string;
   primaryTab: TabKey;
   secondaryTab: TabKey;
-  products: Record<TabKey, ProductWithRelations[]>;
+  products: Partial<Record<TabKey, ProductWithRelations[]>>;
   labels: Record<TabKey, string>;
   viewAllLabel: string;
 };

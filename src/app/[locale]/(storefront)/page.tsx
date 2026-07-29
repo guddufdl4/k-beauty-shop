@@ -6,25 +6,16 @@ import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { productHasRealImage } from "@/lib/product-images";
 import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettingsFresh } from "@/lib/site-settings";
-import { getPriorityBrandProducts, type ProductWithRelations } from "@/lib/supabase/products";
+import {
+  getPriorityBrandProducts,
+  selectHomepageTabProducts,
+} from "@/lib/supabase/products";
 import { buildProductsHref } from "@/lib/store/products-url";
 
 export const revalidate = 60;
 
 function isExternalHref(href: string): boolean {
   return href.startsWith("http://") || href.startsWith("https://");
-}
-
-function sortHomeProducts(products: ProductWithRelations[]): ProductWithRelations[] {
-  return [...products].sort((a, b) => {
-    const aHasImage = productHasRealImage(a) ? 1 : 0;
-    const bHasImage = productHasRealImage(b) ? 1 : 0;
-    if (bHasImage !== aHasImage) {
-      return bHasImage - aHasImage;
-    }
-
-    return b.created_at.localeCompare(a.created_at);
-  });
 }
 
 async function loadSiteSettingsSafely() {
@@ -103,15 +94,17 @@ export default async function HomePage() {
   const hasHeroSlides = heroSlides.length > 0;
 
   const visibleProducts = products.filter((product) => productHasRealImage(product));
-
-  const featuredProducts = visibleProducts.filter((product) => product.is_featured);
-  const bestSellers = sortHomeProducts(
-    featuredProducts.length > 0 ? featuredProducts : visibleProducts,
-  ).slice(0, 8);
-  const mostViewed = sortHomeProducts(visibleProducts).slice(0, 8);
   const tabEmptyMessage = t("tabEmpty");
-  const newArrivals = sortHomeProducts(visibleProducts).slice(0, 8);
-  const allProducts = sortHomeProducts(visibleProducts).slice(0, 8);
+
+  const popularProducts = {
+    bestSellers: selectHomepageTabProducts(products, "bestSellers"),
+    mostViewed: selectHomepageTabProducts(products, "mostViewed"),
+  };
+
+  const discoveryProducts = {
+    newArrivals: selectHomepageTabProducts(products, "newArrivals"),
+    allProducts: selectHomepageTabProducts(products, "allProducts"),
+  };
 
   const uniqueBrands = [...new Set(visibleProducts.map((product) => product.brand).filter(Boolean))].slice(0, 8);
 
@@ -120,12 +113,7 @@ export default async function HomePage() {
       id: "popular",
       primaryTab: "bestSellers" as const,
       secondaryTab: "mostViewed" as const,
-      products: {
-        bestSellers,
-        mostViewed,
-        newArrivals,
-        allProducts,
-      },
+      products: popularProducts,
       labels: {
         bestSellers: t("tabBestSellers"),
         mostViewed: t("tabMostViewed"),
@@ -138,12 +126,7 @@ export default async function HomePage() {
       id: "new",
       primaryTab: "newArrivals" as const,
       secondaryTab: "allProducts" as const,
-      products: {
-        bestSellers,
-        mostViewed,
-        newArrivals,
-        allProducts,
-      },
+      products: discoveryProducts,
       labels: {
         bestSellers: t("tabBestSellers"),
         mostViewed: t("tabMostViewed"),
