@@ -66,7 +66,10 @@
     "tabAllProducts": "All Products",
     "badgeHot": "HOT",
     "badgeNew": "NEW",
-    "brandsTitle": "Partner Brands"
+    "brandsTitle": "Partner Brands",
+    "categoryNavSubtitle": "{category}をすべて見る",
+    "promoBestProducts": "ベスト商品",
+    "promoShopNow": "SHOP NOW"
   },
   "footer": {
     "about": "会社概要",

@@ -1,7 +1,7 @@
 import type { Category } from "@/lib/supabase/products";
 
 /** English display names keyed by category slug (DB names are often Korean). */
-const CATEGORY_EN_NAMES: Record<string, string> = {
+export const CATEGORY_EN_NAMES: Record<string, string> = {
   skincare: "Skincare",
   makeup: "Makeup",
   suncare: "Suncare",
@@ -15,6 +15,10 @@ const CATEGORY_EN_NAMES: Record<string, string> = {
   promotion: "Promotions",
 };
 
+export function getEnglishCategoryName(category: Pick<Category, "name" | "slug">): string {
+  return CATEGORY_EN_NAMES[category.slug] ?? category.name;
+}
+
 export function getLocalizedCategoryName(
   category: Pick<Category, "name" | "slug">,
   locale: string,
@@ -22,7 +26,7 @@ export function getLocalizedCategoryName(
   if (locale === "ko") {
     return category.name;
   }
-  return CATEGORY_EN_NAMES[category.slug] ?? category.name;
+  return getEnglishCategoryName(category);
 }
 
 export function localizeCategories(categories: Category[], locale: string): Category[] {

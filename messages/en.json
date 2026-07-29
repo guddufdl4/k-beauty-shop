@@ -66,7 +66,10 @@
     "tabAllProducts": "All Products",
     "badgeHot": "HOT",
     "badgeNew": "NEW",
-    "brandsTitle": "Partner Brands"
+    "brandsTitle": "Partner Brands",
+    "categoryNavSubtitle": "View all {category}",
+    "promoBestProducts": "Best Products",
+    "promoShopNow": "SHOP NOW"
   },
   "footer": {
     "about": "About",
