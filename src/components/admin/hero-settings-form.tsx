@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SiteSettings } from "@/types/database";
 import { validateClientProductImageFile } from "@/lib/admin/product-image-upload";
 
@@ -8,13 +8,52 @@ type Props = {
   initialSettings: SiteSettings;
 };
 
+function withCacheBuster(url: string, version: string): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+}
+
 export function AdminHeroSettingsForm({ initialSettings }: Props) {
   const [settings, setSettings] = useState(initialSettings);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [previewVersion, setPreviewVersion] = useState(initialSettings.updated_at ?? "");
   const [pending, setPending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const localPreviewRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (localPreviewRef.current) {
+        URL.revokeObjectURL(localPreviewRef.current);
+        localPreviewRef.current = null;
+      }
+    };
+  }, []);
+
+  function setLocalPreview(file: File) {
+    if (localPreviewRef.current) {
+      URL.revokeObjectURL(localPreviewRef.current);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    localPreviewRef.current = objectUrl;
+    setPreviewSrc(objectUrl);
+  }
+
+  function clearLocalPreview() {
+    if (localPreviewRef.current) {
+      URL.revokeObjectURL(localPreviewRef.current);
+      localPreviewRef.current = null;
+    }
+  }
+
+  const heroImageUrl = settings.hero_image_url?.trim() ?? null;
+  const displayImageSrc =
+    previewSrc ??
+    (heroImageUrl ? withCacheBuster(heroImageUrl, previewVersion || settings.updated_at) : null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,6 +110,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     setUploadPending(true);
     setMessage(null);
     setError(null);
+    setLocalPreview(file);
 
     const formData = new FormData();
     formData.set("file", file);
@@ -84,27 +124,43 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
       const data = (await response.json()) as {
         settings?: SiteSettings;
         hero_image_url?: string;
+        hero_image_preview_url?: string;
         error?: string;
       };
 
       if (!response.ok) {
+        clearLocalPreview();
+        setPreviewSrc(null);
         setError(data.error ?? "배너 이미지 업로드에 실패했습니다.");
         return;
       }
 
+      const nextHeroUrl = data.hero_image_url?.trim() ?? data.settings?.hero_image_url?.trim() ?? null;
+      const nextPreviewUrl =
+        data.hero_image_preview_url?.trim() ?? nextHeroUrl ?? null;
+      const nextUpdatedAt = data.settings?.updated_at ?? new Date().toISOString();
+
       if (data.settings) {
         setSettings({
           ...data.settings,
-          hero_image_url: data.hero_image_url ?? data.settings.hero_image_url,
+          hero_image_url: nextHeroUrl,
+          updated_at: nextUpdatedAt,
         });
-      } else if (data.hero_image_url) {
+      } else if (nextHeroUrl) {
         setSettings((current) => ({
           ...current,
-          hero_image_url: data.hero_image_url ?? null,
+          hero_image_url: nextHeroUrl,
+          updated_at: nextUpdatedAt,
         }));
       }
+
+      clearLocalPreview();
+      setPreviewVersion(nextUpdatedAt);
+      setPreviewSrc(nextPreviewUrl ? withCacheBuster(nextPreviewUrl, nextUpdatedAt) : null);
       setMessage("배너 이미지를 업로드했습니다.");
     } catch {
+      clearLocalPreview();
+      setPreviewSrc(null);
       setError("네트워크 오류로 이미지를 업로드하지 못했습니다.");
     } finally {
       setUploadPending(false);
@@ -139,6 +195,9 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
       if (data.settings) {
         setSettings(data.settings);
       }
+      clearLocalPreview();
+      setPreviewSrc(null);
+      setPreviewVersion(data.settings?.updated_at ?? new Date().toISOString());
       setMessage("배너 이미지를 삭제했습니다.");
     } catch {
       setError("네트워크 오류로 이미지를 삭제하지 못했습니다.");
@@ -160,13 +219,13 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
           </p>
         </div>
 
-        {settings.hero_image_url ? (
+        {displayImageSrc ? (
           <div className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
             <div className="relative aspect-[21/9] w-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                key={settings.hero_image_url}
-                src={settings.hero_image_url}
+                key={displayImageSrc}
+                src={displayImageSrc}
                 alt="현재 메인 배너 배경"
                 className="absolute inset-0 h-full w-full object-cover"
               />
@@ -195,7 +254,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
               }}
             />
           </label>
-          {settings.hero_image_url ? (
+          {heroImageUrl ? (
             <button
               type="button"
               disabled={uploadPending}

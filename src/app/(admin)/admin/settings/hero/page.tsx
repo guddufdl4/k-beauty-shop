@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AdminHeroSettingsForm } from "@/components/admin/hero-settings-form";
 import { AdminSettingsNav } from "@/components/admin/settings-nav";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteSettingsFresh } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminHeroSettingsPage() {
   const { configured, user, profile } = await getSessionProfile();
-  const settings = await getSiteSettings();
+  const settings = await getSiteSettingsFresh();
 
   if (!configured) {
     return (

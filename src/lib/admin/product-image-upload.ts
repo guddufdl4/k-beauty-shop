@@ -2,8 +2,61 @@ import {
   describeByteStringFetchError,
   describeServiceClientMisconfiguration,
   describeSupabaseEnvDiagnostics,
+  getSupabaseProjectUrl,
 } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
+
+export type PublicStorageVerifyResult =
+  | { ok: true }
+  | { ok: false; status?: number; error?: string };
+
+/** Build a Supabase Storage public object URL from sanitized project URL. */
+export function buildStoragePublicUrl(bucket: string, objectPath: string): string | null {
+  const projectUrl = getSupabaseProjectUrl();
+  if (!projectUrl) {
+    return null;
+  }
+
+  const normalizedObjectPath = objectPath.replace(/^\/+/, "");
+  const storagePath = `${bucket}/${normalizedObjectPath}`;
+  const base = projectUrl.replace(/\/$/, "");
+  return encodeURI(`${base}/storage/v1/object/public/${storagePath}`);
+}
+
+/** HEAD-check that a public storage URL is reachable (retries CDN propagation). */
+export async function verifyPublicStorageUrl(
+  url: string,
+  options?: { retries?: number; delayMs?: number },
+): Promise<PublicStorageVerifyResult> {
+  const retries = options?.retries ?? 4;
+  const delayMs = options?.delayMs ?? 350;
+
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+      if (response.ok) {
+        return { ok: true };
+      }
+
+      if (response.status !== 403 && response.status !== 404) {
+        return { ok: false, status: response.status };
+      }
+    } catch (error) {
+      if (attempt === retries - 1) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
+
+    if (attempt < retries - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return { ok: false, status: 403 };
+}
 
 export type BucketEnsureResult = { ok: true } | { ok: false; error: string };
 
@@ -190,6 +243,7 @@ async function ensureProductImagesBucketOnce(): Promise<BucketEnsureResult> {
           };
         }
       }
+
       return { ok: true };
     }
 

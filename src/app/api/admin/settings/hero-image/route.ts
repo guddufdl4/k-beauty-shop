@@ -7,8 +7,10 @@ import {
 } from "@/lib/admin/hero-image-upload";
 import {
   ensureProductImagesBucket,
+  buildStoragePublicUrl,
   formatStorageAuthHint,
   readProductImageUploadEntry,
+  verifyPublicStorageUrl,
 } from "@/lib/admin/product-image-upload";
 import {
   getSiteSettingsFresh,
@@ -52,7 +54,7 @@ async function requireAdminApi() {
 }
 
 function revalidateHeroPaths() {
-  revalidateTag(SITE_SETTINGS_CACHE_TAG, "max");
+  revalidateTag(SITE_SETTINGS_CACHE_TAG, { expire: 0 });
   revalidatePath("/admin/settings/hero");
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
@@ -81,12 +83,25 @@ export async function GET(request: Request) {
   }
 
   const serviceClient = createServiceClient();
-  let bucketProbe: { ok: boolean; error?: string } = { ok: false, error: "service client unavailable" };
+  let bucketProbe: { ok: boolean; error?: string; public?: boolean } = {
+    ok: false,
+    error: "service client unavailable",
+  };
 
   if (serviceClient) {
     try {
-      const { error } = await serviceClient.storage.listBuckets();
-      bucketProbe = error ? { ok: false, error: error.message } : { ok: true };
+      const { data: buckets, error } = await serviceClient.storage.listBuckets();
+      if (error) {
+        bucketProbe = { ok: false, error: error.message };
+      } else {
+        const productImages = buckets?.find(
+          (bucket) => bucket.id === HERO_IMAGE_BUCKET || bucket.name === HERO_IMAGE_BUCKET,
+        );
+        bucketProbe = {
+          ok: true,
+          public: productImages?.public ?? undefined,
+        };
+      }
     } catch (error) {
       bucketProbe = {
         ok: false,
@@ -95,11 +110,24 @@ export async function GET(request: Request) {
     }
   }
 
+  const heroSettings = serviceClient ? await getSiteSettingsFresh() : null;
+  const heroImageUrl = heroSettings?.hero_image_url?.trim() ?? null;
+  let heroImageProbe: { ok: boolean; status?: number; error?: string } | null = null;
+
+  if (heroImageUrl) {
+    const verified = await verifyPublicStorageUrl(heroImageUrl);
+    heroImageProbe = verified.ok
+      ? { ok: true }
+      : { ok: false, status: verified.status, error: verified.error };
+  }
+
   return NextResponse.json({
     env: SUPABASE_ENV_VARS.map((name) => describeSupabaseEnvVarSnapshot(name)),
     diagnostics: describeSupabaseEnvDiagnostics(),
     serviceClientReady: Boolean(serviceClient),
     bucketListProbe: bucketProbe,
+    hero_image_url: heroImageUrl,
+    heroImageProbe,
   });
 }
 
@@ -161,16 +189,41 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: publicData } = serviceClient.storage
-    .from(HERO_IMAGE_BUCKET)
-    .getPublicUrl(storagePath);
-
-  const publicUrl = publicData.publicUrl?.trim();
+  const publicUrl = buildStoragePublicUrl(HERO_IMAGE_BUCKET, storagePath);
   if (!publicUrl) {
     return NextResponse.json(
       { error: "\uc5c5\ub85c\ub4dc\ub41c \uc774\ubbf8\uc9c0 URL\uc744 \uc0dd\uc131\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4." },
       { status: 500 },
     );
+  }
+
+  let verified = await verifyPublicStorageUrl(publicUrl);
+  if (!verified.ok) {
+    const bucketReadyRetry = await ensureProductImagesBucket();
+    if (!bucketReadyRetry.ok) {
+      await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
+      return NextResponse.json({ error: bucketReadyRetry.error }, { status: 500 });
+    }
+
+    verified = await verifyPublicStorageUrl(publicUrl, { retries: 6, delayMs: 500 });
+    if (!verified.ok) {
+      await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
+      return NextResponse.json(
+        {
+          error: `업로드된 이미지를 공개 URL로 불러올 수 없습니다 (HTTP ${verified.status ?? "unknown"}). product-images 버킷 public 설정과 Storage 정책을 확인하세요.`,
+        },
+        { status: 500 },
+      );
+    }
+  }
+
+  let previewUrl = publicUrl;
+  const { data: signedData, error: signedError } = await serviceClient.storage
+    .from(HERO_IMAGE_BUCKET)
+    .createSignedUrl(storagePath, 3600);
+
+  if (!signedError && signedData?.signedUrl?.trim()) {
+    previewUrl = signedData.signedUrl.trim();
   }
 
   const { error: heroSaveError } = await saveHeroSettings({ hero_image_url: publicUrl });
@@ -189,6 +242,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     hero_image_url: publicUrl,
+    hero_image_preview_url: previewUrl,
     settings,
   });
 }
