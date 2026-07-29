@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
 import type { SiteSettings } from "@/types/database";
 
@@ -94,7 +95,12 @@ async function ensureHeroSettingsBucketOnce(): Promise<boolean> {
   }
 
   const message = createError.message.toLowerCase();
-  return message.includes("already exists") || message.includes("duplicate");
+  if (message.includes("already exists") || message.includes("duplicate")) {
+    return true;
+  }
+
+  console.error("[site-settings] ensureHeroSettingsBucket failed:", listError?.message ?? createError.message);
+  return false;
 }
 
 async function fetchHeroSettings(supabase: SupabaseClient): Promise<StoredHeroSettings> {
@@ -127,8 +133,7 @@ export async function saveHeroSettings(
   if (!service) {
     return {
       data: null,
-      error:
-        "SUPABASE_SERVICE_ROLE_KEY가 설정되지 않아 배너 설정을 저장할 수 없습니다.",
+      error: describeServiceClientMisconfiguration(),
     };
   }
 
@@ -136,7 +141,8 @@ export async function saveHeroSettings(
   if (!bucketReady) {
     return {
       data: null,
-      error: "Storage 버킷(site-config)을 준비하지 못했습니다.",
+      error:
+        "Storage 버킷(site-config)을 준비하지 못했습니다. SUPABASE_SERVICE_ROLE_KEY 권한과 Vercel 재배포 여부를 확인하세요.",
     };
   }
 

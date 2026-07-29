@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin/hero-image-upload";
 import {
   ensureProductImagesBucket,
+  formatStorageAuthHint,
   readProductImageUploadEntry,
 } from "@/lib/admin/product-image-upload";
 import {
@@ -15,6 +16,7 @@ import {
   SITE_SETTINGS_CACHE_TAG,
 } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -68,20 +70,14 @@ export async function POST(request: Request) {
   const serviceClient = createServiceClient();
   if (!serviceClient) {
     return NextResponse.json(
-      {
-        error:
-          "SUPABASE_SERVICE_ROLE_KEY\uac00 \uc124\uc815\ub418\uc9c0 \uc54a\uc544 Storage \uc5c5\ub85c\ub4dc\ub97c \ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
-      },
+      { error: describeServiceClientMisconfiguration() },
       { status: 500 },
     );
   }
 
   const bucketReady = await ensureProductImagesBucket();
-  if (!bucketReady) {
-    return NextResponse.json(
-      { error: "Storage \ubc84\ud0b7(product-images)\uc744 \uc900\ube44\ud558\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4." },
-      { status: 500 },
-    );
+  if (!bucketReady.ok) {
+    return NextResponse.json({ error: bucketReady.error }, { status: 500 });
   }
 
   let formData: FormData;
@@ -117,7 +113,10 @@ export async function POST(request: Request) {
     });
 
   if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    return NextResponse.json(
+      { error: formatStorageAuthHint(uploadError.message) },
+      { status: 500 },
+    );
   }
 
   const { data: publicData } = serviceClient.storage

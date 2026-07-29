@@ -1,4 +1,7 @@
+import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
+
+export type BucketEnsureResult = { ok: true } | { ok: false; error: string };
 
 export const PRODUCT_IMAGE_BUCKET = "product-images";
 
@@ -126,10 +129,19 @@ export function readProductImageUploadEntry(
   return entry;
 }
 
-let productImagesBucketEnsurePromise: Promise<boolean> | null = null;
+let productImagesBucketEnsurePromise: Promise<BucketEnsureResult> | null = null;
+
+export function formatStorageAuthHint(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("invalid jwt") || lower.includes("invalid api key")) {
+    return `${message} — SUPABASE_SERVICE_ROLE_KEY(sb_secret_... 또는 legacy service_role JWT)와 NEXT_PUBLIC_SUPABASE_URL 프로젝트가 일치하는지, Vercel 재배포 후 다시 시도하세요.`;
+  }
+
+  return message;
+}
 
 /** Ensures the public product-images bucket exists (service role; no SQL migration required). */
-export async function ensureProductImagesBucket(): Promise<boolean> {
+export async function ensureProductImagesBucket(): Promise<BucketEnsureResult> {
   if (!productImagesBucketEnsurePromise) {
     productImagesBucketEnsurePromise = ensureProductImagesBucketOnce().catch((error) => {
       productImagesBucketEnsurePromise = null;
@@ -140,10 +152,13 @@ export async function ensureProductImagesBucket(): Promise<boolean> {
   return productImagesBucketEnsurePromise;
 }
 
-async function ensureProductImagesBucketOnce(): Promise<boolean> {
+async function ensureProductImagesBucketOnce(): Promise<BucketEnsureResult> {
   const service = createServiceClient();
   if (!service) {
-    return false;
+    return {
+      ok: false,
+      error: describeServiceClientMisconfiguration(),
+    };
   }
 
   const { data: buckets, error: listError } = await service.storage.listBuckets();
@@ -152,7 +167,7 @@ async function ensureProductImagesBucketOnce(): Promise<boolean> {
       (bucket) => bucket.id === PRODUCT_IMAGE_BUCKET || bucket.name === PRODUCT_IMAGE_BUCKET,
     );
     if (exists) {
-      return true;
+      return { ok: true };
     }
   }
 
@@ -163,11 +178,19 @@ async function ensureProductImagesBucketOnce(): Promise<boolean> {
   });
 
   if (!createError) {
-    return true;
+    return { ok: true };
   }
 
   const message = createError.message.toLowerCase();
-  return message.includes("already exists") || message.includes("duplicate");
+  if (message.includes("already exists") || message.includes("duplicate")) {
+    return { ok: true };
+  }
+
+  const detail = listError?.message ?? createError.message;
+  return {
+    ok: false,
+    error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET})을 준비하지 못했습니다: ${formatStorageAuthHint(detail)}`,
+  };
 }
 
 export function validateClientProductImageFile(file: File): string | null {
