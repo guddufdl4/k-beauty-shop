@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import type { HeroSlide, SiteSettings } from "@/types/database";
-import { formatHeroImageRecommendation } from "@/lib/admin/hero-image-spec";
+import { resizeHeroImageToRecommended } from "@/lib/admin/hero-image-client-resize";
+import { formatHeroImageRecommendation, HERO_IMAGE_RECOMMENDED } from "@/lib/admin/hero-image-spec";
 import {
   validateClientProductImageFile,
   withStorageImageCacheBuster,
@@ -39,6 +40,8 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
   const [previewVersion, setPreviewVersion] = useState(initialSettings.updated_at ?? "");
   const [pending, setPending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
+  const [optimizePendingId, setOptimizePendingId] = useState<string | null>(null);
+  const [autoFitOnUpload, setAutoFitOnUpload] = useState(true);
   const [reorderPending, setReorderPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -158,8 +161,22 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     setMessage(null);
     setError(null);
 
+    let uploadFile = file;
+    if (autoFitOnUpload) {
+      try {
+        uploadFile = await resizeHeroImageToRecommended(file);
+      } catch {
+        setError("권장 크기로 맞추는 중 오류가 발생했습니다. 다시 시도해 주세요.");
+        setUploadPending(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        return;
+      }
+    }
+
     const formData = new FormData();
-    formData.set("file", file);
+    formData.set("file", uploadFile);
 
     try {
       const response = await fetch("/api/admin/settings/hero-image", {
@@ -185,7 +202,11 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
         setSlides(initialSlides(data.settings));
       }
 
-      setMessage("배너 슬라이드를 추가했습니다.");
+      setMessage(
+        autoFitOnUpload
+          ? `배너 슬라이드를 추가했습니다. (${HERO_IMAGE_RECOMMENDED.width}×${HERO_IMAGE_RECOMMENDED.height}px로 맞춤)`
+          : "배너 슬라이드를 추가했습니다.",
+      );
     } catch {
       setError("네트워크 오류로 이미지를 업로드하지 못했습니다.");
     } finally {
@@ -193,6 +214,44 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  }
+
+  async function handleOptimizeSlide(slideId: string) {
+    setOptimizePendingId(slideId);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/admin/settings/hero-image/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slideId }),
+      });
+
+      const data = (await response.json()) as {
+        settings?: SiteSettings;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setError(data.error ?? "배너 이미지 크기 맞춤에 실패했습니다.");
+        return;
+      }
+
+      if (data.settings) {
+        setSettings(data.settings);
+        setPreviewVersion(data.settings.updated_at);
+        setSlides(initialSlides(data.settings));
+      }
+
+      setMessage(
+        `슬라이드를 권장 크기(${HERO_IMAGE_RECOMMENDED.width}×${HERO_IMAGE_RECOMMENDED.height}px)로 맞췄습니다.`,
+      );
+    } catch {
+      setError("네트워크 오류로 이미지 크기를 맞추지 못했습니다.");
+    } finally {
+      setOptimizePendingId(null);
     }
   }
 
@@ -298,6 +357,16 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
+                      disabled={
+                        uploadPending || reorderPending || optimizePendingId === slide.id
+                      }
+                      onClick={() => void handleOptimizeSlide(slide.id)}
+                      className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {optimizePendingId === slide.id ? "맞추는 중…" : "권장 사이즈로 맞추기"}
+                    </button>
+                    <button
+                      type="button"
                       disabled={reorderPending || index === 0}
                       onClick={() => void handleMoveSlide(slide.id, -1)}
                       className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-semibold text-zinc-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
@@ -339,7 +408,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
-              disabled={uploadPending || reorderPending}
+              disabled={uploadPending || reorderPending || optimizePendingId !== null}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) {
@@ -347,6 +416,16 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                 }
               }}
             />
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+            <input
+              type="checkbox"
+              checked={autoFitOnUpload}
+              onChange={(event) => setAutoFitOnUpload(event.target.checked)}
+              disabled={uploadPending || reorderPending || optimizePendingId !== null}
+              className="rounded border-zinc-300 text-rose-600 focus:ring-rose-500"
+            />
+            권장 사이즈({HERO_IMAGE_RECOMMENDED.width}×{HERO_IMAGE_RECOMMENDED.height})로 자동 맞춤
           </label>
         </div>
       </section>
