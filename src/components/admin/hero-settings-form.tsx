@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { SiteSettings } from "@/types/database";
+import { useRef, useState } from "react";
+import type { HeroSlide, SiteSettings } from "@/types/database";
+import { formatHeroImageRecommendation } from "@/lib/admin/hero-image-spec";
 import {
   validateClientProductImageFile,
   withStorageImageCacheBuster,
@@ -11,76 +12,93 @@ type Props = {
   initialSettings: SiteSettings;
 };
 
+type SlideDraft = HeroSlide & {
+  previewSrc?: string | null;
+};
+
+function sortSlides(slides: SlideDraft[]): SlideDraft[] {
+  return [...slides]
+    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+    .map((slide, index) => ({ ...slide, order: index }));
+}
+
+function initialSlides(settings: SiteSettings): SlideDraft[] {
+  const source =
+    settings.hero_slides.length > 0
+      ? settings.hero_slides
+      : settings.hero_image_url
+        ? [{ id: "legacy", image_url: settings.hero_image_url, order: 0 }]
+        : [];
+
+  return sortSlides(source.map((slide) => ({ ...slide })));
+}
+
 export function AdminHeroSettingsForm({ initialSettings }: Props) {
   const [settings, setSettings] = useState(initialSettings);
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [slides, setSlides] = useState<SlideDraft[]>(() => initialSlides(initialSettings));
   const [previewVersion, setPreviewVersion] = useState(initialSettings.updated_at ?? "");
   const [pending, setPending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
+  const [reorderPending, setReorderPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const localPreviewRef = useRef<string | null>(null);
-  const awaitingServerPreviewRef = useRef(false);
 
-  useEffect(() => {
-    return () => {
-      if (localPreviewRef.current) {
-        URL.revokeObjectURL(localPreviewRef.current);
-        localPreviewRef.current = null;
+  function slidePreviewSrc(slide: SlideDraft): string {
+    if (slide.previewSrc) {
+      return slide.previewSrc;
+    }
+
+    return withStorageImageCacheBuster(slide.image_url, previewVersion || settings.updated_at);
+  }
+
+  async function persistSlides(nextSlides: SlideDraft[], successMessage: string) {
+    setReorderPending(true);
+    setMessage(null);
+    setError(null);
+
+    const payloadSlides = sortSlides(nextSlides).map(({ id, image_url, order }) => ({
+      id,
+      image_url,
+      order,
+    }));
+
+    try {
+      const response = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hero_slides: payloadSlides,
+          hero_image_url: payloadSlides[0]?.image_url ?? null,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        settings?: SiteSettings;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setError(data.error ?? "배너 슬라이드 저장에 실패했습니다.");
+        return false;
       }
-    };
-  }, []);
 
-  function setLocalPreview(file: File) {
-    if (localPreviewRef.current) {
-      URL.revokeObjectURL(localPreviewRef.current);
-    }
+      if (data.settings) {
+        setSettings(data.settings);
+        setPreviewVersion(data.settings.updated_at);
+        setSlides(initialSlides(data.settings));
+      } else {
+        setSlides(sortSlides(nextSlides));
+      }
 
-    const objectUrl = URL.createObjectURL(file);
-    localPreviewRef.current = objectUrl;
-    setPreviewSrc(objectUrl);
-  }
-
-  function clearLocalPreview() {
-    if (localPreviewRef.current) {
-      URL.revokeObjectURL(localPreviewRef.current);
-      localPreviewRef.current = null;
-    }
-  }
-
-  const heroImageUrl = settings.hero_image_url?.trim() ?? null;
-  const displayImageSrc =
-    previewSrc ??
-    (heroImageUrl
-      ? withStorageImageCacheBuster(heroImageUrl, previewVersion || settings.updated_at)
-      : null);
-
-  function handlePreviewLoad() {
-    if (!awaitingServerPreviewRef.current) {
-      return;
-    }
-
-    awaitingServerPreviewRef.current = false;
-    clearLocalPreview();
-  }
-
-  function handlePreviewError() {
-    if (!awaitingServerPreviewRef.current) {
-      return;
-    }
-
-    awaitingServerPreviewRef.current = false;
-
-    if (localPreviewRef.current) {
-      setPreviewSrc(localPreviewRef.current);
-      return;
-    }
-
-    if (heroImageUrl) {
-      setPreviewSrc(
-        withStorageImageCacheBuster(heroImageUrl, previewVersion || settings.updated_at),
-      );
+      setMessage(successMessage);
+      return true;
+    } catch {
+      setError("네트워크 오류로 슬라이드를 저장하지 못했습니다.");
+      return false;
+    } finally {
+      setReorderPending(false);
     }
   }
 
@@ -139,8 +157,6 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     setUploadPending(true);
     setMessage(null);
     setError(null);
-    awaitingServerPreviewRef.current = false;
-    setLocalPreview(file);
 
     const formData = new FormData();
     formData.set("file", file);
@@ -153,47 +169,24 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
 
       const data = (await response.json()) as {
         settings?: SiteSettings;
-        hero_image_url?: string;
+        hero_slide?: HeroSlide;
         hero_image_preview_url?: string;
         error?: string;
       };
 
       if (!response.ok) {
-        awaitingServerPreviewRef.current = false;
-        clearLocalPreview();
-        setPreviewSrc(null);
         setError(data.error ?? "배너 이미지 업로드에 실패했습니다.");
         return;
       }
 
-      const nextHeroUrl = data.hero_image_url?.trim() ?? data.settings?.hero_image_url?.trim() ?? null;
-      const nextUpdatedAt = data.settings?.updated_at ?? new Date().toISOString();
-      const nextPreviewUrl = nextHeroUrl
-        ? withStorageImageCacheBuster(nextHeroUrl, nextUpdatedAt)
-        : data.hero_image_preview_url?.trim() ?? null;
-
       if (data.settings) {
-        setSettings({
-          ...data.settings,
-          hero_image_url: nextHeroUrl,
-          updated_at: nextUpdatedAt,
-        });
-      } else if (nextHeroUrl) {
-        setSettings((current) => ({
-          ...current,
-          hero_image_url: nextHeroUrl,
-          updated_at: nextUpdatedAt,
-        }));
+        setSettings(data.settings);
+        setPreviewVersion(data.settings.updated_at);
+        setSlides(initialSlides(data.settings));
       }
 
-      awaitingServerPreviewRef.current = Boolean(nextPreviewUrl);
-      setPreviewVersion(nextUpdatedAt);
-      setPreviewSrc(nextPreviewUrl);
-      setMessage("배너 이미지를 업로드했습니다.");
+      setMessage("배너 슬라이드를 추가했습니다.");
     } catch {
-      awaitingServerPreviewRef.current = false;
-      clearLocalPreview();
-      setPreviewSrc(null);
       setError("네트워크 오류로 이미지를 업로드하지 못했습니다.");
     } finally {
       setUploadPending(false);
@@ -203,41 +196,53 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     }
   }
 
-  async function handleClearImage() {
-    setUploadPending(true);
-    setMessage(null);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hero_image_url: null }),
-      });
-
-      const data = (await response.json()) as {
-        settings?: SiteSettings;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        setError(data.error ?? "배너 이미지를 삭제하지 못했습니다.");
-        return;
-      }
-
-      if (data.settings) {
-        setSettings(data.settings);
-      }
-      clearLocalPreview();
-      setPreviewSrc(null);
-      setPreviewVersion(data.settings?.updated_at ?? new Date().toISOString());
-      setMessage("배너 이미지를 삭제했습니다.");
-    } catch {
-      setError("네트워크 오류로 이미지를 삭제하지 못했습니다.");
-    } finally {
-      setUploadPending(false);
-    }
+  async function handleDeleteSlide(slideId: string) {
+    const nextSlides = slides.filter((slide) => slide.id !== slideId);
+    await persistSlides(nextSlides, "배너 슬라이드를 삭제했습니다.");
   }
+
+  async function handleMoveSlide(slideId: string, direction: -1 | 1) {
+    const ordered = sortSlides(slides);
+    const index = ordered.findIndex((slide) => slide.id === slideId);
+    if (index < 0) {
+      return;
+    }
+
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= ordered.length) {
+      return;
+    }
+
+    const nextSlides = [...ordered];
+    const [moved] = nextSlides.splice(index, 1);
+    nextSlides.splice(targetIndex, 0, moved);
+    await persistSlides(nextSlides, "배너 순서를 변경했습니다.");
+  }
+
+  async function handleDrop(targetId: string) {
+    if (!draggingId || draggingId === targetId) {
+      setDraggingId(null);
+      return;
+    }
+
+    const ordered = sortSlides(slides);
+    const fromIndex = ordered.findIndex((slide) => slide.id === draggingId);
+    const toIndex = ordered.findIndex((slide) => slide.id === targetId);
+
+    if (fromIndex < 0 || toIndex < 0) {
+      setDraggingId(null);
+      return;
+    }
+
+    const nextSlides = [...ordered];
+    const [moved] = nextSlides.splice(fromIndex, 1);
+    nextSlides.splice(toIndex, 0, moved);
+    setDraggingId(null);
+    await persistSlides(nextSlides, "배너 순서를 변경했습니다.");
+  }
+
+  const hasSlides = slides.length > 0;
+  const recommendedSize = formatHeroImageRecommendation();
 
   return (
     <form
@@ -246,46 +251,95 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     >
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-900">배너 배경 이미지</h2>
+          <h2 className="text-lg font-semibold text-zinc-900">배너 슬라이드</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            홈페이지 상단 히어로 영역 배경으로 표시됩니다. JPG, PNG, WEBP (최대 5MB).
-            {heroImageUrl ? (
-              <span className="mt-1 block text-zinc-600">
-                이미지가 등록되면 홈페이지에는 배너 이미지만 표시됩니다. 아래 문구는 이미지가 없을 때만 사용됩니다.
-              </span>
-            ) : null}
+            홈페이지 상단 히어로 영역에 표시될 배너 이미지입니다. 여러 장을 등록하면 드래그·스와이프로
+            넘길 수 있습니다.
           </p>
+          <p className="mt-2 text-sm text-zinc-600">
+            권장 크기: <strong>{recommendedSize}</strong>. JPG·PNG·WEBP 업로드 가능. JPG는 WebP(품질 90)로
+            저장되며 PNG는 원본 형식을 유지합니다.
+          </p>
+          {hasSlides ? (
+            <p className="mt-1 text-sm text-zinc-600">
+              이미지가 등록되면 홈페이지에는 배너 이미지만 표시됩니다. 아래 문구는 이미지가 없을 때만
+              사용됩니다.
+            </p>
+          ) : null}
         </div>
 
-        {displayImageSrc ? (
-          <div className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
-            <div className="relative aspect-[21/9] w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                key={displayImageSrc}
-                src={displayImageSrc}
-                alt="현재 메인 배너 배경"
-                className="absolute inset-0 h-full w-full object-cover"
-                onLoad={handlePreviewLoad}
-                onError={handlePreviewError}
-              />
-            </div>
-          </div>
+        {hasSlides ? (
+          <ul className="space-y-3">
+            {sortSlides(slides).map((slide, index) => (
+              <li
+                key={slide.id}
+                draggable
+                onDragStart={() => setDraggingId(slide.id)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => void handleDrop(slide.id)}
+                className={`overflow-hidden rounded-xl border bg-zinc-50 ${
+                  draggingId === slide.id ? "border-rose-300 opacity-70" : "border-zinc-200"
+                }`}
+              >
+                <div className="relative aspect-[21/9] w-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={slidePreviewSrc(slide)}
+                    alt={`배너 슬라이드 ${index + 1}`}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    draggable={false}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-200 px-3 py-2">
+                  <p className="text-xs font-medium text-zinc-600">
+                    슬라이드 {index + 1}
+                    {index === 0 ? " · 첫 번째 배너" : ""}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={reorderPending || index === 0}
+                      onClick={() => void handleMoveSlide(slide.id, -1)}
+                      className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-semibold text-zinc-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      disabled={reorderPending || index === slides.length - 1}
+                      onClick={() => void handleMoveSlide(slide.id, 1)}
+                      className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-semibold text-zinc-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      disabled={uploadPending || reorderPending}
+                      onClick={() => void handleDeleteSlide(slide.id)}
+                      className="rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="flex aspect-[21/9] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-sm text-zinc-500">
-            등록된 배경 이미지 없음 (기본 그라데이션 사용)
+            등록된 배너 없음 (기본 그라데이션 사용)
           </div>
         )}
 
         <div className="flex flex-wrap items-center gap-3">
           <label className="inline-flex cursor-pointer items-center rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
-            {uploadPending ? "업로드 중…" : "이미지 업로드"}
+            {uploadPending ? "업로드 중…" : "슬라이드 추가"}
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
-              disabled={uploadPending}
+              disabled={uploadPending || reorderPending}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) {
@@ -294,16 +348,6 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
               }}
             />
           </label>
-          {heroImageUrl ? (
-            <button
-              type="button"
-              disabled={uploadPending}
-              onClick={() => void handleClearImage()}
-              className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              이미지 삭제
-            </button>
-          ) : null}
         </div>
       </section>
 

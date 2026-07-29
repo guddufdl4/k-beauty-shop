@@ -11,7 +11,7 @@ import {
 export const HERO_IMAGE_BUCKET = PRODUCT_IMAGE_BUCKET;
 
 const HERO_MAX_WIDTH = 1920;
-const HERO_JPEG_QUALITY = 85;
+const HERO_WEBP_QUALITY = 90;
 
 export function buildHeroImageStoragePath(mimeType: AllowedProductImageMimeType): string {
   const ext = extensionForProductImageMime(mimeType);
@@ -40,17 +40,29 @@ export async function readAndValidateHeroImageFile(file: File): Promise<HeroImag
   try {
     const pipeline = sharp(input)
       .rotate()
-      .resize({ width: HERO_MAX_WIDTH, withoutEnlargement: true });
+      .resize({
+        width: HERO_MAX_WIDTH,
+        fit: "inside",
+        withoutEnlargement: true,
+        kernel: sharp.kernel.lanczos3,
+      });
 
-    const buffer =
-      mimeType === "image/png"
-        ? await pipeline.png({ compressionLevel: 6 }).toBuffer()
-        : mimeType === "image/webp"
-          ? await pipeline.webp({ quality: HERO_JPEG_QUALITY }).toBuffer()
-          : await pipeline.jpeg({ quality: HERO_JPEG_QUALITY }).toBuffer();
+    let buffer: Buffer;
+    let outputMimeType: AllowedProductImageMimeType;
 
-    const outputMimeType = detectProductImageMimeType(new Uint8Array(buffer));
-    if (!outputMimeType) {
+    if (mimeType === "image/png") {
+      buffer = await pipeline.png({ compressionLevel: 3, effort: 7 }).toBuffer();
+      outputMimeType = "image/png";
+    } else if (mimeType === "image/webp") {
+      buffer = await pipeline.webp({ quality: HERO_WEBP_QUALITY, effort: 4 }).toBuffer();
+      outputMimeType = "image/webp";
+    } else {
+      buffer = await pipeline.webp({ quality: HERO_WEBP_QUALITY, effort: 4 }).toBuffer();
+      outputMimeType = "image/webp";
+    }
+
+    const detected = detectProductImageMimeType(new Uint8Array(buffer));
+    if (!detected) {
       return { ok: false, error: "이미지 처리 후 형식을 확인하지 못했습니다." };
     }
 

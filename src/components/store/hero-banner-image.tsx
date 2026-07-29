@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -18,9 +18,10 @@ export function HeroBannerImage({ src }: Props) {
     <img
       src={src}
       alt=""
-      className="block h-auto w-full"
+      className="block h-auto min-h-[280px] w-full object-cover sm:min-h-[320px] lg:min-h-[380px]"
       fetchPriority="high"
       decoding="async"
+      draggable={false}
       onError={() => setFailed(true)}
     />
   );

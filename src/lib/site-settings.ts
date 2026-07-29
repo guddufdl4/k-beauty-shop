@@ -2,13 +2,14 @@ import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
-import type { SiteSettings } from "@/types/database";
+import type { HeroSlide, SiteSettings } from "@/types/database";
 
 const HERO_SETTINGS_BUCKET = "site-config";
 const HERO_SETTINGS_PATH = "hero.json";
 
 const HERO_SETTING_KEYS = [
   "hero_image_url",
+  "hero_slides",
   "hero_badge",
   "hero_title",
   "hero_subtitle",
@@ -22,8 +23,99 @@ export type HeroSettingsPatch = Partial<HeroSettingsRecord>;
 
 type StoredHeroSettings = HeroSettingsRecord & { updated_at: string };
 
+function normalizeHeroSlides(raw: unknown, legacyImageUrl: string | null): HeroSlide[] {
+  const slides: HeroSlide[] = [];
+
+  if (Array.isArray(raw)) {
+    for (const [index, item] of raw.entries()) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+
+      const record = item as Record<string, unknown>;
+      const imageUrl =
+        typeof record.image_url === "string" && record.image_url.trim()
+          ? record.image_url.trim()
+          : null;
+
+      if (!imageUrl) {
+        continue;
+      }
+
+      const id =
+        typeof record.id === "string" && record.id.trim()
+          ? record.id.trim()
+          : `slide-${index}`;
+
+      const order =
+        typeof record.order === "number" && Number.isFinite(record.order)
+          ? record.order
+          : index;
+
+      slides.push({ id, image_url: imageUrl, order });
+    }
+  }
+
+  slides.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+
+  if (slides.length === 0 && legacyImageUrl) {
+    return [{ id: "legacy", image_url: legacyImageUrl, order: 0 }];
+  }
+
+  return slides.map((slide, index) => ({ ...slide, order: index }));
+}
+
+function parseHeroSlidesPatch(raw: unknown): HeroSlide[] | null {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+
+  const slides: HeroSlide[] = [];
+
+  for (const [index, item] of raw.entries()) {
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+
+    const record = item as Record<string, unknown>;
+    const imageUrl =
+      typeof record.image_url === "string" && record.image_url.trim()
+        ? record.image_url.trim()
+        : null;
+
+    if (!imageUrl) {
+      return null;
+    }
+
+    const id =
+      typeof record.id === "string" && record.id.trim() ? record.id.trim() : `slide-${index}`;
+
+    const order =
+      typeof record.order === "number" && Number.isFinite(record.order) ? record.order : index;
+
+    slides.push({ id, image_url: imageUrl, order });
+  }
+
+  slides.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+  return slides.map((slide, index) => ({ ...slide, order: index }));
+}
+
+export function getHeroSlides(settings: Pick<SiteSettings, "hero_slides" | "hero_image_url">): HeroSlide[] {
+  if (settings.hero_slides.length > 0) {
+    return [...settings.hero_slides].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+  }
+
+  const legacyUrl = settings.hero_image_url?.trim();
+  if (legacyUrl) {
+    return [{ id: "legacy", image_url: legacyUrl, order: 0 }];
+  }
+
+  return [];
+}
+
 const DEFAULT_STORED_HERO: StoredHeroSettings = {
   hero_image_url: null,
+  hero_slides: [],
   hero_badge: null,
   hero_title: null,
   hero_subtitle: null,
@@ -41,8 +133,12 @@ function normalizeStoredHero(raw: unknown): StoredHeroSettings {
   const trimOrNull = (value: unknown): string | null =>
     typeof value === "string" && value.trim() ? value.trim() : null;
 
+  const heroImageUrl = trimOrNull(record.hero_image_url);
+  const heroSlides = normalizeHeroSlides(record.slides ?? record.hero_slides, heroImageUrl);
+
   return {
-    hero_image_url: trimOrNull(record.hero_image_url),
+    hero_image_url: heroSlides[0]?.image_url ?? heroImageUrl,
+    hero_slides: heroSlides,
     hero_badge: trimOrNull(record.hero_badge),
     hero_title: trimOrNull(record.hero_title),
     hero_subtitle: trimOrNull(record.hero_subtitle),
@@ -210,13 +306,36 @@ export async function saveHeroSettings(
   }
 
   const current = await fetchHeroSettings(service);
+  const mergedSlides =
+    patch.hero_slides !== undefined
+      ? patch.hero_slides
+      : patch.hero_image_url !== undefined && patch.hero_image_url === null
+        ? []
+        : current.hero_slides;
+
   const next: StoredHeroSettings = {
     ...current,
     ...patch,
+    hero_slides: mergedSlides,
+    hero_image_url:
+      patch.hero_image_url !== undefined
+        ? patch.hero_image_url
+        : mergedSlides[0]?.image_url ?? current.hero_image_url,
     updated_at: new Date().toISOString(),
   };
 
-  const payload = Buffer.from(JSON.stringify(next), "utf-8");
+  const payloadObject = {
+    hero_image_url: next.hero_image_url,
+    slides: next.hero_slides,
+    hero_badge: next.hero_badge,
+    hero_title: next.hero_title,
+    hero_subtitle: next.hero_subtitle,
+    hero_button_text: next.hero_button_text,
+    hero_button_link: next.hero_button_link,
+    updated_at: next.updated_at,
+  };
+
+  const payload = Buffer.from(JSON.stringify(payloadObject), "utf-8");
   const { error } = await service.storage
     .from(HERO_SETTINGS_BUCKET)
     .upload(HERO_SETTINGS_PATH, payload, {
@@ -245,6 +364,7 @@ function mergeHeroIntoSiteSettings(
   return {
     ...settings,
     hero_image_url: hero.hero_image_url,
+    hero_slides: hero.hero_slides,
     hero_badge: hero.hero_badge,
     hero_title: hero.hero_title,
     hero_subtitle: hero.hero_subtitle,
@@ -269,6 +389,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   moq_label: null,
   min_order_note: null,
   hero_image_url: null,
+  hero_slides: [],
   hero_badge: null,
   hero_title: null,
   hero_subtitle: null,
@@ -292,6 +413,9 @@ function normalizeSettings(row: Partial<SiteSettings> | null): SiteSettings {
     moq_label: row.moq_label?.trim() || null,
     min_order_note: row.min_order_note?.trim() || null,
     hero_image_url: row.hero_image_url?.trim() || null,
+    hero_slides: Array.isArray(row.hero_slides)
+      ? normalizeHeroSlides(row.hero_slides, row.hero_image_url?.trim() || null)
+      : normalizeHeroSlides([], row.hero_image_url?.trim() || null),
     hero_badge: row.hero_badge?.trim() || null,
     hero_title: row.hero_title?.trim() || null,
     hero_subtitle: row.hero_subtitle?.trim() || null,
@@ -341,7 +465,7 @@ export function splitSiteSettingsPatch(patch: SiteSettingsPatch): {
 
   for (const key of HERO_SETTING_KEYS) {
     if (key in patch) {
-      heroPatch[key] = patch[key];
+      (heroPatch as Record<string, unknown>)[key] = patch[key];
       delete dbPatch[key];
     }
   }
@@ -363,6 +487,7 @@ export type SiteSettingsPatch = Partial<
     | "moq_label"
     | "min_order_note"
     | "hero_image_url"
+    | "hero_slides"
     | "hero_badge"
     | "hero_title"
     | "hero_subtitle"
@@ -374,6 +499,7 @@ export type SiteSettingsPatch = Partial<
 export type SiteSettingsDbPatch = Omit<
   SiteSettingsPatch,
   | "hero_image_url"
+  | "hero_slides"
   | "hero_badge"
   | "hero_title"
   | "hero_subtitle"
@@ -479,6 +605,19 @@ export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null 
         : String(record.hero_image_url).trim() || null;
   } else if ("hero_image_url" in record) {
     return null;
+  }
+
+  if ("hero_slides" in record || "slides" in record) {
+    const rawSlides = "hero_slides" in record ? record.hero_slides : record.slides;
+    if (rawSlides === null) {
+      patch.hero_slides = [];
+    } else {
+      const parsedSlides = parseHeroSlidesPatch(rawSlides);
+      if (!parsedSlides) {
+        return null;
+      }
+      patch.hero_slides = parsedSlides;
+    }
   }
 
   if (

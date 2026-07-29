@@ -1,11 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
-import { HeroBannerImage } from "@/components/store/hero-banner-image";
-import { isPublicImageUrl } from "@/lib/admin/product-image-upload";
+import { HeroBannerSlider } from "@/components/store/hero-banner-slider";
+import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { productHasRealImage } from "@/lib/product-images";
-import { DEFAULT_SITE_SETTINGS, getSiteSettingsFresh } from "@/lib/site-settings";
+import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettingsFresh } from "@/lib/site-settings";
 import { getPriorityBrandProducts, type ProductWithRelations } from "@/lib/supabase/products";
 import { buildProductsHref } from "@/lib/store/products-url";
 
@@ -94,8 +94,13 @@ export default async function HomePage() {
   const heroSubtitle = siteSettings.hero_subtitle ?? t("description");
   const heroButtonText = siteSettings.hero_button_text ?? t("heroCta");
   const heroButtonLink = siteSettings.hero_button_link ?? "/products";
-  const heroImageUrl = siteSettings.hero_image_url?.trim() ?? null;
-  const hasHeroImage = isPublicImageUrl(heroImageUrl);
+  const heroSlides = getHeroSlides(siteSettings)
+    .map((slide) => {
+      const src = resolveHeroImageSrc(slide.image_url, siteSettings.updated_at);
+      return src ? { id: slide.id, src } : null;
+    })
+    .filter((slide): slide is { id: string; src: string } => slide !== null);
+  const hasHeroSlides = heroSlides.length > 0;
 
   const visibleProducts = products.filter((product) => productHasRealImage(product));
 
@@ -151,12 +156,10 @@ export default async function HomePage() {
 
   return (
     <>
-      {hasHeroImage ? (
-        <section className="overflow-hidden border-b border-zinc-200">
-          <HeroBannerImage src={heroImageUrl} />
-        </section>
+      {hasHeroSlides ? (
+        <HeroBannerSlider slides={heroSlides} />
       ) : (
-        <section className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]">
+        <section className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#f1f5f9_0%,#e2e8f0_45%,#fce4ec_100%)]">
           <HeroTextFallback
             heroBadge={heroBadge}
             heroTitle={heroTitle}

@@ -191,6 +191,12 @@ export interface OrderItem {
   created_at: string;
 }
 
+export interface HeroSlide {
+  id: string;
+  image_url: string;
+  order: number;
+}
+
 export interface SiteSettings {
   id: number;
   store_name: string;
@@ -201,6 +207,7 @@ export interface SiteSettings {
   moq_label: string | null;
   min_order_note: string | null;
   hero_image_url: string | null;
+  hero_slides: HeroSlide[];
   hero_badge: string | null;
   hero_title: string | null;
   hero_subtitle: string | null;

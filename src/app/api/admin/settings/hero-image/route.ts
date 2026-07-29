@@ -14,6 +14,7 @@ import {
   verifyStoredImageObject,
 } from "@/lib/admin/product-image-upload";
 import {
+  getHeroSlides,
   getSiteSettingsFresh,
   saveHeroSettings,
   SITE_SETTINGS_CACHE_TAG,
@@ -233,7 +234,19 @@ export async function POST(request: Request) {
     previewUrl = signedData.signedUrl.trim();
   }
 
-  const { error: heroSaveError } = await saveHeroSettings({ hero_image_url: publicUrl });
+  const currentSettings = await getSiteSettingsFresh();
+  const existingSlides = getHeroSlides(currentSettings);
+  const newSlide = {
+    id: crypto.randomUUID(),
+    image_url: publicUrl,
+    order: existingSlides.length,
+  };
+  const nextSlides = [...existingSlides, newSlide];
+
+  const { error: heroSaveError } = await saveHeroSettings({
+    hero_slides: nextSlides,
+    hero_image_url: nextSlides[0]?.image_url ?? publicUrl,
+  });
 
   if (heroSaveError) {
     await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
@@ -250,6 +263,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     hero_image_url: publicUrl,
     hero_image_preview_url: previewUrl,
+    hero_slide: newSlide,
     settings,
   });
 }
