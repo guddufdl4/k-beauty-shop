@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
 import { HeroBannerSlider } from "@/components/store/hero-banner-slider";
-import { PartnerBrandsCarousel } from "@/components/store/partner-brands-carousel";
+import { PartnerBrandsGrid } from "@/components/store/partner-brands-grid";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { productHasRealImage } from "@/lib/product-images";
@@ -170,7 +170,7 @@ export default async function HomePage() {
           usdKrwRate={usdKrwRate}
         />
 
-        <PartnerBrandsCarousel title={t("brandsTitle")} brands={partnerBrands} />
+        <PartnerBrandsGrid title={t("brandsTitle")} brands={partnerBrands} />
 
         <section className="mt-16 border border-zinc-200 bg-surface-muted px-6 py-10 text-center sm:px-10">
           <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">{t("b2bTitle")}</h2>
