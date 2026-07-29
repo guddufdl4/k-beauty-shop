@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
 import { HeroBannerSlider } from "@/components/store/hero-banner-slider";
+import { PartnerBrandsCarousel } from "@/components/store/partner-brands-carousel";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { productHasRealImage } from "@/lib/product-images";
@@ -10,7 +11,7 @@ import {
   getPriorityBrandProducts,
   selectHomepageTabProducts,
 } from "@/lib/supabase/products";
-import { buildProductsHref } from "@/lib/store/products-url";
+import { getPartnerBrands } from "@/lib/store/partner-brands";
 
 export const revalidate = 60;
 
@@ -78,7 +79,10 @@ export default async function HomePage() {
     getUsdKrwRate(),
   ]);
 
-  const siteSettings = await loadSiteSettingsSafely();
+  const [siteSettings, partnerBrands] = await Promise.all([
+    loadSiteSettingsSafely(),
+    getPartnerBrands(products),
+  ]);
 
   const heroBadge = siteSettings.hero_badge ?? t("heroWholesale");
   const heroTitle = siteSettings.hero_title ?? t("heroDiscount");
@@ -105,8 +109,6 @@ export default async function HomePage() {
     newArrivals: selectHomepageTabProducts(products, "newArrivals"),
     allProducts: selectHomepageTabProducts(products, "allProducts"),
   };
-
-  const uniqueBrands = [...new Set(visibleProducts.map((product) => product.brand).filter(Boolean))].slice(0, 8);
 
   const sections = [
     {
@@ -168,24 +170,7 @@ export default async function HomePage() {
           usdKrwRate={usdKrwRate}
         />
 
-        {uniqueBrands.length > 0 ? (
-          <section className="mt-16 border-t border-zinc-200 pt-12">
-            <h2 className="mb-8 text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-800">
-              {t("brandsTitle")}
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-              {uniqueBrands.map((brand) => (
-                <Link
-                  key={brand}
-                  href={buildProductsHref({ brand })}
-                  className="flex h-16 items-center justify-center border border-zinc-200 bg-white px-3 text-center text-xs font-bold uppercase tracking-wide text-zinc-500 transition-colors hover:border-accent hover:text-accent"
-                >
-                  {brand}
-                </Link>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        <PartnerBrandsCarousel title={t("brandsTitle")} brands={partnerBrands} />
 
         <section className="mt-16 border border-zinc-200 bg-surface-muted px-6 py-10 text-center sm:px-10">
           <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">{t("b2bTitle")}</h2>
