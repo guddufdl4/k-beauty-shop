@@ -39,7 +39,7 @@ export default async function HomePage() {
   const heroButtonLink = siteSettings.hero_button_link ?? "/products";
   const heroBackgroundStyle = siteSettings.hero_image_url
     ? {
-        backgroundImage: `linear-gradient(135deg, rgba(250,250,250,0.88) 0%, rgba(245,245,245,0.82) 45%, rgba(252,228,236,0.78) 100%), url(${siteSettings.hero_image_url})`,
+        backgroundImage: `linear-gradient(135deg, rgba(250,250,250,0.72) 0%, rgba(245,245,245,0.65) 45%, rgba(252,228,236,0.58) 100%), url("${siteSettings.hero_image_url}")`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }

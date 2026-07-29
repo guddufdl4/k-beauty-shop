@@ -172,13 +172,25 @@ async function ensureProductImagesBucketOnce(): Promise<BucketEnsureResult> {
 
   try {
     const { data: buckets, error: listError } = await service.storage.listBuckets();
-    if (!listError) {
-      const exists = buckets?.some(
-        (bucket) => bucket.id === PRODUCT_IMAGE_BUCKET || bucket.name === PRODUCT_IMAGE_BUCKET,
-      );
-      if (exists) {
-        return { ok: true };
+    const existing = !listError
+      ? buckets?.find(
+          (bucket) => bucket.id === PRODUCT_IMAGE_BUCKET || bucket.name === PRODUCT_IMAGE_BUCKET,
+        )
+      : undefined;
+
+    if (existing) {
+      if (!existing.public) {
+        const { error: updateError } = await service.storage.updateBucket(PRODUCT_IMAGE_BUCKET, {
+          public: true,
+        });
+        if (updateError) {
+          return {
+            ok: false,
+            error: `Storage 버킷(${PRODUCT_IMAGE_BUCKET}) public 설정에 실패했습니다: ${formatStorageAuthHint(updateError.message)}`,
+          };
+        }
       }
+      return { ok: true };
     }
 
     const { error: createError } = await service.storage.createBucket(PRODUCT_IMAGE_BUCKET, {

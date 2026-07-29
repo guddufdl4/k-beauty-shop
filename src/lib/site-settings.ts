@@ -68,6 +68,13 @@ async function ensureHeroSettingsBucket(): Promise<boolean> {
   return heroBucketEnsurePromise;
 }
 
+function findStorageBucket(
+  buckets: Array<{ id: string; name: string; public?: boolean }> | null | undefined,
+  bucketId: string,
+) {
+  return buckets?.find((bucket) => bucket.id === bucketId || bucket.name === bucketId);
+}
+
 async function ensureHeroSettingsBucketOnce(): Promise<boolean> {
   const service = createServiceClient();
   if (!service) {
@@ -75,13 +82,18 @@ async function ensureHeroSettingsBucketOnce(): Promise<boolean> {
   }
 
   const { data: buckets, error: listError } = await service.storage.listBuckets();
-  if (!listError) {
-    const exists = buckets?.some(
-      (bucket) => bucket.id === HERO_SETTINGS_BUCKET || bucket.name === HERO_SETTINGS_BUCKET,
-    );
-    if (exists) {
-      return true;
+  const existing = !listError ? findStorageBucket(buckets, HERO_SETTINGS_BUCKET) : undefined;
+
+  if (existing) {
+    if (!existing.public) {
+      const { error: updateError } = await service.storage.updateBucket(HERO_SETTINGS_BUCKET, {
+        public: true,
+      });
+      if (updateError) {
+        console.error("[site-settings] ensureHeroSettingsBucket public update failed:", updateError.message);
+      }
     }
+    return true;
   }
 
   const { error: createError } = await service.storage.createBucket(HERO_SETTINGS_BUCKET, {
@@ -103,7 +115,42 @@ async function ensureHeroSettingsBucketOnce(): Promise<boolean> {
   return false;
 }
 
+async function readHeroSettingsPayload(raw: unknown): Promise<StoredHeroSettings | null> {
+  if (raw instanceof Blob) {
+    try {
+      return normalizeStoredHero(JSON.parse(await raw.text()) as unknown);
+    } catch (error) {
+      console.error("[site-settings] hero.json parse failed:", error);
+      return null;
+    }
+  }
+
+  if (typeof raw === "string") {
+    try {
+      return normalizeStoredHero(JSON.parse(raw) as unknown);
+    } catch (error) {
+      console.error("[site-settings] hero.json parse failed:", error);
+      return null;
+    }
+  }
+
+  return normalizeStoredHero(raw);
+}
+
 async function fetchHeroSettings(supabase: SupabaseClient): Promise<StoredHeroSettings> {
+  const { data: blob, error: downloadError } = await supabase.storage
+    .from(HERO_SETTINGS_BUCKET)
+    .download(HERO_SETTINGS_PATH);
+
+  if (!downloadError && blob) {
+    const parsed = await readHeroSettingsPayload(blob);
+    if (parsed) {
+      return parsed;
+    }
+  } else if (downloadError && !/not found|object not found/i.test(downloadError.message)) {
+    console.error("[site-settings] hero.json download failed:", downloadError.message);
+  }
+
   const { data: publicData } = supabase.storage
     .from(HERO_SETTINGS_BUCKET)
     .getPublicUrl(HERO_SETTINGS_PATH);
@@ -116,14 +163,30 @@ async function fetchHeroSettings(supabase: SupabaseClient): Promise<StoredHeroSe
   try {
     const response = await fetch(publicUrl, { cache: "no-store" });
     if (!response.ok) {
+      console.error("[site-settings] hero.json public fetch failed:", response.status, publicUrl);
       return { ...DEFAULT_STORED_HERO };
     }
 
-    const parsed = (await response.json()) as unknown;
-    return normalizeStoredHero(parsed);
-  } catch {
+    const parsed = await readHeroSettingsPayload(await response.json());
+    return parsed ?? { ...DEFAULT_STORED_HERO };
+  } catch (error) {
+    console.error("[site-settings] hero.json public fetch error:", error);
     return { ...DEFAULT_STORED_HERO };
   }
+}
+
+async function fetchHeroSettingsForServer(): Promise<StoredHeroSettings> {
+  const service = createServiceClient();
+  if (service) {
+    return fetchHeroSettings(service);
+  }
+
+  const publicClient = createPublicClient();
+  if (publicClient) {
+    return fetchHeroSettings(publicClient);
+  }
+
+  return { ...DEFAULT_STORED_HERO };
 }
 
 export async function saveHeroSettings(
@@ -153,7 +216,7 @@ export async function saveHeroSettings(
     updated_at: new Date().toISOString(),
   };
 
-  const payload = JSON.stringify(next);
+  const payload = Buffer.from(JSON.stringify(next), "utf-8");
   const { error } = await service.storage
     .from(HERO_SETTINGS_BUCKET)
     .upload(HERO_SETTINGS_PATH, payload, {
@@ -254,7 +317,7 @@ async function fetchSiteSettingsFromSource(): Promise<SiteSettings> {
 
   const [{ data, error }, heroSettings] = await Promise.all([
     supabase.from("site_settings").select("*").eq("id", 1).maybeSingle(),
-    fetchHeroSettings(supabase),
+    fetchHeroSettingsForServer(),
   ]);
 
   if (error || !data) {

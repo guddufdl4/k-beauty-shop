@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState } from "react";
 import type { SiteSettings } from "@/types/database";
 import { validateClientProductImageFile } from "@/lib/admin/product-image-upload";
@@ -94,7 +93,15 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
       }
 
       if (data.settings) {
-        setSettings(data.settings);
+        setSettings({
+          ...data.settings,
+          hero_image_url: data.hero_image_url ?? data.settings.hero_image_url,
+        });
+      } else if (data.hero_image_url) {
+        setSettings((current) => ({
+          ...current,
+          hero_image_url: data.hero_image_url ?? null,
+        }));
       }
       setMessage("배너 이미지를 업로드했습니다.");
     } catch {
@@ -156,13 +163,12 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
         {settings.hero_image_url ? (
           <div className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
             <div className="relative aspect-[21/9] w-full">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={settings.hero_image_url}
                 src={settings.hero_image_url}
                 alt="현재 메인 배너 배경"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 768px"
-                unoptimized
+                className="absolute inset-0 h-full w-full object-cover"
               />
             </div>
           </div>
