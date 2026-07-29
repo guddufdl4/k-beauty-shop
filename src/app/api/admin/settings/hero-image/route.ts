@@ -10,6 +10,8 @@ import {
   buildStoragePublicUrl,
   formatStorageAuthHint,
   readProductImageUploadEntry,
+  toBinaryUploadBody,
+  verifyPublicJpegUrl,
   verifyPublicStorageUrl,
 } from "@/lib/admin/product-image-upload";
 import {
@@ -177,8 +179,8 @@ export async function POST(request: Request) {
 
   const { error: uploadError } = await serviceClient.storage
     .from(HERO_IMAGE_BUCKET)
-    .upload(storagePath, validated.buffer, {
-      contentType: validated.mimeType,
+    .upload(storagePath, toBinaryUploadBody(validated.buffer), {
+      contentType: "image/jpeg",
       upsert: true,
     });
 
@@ -197,7 +199,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let verified = await verifyPublicStorageUrl(publicUrl);
+  let verified = await verifyPublicJpegUrl(publicUrl);
   if (!verified.ok) {
     const bucketReadyRetry = await ensureProductImagesBucket();
     if (!bucketReadyRetry.ok) {
@@ -205,12 +207,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: bucketReadyRetry.error }, { status: 500 });
     }
 
-    verified = await verifyPublicStorageUrl(publicUrl, { retries: 6, delayMs: 500 });
+    verified = await verifyPublicJpegUrl(publicUrl, { retries: 6, delayMs: 500 });
     if (!verified.ok) {
       await serviceClient.storage.from(HERO_IMAGE_BUCKET).remove([storagePath]);
       return NextResponse.json(
         {
-          error: `업로드된 이미지를 공개 URL로 불러올 수 없습니다 (HTTP ${verified.status ?? "unknown"}). product-images 버킷 public 설정과 Storage 정책을 확인하세요.`,
+          error: `업로드된 이미지가 손상되었거나 공개 URL로 불러올 수 없습니다. 다시 업로드해 주세요.${verified.status ? ` (HTTP ${verified.status})` : ""}${verified.error ? ` ${verified.error}` : ""}`,
         },
         { status: 500 },
       );

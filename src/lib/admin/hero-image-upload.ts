@@ -2,6 +2,7 @@ import sharp from "sharp";
 import {
   detectProductImageMimeType,
   extensionForProductImageMime,
+  isJpegBuffer,
   MAX_PRODUCT_IMAGE_BYTES,
   PRODUCT_IMAGE_BUCKET,
   type AllowedProductImageMimeType,
@@ -41,8 +42,12 @@ export async function readAndValidateHeroImageFile(file: File): Promise<HeroImag
     const buffer = await sharp(input)
       .rotate()
       .resize({ width: HERO_MAX_WIDTH, withoutEnlargement: true })
-      .jpeg({ quality: HERO_JPEG_QUALITY, mozjpeg: true })
+      .jpeg({ quality: HERO_JPEG_QUALITY })
       .toBuffer();
+
+    if (!isJpegBuffer(buffer)) {
+      return { ok: false, error: "이미지를 JPEG로 변환하지 못했습니다." };
+    }
 
     return { ok: true, buffer, mimeType: "image/jpeg" };
   } catch {

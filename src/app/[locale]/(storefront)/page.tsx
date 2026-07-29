@@ -1,7 +1,8 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
-import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
+import { HeroBannerImage } from "@/components/store/hero-banner-image";
+import { isPublicImageUrl } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { productHasRealImage } from "@/lib/product-images";
 import { DEFAULT_SITE_SETTINGS, getSiteSettingsFresh } from "@/lib/site-settings";
@@ -93,10 +94,8 @@ export default async function HomePage() {
   const heroSubtitle = siteSettings.hero_subtitle ?? t("description");
   const heroButtonText = siteSettings.hero_button_text ?? t("heroCta");
   const heroButtonLink = siteSettings.hero_button_link ?? "/products";
-  const heroImageSrc = resolveHeroImageSrc(
-    siteSettings.hero_image_url,
-    siteSettings.updated_at,
-  );
+  const heroImageUrl = siteSettings.hero_image_url?.trim() ?? null;
+  const hasHeroImage = isPublicImageUrl(heroImageUrl);
 
   const visibleProducts = products.filter((product) => productHasRealImage(product));
 
@@ -152,16 +151,9 @@ export default async function HomePage() {
 
   return (
     <>
-      {heroImageSrc ? (
+      {hasHeroImage ? (
         <section className="overflow-hidden border-b border-zinc-200">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroImageSrc}
-            alt={heroTitle}
-            className="block w-full max-h-[480px] object-cover object-center"
-            fetchPriority="high"
-            decoding="async"
-          />
+          <HeroBannerImage src={heroImageUrl} />
         </section>
       ) : (
         <section className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]">

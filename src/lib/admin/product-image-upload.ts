@@ -25,6 +25,16 @@ export function withStorageImageCacheBuster(url: string, version: string): strin
   return `${url}${separator}v=${encodeURIComponent(version)}`;
 }
 
+/** JPEG files start with FF D8 FF. */
+export function isJpegBuffer(bytes: Uint8Array | Buffer): boolean {
+  return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+}
+
+/** Avoid Buffer→string coercion in Storage upload (0xFF bytes become U+FFFD / efbfbd). */
+export function toBinaryUploadBody(buffer: Buffer): Uint8Array {
+  return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+}
+
 /** True when the value is an absolute http(s) URL suitable for img/background-image src. */
 export function isPublicImageUrl(url: string | null | undefined): url is string {
   if (!url?.trim()) {
@@ -81,6 +91,46 @@ export async function verifyPublicStorageUrl(
 
       if (response.status !== 403 && response.status !== 404) {
         return { ok: false, status: response.status };
+      }
+    } catch (error) {
+      if (attempt === retries - 1) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
+
+    if (attempt < retries - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return { ok: false, status: 403 };
+}
+
+/** GET-check that a public URL returns valid JPEG bytes (not just HTTP 200). */
+export async function verifyPublicJpegUrl(
+  url: string,
+  options?: { retries?: number; delayMs?: number },
+): Promise<PublicStorageVerifyResult> {
+  const retries = options?.retries ?? 4;
+  const delayMs = options?.delayMs ?? 350;
+
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        if (response.status !== 403 && response.status !== 404) {
+          return { ok: false, status: response.status };
+        }
+      } else {
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        if (isJpegBuffer(bytes)) {
+          return { ok: true };
+        }
+
+        return { ok: false, error: "stored object is not a valid JPEG" };
       }
     } catch (error) {
       if (attempt === retries - 1) {
