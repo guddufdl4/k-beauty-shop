@@ -1,6 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { HomeHeroBanner } from "@/components/store/home-hero-banner";
 import { HomeProductTabs } from "@/components/store/home-product-tabs";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
@@ -101,7 +100,16 @@ export default async function HomePage() {
   return (
     <>
       {heroImageSrc ? (
-        <HomeHeroBanner imageSrc={heroImageSrc} />
+        <section className="overflow-hidden border-b border-zinc-200">
+          <div className="relative aspect-[21/9] w-full min-h-[200px]">
+            <img
+              src={heroImageSrc}
+              alt=""
+              className="h-full w-full object-cover"
+              fetchPriority="high"
+            />
+          </div>
+        </section>
       ) : (
         <section className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#fafafa_0%,#f5f5f5_45%,#fce4ec_100%)]">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
