@@ -1,5 +1,8 @@
 import type { Category } from "@/lib/supabase/products";
-import { compareCategoriesByDisplayName } from "@/lib/store/localized-category";
+import {
+  compareCategoriesByDisplayName,
+  filterStorefrontCategories,
+} from "@/lib/store/localized-category";
 
 export type CategoryColumn = {
   parent: Category;
@@ -12,13 +15,15 @@ export function buildCategoryTree(categories: Category[], locale = "en"): {
   columns: CategoryColumn[];
   hasHierarchy: boolean;
 } {
-  const topLevel = categories
+  const visibleCategories = filterStorefrontCategories(categories);
+
+  const topLevel = visibleCategories
     .filter((category) => !category.parent_id)
     .sort((a, b) => compareCategoriesByDisplayName(a, b, locale));
 
   const childrenByParentId = new Map<string, Category[]>();
 
-  for (const category of categories) {
+  for (const category of visibleCategories) {
     if (!category.parent_id) {
       continue;
     }

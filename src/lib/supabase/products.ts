@@ -9,6 +9,7 @@ import {
 } from "@/lib/product-images";
 import type { ProductListSort } from "@/lib/store/products-url";
 import { isProductOnSale } from "@/lib/store/products-url";
+import { filterStorefrontCategories } from "@/lib/store/localized-category";
 import { isSupabaseConfigured } from "./config";
 import { createSafeClient } from "./safe-server";
 import { createPublicClient, createServiceClient } from "./service";
@@ -847,7 +848,9 @@ async function fetchCategoriesFromSource(): Promise<{
   }
 
   return {
-    categories: data.map((row) => mapCategory(row as Record<string, unknown>)),
+    categories: filterStorefrontCategories(
+      data.map((row) => mapCategory(row as Record<string, unknown>)),
+    ),
     meta: { source: "database", configured: true },
   };
 }

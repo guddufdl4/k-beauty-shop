@@ -53,3 +53,16 @@ export function compareCategoriesByDisplayName(
     numeric: true,
   });
 }
+
+/** True when name/slug looks like a barcode accidentally imported as a category. */
+export function isBarcodeLikeCategory(
+  category: Pick<Category, "name" | "slug">,
+): boolean {
+  const slug = category.slug.trim();
+  const name = category.name.trim();
+  return /^\d{8,}$/.test(slug) || /^\d{8,}$/.test(name);
+}
+
+export function filterStorefrontCategories(categories: Category[]): Category[] {
+  return categories.filter((category) => !isBarcodeLikeCategory(category));
+}
