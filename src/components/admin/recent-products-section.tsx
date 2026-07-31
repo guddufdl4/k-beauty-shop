@@ -128,7 +128,8 @@ export function RecentProductsSection({ products, filters, dense }: Props) {
                   <div className="mt-1">
                     <ProductNameWithCopy
                       name={product.name}
-                      textClassName="line-clamp-2 text-sm font-medium leading-snug text-zinc-900"
+                      brand={product.brand}
+                      textClassName="line-clamp-2 text-sm leading-snug text-zinc-900"
                     />
                   </div>
                 </div>

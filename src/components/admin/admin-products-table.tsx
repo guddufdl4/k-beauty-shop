@@ -249,12 +249,11 @@ const ProductTableRow = memo(function ProductTableRow({
       <td className="max-w-[14rem] px-3 py-2.5 align-top">
         <ProductNameWithCopy
           name={product.name}
-          href={`/en/products/${product.slug}`}
-          linkClassName="truncate font-medium text-zinc-900 hover:text-rose-700"
+          brand={product.brand}
+          textClassName="truncate text-zinc-900"
         />
         <p className="mt-0.5 select-none text-[10px] text-zinc-400">MOQ {product.moq}</p>
       </td>
-      <td className="px-3 py-2.5 align-top text-xs text-zinc-700">{product.brand}</td>
       <td className="px-3 py-2.5 align-top">
         <p
           className={`text-xs font-semibold ${
@@ -1085,7 +1084,6 @@ export const AdminProductsTable = memo(function AdminProductsTable({
               <th className="w-14 px-3 py-2.5 font-semibold">이미지</th>
               <th className="min-w-[7rem] px-3 py-2.5 font-semibold">SKU</th>
               <th className="min-w-[12rem] px-3 py-2.5 font-semibold">상품명</th>
-              <th className="min-w-[6rem] px-3 py-2.5 font-semibold">브랜드</th>
               <th className="min-w-[5rem] px-3 py-2.5 font-semibold">가격</th>
               <th className="min-w-[4rem] px-3 py-2.5 font-semibold">재고</th>
               <th className="min-w-[4rem] px-3 py-2.5 font-semibold">품절</th>
