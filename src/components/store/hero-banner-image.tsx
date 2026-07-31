@@ -42,7 +42,7 @@ export function HeroBannerImage({
       alt=""
       width={1920}
       height={600}
-      sizes="100vw"
+      sizes="(max-width: 1280px) 100vw, 1280px"
       className={`absolute inset-0 block h-full w-full object-contain ${focusClass[imageFocus]} ${className ?? ""}`}
       fetchPriority={priority ? "high" : "auto"}
       loading={priority ? "eager" : "lazy"}

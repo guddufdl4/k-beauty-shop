@@ -346,9 +346,11 @@ export function HeroBannerSlider({ slides, copy }: Props) {
     const { desktop } = resolveHeroSlideLayout(null);
 
     return (
-      <section className="overflow-hidden border-b border-zinc-200 bg-gradient-to-br from-slate-50 via-white to-rose-50/30">
-        <div className="relative mx-auto aspect-[1920/600] w-full max-w-[1920px] px-4 py-10 sm:px-6 sm:py-14">
-          <HeroCopyPanel copy={copy} layout={desktop} isMobile={false} />
+      <section className="border-b border-zinc-200 bg-white">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+          <div className="relative aspect-[1920/600] w-full bg-gradient-to-br from-slate-50 via-white to-rose-50/30">
+            <HeroCopyPanel copy={copy} layout={desktop} isMobile={false} />
+          </div>
         </div>
       </section>
     );
@@ -359,15 +361,16 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       ref={sectionRef}
       tabIndex={showControls ? 0 : undefined}
       onKeyDown={showControls ? handleKeyDown : undefined}
-      className="relative overflow-hidden border-b border-zinc-200 bg-[#f4f2ef] outline-none"
+      className="border-b border-zinc-200 bg-white outline-none"
     >
-      <div
-        className="relative mx-auto w-full max-w-[1920px]"
-        onMouseEnter={showControls ? pauseAutoplay : undefined}
-        onMouseLeave={showControls ? resumeAutoplay : undefined}
-        onFocusCapture={showControls ? pauseAutoplay : undefined}
-        onBlurCapture={showControls ? resumeAutoplay : undefined}
-      >
+      <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+        <div
+          className="relative w-full overflow-hidden"
+          onMouseEnter={showControls ? pauseAutoplay : undefined}
+          onMouseLeave={showControls ? resumeAutoplay : undefined}
+          onFocusCapture={showControls ? pauseAutoplay : undefined}
+          onBlurCapture={showControls ? resumeAutoplay : undefined}
+        >
         <div
           ref={showControls ? containerRef : undefined}
           className={
@@ -482,6 +485,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
             </div>
           </>
         ) : null}
+        </div>
       </div>
     </section>
   );
