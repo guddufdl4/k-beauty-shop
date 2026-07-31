@@ -114,6 +114,7 @@
       "makeup": "彩妆",
       "hairCare": "护发",
       "badgeBestSeller": "畅销",
+      "badgeFeatured": "Featured",
       "badgeNew": "新品",
       "badgeSale": "促销",
       "soldOut": "缺货"
@@ -136,8 +137,15 @@
   "footer": {
     "about": "关于我们",
     "terms": "服务条款",
-    "copyright": "© {brand} · 韩国化妆品出口平台",
-    "address": "首尔 · 韩美贸易 K-Beauty B2B 批发中心",
+    "copyright": "© {brand} · 韩国化妆品B2B批发",
+    "description": "韩国化妆品B2B批发中心",
+    "moqSummary": "各产品MOQ不同，请查看商品页或联系我们了解详情。",
+    "paymentSummary": "仅支持银行转账",
+    "phoneLabel": "电话",
+    "whatsappLabel": "WhatsApp",
+    "hoursLabel": "营业时间",
+    "leadTimeLabel": "平均交期",
+    "registrationLabel": "营业执照号",
     "infoTitle": "Information",
     "supportTitle": "Customer Support",
     "aboutTitle": "About",
@@ -170,6 +178,13 @@
     "contactEmailLabel": "邮箱",
     "wholesaleCta": "批发询价",
     "productsCta": "浏览产品",
+    "contactCta": "联系我们"
+  },
+  "payment": {
+    "title": "支付说明",
+    "subtitle": "仅支持银行转账",
+    "body": "B2B订单通过银行转账处理，目前不支持信用卡及借记卡支付。",
+    "wholesaleCta": "批发咨询",
     "contactCta": "联系我们"
   },
   "products": {
@@ -371,6 +386,7 @@
     "eyebrow": "B2B 批发",
     "title": "批发咨询",
     "subtitle": "请告诉我们您的业务及感兴趣的 K-Beauty 品牌。我们将在 1–2 个工作日内回复。",
+    "paymentNotice": "B2B订单仅支持银行转账，目前不支持信用卡及借记卡支付。",
     "companyName": "公司名称",
     "contactName": "联系人",
     "country": "国家/地区",

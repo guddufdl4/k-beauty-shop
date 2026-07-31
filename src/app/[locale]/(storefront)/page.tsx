@@ -123,6 +123,7 @@ export default async function HomePage() {
               haircare: t("trending.hairCare"),
             }}
             badgeLabels={{
+              featured: t("trending.badgeFeatured"),
               bestSeller: t("trending.badgeBestSeller"),
               new: t("trending.badgeNew"),
               sale: t("trending.badgeSale"),

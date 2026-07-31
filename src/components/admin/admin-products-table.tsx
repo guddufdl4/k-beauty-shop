@@ -191,6 +191,9 @@ type ProductTableRowProps = {
   onCancelStockEdit: () => void;
   onSaveStock: (productId: string) => void;
   onToggleSoldOut: (product: ProductWithRelations) => void;
+  onToggleFeatured: (product: ProductWithRelations) => void;
+  onToggleBestSeller: (product: ProductWithRelations) => void;
+  flagPendingId: string | null;
   onRestore: (product: ProductWithRelations) => void;
 };
 
@@ -209,6 +212,9 @@ const ProductTableRow = memo(function ProductTableRow({
   onCancelStockEdit,
   onSaveStock,
   onToggleSoldOut,
+  onToggleFeatured,
+  onToggleBestSeller,
+  flagPendingId,
   onRestore,
 }: ProductTableRowProps) {
   const imageUrl = resolveProductImageUrl(product);
@@ -248,6 +254,34 @@ const ProductTableRow = memo(function ProductTableRow({
           textClassName="truncate text-zinc-900"
         />
         <p className="mt-0.5 select-none text-[10px] text-zinc-400">MOQ {product.moq}</p>
+        <div className="mt-1 flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => void onToggleFeatured(product)}
+            disabled={flagPendingId === product.id}
+            className={`rounded px-1.5 py-0.5 text-[10px] font-medium disabled:opacity-50 ${
+              product.is_featured
+                ? "bg-violet-100 text-violet-800 hover:bg-violet-200"
+                : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+            }`}
+            title="홈 Featured 배지"
+          >
+            {flagPendingId === product.id ? "…" : product.is_featured ? "Featured" : "Featured"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void onToggleBestSeller(product)}
+            disabled={flagPendingId === product.id}
+            className={`rounded px-1.5 py-0.5 text-[10px] font-medium disabled:opacity-50 ${
+              product.is_best_seller
+                ? "bg-zinc-800 text-white hover:bg-zinc-700"
+                : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+            }`}
+            title="Best Seller 배지"
+          >
+            {flagPendingId === product.id ? "…" : product.is_best_seller ? "Best" : "Best"}
+          </button>
+        </div>
       </td>
       <td className="px-3 py-2.5 align-top">
         <p
@@ -415,6 +449,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   const [stockDraft, setStockDraft] = useState("");
   const [stockPending, setStockPending] = useState(false);
   const [soldOutPendingId, setSoldOutPendingId] = useState<string | null>(null);
+  const [flagPendingId, setFlagPendingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -851,6 +886,65 @@ export const AdminProductsTable = memo(function AdminProductsTable({
     [router],
   );
 
+  const toggleProductFlag = useCallback(
+    async (
+      product: ProductWithRelations,
+      field: "is_featured" | "is_best_seller",
+    ) => {
+      setFlagPendingId(product.id);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/admin/products/${product.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [field]: !product[field] }),
+        });
+
+        const data = (await response.json()) as {
+          product?: { id: string; is_featured: boolean; is_best_seller: boolean };
+          error?: string;
+        };
+
+        if (!response.ok || !data.product) {
+          setError(data.error ?? "상품 플래그 변경에 실패했습니다.");
+          return;
+        }
+
+        const saved = data.product;
+        const now = new Date().toISOString();
+        setProducts((current) =>
+          current.map((item) =>
+            item.id === saved.id
+              ? {
+                  ...item,
+                  is_featured: saved.is_featured,
+                  is_best_seller: saved.is_best_seller,
+                  updated_at: now,
+                }
+              : item,
+          ),
+        );
+        router.refresh();
+      } catch {
+        setError("네트워크 오류로 상품 플래그를 변경하지 못했습니다.");
+      } finally {
+        setFlagPendingId(null);
+      }
+    },
+    [router],
+  );
+
+  const toggleFeatured = useCallback(
+    (product: ProductWithRelations) => toggleProductFlag(product, "is_featured"),
+    [toggleProductFlag],
+  );
+
+  const toggleBestSeller = useCallback(
+    (product: ProductWithRelations) => toggleProductFlag(product, "is_best_seller"),
+    [toggleProductFlag],
+  );
+
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editing) {
@@ -1109,6 +1203,9 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                 onCancelStockEdit={cancelStockEdit}
                 onSaveStock={saveStock}
                 onToggleSoldOut={toggleSoldOut}
+                onToggleFeatured={toggleFeatured}
+                onToggleBestSeller={toggleBestSeller}
+                flagPendingId={flagPendingId}
                 onRestore={restoreProduct}
               />
             ))}

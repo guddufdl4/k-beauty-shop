@@ -114,6 +114,7 @@
       "makeup": "Makeup",
       "hairCare": "Hair Care",
       "badgeBestSeller": "Best Seller",
+      "badgeFeatured": "Featured",
       "badgeNew": "New",
       "badgeSale": "Sale",
       "soldOut": "Sold Out"
@@ -136,8 +137,15 @@
   "footer": {
     "about": "About",
     "terms": "Terms",
-    "copyright": "© {brand} · Korean cosmetics export platform",
-    "address": "Seoul · Hanmi Trade K-Beauty B2B wholesale center",
+    "copyright": "© {brand} · Korean Cosmetics B2B Wholesale Center",
+    "description": "Korean Cosmetics B2B Wholesale Center",
+    "moqSummary": "MOQ varies by product. Please check each product page or contact us for details.",
+    "paymentSummary": "Bank Transfer Only",
+    "phoneLabel": "Phone",
+    "whatsappLabel": "WhatsApp",
+    "hoursLabel": "Business hours",
+    "leadTimeLabel": "Lead time",
+    "registrationLabel": "Registration",
     "infoTitle": "Information",
     "supportTitle": "Customer Support",
     "aboutTitle": "About",
@@ -170,6 +178,13 @@
     "contactEmailLabel": "Email",
     "wholesaleCta": "Wholesale Inquiry",
     "productsCta": "Browse Products",
+    "contactCta": "Contact Us"
+  },
+  "payment": {
+    "title": "Payment Information",
+    "subtitle": "Bank Transfer Only",
+    "body": "B2B orders are processed by bank transfer. Credit and debit card payments are not currently accepted.",
+    "wholesaleCta": "Wholesale Inquiry",
     "contactCta": "Contact Us"
   },
   "products": {
@@ -399,6 +414,7 @@
     "eyebrow": "B2B Wholesale",
     "title": "Wholesale Inquiry",
     "subtitle": "Tell us about your business and the K-Beauty brands you want to source. Our team will respond within 1–2 business days.",
+    "paymentNotice": "B2B orders are processed by bank transfer only. Credit and debit card payments are not currently accepted.",
     "companyName": "Company name",
     "contactName": "Contact name",
     "country": "Country",

@@ -25,6 +25,13 @@ export function AdminSettingsForm({ initialSettings }: Props) {
     const payload = {
       store_name: String(formData.get("store_name") ?? "").trim(),
       contact_email: String(formData.get("contact_email") ?? "").trim() || null,
+      public_email: String(formData.get("public_email") ?? "").trim() || null,
+      public_phone: String(formData.get("public_phone") ?? "").trim() || null,
+      public_whatsapp: String(formData.get("public_whatsapp") ?? "").trim() || null,
+      company_address: String(formData.get("company_address") ?? "").trim() || null,
+      business_hours: String(formData.get("business_hours") ?? "").trim() || null,
+      avg_lead_time: String(formData.get("avg_lead_time") ?? "").trim() || null,
+      company_registration: String(formData.get("company_registration") ?? "").trim() || null,
       instagram_url: String(formData.get("instagram_url") ?? "").trim() || null,
       facebook_url: String(formData.get("facebook_url") ?? "").trim() || null,
       maintenance_enabled: formData.get("maintenance_enabled") === "on",
@@ -72,7 +79,7 @@ export function AdminSettingsForm({ initialSettings }: Props) {
         <div>
           <h2 className="text-lg font-semibold text-zinc-900">쇼핑몰 기본 정보</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            스토어 헤더·푸터에 표시되는 이름과 문의 이메일입니다.
+            스토어 헤더·푸터에 표시되는 이름과 공개 연락처입니다.
           </p>
         </div>
 
@@ -88,20 +95,120 @@ export function AdminSettingsForm({ initialSettings }: Props) {
             className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
         </div>
+      </section>
+
+      <section className="space-y-4 border-t border-zinc-100 pt-6">
+        <div>
+          <h2 className="text-lg font-semibold text-zinc-900">내부·공개 연락처</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            공개 필드는 값이 있을 때만 스토어에 표시됩니다. 비워 두면 해당 항목은 숨겨집니다.
+          </p>
+        </div>
 
         <div>
           <label htmlFor="contact_email" className="block text-sm font-medium text-zinc-700">
-            문의 이메일
+            내부 문의 이메일
           </label>
           <input
             id="contact_email"
             name="contact_email"
             type="email"
             defaultValue={settings.contact_email ?? ""}
+            placeholder="internal@example.com"
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+          <p className="mt-1 text-xs text-zinc-500">관리용·내부 알림용. 공개 사이트에는 표시되지 않습니다.</p>
+        </div>
+
+        <div>
+          <label htmlFor="public_email" className="block text-sm font-medium text-zinc-700">
+            공개 이메일
+          </label>
+          <input
+            id="public_email"
+            name="public_email"
+            type="email"
+            defaultValue={settings.public_email ?? ""}
             placeholder="support@example.com"
             className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
-          <p className="mt-1 text-xs text-zinc-500">푸터에 mailto 링크로 표시됩니다.</p>
+        </div>
+
+        <div>
+          <label htmlFor="public_phone" className="block text-sm font-medium text-zinc-700">
+            공개 전화번호
+          </label>
+          <input
+            id="public_phone"
+            name="public_phone"
+            type="tel"
+            defaultValue={settings.public_phone ?? ""}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="public_whatsapp" className="block text-sm font-medium text-zinc-700">
+            WhatsApp
+          </label>
+          <input
+            id="public_whatsapp"
+            name="public_whatsapp"
+            defaultValue={settings.public_whatsapp ?? ""}
+            placeholder="+82 10 0000 0000"
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="company_address" className="block text-sm font-medium text-zinc-700">
+            회사 주소
+          </label>
+          <textarea
+            id="company_address"
+            name="company_address"
+            rows={2}
+            defaultValue={settings.company_address ?? ""}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="business_hours" className="block text-sm font-medium text-zinc-700">
+            영업 시간
+          </label>
+          <input
+            id="business_hours"
+            name="business_hours"
+            defaultValue={settings.business_hours ?? ""}
+            placeholder="Mon–Fri 09:00–18:00 KST"
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="avg_lead_time" className="block text-sm font-medium text-zinc-700">
+            평균 리드타임
+          </label>
+          <input
+            id="avg_lead_time"
+            name="avg_lead_time"
+            defaultValue={settings.avg_lead_time ?? ""}
+            placeholder="e.g. 3–5 business days after payment"
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="company_registration" className="block text-sm font-medium text-zinc-700">
+            사업자등록번호
+          </label>
+          <input
+            id="company_registration"
+            name="company_registration"
+            defaultValue={settings.company_registration ?? ""}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
         </div>
 
         <div>

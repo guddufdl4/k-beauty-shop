@@ -1,10 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteSettings, getPublicSiteContact } from "@/lib/site-settings";
 
 export default async function ContactPage() {
   const [t, settings] = await Promise.all([getTranslations("supportPages"), getSiteSettings()]);
-  const email = settings.contact_email?.trim();
+  const { public_email: email } = getPublicSiteContact(settings);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-14">

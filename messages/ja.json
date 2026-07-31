@@ -114,6 +114,7 @@
       "makeup": "メイクアップ",
       "hairCare": "ヘアケア",
       "badgeBestSeller": "ベストセラー",
+      "badgeFeatured": "Featured",
       "badgeNew": "新着",
       "badgeSale": "セール",
       "soldOut": "在庫切れ"
@@ -136,8 +137,15 @@
   "footer": {
     "about": "会社概要",
     "terms": "利用規約",
-    "copyright": "© {brand} · 韓国コスメ輸出プラットフォーム",
-    "address": "ソウル · 韓美貿易 K-Beauty B2B卸売センター",
+    "copyright": "© {brand} · 韓国コスメB2B卸売",
+    "description": "韓国コスメB2B卸売センター",
+    "moqSummary": "MOQは商品ごとに異なります。各商品ページまたはお問い合わせでご確認ください。",
+    "paymentSummary": "銀行振込のみ",
+    "phoneLabel": "電話",
+    "whatsappLabel": "WhatsApp",
+    "hoursLabel": "営業時間",
+    "leadTimeLabel": "リードタイム",
+    "registrationLabel": "登録番号",
     "infoTitle": "Information",
     "supportTitle": "Customer Support",
     "aboutTitle": "About",
@@ -170,6 +178,13 @@
     "contactEmailLabel": "メール",
     "wholesaleCta": "卸売お問い合わせ",
     "productsCta": "商品を見る",
+    "contactCta": "お問い合わせ"
+  },
+  "payment": {
+    "title": "お支払いについて",
+    "subtitle": "銀行振込のみ",
+    "body": "B2B注文は銀行振込で処理されます。クレジットカード・デビットカード決済には現在対応しておりません。",
+    "wholesaleCta": "卸売お問い合わせ",
     "contactCta": "お問い合わせ"
   },
   "products": {
@@ -371,6 +386,7 @@
     "eyebrow": "B2B 卸売",
     "title": "卸売お問い合わせ",
     "subtitle": "ビジネス内容とご希望のK-Beautyブランドをお知らせください。営業日1〜2日以内にご返信いたします。",
+    "paymentNotice": "B2B注文は銀行振込のみ対応しています。クレジットカード・デビットカード決済には現在対応しておりません。",
     "companyName": "会社名",
     "contactName": "担当者名",
     "country": "国",

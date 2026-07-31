@@ -74,6 +74,7 @@ export interface Product {
   needs_image: boolean;
   needs_description: boolean;
   is_featured: boolean;
+  is_best_seller: boolean;
   meta_title: string | null;
   meta_description: string | null;
   deleted_at: string | null;
@@ -216,6 +217,13 @@ export interface SiteSettings {
   id: number;
   store_name: string;
   contact_email: string | null;
+  public_email: string | null;
+  public_phone: string | null;
+  public_whatsapp: string | null;
+  company_address: string | null;
+  business_hours: string | null;
+  avg_lead_time: string | null;
+  company_registration: string | null;
   instagram_url: string | null;
   facebook_url: string | null;
   maintenance_enabled: boolean;

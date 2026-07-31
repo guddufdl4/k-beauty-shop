@@ -341,6 +341,7 @@ async function resolveProductForCart(
     status: "active" as const,
     image_url: record.image_url ? String(record.image_url) : null,
     is_featured: Boolean(record.is_featured),
+    is_best_seller: Boolean(record.is_best_seller),
     created_at: String(record.created_at ?? new Date().toISOString()),
     updated_at: String(record.updated_at ?? new Date().toISOString()),
     category: categoryRaw

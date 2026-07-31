@@ -12,6 +12,7 @@ export type TrendingFilterKey = "all" | TrendingCategorySlug;
 type TrendingProducts = Record<TrendingFilterKey, ProductWithRelations[]>;
 
 type BadgeLabels = {
+  featured: string;
   bestSeller: string;
   new: string;
   sale: string;
@@ -49,13 +50,17 @@ function isNewProduct(product: ProductWithRelations): boolean {
 function resolveProductBadge(
   product: ProductWithRelations,
   badgeLabels: BadgeLabels,
-): { type: "bestSeller" | "new" | "sale"; label: string } | undefined {
+): { type: "featured" | "bestSeller" | "new" | "sale"; label: string } | undefined {
   if (isProductSoldOut(product)) {
     return undefined;
   }
 
-  if (product.is_featured) {
+  if (product.is_best_seller) {
     return { type: "bestSeller", label: badgeLabels.bestSeller };
+  }
+
+  if (product.is_featured) {
+    return { type: "featured", label: badgeLabels.featured };
   }
 
   if (isNewProduct(product)) {

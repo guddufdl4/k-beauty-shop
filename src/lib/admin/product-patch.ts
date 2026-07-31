@@ -226,6 +226,60 @@ export function parseProductPatch(body: unknown): ProductPatchResult {
   };
 }
 
+export type ProductFlagsPatch = {
+  is_featured?: boolean;
+  is_best_seller?: boolean;
+};
+
+export type ProductFlagsPatchResult =
+  | { ok: true; patch: ProductFlagsPatch; isFlagsOnly: true }
+  | { ok: false; error: string };
+
+const FLAG_KEYS = new Set(["is_featured", "is_best_seller"]);
+
+export function parseProductFlagsPatch(body: unknown): ProductFlagsPatchResult {
+  if (!body || typeof body !== "object") {
+    return { ok: false, error: "요청 본문이 올바르지 않습니다." };
+  }
+
+  const record = body as Record<string, unknown>;
+  const keys = Object.keys(record);
+
+  if (keys.length === 0) {
+    return { ok: false, error: "수정할 플래그가 없습니다." };
+  }
+
+  if (!keys.every((key) => FLAG_KEYS.has(key))) {
+    return { ok: false, error: "플래그 수정 요청 형식이 올바르지 않습니다." };
+  }
+
+  const patch: ProductFlagsPatch = {};
+
+  if (record.is_featured !== undefined) {
+    if (typeof record.is_featured !== "boolean") {
+      return { ok: false, error: "Featured 여부는 true/false여야 합니다." };
+    }
+    patch.is_featured = record.is_featured;
+  }
+
+  if (record.is_best_seller !== undefined) {
+    if (typeof record.is_best_seller !== "boolean") {
+      return { ok: false, error: "Best Seller 여부는 true/false여야 합니다." };
+    }
+    patch.is_best_seller = record.is_best_seller;
+  }
+
+  return { ok: true, patch, isFlagsOnly: true };
+}
+
+export function isFlagsOnlyBody(body: unknown): boolean {
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+  const keys = Object.keys(body as Record<string, unknown>);
+  return keys.length > 0 && keys.every((key) => FLAG_KEYS.has(key));
+}
+
 export type ProductInventoryPatch = {
   stock?: number;
   sold_out?: boolean;

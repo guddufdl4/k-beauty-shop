@@ -15,7 +15,7 @@ import {
 import type { ProductWithRelations } from "@/lib/supabase/products";
 
 type ProductCardBadge = {
-  type: "bestSeller" | "new" | "sale";
+  type: "featured" | "bestSeller" | "new" | "sale";
   label: string;
 };
 
@@ -120,6 +120,7 @@ export function ProductCard({
             className={cn(
               "absolute right-2 top-2 rounded-sm px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white",
               badge.type === "bestSeller" && "bg-zinc-900",
+              badge.type === "featured" && "bg-violet-700",
               badge.type === "new" && "bg-accent",
               badge.type === "sale" && "bg-rose-600",
             )}

@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { parseProductInventoryPatch, parseProductPatch, parseOptionalInventoryFields, isInventoryOnlyBody } from "@/lib/admin/product-patch";
+import { parseProductInventoryPatch, parseProductPatch, parseOptionalInventoryFields, isInventoryOnlyBody, parseProductFlagsPatch, isFlagsOnlyBody } from "@/lib/admin/product-patch";
 import { resolveNeedsImageFromFields } from "@/lib/product-images";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
@@ -79,11 +79,49 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const parsed = parseProductPatch(body);
   const inventoryOnly = isInventoryOnlyBody(body);
+  const flagsOnly = isFlagsOnlyBody(body);
   const inventoryParsed = inventoryOnly ? parseProductInventoryPatch(body) : null;
+  const flagsParsed = flagsOnly ? parseProductFlagsPatch(body) : null;
   const optionalInventory = parseOptionalInventoryFields(body);
 
   if (!optionalInventory.ok) {
     return NextResponse.json({ error: optionalInventory.error }, { status: 400 });
+  }
+
+  if (flagsOnly && flagsParsed?.ok) {
+    const supabase = await createSafeClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase 클라이언트를 생성할 수 없습니다." },
+        { status: 500 },
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("products")
+      .update(flagsParsed.patch)
+      .eq("id", productId)
+      .select("id, is_featured, is_best_seller, slug")
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: "상품을 찾을 수 없습니다." },
+        { status: 404 },
+      );
+    }
+
+    revalidateProductPaths(data.slug);
+    revalidatePath("/");
+    revalidatePath("/en");
+    revalidatePath("/ko");
+    revalidatePath("/ja");
+    revalidatePath("/zh");
+    return NextResponse.json({ product: data });
   }
 
   if (inventoryOnly && inventoryParsed?.ok) {

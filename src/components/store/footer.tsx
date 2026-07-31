@@ -1,13 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import type { PublicSiteContact } from "@/lib/site-settings";
 import { ViewModeToggle } from "./view-mode";
 
-type Props = {
-  contactEmail?: string | null;
-  instagramUrl?: string | null;
-  facebookUrl?: string | null;
-  storeName?: string;
-};
+type Props = PublicSiteContact;
 
 function isValidExternalUrl(value: string | null | undefined): value is string {
   if (!value?.trim()) {
@@ -22,13 +18,30 @@ function isValidExternalUrl(value: string | null | undefined): value is string {
   }
 }
 
-export async function StoreFooter({ contactEmail, instagramUrl, facebookUrl, storeName }: Props) {
+function whatsAppHref(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  return digits ? `https://wa.me/${digits}` : `https://wa.me/`;
+}
+
+export async function StoreFooter({
+  store_name,
+  public_email,
+  public_phone,
+  public_whatsapp,
+  company_address,
+  business_hours,
+  avg_lead_time,
+  company_registration,
+  instagram_url,
+  facebook_url,
+}: Props) {
   const t = await getTranslations("footer");
-  const brand = storeName?.trim() || "HMT";
+  const brand = store_name?.trim() || "HMT KOREA";
   const acronym = brand.replace(/\s+/g, "").toUpperCase();
   const showViewModeToggle = process.env.NODE_ENV === "development";
-  const showInstagram = isValidExternalUrl(instagramUrl);
-  const showFacebook = isValidExternalUrl(facebookUrl);
+  const showInstagram = isValidExternalUrl(instagram_url);
+  const showFacebook = isValidExternalUrl(facebook_url);
+  const showWhatsApp = Boolean(public_whatsapp?.trim());
 
   return (
     <footer className="border-t border-zinc-200 bg-white">
@@ -41,17 +54,52 @@ export async function StoreFooter({ contactEmail, instagramUrl, facebookUrl, sto
             </span>
             <span className="h-px w-10 bg-gradient-to-r from-accent via-accent/50 to-transparent" aria-hidden />
           </div>
-          <p className="text-sm leading-relaxed text-zinc-500">{t("address")}</p>
-          {contactEmail ? (
-            <a href={`mailto:${contactEmail}`} className="mt-2 block text-sm text-accent hover:underline">
-              {contactEmail}
+          <p className="text-sm leading-relaxed text-zinc-500">{t("description")}</p>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500">{t("moqSummary")}</p>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500">{t("paymentSummary")}</p>
+          {company_address ? (
+            <p className="mt-3 text-sm leading-relaxed text-zinc-500">{company_address}</p>
+          ) : null}
+          {public_email ? (
+            <a href={`mailto:${public_email}`} className="mt-2 block text-sm text-accent hover:underline">
+              {public_email}
             </a>
+          ) : null}
+          {public_phone ? (
+            <a href={`tel:${public_phone.replace(/\s/g, "")}`} className="mt-1 block text-sm text-zinc-600 hover:text-accent">
+              {t("phoneLabel")}: {public_phone}
+            </a>
+          ) : null}
+          {showWhatsApp ? (
+            <a
+              href={whatsAppHref(public_whatsapp!)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 block text-sm text-zinc-600 hover:text-accent"
+            >
+              {t("whatsappLabel")}: {public_whatsapp}
+            </a>
+          ) : null}
+          {business_hours ? (
+            <p className="mt-2 text-sm text-zinc-500">
+              {t("hoursLabel")}: {business_hours}
+            </p>
+          ) : null}
+          {avg_lead_time ? (
+            <p className="mt-1 text-sm text-zinc-500">
+              {t("leadTimeLabel")}: {avg_lead_time}
+            </p>
+          ) : null}
+          {company_registration ? (
+            <p className="mt-1 text-sm text-zinc-500">
+              {t("registrationLabel")}: {company_registration}
+            </p>
           ) : null}
           {showInstagram || showFacebook ? (
             <div className="mt-4 flex gap-3 text-zinc-400">
               {showInstagram ? (
                 <a
-                  href={instagramUrl}
+                  href={instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-accent"
@@ -62,7 +110,7 @@ export async function StoreFooter({ contactEmail, instagramUrl, facebookUrl, sto
               ) : null}
               {showFacebook ? (
                 <a
-                  href={facebookUrl}
+                  href={facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-accent"
@@ -84,7 +132,7 @@ export async function StoreFooter({ contactEmail, instagramUrl, facebookUrl, sto
               </Link>
             </li>
             <li>
-              <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/payment" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("payment")}
               </Link>
             </li>

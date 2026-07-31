@@ -417,8 +417,15 @@ export const SITE_SETTINGS_CACHE_TAG = "site-settings";
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   id: 1,
-  store_name: "HMT",
+  store_name: "HMT KOREA",
   contact_email: null,
+  public_email: null,
+  public_phone: null,
+  public_whatsapp: null,
+  company_address: null,
+  business_hours: null,
+  avg_lead_time: null,
+  company_registration: null,
   instagram_url: null,
   facebook_url: null,
   maintenance_enabled: false,
@@ -436,6 +443,10 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   updated_at: new Date(0).toISOString(),
 };
 
+function trimOrNull(value: string | null | undefined): string | null {
+  return value?.trim() || null;
+}
+
 function normalizeSettings(row: Partial<SiteSettings> | null): SiteSettings {
   if (!row) {
     return { ...DEFAULT_SITE_SETTINGS };
@@ -444,9 +455,16 @@ function normalizeSettings(row: Partial<SiteSettings> | null): SiteSettings {
   return {
     id: 1,
     store_name: row.store_name?.trim() || DEFAULT_SITE_SETTINGS.store_name,
-    contact_email: row.contact_email?.trim() || null,
-    instagram_url: row.instagram_url?.trim() || null,
-    facebook_url: row.facebook_url?.trim() || null,
+    contact_email: trimOrNull(row.contact_email),
+    public_email: trimOrNull(row.public_email),
+    public_phone: trimOrNull(row.public_phone),
+    public_whatsapp: trimOrNull(row.public_whatsapp),
+    company_address: trimOrNull(row.company_address),
+    business_hours: trimOrNull(row.business_hours),
+    avg_lead_time: trimOrNull(row.avg_lead_time),
+    company_registration: trimOrNull(row.company_registration),
+    instagram_url: trimOrNull(row.instagram_url),
+    facebook_url: trimOrNull(row.facebook_url),
     maintenance_enabled: Boolean(row.maintenance_enabled),
     maintenance_message: row.maintenance_message?.trim() ?? "",
     wholesale_price_label: row.wholesale_price_label?.trim() || null,
@@ -516,11 +534,47 @@ export function splitSiteSettingsPatch(patch: SiteSettingsPatch): {
   };
 }
 
+export type PublicSiteContact = {
+  store_name: string;
+  public_email: string | null;
+  public_phone: string | null;
+  public_whatsapp: string | null;
+  company_address: string | null;
+  business_hours: string | null;
+  avg_lead_time: string | null;
+  company_registration: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+};
+
+/** Public storefront contact fields — never exposes internal contact_email. */
+export function getPublicSiteContact(settings: SiteSettings): PublicSiteContact {
+  return {
+    store_name: settings.store_name?.trim() || DEFAULT_SITE_SETTINGS.store_name,
+    public_email: settings.public_email?.trim() || null,
+    public_phone: settings.public_phone?.trim() || null,
+    public_whatsapp: settings.public_whatsapp?.trim() || null,
+    company_address: settings.company_address?.trim() || null,
+    business_hours: settings.business_hours?.trim() || null,
+    avg_lead_time: settings.avg_lead_time?.trim() || null,
+    company_registration: settings.company_registration?.trim() || null,
+    instagram_url: settings.instagram_url?.trim() || null,
+    facebook_url: settings.facebook_url?.trim() || null,
+  };
+}
+
 export type SiteSettingsPatch = Partial<
   Pick<
     SiteSettings,
     | "store_name"
     | "contact_email"
+    | "public_email"
+    | "public_phone"
+    | "public_whatsapp"
+    | "company_address"
+    | "business_hours"
+    | "avg_lead_time"
+    | "company_registration"
     | "instagram_url"
     | "facebook_url"
     | "maintenance_enabled"
@@ -566,6 +620,45 @@ function isValidHeroButtonLink(value: string | null): boolean {
   }
 }
 
+function parseNullableStringField(
+  record: Record<string, unknown>,
+  key: keyof SiteSettingsPatch,
+  patch: SiteSettingsPatch,
+): boolean {
+  if (!(key in record)) {
+    return true;
+  }
+
+  const value = record[key];
+  if (value === null || value === "") {
+    patch[key] = null as never;
+    return true;
+  }
+
+  if (typeof value === "string") {
+    patch[key] = (value.trim() || null) as never;
+    return true;
+  }
+
+  return false;
+}
+
+const NULLABLE_STRING_PATCH_KEYS = [
+  "contact_email",
+  "public_email",
+  "public_phone",
+  "public_whatsapp",
+  "company_address",
+  "business_hours",
+  "avg_lead_time",
+  "company_registration",
+  "instagram_url",
+  "facebook_url",
+  "wholesale_price_label",
+  "moq_label",
+  "min_order_note",
+] as const satisfies readonly (keyof SiteSettingsPatch)[];
+
 export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null {
   if (!body || typeof body !== "object") {
     return null;
@@ -581,32 +674,8 @@ export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null 
     patch.store_name = record.store_name.trim();
   }
 
-  if ("contact_email" in record) {
-    if (record.contact_email === null || record.contact_email === "") {
-      patch.contact_email = null;
-    } else if (typeof record.contact_email === "string") {
-      patch.contact_email = record.contact_email.trim() || null;
-    } else {
-      return null;
-    }
-  }
-
-  if ("instagram_url" in record) {
-    if (record.instagram_url === null || record.instagram_url === "") {
-      patch.instagram_url = null;
-    } else if (typeof record.instagram_url === "string") {
-      patch.instagram_url = record.instagram_url.trim() || null;
-    } else {
-      return null;
-    }
-  }
-
-  if ("facebook_url" in record) {
-    if (record.facebook_url === null || record.facebook_url === "") {
-      patch.facebook_url = null;
-    } else if (typeof record.facebook_url === "string") {
-      patch.facebook_url = record.facebook_url.trim() || null;
-    } else {
+  for (const key of NULLABLE_STRING_PATCH_KEYS) {
+    if (!parseNullableStringField(record, key, patch)) {
       return null;
     }
   }
@@ -623,36 +692,6 @@ export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null 
       return null;
     }
     patch.maintenance_message = record.maintenance_message;
-  }
-
-  if ("wholesale_price_label" in record) {
-    if (record.wholesale_price_label === null || record.wholesale_price_label === "") {
-      patch.wholesale_price_label = null;
-    } else if (typeof record.wholesale_price_label === "string") {
-      patch.wholesale_price_label = record.wholesale_price_label.trim() || null;
-    } else {
-      return null;
-    }
-  }
-
-  if ("moq_label" in record) {
-    if (record.moq_label === null || record.moq_label === "") {
-      patch.moq_label = null;
-    } else if (typeof record.moq_label === "string") {
-      patch.moq_label = record.moq_label.trim() || null;
-    } else {
-      return null;
-    }
-  }
-
-  if ("min_order_note" in record) {
-    if (record.min_order_note === null || record.min_order_note === "") {
-      patch.min_order_note = null;
-    } else if (typeof record.min_order_note === "string") {
-      patch.min_order_note = record.min_order_note.trim() || null;
-    } else {
-      return null;
-    }
   }
 
   if (

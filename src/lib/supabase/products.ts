@@ -93,6 +93,7 @@ export type Product = {
   needs_image: boolean;
   needs_description: boolean;
   is_featured: boolean;
+  is_best_seller: boolean;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -202,6 +203,7 @@ function staticProduct(
     stock: number;
     status: ProductStatus;
     is_featured: boolean;
+    is_best_seller?: boolean;
     created_at: string;
     updated_at: string;
     category: Pick<Category, "id" | "name" | "slug"> | null;
@@ -228,6 +230,7 @@ function staticProduct(
     content_status: partial.content_status ?? "complete",
     needs_image: partial.needs_image ?? false,
     needs_description: partial.needs_description ?? false,
+    is_best_seller: partial.is_best_seller ?? false,
     deleted_at: partial.deleted_at ?? null,
     import_batch: partial.import_batch ?? null,
     images: [],
@@ -623,6 +626,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     needs_image: Boolean(row.needs_image),
     needs_description: Boolean(row.needs_description),
     is_featured: Boolean(row.is_featured),
+    is_best_seller: Boolean(row.is_best_seller),
     deleted_at: row.deleted_at ? String(row.deleted_at) : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),

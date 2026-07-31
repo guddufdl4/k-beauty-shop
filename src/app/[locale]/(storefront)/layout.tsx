@@ -5,7 +5,7 @@ import { StoreHeader } from "@/components/store/header";
 import { MaintenanceBanner } from "@/components/store/maintenance-banner";
 import { StorefrontViewShell, ViewModeProvider } from "@/components/store/view-mode";
 import { routing, type AppLocale } from "@/i18n/routing";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteSettings, getPublicSiteContact } from "@/lib/site-settings";
 
 const STOREFRONT_SEO: Record<AppLocale, { title: string; description: string }> = {
   en: {
@@ -64,6 +64,7 @@ export default async function StorefrontLayout({
   children: React.ReactNode;
 }) {
   const settings = await getSiteSettings();
+  const publicContact = getPublicSiteContact(settings);
 
   return (
     <ViewModeProvider>
@@ -72,12 +73,7 @@ export default async function StorefrontLayout({
           <MaintenanceBanner settings={settings} />
           <StoreHeader storeName={settings.store_name} />
           <main className="mx-auto min-w-0 w-full max-w-full flex-1 overflow-x-hidden">{children}</main>
-          <StoreFooter
-            contactEmail={settings.contact_email}
-            instagramUrl={settings.instagram_url}
-            facebookUrl={settings.facebook_url}
-            storeName={settings.store_name}
-          />
+          <StoreFooter {...publicContact} />
         </div>
       </StorefrontViewShell>
     </ViewModeProvider>
