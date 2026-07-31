@@ -1,22 +1,54 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
-import { HomeProductTabs } from "@/components/store/home-product-tabs";
+import { HomeTrendingSection } from "@/components/store/home-product-tabs";
 import { HeroBannerSlider } from "@/components/store/hero-banner-slider";
-import { PartnerBrandsGrid } from "@/components/store/partner-brands-grid";
+import { HomeTrustBar, HomeCategorySection, HomeFeaturedBrandsSection } from "@/components/store/header";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
-import { productHasRealImage } from "@/lib/product-images";
+import { buildProductsHref } from "@/lib/store/products-url";
 import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettingsFresh } from "@/lib/site-settings";
 import {
   getPriorityBrandProducts,
-  selectHomepageTabProducts,
+  getStorefrontCategories,
+  selectTrendingCategoryProducts,
 } from "@/lib/supabase/products";
-import { getPartnerBrands } from "@/lib/store/partner-brands";
 
 export const revalidate = 60;
 
-function isExternalHref(href: string): boolean {
-  return href.startsWith("http://") || href.startsWith("https://");
+/** Standard homepage hero brand set (VT, SKINFOOD, Torriden). */
+const HERO_BRAND_ORDER = ["VT", "skinfood", "Torriden"] as const;
+
+type HeroObjectPosition = "left" | "center" | "right";
+
+function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRAND_ORDER)[number] {
+  const id = slideId.toLowerCase();
+
+  if (id.includes("bestseller") || id.includes("vt")) {
+    return "VT";
+  }
+
+  if (id.includes("skinfood") || id.includes("mask-skinfood")) {
+    return "skinfood";
+  }
+
+  if (id.includes("torriden") || id.includes("skincare-lineup")) {
+    return "Torriden";
+  }
+
+  return HERO_BRAND_ORDER[order] ?? HERO_BRAND_ORDER[0];
+}
+
+function resolveHeroSlideObjectPosition(
+  brand: (typeof HERO_BRAND_ORDER)[number],
+): HeroObjectPosition {
+  if (brand === "VT" || brand === "Torriden") {
+    return "right";
+  }
+
+  if (brand === "skinfood") {
+    return "left";
+  }
+
+  return "center";
 }
 
 async function loadSiteSettingsSafely() {
@@ -28,160 +60,106 @@ async function loadSiteSettingsSafely() {
   }
 }
 
-function HeroTextFallback({
-  heroBadge,
-  heroTitle,
-  heroSubtitle,
-  heroButtonText,
-  heroButtonLink,
-}: {
-  heroBadge: string;
-  heroTitle: string;
-  heroSubtitle: string;
-  heroButtonText: string;
-  heroButtonLink: string;
-}) {
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-16">
-      <div className="max-w-xl text-center lg:text-left">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">{heroBadge}</p>
-        <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-4xl lg:text-6xl">
-          {heroTitle}
-        </h1>
-        <p className="mt-4 text-base leading-relaxed text-zinc-600">{heroSubtitle}</p>
-        {isExternalHref(heroButtonLink) ? (
-          <a
-            href={heroButtonLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex min-h-11 items-center bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:mt-8 sm:px-8"
-          >
-            {heroButtonText}
-          </a>
-        ) : (
-          <Link
-            href={heroButtonLink}
-            className="mt-6 inline-flex min-h-11 items-center bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:mt-8 sm:px-8"
-          >
-            {heroButtonText}
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default async function HomePage() {
-  const [t, { products, meta }, locale, usdKrwRate] = await Promise.all([
+  const [t, { products, meta }, locale, usdKrwRate, { categories }] = await Promise.all([
     getTranslations("home"),
     getPriorityBrandProducts({ limit: 200 }),
     getLocale(),
     getUsdKrwRate(),
+    getStorefrontCategories(),
   ]);
 
-  const [siteSettings, partnerBrands] = await Promise.all([
-    loadSiteSettingsSafely(),
-    getPartnerBrands(products),
-  ]);
+  const siteSettings = await loadSiteSettingsSafely();
 
-  const heroBadge = siteSettings.hero_badge ?? t("heroWholesale");
-  const heroTitle = siteSettings.hero_title ?? t("heroDiscount");
-  const heroSubtitle = siteSettings.hero_subtitle ?? t("description");
-  const heroButtonText = siteSettings.hero_button_text ?? t("heroCta");
-  const heroButtonLink = siteSettings.hero_button_link ?? "/products";
   const heroSlides = getHeroSlides(siteSettings)
-    .map((slide) => {
+    .map((slide, index) => {
       const src = resolveHeroImageSrc(slide.image_url, siteSettings.updated_at);
-      return src ? { id: slide.id, src } : null;
+      if (!src) {
+        return null;
+      }
+
+      const brand = resolveHeroSlideBrand(slide.id, index);
+      const objectPosition = resolveHeroSlideObjectPosition(brand);
+
+      return {
+        id: slide.id,
+        src,
+        href: buildProductsHref({ brand }),
+        objectPosition,
+        brandLabel: t("hero.shopBrand", { brand: brand === "skinfood" ? "SKINFOOD" : brand }),
+      };
     })
-    .filter((slide): slide is { id: string; src: string } => slide !== null);
-  const hasHeroSlides = heroSlides.length > 0;
+    .filter(
+      (
+        slide,
+      ): slide is {
+        id: string;
+        src: string;
+        href: string;
+        objectPosition: HeroObjectPosition;
+        brandLabel: string;
+      } => slide !== null,
+    );
 
-  const visibleProducts = products.filter((product) => productHasRealImage(product));
-  const tabEmptyMessage = t("tabEmpty");
-
-  const popularProducts = {
-    bestSellers: selectHomepageTabProducts(products, "bestSellers"),
-    mostViewed: selectHomepageTabProducts(products, "mostViewed"),
+  const heroCopy = {
+    title: t("hero.title"),
+    description: t("hero.description"),
+    shopBestSellersLabel: t("hero.shopBestSellers"),
+    shopBestSellersHref: buildProductsHref({ sort: "trending" }),
+    wholesaleInquiryLabel: t("hero.wholesaleInquiry"),
+    // No dedicated wholesale inquiry page yet — route to the product catalog.
+    wholesaleInquiryHref: buildProductsHref({}),
   };
 
-  const discoveryProducts = {
-    newArrivals: selectHomepageTabProducts(products, "newArrivals"),
-    allProducts: selectHomepageTabProducts(products, "allProducts"),
-  };
-
-  const sections = [
-    {
-      id: "popular",
-      primaryTab: "bestSellers" as const,
-      secondaryTab: "mostViewed" as const,
-      products: popularProducts,
-      labels: {
-        bestSellers: t("tabBestSellers"),
-        mostViewed: t("tabMostViewed"),
-        newArrivals: t("tabNewArrivals"),
-        allProducts: t("tabAllProducts"),
-      },
-      viewAllLabel: t("viewAll"),
-    },
-    {
-      id: "new",
-      primaryTab: "newArrivals" as const,
-      secondaryTab: "allProducts" as const,
-      products: discoveryProducts,
-      labels: {
-        bestSellers: t("tabBestSellers"),
-        mostViewed: t("tabMostViewed"),
-        newArrivals: t("tabNewArrivals"),
-        allProducts: t("tabAllProducts"),
-      },
-      viewAllLabel: t("viewAll"),
-    },
-  ];
+  const trendingProducts = {
+    all: selectTrendingCategoryProducts(products, null, categories),
+    skincare: selectTrendingCategoryProducts(products, "skincare", categories),
+    makeup: selectTrendingCategoryProducts(products, "makeup", categories),
+    haircare: selectTrendingCategoryProducts(products, "haircare", categories),
+  } as const;
 
   return (
     <>
-      {hasHeroSlides ? (
-        <HeroBannerSlider slides={heroSlides} />
-      ) : (
-        <section className="overflow-hidden border-b border-zinc-200 bg-[linear-gradient(135deg,#f1f5f9_0%,#e2e8f0_45%,#fce4ec_100%)]">
-          <HeroTextFallback
-            heroBadge={heroBadge}
-            heroTitle={heroTitle}
-            heroSubtitle={heroSubtitle}
-            heroButtonText={heroButtonText}
-            heroButtonLink={heroButtonLink}
-          />
-        </section>
-      )}
+      <HeroBannerSlider slides={heroSlides} copy={heroCopy} />
 
-      <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-        {!meta.configured || meta.source === "static" ? (
-          <p className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <HomeTrustBar />
+
+      {!meta.configured || meta.source === "static" ? (
+        <div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6">
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {t("supabaseWarning")}
           </p>
-        ) : null}
+        </div>
+      ) : null}
 
-        <HomeProductTabs
-          sections={sections}
-          emptyMessage={tabEmptyMessage}
-          badgeLabels={{ hot: t("badgeHot"), new: t("badgeNew") }}
-          locale={locale}
-          usdKrwRate={usdKrwRate}
-        />
+      <HomeCategorySection products={products} />
 
-        <PartnerBrandsGrid title={t("brandsTitle")} brands={partnerBrands} />
+      <section className="border-b border-zinc-200 bg-white py-10 sm:py-12">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <HomeTrendingSection
+            title={t("trending.title")}
+            viewAllLabel={t("trending.viewAll")}
+            emptyMessage={t("trending.empty")}
+            productsByFilter={trendingProducts}
+            filterLabels={{
+              all: t("trending.all"),
+              skincare: t("trending.skincare"),
+              makeup: t("trending.makeup"),
+              haircare: t("trending.hairCare"),
+            }}
+            badgeLabels={{
+              bestSeller: t("trending.badgeBestSeller"),
+              new: t("trending.badgeNew"),
+              sale: t("trending.badgeSale"),
+              soldOut: t("trending.soldOut"),
+            }}
+            locale={locale}
+            usdKrwRate={usdKrwRate}
+          />
+        </div>
+      </section>
 
-        <section className="mt-16 border border-zinc-200 bg-surface-muted px-6 py-10 text-center sm:px-10">
-          <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">{t("b2bTitle")}</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">{t("b2bDescription")}</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm text-zinc-600">
-            <span>{t("b2cTitle")}: {t("b2cDescription")}</span>
-            <span className="hidden sm:inline text-zinc-300">|</span>
-            <span>{t("exportTitle")}: {t("exportDescription")}</span>
-          </div>
-        </section>
-      </div>
+      <HomeFeaturedBrandsSection products={products} />
     </>
   );
 }

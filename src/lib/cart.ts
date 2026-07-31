@@ -330,6 +330,7 @@ async function resolveProductForCart(
       record.compare_at_price != null ? Number(record.compare_at_price) : null,
     moq: Number(record.moq ?? 1),
     stock: Number(record.stock ?? 0),
+    sold_out: Boolean(record.sold_out),
     weight_grams:
       record.weight_grams != null ? Number(record.weight_grams) : null,
     ingredients: record.ingredients ? String(record.ingredients) : null,
@@ -364,6 +365,7 @@ export type CartLibErrorCode =
   | "invalid_quantity"
   | "moq_not_met"
   | "insufficient_stock"
+  | "out_of_stock"
   | "product_not_found"
   | "cart_unavailable"
   | "cart_empty"
@@ -383,13 +385,13 @@ function validateQuantity(
   if (!Number.isFinite(quantity) || quantity < 1) {
     return { errorCode: "invalid_quantity" };
   }
-  if (product.sold_out) {
-    return { errorCode: "insufficient_stock", errorParams: { stock: product.stock } };
+  if (product.sold_out || product.stock <= 0) {
+    return { errorCode: "out_of_stock" };
   }
   if (quantity < product.moq) {
     return { errorCode: "moq_not_met", errorParams: { moq: product.moq } };
   }
-  if (product.stock > 0 && quantity > product.stock) {
+  if (quantity > product.stock) {
     return { errorCode: "insufficient_stock", errorParams: { stock: product.stock } };
   }
   return null;

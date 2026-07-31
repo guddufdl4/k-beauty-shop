@@ -1,11 +1,23 @@
-import { readFileSync, existsSync } from "node:fs";
+﻿import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/service";
+import {
+  getBrandFilterValue,
+  HOME_FEATURED_BRANDS,
+  normalizeBrandKey,
+  resolveBrandFilterValues,
+  resolveFeaturedBrandsFromProducts,
+  type ResolvedFeaturedBrand,
+} from "@/lib/store/products-url";
 import type { ProductWithRelations } from "@/lib/supabase/products";
 
 export type PartnerBrand = {
   name: string;
+  logoUrl: string | null;
+};
+
+export type FeaturedBrand = ResolvedFeaturedBrand & {
   logoUrl: string | null;
 };
 
@@ -29,10 +41,6 @@ const FALLBACK_BRAND_NAMES = [
   "Abib",
 ];
 
-function normalizeBrandKey(name: string): string {
-  return name.trim().toLowerCase();
-}
-
 function getManifestBrandNames(): string[] {
   if (!existsSync(MANIFEST_PATH)) {
     return FALLBACK_BRAND_NAMES;
@@ -46,10 +54,11 @@ function getManifestBrandNames(): string[] {
     const brands: string[] = [];
 
     for (const entry of manifest.sheets ?? []) {
-      const key = normalizeBrandKey(entry.sheet);
+      const displayName = getBrandFilterValue(entry.sheet);
+      const key = normalizeBrandKey(displayName);
       if (!seen.has(key)) {
         seen.add(key);
-        brands.push(entry.sheet);
+        brands.push(displayName);
       }
     }
 
@@ -60,10 +69,12 @@ function getManifestBrandNames(): string[] {
 }
 
 function buildOrderedBrandNames(products: ProductWithRelations[]): string[] {
-  const productBrands = products.map((product) => product.brand).filter(Boolean);
-  const productBrandSet = new Set(productBrands);
+  const productBrands = products
+    .map((product) => getBrandFilterValue(product.brand))
+    .filter(Boolean);
+  const productBrandKeys = new Set(productBrands.map((brand) => normalizeBrandKey(brand)));
 
-  if (productBrandSet.size === 0) {
+  if (productBrandKeys.size === 0) {
     return getManifestBrandNames();
   }
 
@@ -71,11 +82,11 @@ function buildOrderedBrandNames(products: ProductWithRelations[]): string[] {
   const ordered: string[] = [];
 
   for (const manifestBrand of manifestBrands) {
-    const match = productBrands.find(
-      (brand) => normalizeBrandKey(brand) === normalizeBrandKey(manifestBrand),
-    );
-    if (match && !ordered.some((brand) => normalizeBrandKey(brand) === normalizeBrandKey(match))) {
-      ordered.push(match);
+    if (
+      productBrandKeys.has(normalizeBrandKey(manifestBrand)) &&
+      !ordered.some((brand) => normalizeBrandKey(brand) === normalizeBrandKey(manifestBrand))
+    ) {
+      ordered.push(manifestBrand);
     }
   }
 
@@ -134,4 +145,69 @@ export async function getPartnerBrands(
   products: ProductWithRelations[],
 ): Promise<PartnerBrand[]> {
   return resolvePartnerBrandsFromSource(products);
+}
+
+async function findFeaturedBrandFilterInDatabase(
+  displayName: string,
+): Promise<string | null> {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const supabase = createPublicClient();
+  if (!supabase) {
+    return null;
+  }
+
+  for (const candidate of resolveBrandFilterValues(displayName)) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("brand")
+      .eq("status", "active")
+      .ilike("brand", candidate)
+      .limit(1);
+
+    if (error || !data?.[0]?.brand) {
+      continue;
+    }
+
+    return getBrandFilterValue(String(data[0].brand));
+  }
+
+  return null;
+}
+
+export async function resolveFeaturedBrands(
+  products: ProductWithRelations[],
+): Promise<FeaturedBrand[]> {
+  const fromPool = resolveFeaturedBrandsFromProducts(products);
+  const byDisplayName = new Map(fromPool.map((brand) => [brand.displayName, brand]));
+
+  for (const config of HOME_FEATURED_BRANDS) {
+    if (!config.enabled || byDisplayName.has(config.displayName)) {
+      continue;
+    }
+
+    const filterBrand = await findFeaturedBrandFilterInDatabase(config.displayName);
+    if (filterBrand) {
+      byDisplayName.set(config.displayName, {
+        displayName: config.displayName,
+        filterBrand,
+      });
+    }
+  }
+
+  const brands = HOME_FEATURED_BRANDS.filter((config) => config.enabled)
+    .map((config) => byDisplayName.get(config.displayName))
+    .filter((brand): brand is ResolvedFeaturedBrand => Boolean(brand));
+
+  const logoMap = await fetchBrandLogoMap();
+
+  return brands.map((brand) => ({
+    ...brand,
+    logoUrl:
+      logoMap.get(normalizeBrandKey(brand.displayName)) ??
+      logoMap.get(normalizeBrandKey(brand.filterBrand)) ??
+      null,
+  }));
 }

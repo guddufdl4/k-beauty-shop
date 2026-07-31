@@ -10,8 +10,17 @@
     "admin": "관리자",
     "menu": "메뉴",
     "brand": "HMT",
-    "shop": "SHOP",
-    "brands": "BRANDS",
+    "shop": "Shop",
+    "skincare": "Skincare",
+    "makeup": "Makeup",
+    "hairBody": "Hair & Body",
+    "newArrivals": "New Arrivals",
+    "bestSellers": "Best Sellers",
+    "wholesale": "Wholesale",
+    "utilityTagline": "Global K-Beauty Wholesale · Worldwide Shipping",
+    "mainNavigation": "메인 메뉴",
+    "headerAccount": "Account",
+    "brands": "Brands",
     "shopSale": "Sale",
     "shopTrending": "Trending",
     "shopLatest": "Latest",
@@ -60,6 +69,59 @@
     "heroWholesale": "Wholesale",
     "heroDiscount": "최대 70% OFF",
     "heroCta": "자세히 보기",
+    "hero": {
+      "title": "K-Beauty, Ready for Global Business",
+      "description": "Authentic Korean beauty products with competitive wholesale pricing.",
+      "shopBestSellers": "Shop Best Sellers",
+      "wholesaleInquiry": "Wholesale Inquiry",
+      "shopBrand": "{brand} 상품 보기"
+    },
+    "trust": {
+      "sectionLabel": "HMT를 선택하는 이유",
+      "authenticProducts": {
+        "title": "Authentic Products",
+        "description": "Sourced directly from Korea"
+      },
+      "flexibleMoq": {
+        "title": "Flexible MOQ",
+        "description": "Low minimum order quantity"
+      },
+      "globalShipping": {
+        "title": "Global Shipping",
+        "description": "Fast and reliable worldwide"
+      },
+      "b2bSupport": {
+        "title": "B2B Support",
+        "description": "Dedicated wholesale support"
+      }
+    },
+    "categorySection": {
+      "title": "카테고리별 쇼핑",
+      "viewAll": "전체 카테고리 보기",
+      "skincare": "스킨케어",
+      "makeup": "메이크업",
+      "maskPack": "마스크팩",
+      "suncare": "선케어",
+      "hairCare": "헤어케어",
+      "bodyCare": "바디케어"
+    },
+    "trending": {
+      "title": "Trending in K-Beauty",
+      "viewAll": "전체 보기 →",
+      "empty": "표시할 상품이 없습니다.",
+      "all": "전체",
+      "skincare": "스킨케어",
+      "makeup": "메이크업",
+      "hairCare": "헤어케어",
+      "badgeBestSeller": "베스트셀러",
+      "badgeNew": "신상",
+      "badgeSale": "세일",
+      "soldOut": "품절"
+    },
+    "featuredBrands": {
+      "title": "Featured Brands",
+      "viewAll": "브랜드 전체 보기"
+    },
     "tabBestSellers": "Best Sellers",
     "tabMostViewed": "Most Viewed",
     "tabNewArrivals": "New Arrivals",
@@ -113,8 +175,12 @@
     "supabaseWarning": "Supabase 미연결 — 샘플 상품 데이터를 표시합니다.",
     "retailPrice": "소매가 (B2C)",
     "wholesalePrice": "도매가 (B2B)",
-    "moq": "박스 최소 주문",
-    "moqUnit": "{count}개/박스",
+    "moq": "최소 주문 수량",
+    "moqUnit": "최소 {count}개",
+    "unitsPerBox": "박스 입수량",
+    "unitsPerBoxValue": "{count}개",
+    "moqBadge": "MOQ {count}",
+    "unitsPerBoxBadge": "{count}개/박스",
     "stock": "재고",
     "inStock": "{count}개",
     "outOfStock": "품절",
@@ -170,7 +236,14 @@
     "title": "브랜드",
     "description": "브랜드별로 K-뷰티 상품을 둘러보세요. 브랜드를 선택하면 해당 카탈로그가 표시됩니다.",
     "supabaseWarning": "Supabase 미연결 — 샘플 브랜드 목록을 표시합니다.",
-    "empty": "등록된 브랜드가 없습니다."
+    "empty": "등록된 브랜드가 없습니다.",
+    "searchLabel": "브랜드 검색",
+    "searchPlaceholder": "브랜드명 검색…",
+    "alphabetFilter": "알파벳으로 브랜드 필터",
+    "filterAll": "전체",
+    "filterOther": "#",
+    "noResults": "검색 결과가 없습니다. 다른 브랜드명이나 글자를 선택해 보세요.",
+    "resultCount": "브랜드 {count} / {total}개"
   },
   "about": {
     "eyebrow": "About Us",
@@ -257,7 +330,7 @@
     "change": "변경",
     "remove": "삭제",
     "quantity": "수량",
-    "moqHint": "박스 최소 {count}개",
+    "moqHint": "최소 {count}개",
     "adding": "담는 중…",
     "outOfStock": "품절",
     "addToCart": "장바구니 담기",
@@ -269,6 +342,7 @@
       "invalidQuantity": "수량을 올바르게 입력해 주세요.",
       "moqNotMet": "최소 주문 수량(MOQ)은 {moq}개입니다.",
       "insufficientStock": "재고가 {stock}개뿐입니다.",
+      "outOfStock": "품절된 상품입니다.",
       "productNotFound": "상품을 찾을 수 없습니다.",
       "cartUnavailable": "장바구니를 사용할 수 없습니다.",
       "cartEmpty": "장바구니가 비어 있습니다.",

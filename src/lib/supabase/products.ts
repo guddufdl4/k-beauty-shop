@@ -6,10 +6,16 @@ import { formatKRW } from "@/lib/utils";
 import {
   enrichProductImages,
   productHasRealImage,
+  resolveNavCategorySlugForProduct,
 } from "@/lib/product-images";
 import type { ProductListSort } from "@/lib/store/products-url";
 import { isProductOnSale } from "@/lib/store/products-url";
-import { filterStorefrontCategories } from "@/lib/store/localized-category";
+import { filterStorefrontCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
+import {
+  buildBrandCatalog,
+  matchesBrandFilter,
+  resolveBrandFilterValues,
+} from "@/lib/store/products-url";
 import {
   filterCategoriesWithProducts,
   resolveCategoryIdsForFilter,
@@ -160,6 +166,26 @@ const STATIC_CATEGORIES: Category[] = [
     description: "자외선 차단 & 애프터선 케어",
     image_url: null,
     sort_order: 4,
+    is_active: true,
+  },
+  {
+    id: "static-haircare",
+    parent_id: null,
+    name: "헤어케어",
+    slug: "haircare",
+    description: "샴푸, 트리트먼트, 헤어 에센스",
+    image_url: null,
+    sort_order: 5,
+    is_active: true,
+  },
+  {
+    id: "static-bodycare",
+    parent_id: null,
+    name: "바디케어",
+    slug: "bodycare",
+    description: "바디 로션, 워시, 핸드케어",
+    image_url: null,
+    sort_order: 6,
     is_active: true,
   },
 ];
@@ -734,11 +760,8 @@ function filterStaticProducts(
   }
 
   if (options?.brand?.trim()) {
-    const brandTerm = options.brand.trim().toLowerCase();
     filtered = filtered.filter((product) =>
-      options.brandExact
-        ? product.brand.toLowerCase() === brandTerm
-        : product.brand.toLowerCase().includes(brandTerm),
+      matchesBrandFilter(product.brand, options.brand!, Boolean(options.brandExact)),
     );
   }
 
@@ -1148,7 +1171,12 @@ export async function getProducts(
 
     if (brandFilter) {
       if (brandExact) {
-        filtered = filtered.eq("brand", brandFilter);
+        const aliases = resolveBrandFilterValues(brandFilter);
+        if (aliases.length > 1) {
+          filtered = filtered.in("brand", aliases);
+        } else {
+          filtered = filtered.eq("brand", brandFilter);
+        }
       } else {
         const escaped = escapeIlikePattern(brandFilter);
         filtered = filtered.or(`brand.ilike.%${escaped}%`);
@@ -1550,6 +1578,8 @@ function finalizeHomepageProducts(
 
 export type HomepageTabKey = "bestSellers" | "mostViewed" | "newArrivals" | "allProducts";
 
+export type TrendingCategorySlug = "skincare" | "makeup" | "haircare";
+
 const HOMEPAGE_TAB_LIMIT = 8;
 
 function compareBestSellers(a: ProductWithRelations, b: ProductWithRelations): number {
@@ -1593,6 +1623,26 @@ export function selectHomepageTabProducts(
       return nextPage.length >= limit ? nextPage : sorted.slice(0, limit);
     }
   }
+}
+
+/** Trending homepage row — mixed best sellers or filtered by top-level category slug. */
+export function selectTrendingCategoryProducts(
+  pool: ProductWithRelations[],
+  categorySlug: TrendingCategorySlug | null,
+  categories: Category[] = [],
+  limit = HOMEPAGE_TAB_LIMIT,
+): ProductWithRelations[] {
+  if (categorySlug === null) {
+    return selectHomepageTabProducts(pool, "bestSellers", limit);
+  }
+
+  const navCategories = pickStorefrontNavCategories(categories);
+  const visible = pool.filter((product) => productHasRealImage(product));
+  const filtered = visible.filter((product) => {
+    const navSlug = resolveNavCategorySlugForProduct(product, categories, navCategories);
+    return navSlug === categorySlug;
+  });
+  return [...filtered].sort(compareBestSellers).slice(0, limit);
 }
 
 function quoteInFilterValues(values: string[]): string {
@@ -1972,15 +2022,11 @@ export async function getProductBrands(): Promise<{
   const configured = isSupabaseConfigured();
 
   if (!configured) {
-    const brands = [
-      ...new Set(
-        STATIC_PRODUCTS.filter((product) => product.status === "active").map(
-          (product) => product.brand,
-        ),
+    const brands = buildBrandCatalog(
+      STATIC_PRODUCTS.filter((product) => product.status === "active").map(
+        (product) => product.brand,
       ),
-    ]
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, "en"));
+    );
     return {
       brands,
       meta: { source: "static", configured: false },
@@ -1989,15 +2035,11 @@ export async function getProductBrands(): Promise<{
 
   const supabase = await createSafeClient();
   if (!supabase) {
-    const brands = [
-      ...new Set(
-        STATIC_PRODUCTS.filter((product) => product.status === "active").map(
-          (product) => product.brand,
-        ),
+    const brands = buildBrandCatalog(
+      STATIC_PRODUCTS.filter((product) => product.status === "active").map(
+        (product) => product.brand,
       ),
-    ]
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, "en"));
+    );
     return {
       brands,
       meta: { source: "static", configured: false },
@@ -2040,9 +2082,9 @@ export async function getProductBrands(): Promise<{
     };
   }
 
-  const brands = [
-    ...new Set(data.map((row) => row.brand?.trim()).filter(Boolean) as string[]),
-  ].sort((a, b) => a.localeCompare(b, "en"));
+  const brands = buildBrandCatalog(
+    data.map((row) => row.brand?.trim()).filter(Boolean) as string[],
+  );
 
   return {
     brands,

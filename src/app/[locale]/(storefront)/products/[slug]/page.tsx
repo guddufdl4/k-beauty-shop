@@ -8,10 +8,15 @@ import {
   isCategoryPlaceholderUrl,
   resolveProductImageUrl,
 } from "@/lib/product-images";
-import { isProductSoldOut } from "@/lib/store/products-url";
+import {
+  getProductPriceColumns,
+  isProductSoldOut,
+  usesBoxQuantityField,
+} from "@/lib/store/products-url";
+import { getDisplayBrandName } from "@/lib/store/products-url";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
-import { formatLocalePrice, formatLocaleProductPrice } from "@/lib/utils";
+import { formatLocaleProductPrice } from "@/lib/utils";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getProductBySlug } from "@/lib/supabase/products";
@@ -43,6 +48,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const inStock = !isProductSoldOut(product);
   const wholesaleLabel = siteSettings.wholesale_price_label || t("wholesalePrice");
   const moqLabel = siteSettings.moq_label || t("moq");
+  const priceColumns = getProductPriceColumns(product);
+  const quantityLabel = usesBoxQuantityField(product) ? t("unitsPerBox") : moqLabel;
+  const quantityValue = usesBoxQuantityField(product)
+    ? t("unitsPerBoxValue", { count: product.moq })
+    : t("moqUnit", { count: product.moq });
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 overflow-x-hidden px-4 py-10">
@@ -120,7 +130,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             />
           ) : (
             <>
-              <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">{product.brand}</p>
+              <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">
+                {getDisplayBrandName(product.brand)}
+              </p>
               <h1 className="mt-2 text-balance break-words text-3xl font-bold tracking-tight text-zinc-900">
                 {product.name}
               </h1>
@@ -131,24 +143,34 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <div className="mt-8 min-w-0 space-y-4 rounded-2xl border border-rose-100 bg-white p-6">
                 <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t("retailPrice")}</p>
-                    <p className="text-2xl font-bold text-zinc-900">{formatLocaleProductPrice(product.price, locale, usdKrwRate)}</p>
-                    {product.compare_at_price ? (
-                      <p className="text-sm text-zinc-400 line-through">{formatLocalePrice(product.compare_at_price, locale, usdKrwRate)}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                      {t(priceColumns.primary.labelKey)}
+                    </p>
+                    <p className="text-2xl font-bold text-zinc-900">
+                      {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
+                    </p>
+                    {priceColumns.compareAt ? (
+                      <p className="text-sm text-zinc-400 line-through">
+                        {formatLocaleProductPrice(priceColumns.compareAt, locale, usdKrwRate)}
+                      </p>
                     ) : null}
                   </div>
-                  {product.wholesale_price ? (
+                  {priceColumns.secondary ? (
                     <div className="min-w-0 text-right">
-                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{wholesaleLabel}</p>
-                      <p className="text-xl font-bold text-rose-700">{formatLocaleProductPrice(product.wholesale_price, locale, usdKrwRate)}</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        {wholesaleLabel}
+                      </p>
+                      <p className="text-xl font-bold text-rose-700">
+                        {formatLocaleProductPrice(priceColumns.secondary.amount, locale, usdKrwRate)}
+                      </p>
                     </div>
                   ) : null}
                 </div>
 
                 <dl className="grid min-w-0 grid-cols-2 gap-4 border-t border-rose-50 pt-4 text-sm">
                   <div className="min-w-0">
-                    <dt className="text-zinc-500">{moqLabel}</dt>
-                    <dd className="font-semibold text-zinc-900">{t("moqUnit", { count: product.moq })}</dd>
+                    <dt className="text-zinc-500">{quantityLabel}</dt>
+                    <dd className="font-semibold text-zinc-900">{quantityValue}</dd>
                   </div>
                   <div className="min-w-0">
                     <dt className="text-zinc-500">{t("stock")}</dt>

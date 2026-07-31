@@ -7,6 +7,10 @@ import {
   ensureSoftDeleteColumnProbed,
   isSoftDeleteColumnAvailable,
 } from "./soft-delete";
+import {
+  getBrandFilterValue,
+  getDisplayBrandName,
+} from "@/lib/store/products-url";
 import { STATIC_PRODUCTS, type ProductWithRelations } from "./products";
 
 export type SearchSuggestionProduct = {
@@ -75,6 +79,7 @@ function scoreProductMatch(
   return Math.max(
     scoreFieldMatch(product.name, query),
     scoreFieldMatch(product.brand, query),
+    scoreFieldMatch(getDisplayBrandName(product.brand), query),
     scoreFieldMatch(product.sku, query),
     scoreFieldMatch(product.barcode ?? "", query),
   );
@@ -96,7 +101,7 @@ function mapSuggestionProduct(
   return {
     id: product.id,
     name: product.name,
-    brand: product.brand,
+    brand: getDisplayBrandName(product.brand),
     slug: product.slug,
     sku: product.sku,
   };
@@ -122,12 +127,16 @@ function buildSuggestionsFromProducts(
     if (product.status !== "active") {
       continue;
     }
-    const brandScore = scoreFieldMatch(product.brand, query);
+    const brandScore = Math.max(
+      scoreFieldMatch(product.brand, query),
+      scoreFieldMatch(getDisplayBrandName(product.brand), query),
+    );
     if (brandScore <= 0) {
       continue;
     }
-    const current = brandScores.get(product.brand) ?? 0;
-    brandScores.set(product.brand, Math.max(current, brandScore));
+    const filterBrand = getBrandFilterValue(product.brand);
+    const current = brandScores.get(filterBrand) ?? 0;
+    brandScores.set(filterBrand, Math.max(current, brandScore));
   }
 
   const brands = [...brandScores.entries()]
@@ -291,8 +300,9 @@ function relatedTermsFromProducts(
     }
 
     const brandScore = scoreFieldMatch(product.brand, query);
-    if (brandScore > 0 && normalizeQuery(product.brand) !== normalizedQuery) {
-      terms.add(product.brand);
+    const filterBrand = getBrandFilterValue(product.brand);
+    if (brandScore > 0 && normalizeQuery(filterBrand) !== normalizedQuery) {
+      terms.add(filterBrand);
     }
 
     const nameScore = scoreFieldMatch(product.name, query);
@@ -310,10 +320,10 @@ function relatedTermsFromProducts(
       if (product.status !== "active") {
         continue;
       }
-      if (terms.has(product.brand)) {
+      if (terms.has(getBrandFilterValue(product.brand))) {
         continue;
       }
-      terms.add(product.brand);
+      terms.add(getBrandFilterValue(product.brand));
       if (terms.size >= limit) {
         break;
       }

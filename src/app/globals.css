@@ -31,6 +31,10 @@ body {
   overflow-x: hidden;
 }
 
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Storefront view mode overrides (auto = normal responsive behavior) */
 html.view-mode-mobile .lg\:block,
 html.view-mode-mobile .lg\:flex {

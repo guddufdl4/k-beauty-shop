@@ -10,8 +10,17 @@
     "admin": "管理者",
     "menu": "メニュー",
     "brand": "HMT",
-    "shop": "SHOP",
-    "brands": "BRANDS",
+    "shop": "Shop",
+    "skincare": "Skincare",
+    "makeup": "Makeup",
+    "hairBody": "Hair & Body",
+    "newArrivals": "New Arrivals",
+    "bestSellers": "Best Sellers",
+    "wholesale": "Wholesale",
+    "utilityTagline": "Global K-Beauty Wholesale · Worldwide Shipping",
+    "mainNavigation": "メインナビゲーション",
+    "headerAccount": "Account",
+    "brands": "Brands",
     "shopSale": "セール",
     "shopTrending": "トレンド",
     "shopLatest": "新着",
@@ -60,6 +69,59 @@
     "heroWholesale": "Wholesale",
     "heroDiscount": "最大70% OFF",
     "heroCta": "詳しく見る",
+    "hero": {
+      "title": "K-Beauty, Ready for Global Business",
+      "description": "Authentic Korean beauty products with competitive wholesale pricing.",
+      "shopBestSellers": "Shop Best Sellers",
+      "wholesaleInquiry": "Wholesale Inquiry",
+      "shopBrand": "{brand}の商品を見る"
+    },
+    "trust": {
+      "sectionLabel": "HMTを選ぶ理由",
+      "authenticProducts": {
+        "title": "Authentic Products",
+        "description": "Sourced directly from Korea"
+      },
+      "flexibleMoq": {
+        "title": "Flexible MOQ",
+        "description": "Low minimum order quantity"
+      },
+      "globalShipping": {
+        "title": "Global Shipping",
+        "description": "Fast and reliable worldwide"
+      },
+      "b2bSupport": {
+        "title": "B2B Support",
+        "description": "Dedicated wholesale support"
+      }
+    },
+    "categorySection": {
+      "title": "カテゴリーから探す",
+      "viewAll": "すべてのカテゴリーを見る",
+      "skincare": "スキンケア",
+      "makeup": "メイクアップ",
+      "maskPack": "マスクパック",
+      "suncare": "サンケア",
+      "hairCare": "ヘアケア",
+      "bodyCare": "ボディケア"
+    },
+    "trending": {
+      "title": "Trending in K-Beauty",
+      "viewAll": "すべて見る →",
+      "empty": "このカテゴリーに表示する商品がありません。",
+      "all": "すべて",
+      "skincare": "スキンケア",
+      "makeup": "メイクアップ",
+      "hairCare": "ヘアケア",
+      "badgeBestSeller": "ベストセラー",
+      "badgeNew": "新着",
+      "badgeSale": "セール",
+      "soldOut": "在庫切れ"
+    },
+    "featuredBrands": {
+      "title": "Featured Brands",
+      "viewAll": "ブランド一覧"
+    },
     "tabBestSellers": "Best Sellers",
     "tabMostViewed": "Most Viewed",
     "tabNewArrivals": "New Arrivals",
@@ -114,7 +176,11 @@
     "retailPrice": "小売価格 (B2C)",
     "wholesalePrice": "卸売価格 (B2B)",
     "moq": "MOQ",
-    "moqUnit": "{count}個以上",
+    "moqUnit": "最低 {count} 個",
+    "unitsPerBox": "ボックス入数",
+    "unitsPerBoxValue": "{count} 個",
+    "moqBadge": "MOQ {count}",
+    "unitsPerBoxBadge": "{count}/box",
     "stock": "在庫",
     "inStock": "{count}個",
     "outOfStock": "在庫切れ",
@@ -159,6 +225,20 @@
     "emptyTitle": "登録されたカテゴリーがありません",
     "emptyDescription": "管理画面でカテゴリーを追加するかseed SQLを実行してください。",
     "viewAllProducts": "全商品を見る"
+  },
+  "brands": {
+    "browse": "Browse",
+    "title": "ブランド",
+    "description": "ブランド別にK-ビューティー商品を探せます。ブランドを選ぶとカタログが表示されます。",
+    "supabaseWarning": "Supabase未接続 — サンプルブランド一覧を表示しています。",
+    "empty": "登録されたブランドがありません。",
+    "searchLabel": "ブランド検索",
+    "searchPlaceholder": "ブランド名で検索…",
+    "alphabetFilter": "頭文字でブランドを絞り込む",
+    "filterAll": "すべて",
+    "filterOther": "#",
+    "noResults": "一致するブランドがありません。別の名前や文字をお試しください。",
+    "resultCount": "{total}件中{count}件"
   },
   "about": {
     "eyebrow": "About Us",
@@ -213,7 +293,27 @@
     "freeShippingNote": "10万ウォン以上で送料無料",
     "checkout": "決済へ",
     "change": "変更",
-    "remove": "削除"
+    "remove": "削除",
+    "quantity": "数量",
+    "moqHint": "最低 {count} 個",
+    "adding": "追加中…",
+    "outOfStock": "在庫切れ",
+    "addToCart": "カートに追加",
+    "addedSuccess": "カートに追加しました。",
+    "quantityUpdated": "数量を更新しました。",
+    "itemRemoved": "商品を削除しました。",
+    "errors": {
+      "missingProduct": "商品情報がありません。",
+      "invalidQuantity": "有効な数量を入力してください。",
+      "moqNotMet": "最低注文数量（MOQ）は {moq} 個です。",
+      "insufficientStock": "在庫は {stock} 個のみです。",
+      "outOfStock": "この商品は在庫切れです。",
+      "productNotFound": "商品が見つかりません。",
+      "cartUnavailable": "カートを利用できません。",
+      "cartEmpty": "カートは空です。",
+      "orderUnavailable": "注文を作成できません。",
+      "orderCreateFailed": "注文の作成に失敗しました。"
+    }
   },
   "auth": {
     "loginTitle": "ログイン",

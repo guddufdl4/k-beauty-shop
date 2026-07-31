@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
-import { buildProductsHref } from "@/lib/store/products-url";
+import { BrandsDirectory } from "@/components/store/products-sidebar-search";
 import { getProductBrands } from "@/lib/supabase/products";
 
 export default async function BrandsPage() {
@@ -31,17 +30,7 @@ export default async function BrandsPage() {
           {t("empty")}
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {brands.map((brand) => (
-            <Link
-              key={brand}
-              href={buildProductsHref({ brand })}
-              className="flex h-20 items-center justify-center border border-zinc-200 bg-white px-4 text-center text-sm font-bold uppercase tracking-wide text-zinc-600 transition-colors hover:border-accent hover:text-accent"
-            >
-              {brand}
-            </Link>
-          ))}
-        </div>
+        <BrandsDirectory brands={brands} />
       )}
     </main>
   );

@@ -4,7 +4,13 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { buildCategoryTree, findNavAncestorCategory, sortCategoriesForNav } from "@/lib/store/category-tree";
-import { buildProductsHref, type ProductListSort } from "@/lib/store/products-url";
+import {
+  BRAND_INDEX_LETTERS,
+  buildProductsHref,
+  getBrandIndexLetter,
+  normalizeBrandKey,
+  type ProductListSort,
+} from "@/lib/store/products-url";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { isStorefrontNavSlug } from "@/lib/store/category-taxonomy";
 import type { Category } from "@/lib/supabase/products";
@@ -332,6 +338,137 @@ export function ProductCatalogSidebar({
         </div>
       </div>
     </>
+  );
+}
+
+type BrandsDirectoryProps = {
+  brands: string[];
+};
+
+type BrandLetterFilter = "all" | (typeof BRAND_INDEX_LETTERS)[number] | "#";
+
+export function BrandsDirectory({ brands }: BrandsDirectoryProps) {
+  const t = useTranslations("brands");
+  const [query, setQuery] = useState("");
+  const [letter, setLetter] = useState<BrandLetterFilter>("all");
+
+  const availableLetters = useMemo(() => {
+    const letters = new Set<string>();
+    for (const brand of brands) {
+      letters.add(getBrandIndexLetter(brand));
+    }
+    return letters;
+  }, [brands]);
+
+  const filteredBrands = useMemo(() => {
+    const normalizedQuery = normalizeBrandKey(query);
+
+    return brands.filter((brand) => {
+      if (letter !== "all" && getBrandIndexLetter(brand) !== letter) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return normalizeBrandKey(brand).includes(normalizedQuery);
+    });
+  }, [brands, letter, query]);
+
+  const showHashFilter = availableLetters.has("#");
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <label className="block">
+          <span className="sr-only">{t("searchLabel")}</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+          />
+        </label>
+
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="group"
+          aria-label={t("alphabetFilter")}
+        >
+          <button
+            type="button"
+            onClick={() => setLetter("all")}
+            aria-pressed={letter === "all"}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+              letter === "all"
+                ? "bg-rose-600 text-white"
+                : "bg-zinc-100 text-zinc-600 hover:bg-rose-50 hover:text-rose-700"
+            }`}
+          >
+            {t("filterAll")}
+          </button>
+          {BRAND_INDEX_LETTERS.map((indexLetter) => {
+            const enabled = availableLetters.has(indexLetter);
+            return (
+              <button
+                key={indexLetter}
+                type="button"
+                disabled={!enabled}
+                onClick={() => enabled && setLetter(indexLetter)}
+                aria-pressed={letter === indexLetter}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  !enabled
+                    ? "cursor-not-allowed bg-zinc-50 text-zinc-400 opacity-30"
+                    : letter === indexLetter
+                      ? "bg-rose-600 text-white"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-rose-50 hover:text-rose-700"
+                }`}
+              >
+                {indexLetter}
+              </button>
+            );
+          })}
+          {showHashFilter ? (
+            <button
+              type="button"
+              onClick={() => setLetter("#")}
+              aria-pressed={letter === "#"}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                letter === "#"
+                  ? "bg-rose-600 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-rose-50 hover:text-rose-700"
+              }`}
+            >
+              {t("filterOther")}
+            </button>
+          ) : null}
+        </div>
+
+        <p className="text-sm text-zinc-500">
+          {t("resultCount", { count: filteredBrands.length, total: brands.length })}
+        </p>
+      </div>
+
+      {filteredBrands.length === 0 ? (
+        <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-6 py-10 text-center text-zinc-600">
+          {t("noResults")}
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {filteredBrands.map((brand) => (
+            <Link
+              key={brand}
+              href={buildProductsHref({ brand })}
+              className="flex h-20 items-center justify-center border border-zinc-200 bg-white px-4 text-center text-sm font-bold uppercase tracking-wide text-zinc-600 transition-colors hover:border-rose-400 hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
+            >
+              {brand}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

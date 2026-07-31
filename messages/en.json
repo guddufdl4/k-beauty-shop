@@ -10,8 +10,17 @@
     "admin": "Admin",
     "menu": "Menu",
     "brand": "HMT",
-    "shop": "SHOP",
-    "brands": "BRANDS",
+    "shop": "Shop",
+    "skincare": "Skincare",
+    "makeup": "Makeup",
+    "hairBody": "Hair & Body",
+    "newArrivals": "New Arrivals",
+    "bestSellers": "Best Sellers",
+    "wholesale": "Wholesale",
+    "utilityTagline": "Global K-Beauty Wholesale · Worldwide Shipping",
+    "mainNavigation": "Main navigation",
+    "headerAccount": "Account",
+    "brands": "Brands",
     "shopSale": "Sale",
     "shopTrending": "Trending",
     "shopLatest": "Latest",
@@ -60,6 +69,59 @@
     "heroWholesale": "Wholesale",
     "heroDiscount": "UPTO 70% OFF",
     "heroCta": "Learn more",
+    "hero": {
+      "title": "K-Beauty, Ready for Global Business",
+      "description": "Authentic Korean beauty products with competitive wholesale pricing.",
+      "shopBestSellers": "Shop Best Sellers",
+      "wholesaleInquiry": "Wholesale Inquiry",
+      "shopBrand": "Shop {brand} products"
+    },
+    "trust": {
+      "sectionLabel": "Why shop with HMT",
+      "authenticProducts": {
+        "title": "Authentic Products",
+        "description": "Sourced directly from Korea"
+      },
+      "flexibleMoq": {
+        "title": "Flexible MOQ",
+        "description": "Low minimum order quantity"
+      },
+      "globalShipping": {
+        "title": "Global Shipping",
+        "description": "Fast and reliable worldwide"
+      },
+      "b2bSupport": {
+        "title": "B2B Support",
+        "description": "Dedicated wholesale support"
+      }
+    },
+    "categorySection": {
+      "title": "Shop by Category",
+      "viewAll": "View all categories",
+      "skincare": "Skincare",
+      "makeup": "Makeup",
+      "maskPack": "Mask Pack",
+      "suncare": "Suncare",
+      "hairCare": "Hair Care",
+      "bodyCare": "Body Care"
+    },
+    "trending": {
+      "title": "Trending in K-Beauty",
+      "viewAll": "View all →",
+      "empty": "No products to show in this category.",
+      "all": "All",
+      "skincare": "Skincare",
+      "makeup": "Makeup",
+      "hairCare": "Hair Care",
+      "badgeBestSeller": "Best Seller",
+      "badgeNew": "New",
+      "badgeSale": "Sale",
+      "soldOut": "Sold Out"
+    },
+    "featuredBrands": {
+      "title": "Featured Brands",
+      "viewAll": "View all brands"
+    },
     "tabBestSellers": "Best Sellers",
     "tabMostViewed": "Most Viewed",
     "tabNewArrivals": "New Arrivals",
@@ -114,7 +176,11 @@
     "retailPrice": "Retail price (B2C)",
     "wholesalePrice": "Wholesale price (B2B)",
     "moq": "MOQ",
-    "moqUnit": "{count}+ units",
+    "moqUnit": "Minimum {count} units",
+    "unitsPerBox": "Units per box",
+    "unitsPerBoxValue": "{count} units",
+    "moqBadge": "MOQ {count}",
+    "unitsPerBoxBadge": "{count}/box",
     "stock": "Stock",
     "inStock": "{count} units",
     "outOfStock": "Out of stock",
@@ -159,7 +225,14 @@
     "title": "Brands",
     "description": "Shop K-Beauty products by brand. Select a brand to view its catalog.",
     "supabaseWarning": "Supabase disconnected — showing sample brand list.",
-    "empty": "No brands available yet."
+    "empty": "No brands available yet.",
+    "searchLabel": "Search brands",
+    "searchPlaceholder": "Search by brand name…",
+    "alphabetFilter": "Filter brands by letter",
+    "filterAll": "All",
+    "filterOther": "#",
+    "noResults": "No brands match your search. Try a different name or letter.",
+    "resultCount": "{count} of {total} brands"
   },
   "categories": {
     "browse": "Browse",
@@ -250,7 +323,7 @@
     "change": "Update",
     "remove": "Remove",
     "quantity": "Quantity",
-    "moqHint": "Minimum {count} per box",
+    "moqHint": "Minimum {count} units",
     "adding": "Adding…",
     "outOfStock": "Out of stock",
     "addToCart": "Add to cart",
@@ -262,6 +335,7 @@
       "invalidQuantity": "Please enter a valid quantity.",
       "moqNotMet": "Minimum order quantity (MOQ) is {moq} units.",
       "insufficientStock": "Only {stock} units in stock.",
+      "outOfStock": "This product is out of stock.",
       "productNotFound": "Product not found.",
       "cartUnavailable": "Cart is unavailable.",
       "cartEmpty": "Your cart is empty.",

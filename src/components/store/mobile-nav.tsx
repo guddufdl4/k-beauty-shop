@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
@@ -44,6 +44,7 @@ type MobileNavContextValue = {
   toggleMenu: () => void;
   toggleSearch: () => void;
   closeAll: () => void;
+  panelRef: React.RefObject<HTMLDivElement | null>;
 };
 
 const MobileNavContext = createContext<MobileNavContextValue | null>(null);
@@ -88,11 +89,12 @@ export function MobileNavRoot({
 }: RootProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  function closeAll() {
+  const closeAll = useCallback(() => {
     setMenuOpen(false);
     setSearchOpen(false);
-  }
+  }, []);
 
   function toggleMenu() {
     setSearchOpen(false);
@@ -103,6 +105,60 @@ export function MobileNavRoot({
     setMenuOpen(false);
     setSearchOpen((value) => !value);
   }
+
+  useEffect(() => {
+    if (!menuOpen && !searchOpen) {
+      return;
+    }
+
+    const panel = panelRef.current;
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeAll();
+        return;
+      }
+
+      if (event.key !== "Tab" || !panel) {
+        return;
+      }
+
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(focusableSelector),
+      ).filter((element) => !element.hasAttribute("disabled") && element.offsetParent !== null);
+
+      if (focusable.length === 0) {
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    const timer = window.setTimeout(() => {
+      const firstFocusable = panel?.querySelector<HTMLElement>(focusableSelector);
+      firstFocusable?.focus();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen, searchOpen, closeAll]);
 
   return (
     <MobileNavContext.Provider
@@ -120,6 +176,7 @@ export function MobileNavRoot({
         toggleMenu,
         toggleSearch,
         closeAll,
+        panelRef,
       }}
     >
       {children}
@@ -128,7 +185,7 @@ export function MobileNavRoot({
 }
 
 const iconButtonClass =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition-colors hover:border-accent-soft hover:bg-accent-soft hover:text-accent";
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition-colors hover:border-accent-soft hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
 export function MobileNavActions() {
   const { cartCount, labels, menuOpen, searchOpen, toggleMenu, toggleSearch } = useMobileNav();
@@ -193,6 +250,7 @@ export function MobileNavPanels() {
     menuOpen,
     searchOpen,
     closeAll,
+    panelRef,
   } = useMobileNav();
 
   const tProducts = useTranslations("products");
@@ -221,7 +279,7 @@ export function MobileNavPanels() {
   ];
 
   const mobileLinkClass =
-    "flex min-h-11 w-full items-center justify-between px-1 py-3 text-[15px] font-medium text-zinc-800 transition-colors hover:text-accent";
+    "flex min-h-11 w-full items-center justify-between px-1 py-3 text-[15px] font-medium text-zinc-800 transition-colors hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset";
 
   const mobileSubLinkClass =
     "block rounded-md py-2.5 pl-3 pr-1 text-sm font-medium text-zinc-800 transition-colors hover:bg-accent-soft hover:text-accent-hover";
@@ -236,9 +294,13 @@ export function MobileNavPanels() {
   }
 
   return (
-    <div className="border-b border-zinc-200 bg-white lg:hidden">
+    <div
+      ref={panelRef}
+      data-mobile-nav-panel=""
+      className="border-b border-zinc-200 bg-white lg:hidden"
+    >
       {searchOpen ? (
-        <div className="px-0 py-3">
+        <div className="min-w-0 px-4 py-3">
           <StoreSearchBar />
         </div>
       ) : null}

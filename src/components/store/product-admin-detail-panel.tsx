@@ -5,8 +5,12 @@ import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
-import { isProductSoldOut } from "@/lib/store/products-url";
-import { formatLocalePrice, formatLocaleProductPrice } from "@/lib/utils";
+import {
+  getProductPriceColumns,
+  isProductSoldOut,
+  usesBoxQuantityField,
+} from "@/lib/store/products-url";
+import { formatLocaleProductPrice } from "@/lib/utils";
 import type { Category, ProductWithRelations } from "@/lib/supabase/products";
 
 type ProductAdminDetailPanelProps = {
@@ -228,6 +232,25 @@ export function ProductAdminDetailPanel({
   };
 
   const inStock = !isProductSoldOut(product);
+  const priceColumns = getProductPriceColumns({
+    price: product.price,
+    wholesale_price: product.wholesale_price,
+    compare_at_price: initialProduct.compare_at_price,
+  });
+  const quantityLabel = usesBoxQuantityField({
+    price: product.price,
+    wholesale_price: product.wholesale_price,
+    compare_at_price: initialProduct.compare_at_price,
+  })
+    ? t("unitsPerBox")
+    : moqLabel;
+  const quantityValue = usesBoxQuantityField({
+    price: product.price,
+    wholesale_price: product.wholesale_price,
+    compare_at_price: initialProduct.compare_at_price,
+  })
+    ? t("unitsPerBoxValue", { count: product.moq })
+    : t("moqUnit", { count: product.moq });
   const localizedCategory = product.category
     ? getLocalizedCategoryName(product.category, locale)
     : null;
@@ -473,24 +496,24 @@ export function ProductAdminDetailPanel({
               <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    {t("retailPrice")}
+                    {t(priceColumns.primary.labelKey)}
                   </p>
                   <p className="text-2xl font-bold text-zinc-900">
-                    {formatLocaleProductPrice(product.price, locale, usdKrwRate)}
+                    {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
                   </p>
-                  {initialProduct.compare_at_price ? (
+                  {priceColumns.compareAt ? (
                     <p className="text-sm text-zinc-400 line-through">
-                      {formatLocalePrice(initialProduct.compare_at_price, locale, usdKrwRate)}
+                      {formatLocaleProductPrice(priceColumns.compareAt, locale, usdKrwRate)}
                     </p>
                   ) : null}
                 </div>
-                {product.wholesale_price ? (
+                {priceColumns.secondary ? (
                   <div className="min-w-0 text-right">
                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                       {wholesaleLabel}
                     </p>
                     <p className="text-xl font-bold text-rose-700">
-                      {formatLocaleProductPrice(product.wholesale_price, locale, usdKrwRate)}
+                      {formatLocaleProductPrice(priceColumns.secondary.amount, locale, usdKrwRate)}
                     </p>
                   </div>
                 ) : null}
@@ -498,10 +521,8 @@ export function ProductAdminDetailPanel({
 
               <dl className="grid min-w-0 grid-cols-2 gap-4 border-t border-rose-50 pt-4 text-sm">
                 <div className="min-w-0">
-                  <dt className="text-zinc-500">{moqLabel}</dt>
-                  <dd className="font-semibold text-zinc-900">
-                    {t("moqUnit", { count: product.moq })}
-                  </dd>
+                  <dt className="text-zinc-500">{quantityLabel}</dt>
+                  <dd className="font-semibold text-zinc-900">{quantityValue}</dd>
                 </div>
                 <div className="min-w-0">
                   <dt className="text-zinc-500">{t("stock")}</dt>

@@ -277,7 +277,7 @@ function CategoryMegaMenuInner({ categories, promoImageUrl }: Props) {
         onClick={() => setOpen((value) => !value)}
       >
         <HamburgerIcon />
-        {tNav("categories")}
+        {tNav("shop")}
       </button>
 
       <div

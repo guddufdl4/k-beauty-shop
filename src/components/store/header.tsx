@@ -1,23 +1,33 @@
 import { getLocale, getTranslations } from "next-intl/server";
 
+import Image from "next/image";
+
 import { Link } from "@/i18n/navigation";
 
 import { getCart } from "@/lib/cart";
 
 import { getStorefrontCategories } from "@/lib/supabase/products";
-import { localizeCategories } from "@/lib/store/localized-category";
+import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 
-import { getUsdKrwRate } from "@/lib/currency";
-import { formatLocaleProductPrice } from "@/lib/utils";
-
 import { LocaleSwitcher } from "./locale-switcher";
 
-import { CategoryMegaMenu } from "./category-mega-menu";
-import { MobileNavActions, MobileNavPanels, MobileNavRoot, ShopNavDropdown } from "./mobile-nav";
+import { MobileNavActions, MobileNavPanels, MobileNavRoot } from "./mobile-nav";
 
 import { StoreSearchBar } from "./store-search-bar";
+import { CategoryMegaMenu } from "./category-mega-menu";
+import { CategoryIcon } from "@/lib/store/category-icons";
+import { resolveHomeCategoryImageUrls } from "@/lib/product-images";
+import { resolveFeaturedBrands, type FeaturedBrand } from "@/lib/store/partner-brands";
+import {
+  buildProductsHref,
+  HOME_CATEGORY_SLUGS,
+  HOME_TRUST_HIGHLIGHTS,
+  MAIN_NAV_LINKS,
+  type HomeTrustHighlightKey,
+} from "@/lib/store/products-url";
+import type { Category, ProductWithRelations } from "@/lib/supabase/products";
 
 
 
@@ -94,9 +104,13 @@ function IconLink({
 
   return (
 
-    <Link href={href} className="group flex flex-col items-center gap-1 text-zinc-600 hover:text-accent">
+    <Link
+      href={href}
+      aria-label={label}
+      className="group flex flex-col items-center gap-1 text-zinc-600 hover:text-accent-hover"
+    >
 
-      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 transition-colors group-hover:border-accent-soft group-hover:bg-accent-soft">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 transition-colors group-hover:border-accent-soft group-hover:bg-accent-soft">
 
         {children}
 
@@ -114,7 +128,7 @@ function IconLink({
 
 export async function StoreHeader({ storeName }: Props) {
 
-  const [cart, { user, profile }, tNav, locale, { categories }, usdKrwRate] = await Promise.all([
+  const [cart, { user, profile }, tNav, locale, { categories }] = await Promise.all([
 
     getCart(),
 
@@ -126,8 +140,6 @@ export async function StoreHeader({ storeName }: Props) {
 
     getStorefrontCategories(),
 
-    getUsdKrwRate(),
-
   ]);
 
 
@@ -135,15 +147,9 @@ export async function StoreHeader({ storeName }: Props) {
   const brandLabel = storeName?.trim() || tNav("brand");
   const localizedCategories = localizeCategories(categories, locale);
 
-  const shopItems = [
-    { sort: "sale" as const, label: tNav("shopSale") },
-    { sort: "trending" as const, label: tNav("shopTrending") },
-    { sort: "latest" as const, label: tNav("shopLatest") },
-  ];
-
   const accountHref = user ? "/account" : "/login";
 
-  const accountLabel = user ? tNav("account") : tNav("login");
+  const accountIconLabel = tNav("headerAccount");
 
 
 
@@ -151,39 +157,19 @@ export async function StoreHeader({ storeName }: Props) {
 
     <header className="sticky top-0 z-50 overflow-visible border-b border-zinc-200 bg-white shadow-sm">
 
-      <div className="hidden border-b border-zinc-100 bg-surface-muted lg:block">
+      <div className="border-b border-zinc-100 bg-surface-muted">
 
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-2 text-xs text-zinc-500 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 text-xs text-zinc-600 sm:px-6">
 
-          <div className="flex items-center gap-3">
+          <p className="hidden min-w-0 items-center gap-2 truncate sm:flex">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-zinc-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" strokeLinecap="round" />
+            </svg>
+            <span className="truncate">{tNav("utilityTagline")}</span>
+          </p>
 
-            <span className="sr-only">{tNav("followUs")}</span>
-
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-accent" aria-label="Instagram">
-
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
-
-                <path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.9.2 2.3.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.3 1.1.4 2.3.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.9-.4 2.3-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1.1.3-2.3.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.9-.2-2.3-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.3-1.1-.4-2.3C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.9.4-2.3.2-.6.5-1  .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1.1-.3 2.3-.4C8.4 2.2 8.8 2.2 12 2.2zm0 1.8c-3.1 0-3.5 0-4.7.1-1 .0-1.6.2-2 .3-.5.2-.8.4-1.1.7-.3.3-.5.6-.7 1.1-.1.4-.3 1-.3 2-.1 1.2-.1 1.6-.1 4.7s0 3.5.1 4.7c.0 1 .2 1.6.3 2 .2.5.4.8.7 1.1.3.3.6.5 1.1.7.4.1 1 .3 2 .3 1.2.1 1.6.1 4.7.1s3.5 0 4.7-.1c1 0 1.6-.2 2-.3.5-.2.8-.4 1.1-.7.3-.3.5-.6.7-1.1.1-.4.3-1 .3-2 .1-1.2.1-1.6.1-4.7s0-3.5-.1-4.7c0-1-.2-1.6-.3-2-.2-.5-.4-.8-.7-1.1-.3-.3-.6-.5-1.1-.7-.4-.1-1-.3-2-.3-1.2-.1-1.6-.1-4.7-.1z" />
-
-                <path d="M12 7.3a4.7 4.7 0 100 9.4 4.7 4.7 0 000-9.4zm0 7.7a3 3 0 110-6 3 3 0 010 6zm5.8-9.2a1.1 1.1 0 100 2.2 1.1 1.1 0 000-2.2z" />
-
-              </svg>
-
-            </a>
-
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-accent" aria-label="Facebook">
-
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
-
-                <path d="M13.5 22v-8.3h2.8l.4-3.2h-3.2V8.9c0-.9.3-1.6 1.7-1.6h1.7V4.1c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.4H7.8v3.2h2.4V22h3.3z" />
-
-              </svg>
-
-            </a>
-
-          </div>
-
-          <LocaleSwitcher className="inline-flex items-center" />
+          <LocaleSwitcher className="ml-auto inline-flex items-center" />
 
         </div>
 
@@ -217,8 +203,8 @@ export async function StoreHeader({ storeName }: Props) {
           searchButton: tNav("searchButton"),
         }}
       >
-        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6">
-          <div className="flex items-center gap-3 py-3.5 sm:gap-5 sm:py-4 lg:gap-10 lg:py-5">
+        <div className="relative mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2 py-3.5 sm:gap-5 sm:py-4 lg:gap-10 lg:py-5">
 
           <Link
             href="/"
@@ -233,7 +219,7 @@ export async function StoreHeader({ storeName }: Props) {
 
           <div className="hidden flex-1 lg:block">
 
-            <StoreSearchBar className="mx-auto max-w-xl" />
+            <StoreSearchBar className="mx-auto max-w-2xl" />
 
           </div>
 
@@ -243,7 +229,7 @@ export async function StoreHeader({ storeName }: Props) {
 
             <div className="hidden items-center gap-3 md:flex">
 
-              <IconLink href={accountHref} label={accountLabel}>
+              <IconLink href={accountHref} label={accountIconLabel}>
 
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
 
@@ -255,8 +241,12 @@ export async function StoreHeader({ storeName }: Props) {
 
               </IconLink>
 
-              <Link href="/cart" className="group relative flex flex-col items-center gap-1 text-zinc-600 hover:text-accent">
-                <span className="relative flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 transition-colors group-hover:border-accent-soft group-hover:bg-accent-soft">
+              <Link
+                href="/cart"
+                aria-label={tNav("cart")}
+                className="group relative flex flex-col items-center gap-1 text-zinc-600 hover:text-accent-hover"
+              >
+                <span className="relative flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 transition-colors group-hover:border-accent-soft group-hover:bg-accent-soft">
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
                     <path d="M6 6h15l-1.5 9h-12z" strokeLinejoin="round" />
                     <circle cx="9" cy="20" r="1.5" />
@@ -282,67 +272,7 @@ export async function StoreHeader({ storeName }: Props) {
 
         <MobileNavPanels />
 
-        <nav className="relative hidden items-stretch justify-between overflow-visible border-t border-zinc-100 py-0 lg:flex">
-
-          <div className="flex items-stretch">
-
-            <CategoryMegaMenu categories={localizedCategories} />
-
-            <div className="flex items-center gap-6 py-3 pl-6 text-xs font-bold uppercase tracking-wider text-zinc-800">
-
-              <ShopNavDropdown label={tNav("shop")} items={shopItems} />
-
-              <Link href="/brands" className="transition-colors hover:text-accent">
-
-                {tNav("brands")}
-
-              </Link>
-
-            </div>
-
-          </div>
-
-          <div className="flex items-center gap-6 py-3">
-
-            <Link href="/about" className="text-xs font-bold uppercase tracking-wider text-zinc-800 transition-colors hover:text-accent">
-
-              {tNav("about")}
-
-            </Link>
-
-            <Link href="/cart" className="flex items-center gap-2 text-xs text-zinc-600 transition-colors hover:text-accent">
-
-              <span className="font-medium">
-
-                {tNav("cartSummary", {
-
-                  count: cart.itemCount,
-
-                  total: formatLocaleProductPrice(cart.subtotal, locale, usdKrwRate),
-
-                })}
-
-              </span>
-
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white">
-
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-
-                  <path d="M6 6h15l-1.5 9h-12z" strokeLinejoin="round" />
-
-                  <circle cx="9" cy="20" r="1.5" />
-
-                  <circle cx="18" cy="20" r="1.5" />
-
-                </svg>
-
-              </span>
-
-            </Link>
-
-          </div>
-
-        </nav>
+        <StoreMainNav categories={localizedCategories} />
 
         </div>
       </MobileNavRoot>
@@ -353,4 +283,265 @@ export async function StoreHeader({ storeName }: Props) {
 
 }
 
+export async function StoreMainNav({ categories }: { categories: Category[] }) {
+  const tNav = await getTranslations("nav");
+  const standardLinks = MAIN_NAV_LINKS.filter((item) => !item.highlight);
+  const wholesaleLink = MAIN_NAV_LINKS.find((item) => item.highlight);
+
+  return (
+    <nav
+      className="relative hidden items-stretch overflow-visible border-t border-zinc-100 lg:flex"
+      aria-label={tNav("mainNavigation")}
+    >
+      <div className="mx-auto flex w-full max-w-7xl items-stretch px-4 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <CategoryMegaMenu categories={categories} />
+          {standardLinks.map((item) => (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="flex shrink-0 items-center px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent"
+            >
+              {tNav(item.key as "skincare")}
+            </Link>
+          ))}
+          {wholesaleLink ? (
+            <Link
+              href={wholesaleLink.href}
+              className="ml-auto flex shrink-0 items-center px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-accent transition-colors hover:text-accent-hover"
+            >
+              {tNav("wholesale")}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function TrustIcon({ name }: { name: HomeTrustHighlightKey }) {
+  const className = "h-6 w-6 shrink-0 text-accent";
+
+  switch (name) {
+    case "authenticProducts":
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+          <path d="M12 3l7 3v6c0 4.5-3.2 7.8-7 9-3.8-1.2-7-4.5-7-9V6l7-3z" strokeLinejoin="round" />
+          <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "flexibleMoq":
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+          <path d="M4 8l8-4 8 4v8l-8 4-8-4V8z" strokeLinejoin="round" />
+          <path d="M12 4v16M4 8l8 4 8-4" strokeLinejoin="round" />
+        </svg>
+      );
+    case "globalShipping":
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" strokeLinecap="round" />
+        </svg>
+      );
+    case "b2bSupport":
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+          <path d="M4 14v3a2 2 0 002 2h12a2 2 0 002-2v-3" strokeLinecap="round" />
+          <path d="M8 14a4 4 0 018 0v3H8v-3z" strokeLinejoin="round" />
+          <path d="M12 6a2 2 0 012 2v2h-4V8a2 2 0 012-2z" strokeLinejoin="round" />
+        </svg>
+      );
+  }
+}
+
+export async function HomeTrustBar() {
+  const t = await getTranslations("home.trust");
+  const items = HOME_TRUST_HIGHLIGHTS.filter((item) => item.enabled);
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="border-b border-zinc-200 bg-white" aria-label={t("sectionLabel")}>
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-8 sm:px-6 lg:grid-cols-4 lg:gap-x-8 lg:py-10">
+        {items.map((item) => (
+          <div key={item.key} className="flex items-start gap-3">
+            <TrustIcon name={item.key} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-zinc-900">{t(`${item.key}.title`)}</p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-600 sm:text-sm">{t(`${item.key}.description`)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const HOME_CATEGORY_I18N_KEY: Record<string, string> = {
+  skincare: "skincare",
+  makeup: "makeup",
+  "mask-pack": "maskPack",
+  suncare: "suncare",
+  haircare: "hairCare",
+  bodycare: "bodyCare",
+};
+
+type HomeCategorySectionProps = {
+  products: ProductWithRelations[];
+};
+
+export async function HomeCategorySection({ products }: HomeCategorySectionProps) {
+  const enabledSlugs = HOME_CATEGORY_SLUGS.filter((item) => item.enabled).map((item) => item.slug);
+
+  if (enabledSlugs.length === 0) {
+    return null;
+  }
+
+  const [t, locale, { categories }] = await Promise.all([
+    getTranslations("home.categorySection"),
+    getLocale(),
+    getStorefrontCategories(),
+  ]);
+
+  const navCategories = pickStorefrontNavCategories(categories);
+  const categoryBySlug = new Map(
+    localizeCategories(
+      navCategories.filter((category) => enabledSlugs.includes(category.slug as (typeof enabledSlugs)[number])),
+      locale,
+    ).map((category) => [category.slug, category]),
+  );
+
+  const categoryImages = resolveHomeCategoryImageUrls(products, categories, enabledSlugs);
+
+  const items = enabledSlugs.map((slug) => {
+    const category = categoryBySlug.get(slug);
+    const i18nKey = HOME_CATEGORY_I18N_KEY[slug];
+    const label = i18nKey ? t(i18nKey) : (category?.name ?? slug);
+
+    return {
+      slug,
+      label,
+      href: buildProductsHref({ category: slug }),
+      imageUrl: categoryImages[slug] ?? null,
+    };
+  });
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="border-b border-zinc-200 bg-white py-10 sm:py-12" aria-labelledby="home-category-heading">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+        <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
+          <h2 id="home-category-heading" className="text-xl font-bold text-zinc-900 sm:text-2xl">
+            {t("title")}
+          </h2>
+          <Link
+            href="/categories"
+            className="shrink-0 text-sm font-semibold text-accent-hover transition-colors hover:text-accent"
+          >
+            {t("viewAll")}
+          </Link>
+        </div>
+
+        <div className="grid min-w-0 grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-6">
+          {items.map((item) => (
+            <Link
+              key={item.slug}
+              href={item.href}
+              className="group flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            >
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 transition-colors group-hover:border-accent">
+                {item.imageUrl ? (
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.label}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-zinc-400">
+                    <CategoryIcon slug={item.slug} className="h-12 w-12" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-3 text-center text-sm font-semibold text-zinc-900 transition-colors group-hover:text-accent">
+                {item.label}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+type HomeFeaturedBrandsSectionProps = {
+  products: ProductWithRelations[];
+};
+
+function FeaturedBrandCard({ brand }: { brand: FeaturedBrand }) {
+  return (
+    <Link
+      href={buildProductsHref({ brand: brand.filterBrand })}
+      className="group flex min-h-[88px] min-w-[140px] shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-6 transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:min-h-[96px] lg:min-w-0"
+    >
+      {brand.logoUrl ? (
+        <Image
+          src={brand.logoUrl}
+          alt={brand.displayName}
+          width={140}
+          height={48}
+          sizes="140px"
+          loading="lazy"
+          className="h-10 w-auto max-w-full object-contain"
+        />
+      ) : (
+        <span className="text-center text-xs font-bold uppercase leading-tight tracking-wide text-zinc-800 sm:text-sm">
+          {brand.displayName}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+export async function HomeFeaturedBrandsSection({ products }: HomeFeaturedBrandsSectionProps) {
+  const [t, brands] = await Promise.all([
+    getTranslations("home.featuredBrands"),
+    resolveFeaturedBrands(products),
+  ]);
+
+  if (brands.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="border-b border-zinc-200 bg-white py-10 sm:py-12" aria-labelledby="home-featured-brands-heading">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+        <div className="mb-6 flex items-end justify-between gap-4 sm:mb-8">
+          <h2 id="home-featured-brands-heading" className="text-xl font-bold text-zinc-900 sm:text-2xl">
+            {t("title")}
+          </h2>
+          <Link
+            href="/brands"
+            className="shrink-0 text-sm font-semibold text-accent-hover transition-colors hover:text-accent"
+          >
+            {t("viewAll")}
+          </Link>
+        </div>
+
+        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0 lg:snap-none">
+          {brands.map((brand) => (
+            <FeaturedBrandCard key={brand.displayName} brand={brand} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 

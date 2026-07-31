@@ -10,8 +10,17 @@
     "admin": "管理员",
     "menu": "菜单",
     "brand": "HMT",
-    "shop": "SHOP",
-    "brands": "BRANDS",
+    "shop": "Shop",
+    "skincare": "Skincare",
+    "makeup": "Makeup",
+    "hairBody": "Hair & Body",
+    "newArrivals": "New Arrivals",
+    "bestSellers": "Best Sellers",
+    "wholesale": "Wholesale",
+    "utilityTagline": "Global K-Beauty Wholesale · Worldwide Shipping",
+    "mainNavigation": "主导航",
+    "headerAccount": "Account",
+    "brands": "Brands",
     "shopSale": "促销",
     "shopTrending": "热门",
     "shopLatest": "最新",
@@ -60,6 +69,59 @@
     "heroWholesale": "Wholesale",
     "heroDiscount": "最高 70% OFF",
     "heroCta": "了解更多",
+    "hero": {
+      "title": "K-Beauty, Ready for Global Business",
+      "description": "Authentic Korean beauty products with competitive wholesale pricing.",
+      "shopBestSellers": "Shop Best Sellers",
+      "wholesaleInquiry": "Wholesale Inquiry",
+      "shopBrand": "查看{brand}产品"
+    },
+    "trust": {
+      "sectionLabel": "选择HMT的理由",
+      "authenticProducts": {
+        "title": "Authentic Products",
+        "description": "Sourced directly from Korea"
+      },
+      "flexibleMoq": {
+        "title": "Flexible MOQ",
+        "description": "Low minimum order quantity"
+      },
+      "globalShipping": {
+        "title": "Global Shipping",
+        "description": "Fast and reliable worldwide"
+      },
+      "b2bSupport": {
+        "title": "B2B Support",
+        "description": "Dedicated wholesale support"
+      }
+    },
+    "categorySection": {
+      "title": "按分类选购",
+      "viewAll": "查看全部分类",
+      "skincare": "护肤",
+      "makeup": "彩妆",
+      "maskPack": "面膜",
+      "suncare": "防晒",
+      "hairCare": "护发",
+      "bodyCare": "身体护理"
+    },
+    "trending": {
+      "title": "Trending in K-Beauty",
+      "viewAll": "查看全部 →",
+      "empty": "该分类暂无商品。",
+      "all": "全部",
+      "skincare": "护肤",
+      "makeup": "彩妆",
+      "hairCare": "护发",
+      "badgeBestSeller": "畅销",
+      "badgeNew": "新品",
+      "badgeSale": "促销",
+      "soldOut": "缺货"
+    },
+    "featuredBrands": {
+      "title": "Featured Brands",
+      "viewAll": "查看全部品牌"
+    },
     "tabBestSellers": "Best Sellers",
     "tabMostViewed": "Most Viewed",
     "tabNewArrivals": "New Arrivals",
@@ -114,7 +176,11 @@
     "retailPrice": "零售价 (B2C)",
     "wholesalePrice": "批发价 (B2B)",
     "moq": "MOQ",
-    "moqUnit": "{count} 件起",
+    "moqUnit": "最低 {count} 件",
+    "unitsPerBox": "每箱数量",
+    "unitsPerBoxValue": "{count} 件",
+    "moqBadge": "MOQ {count}",
+    "unitsPerBoxBadge": "{count}/箱",
     "stock": "库存",
     "inStock": "{count} 件",
     "outOfStock": "缺货",
@@ -159,6 +225,20 @@
     "emptyTitle": "暂无已注册分类",
     "emptyDescription": "请在管理后台添加分类或运行 seed SQL。",
     "viewAllProducts": "查看全部商品"
+  },
+  "brands": {
+    "browse": "Browse",
+    "title": "品牌",
+    "description": "按品牌浏览 K-Beauty 商品，选择品牌即可查看对应目录。",
+    "supabaseWarning": "未连接 Supabase — 显示示例品牌列表。",
+    "empty": "暂无可用品牌。",
+    "searchLabel": "搜索品牌",
+    "searchPlaceholder": "按品牌名搜索…",
+    "alphabetFilter": "按首字母筛选品牌",
+    "filterAll": "全部",
+    "filterOther": "#",
+    "noResults": "没有匹配的品牌，请尝试其他名称或字母。",
+    "resultCount": "共 {total} 个品牌，显示 {count} 个"
   },
   "about": {
     "eyebrow": "About Us",
@@ -213,7 +293,27 @@
     "freeShippingNote": "满 10 万韩元免运费",
     "checkout": "去结算",
     "change": "修改",
-    "remove": "删除"
+    "remove": "删除",
+    "quantity": "数量",
+    "moqHint": "最低 {count} 件",
+    "adding": "添加中…",
+    "outOfStock": "缺货",
+    "addToCart": "加入购物车",
+    "addedSuccess": "已加入购物车。",
+    "quantityUpdated": "数量已更新。",
+    "itemRemoved": "商品已移除。",
+    "errors": {
+      "missingProduct": "缺少商品信息。",
+      "invalidQuantity": "请输入有效数量。",
+      "moqNotMet": "最低订购量（MOQ）为 {moq} 件。",
+      "insufficientStock": "仅剩 {stock} 件库存。",
+      "outOfStock": "该商品已缺货。",
+      "productNotFound": "未找到商品。",
+      "cartUnavailable": "购物车不可用。",
+      "cartEmpty": "购物车为空。",
+      "orderUnavailable": "无法创建订单。",
+      "orderCreateFailed": "创建订单失败。"
+    }
   },
   "auth": {
     "loginTitle": "登录",

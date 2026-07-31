@@ -1,4 +1,10 @@
-import type { ProductImage } from "@/lib/supabase/products";
+import type { Category, ProductImage, ProductWithRelations } from "@/lib/supabase/products";
+import { findNavAncestorCategory } from "@/lib/store/category-tree";
+import {
+  isStorefrontNavSlug,
+  RE_PARENT_SLUG_MAP,
+} from "@/lib/store/category-taxonomy";
+import { pickStorefrontNavCategories } from "@/lib/store/localized-category";
 
 /** Square canvas size for normalized product images (upload + display). */
 export const STANDARD_PRODUCT_IMAGE_SIZE = 1200;
@@ -297,6 +303,62 @@ export function resolveProductImageUrl(product: ProductImageSource): string {
   }
 
   return getCategoryPlaceholderUrl(product.category?.slug);
+}
+
+export function resolveNavCategorySlugForProduct(
+  product: Pick<ProductWithRelations, "category">,
+  categories: Category[],
+  navCategories: Category[],
+): string | null {
+  if (!product.category) {
+    return null;
+  }
+
+  const fullCategory =
+    categories.find((category) => category.id === product.category!.id) ?? product.category;
+
+  if (isStorefrontNavSlug(fullCategory.slug)) {
+    return fullCategory.slug;
+  }
+
+  const ancestor = findNavAncestorCategory(categories, fullCategory as Category, navCategories);
+  if (ancestor) {
+    return ancestor.slug;
+  }
+
+  const reparented = RE_PARENT_SLUG_MAP[fullCategory.slug];
+  if (reparented) {
+    return reparented;
+  }
+
+  return null;
+}
+
+/** First real product image URL per top-level category slug (for homepage category cards). */
+export function resolveHomeCategoryImageUrls(
+  products: ProductWithRelations[],
+  categories: Category[],
+  targetSlugs: readonly string[],
+): Record<string, string | null> {
+  const navCategories = pickStorefrontNavCategories(categories);
+  const result: Record<string, string | null> = Object.fromEntries(
+    targetSlugs.map((slug) => [slug, null]),
+  );
+
+  for (const product of products) {
+    if (!productHasRealImage(product)) {
+      continue;
+    }
+
+    const navSlug = resolveNavCategorySlugForProduct(product, categories, navCategories);
+    if (!navSlug || !targetSlugs.includes(navSlug) || result[navSlug]) {
+      continue;
+    }
+
+    result[navSlug] = resolveBestProductImageUrl(product);
+  }
+
+  return result;
 }
 
 export function enrichProductImages<T extends ProductImageSource>(product: T): T {
