@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import type { HeroImageFocus } from "@/lib/admin/hero-image-spec";
 
@@ -19,6 +19,10 @@ const focusClass: Record<HeroImageFocus, string> = {
   right: "object-right",
 };
 
+function isImageReady(img: HTMLImageElement): boolean {
+  return img.complete && img.naturalWidth > 0;
+}
+
 export function HeroBannerImage({
   src,
   alt,
@@ -27,8 +31,49 @@ export function HeroBannerImage({
   imageFocus = "center",
   className,
 }: Props) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [trackedSrc, setTrackedSrc] = useState(src);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  if (src !== trackedSrc) {
+    setTrackedSrc(src);
+    setLoaded(false);
+    setFailed(false);
+  }
+
+  const markLoadedIfReady = useCallback(() => {
+    const img = imgRef.current;
+    if (img && isImageReady(img)) {
+      setLoaded(true);
+      setFailed(false);
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    markLoadedIfReady();
+  }, [src, markLoadedIfReady]);
+
+  const handleImgRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      imgRef.current = node;
+      if (node && isImageReady(node)) {
+        setLoaded(true);
+        setFailed(false);
+      }
+    },
+    [],
+  );
+
+  const handleLoad = useCallback(() => {
+    setLoaded(true);
+    setFailed(false);
+  }, []);
+
+  const handleError = useCallback(() => {
+    setFailed(true);
+    setLoaded(false);
+  }, []);
 
   if (failed) {
     return (
@@ -50,6 +95,7 @@ export function HeroBannerImage({
       ) : null}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={handleImgRef}
         src={src}
         alt={alt}
         width={1920}
@@ -60,8 +106,8 @@ export function HeroBannerImage({
         loading={priority || preload ? "eager" : "lazy"}
         decoding="async"
         draggable={false}
-        onLoad={() => setLoaded(true)}
-        onError={() => setFailed(true)}
+        onLoad={handleLoad}
+        onError={handleError}
       />
     </>
   );
