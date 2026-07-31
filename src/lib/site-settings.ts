@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
 import type { HeroSlide, SiteSettings } from "@/types/database";
+import { normalizeHeroSlideLayout } from "@/lib/admin/hero-image-spec";
 
 const HERO_SETTINGS_BUCKET = "site-config";
 const HERO_SETTINGS_PATH = "hero.json";
@@ -52,7 +53,12 @@ function normalizeHeroSlides(raw: unknown, legacyImageUrl: string | null): HeroS
           ? record.order
           : index;
 
-      slides.push({ id, image_url: imageUrl, order });
+      slides.push({
+        id,
+        image_url: imageUrl,
+        order,
+        layout: normalizeHeroSlideLayout(record.layout),
+      });
     }
   }
 
@@ -93,7 +99,12 @@ function parseHeroSlidesPatch(raw: unknown): HeroSlide[] | null {
     const order =
       typeof record.order === "number" && Number.isFinite(record.order) ? record.order : index;
 
-    slides.push({ id, image_url: imageUrl, order });
+    slides.push({
+      id,
+      image_url: imageUrl,
+      order,
+      layout: normalizeHeroSlideLayout(record.layout),
+    });
   }
 
   slides.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));

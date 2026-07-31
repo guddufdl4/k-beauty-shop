@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { HomeTrendingSection } from "@/components/store/home-product-tabs";
-import { HeroBannerSlider } from "@/components/store/hero-banner-slider";
+import { HeroBannerSlider, type HeroBannerSlide } from "@/components/store/hero-banner-slider";
 import { HomeTrustBar, HomeCategorySection, HomeFeaturedBrandsSection } from "@/components/store/header";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
@@ -16,8 +16,6 @@ export const revalidate = 60;
 
 /** Standard homepage hero brand set (VT, SKINFOOD, Torriden). */
 const HERO_BRAND_ORDER = ["VT", "skinfood", "Torriden"] as const;
-
-type HeroObjectPosition = "left" | "center" | "right";
 
 function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRAND_ORDER)[number] {
   const id = slideId.toLowerCase();
@@ -35,20 +33,6 @@ function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRA
   }
 
   return HERO_BRAND_ORDER[order] ?? HERO_BRAND_ORDER[0];
-}
-
-function resolveHeroSlideObjectPosition(
-  brand: (typeof HERO_BRAND_ORDER)[number],
-): HeroObjectPosition {
-  if (brand === "VT" || brand === "Torriden") {
-    return "right";
-  }
-
-  if (brand === "skinfood") {
-    return "left";
-  }
-
-  return "center";
 }
 
 async function loadSiteSettingsSafely() {
@@ -79,35 +63,26 @@ export default async function HomePage() {
       }
 
       const brand = resolveHeroSlideBrand(slide.id, index);
-      const objectPosition = resolveHeroSlideObjectPosition(brand);
 
       return {
         id: slide.id,
         src,
         href: buildProductsHref({ brand }),
-        objectPosition,
         brandLabel: t("hero.shopBrand", { brand: brand === "skinfood" ? "SKINFOOD" : brand }),
+        ...(slide.layout ? { layout: slide.layout } : {}),
       };
     })
-    .filter(
-      (
-        slide,
-      ): slide is {
-        id: string;
-        src: string;
-        href: string;
-        objectPosition: HeroObjectPosition;
-        brandLabel: string;
-      } => slide !== null,
-    );
+    .filter((slide): slide is HeroBannerSlide => slide !== null);
 
   const heroCopy = {
-    title: t("hero.title"),
-    description: t("hero.description"),
-    shopBestSellersLabel: t("hero.shopBestSellers"),
-    shopBestSellersHref: buildProductsHref({ sort: "trending" }),
+    badge: siteSettings.hero_badge,
+    title: siteSettings.hero_title?.trim() || t("hero.title"),
+    description: siteSettings.hero_subtitle?.trim() || t("hero.description"),
+    shopBestSellersLabel:
+      siteSettings.hero_button_text?.trim() || t("hero.shopBestSellers"),
+    shopBestSellersHref:
+      siteSettings.hero_button_link?.trim() || buildProductsHref({ sort: "trending" }),
     wholesaleInquiryLabel: t("hero.wholesaleInquiry"),
-    // No dedicated wholesale inquiry page yet — route to the product catalog.
     wholesaleInquiryHref: buildProductsHref({}),
   };
 

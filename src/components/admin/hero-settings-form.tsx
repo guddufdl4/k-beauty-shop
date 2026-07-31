@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import type { HeroSlide, SiteSettings } from "@/types/database";
 import { resizeHeroImageToRecommended } from "@/lib/admin/hero-image-client-resize";
-import { formatHeroImageRecommendation, HERO_IMAGE_RECOMMENDED } from "@/lib/admin/hero-image-spec";
+import { formatHeroImageRecommendation, HERO_IMAGE_RECOMMENDED, resolveHeroSlideLayout, type HeroSlideLayout, type HeroSlideLayoutPreset } from "@/lib/admin/hero-image-spec";
 import {
   validateClientProductImageFile,
   withStorageImageCacheBuster,
@@ -31,7 +31,164 @@ function initialSlides(settings: SiteSettings): SlideDraft[] {
         ? [{ id: "legacy", image_url: settings.hero_image_url, order: 0 }]
         : [];
 
-  return sortSlides(source.map((slide) => ({ ...slide })));
+  return sortSlides(source.map((slide) => ({ ...slide, layout: slide.layout })));
+}
+
+type LayoutTarget = "desktop" | "mobile";
+
+function updateSlideLayout(
+  slide: SlideDraft,
+  target: LayoutTarget,
+  patch: Partial<HeroSlideLayoutPreset>,
+): SlideDraft {
+  const current = resolveHeroSlideLayout(slide.layout);
+  return {
+    ...slide,
+    layout: {
+      ...slide.layout,
+      [target]: { ...current[target], ...patch },
+    } satisfies HeroSlideLayout,
+  };
+}
+
+function HeroLayoutFields({
+  label,
+  layout,
+  onChange,
+}: {
+  label: string;
+  layout: HeroSlideLayoutPreset;
+  onChange: (patch: Partial<HeroSlideLayoutPreset>) => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4">
+      <p className="text-sm font-semibold text-zinc-900">{label}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-xs font-medium text-zinc-600">
+          가로 위치
+          <select
+            value={layout.alignX}
+            onChange={(event) => onChange({ alignX: event.target.value as HeroSlideLayoutPreset["alignX"] })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          >
+            <option value="left">왼쪽</option>
+            <option value="center">가운데</option>
+            <option value="right">오른쪽</option>
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          세로 위치
+          <select
+            value={layout.alignY}
+            onChange={(event) => onChange({ alignY: event.target.value as HeroSlideLayoutPreset["alignY"] })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          >
+            <option value="top">위</option>
+            <option value="center">가운데</option>
+            <option value="bottom">아래</option>
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          X축 보정 (px)
+          <input
+            type="number"
+            value={layout.offsetX}
+            onChange={(event) => onChange({ offsetX: Number(event.target.value) || 0 })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          Y축 보정 (px)
+          <input
+            type="number"
+            value={layout.offsetY}
+            onChange={(event) => onChange({ offsetY: Number(event.target.value) || 0 })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          텍스트 최대 너비 (px)
+          <input
+            type="number"
+            value={layout.maxWidth}
+            onChange={(event) => onChange({ maxWidth: Number(event.target.value) || 320 })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          텍스트 정렬
+          <select
+            value={layout.textAlign}
+            onChange={(event) => onChange({ textAlign: event.target.value as HeroSlideLayoutPreset["textAlign"] })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          >
+            <option value="left">왼쪽</option>
+            <option value="center">가운데</option>
+            <option value="right">오른쪽</option>
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          제목 색상
+          <input
+            type="color"
+            value={layout.titleColor}
+            onChange={(event) => onChange({ titleColor: event.target.value })}
+            className="mt-1 h-10 w-full rounded-lg border border-zinc-300 px-1 py-1"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          설명 색상
+          <input
+            type="color"
+            value={layout.descriptionColor}
+            onChange={(event) => onChange({ descriptionColor: event.target.value })}
+            className="mt-1 h-10 w-full rounded-lg border border-zinc-300 px-1 py-1"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          제목 크기 (px)
+          <input
+            type="number"
+            value={layout.titleSizePx}
+            onChange={(event) => onChange({ titleSizePx: Number(event.target.value) || 24 })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600">
+          설명 크기 (px)
+          <input
+            type="number"
+            value={layout.descriptionSizePx}
+            onChange={(event) => onChange({ descriptionSizePx: Number(event.target.value) || 14 })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+          그라데이션 강도 ({layout.gradientStrength}%)
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={layout.gradientStrength}
+            onChange={(event) => onChange({ gradientStrength: Number(event.target.value) })}
+            className="mt-2 w-full"
+          />
+        </label>
+        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+          이미지 초점 (제품 위치)
+          <select
+            value={layout.imageFocus}
+            onChange={(event) => onChange({ imageFocus: event.target.value as HeroSlideLayoutPreset["imageFocus"] })}
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+          >
+            <option value="left">왼쪽</option>
+            <option value="center">가운데</option>
+            <option value="right">오른쪽</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  );
 }
 
 export function AdminHeroSettingsForm({ initialSettings }: Props) {
@@ -61,10 +218,11 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     setMessage(null);
     setError(null);
 
-    const payloadSlides = sortSlides(nextSlides).map(({ id, image_url, order }) => ({
+    const payloadSlides = sortSlides(nextSlides).map(({ id, image_url, order, layout }) => ({
       id,
       image_url,
       order,
+      layout,
     }));
 
     try {
@@ -312,8 +470,8 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
         <div>
           <h2 className="text-lg font-semibold text-zinc-900">배너 슬라이드</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            홈페이지 상단 히어로 영역에 표시될 배너 이미지입니다. 여러 장을 등록하면 드래그·스와이프로
-            넘길 수 있습니다.
+            홈페이지 상단 히어로 영역에 표시될 1920×600 배너입니다. 이미지 위에 HTML 텍스트가
+            오버레이됩니다.
           </p>
           <p className="mt-2 text-sm text-zinc-600">
             권장 크기: <strong>{recommendedSize}</strong>. JPG·PNG·WEBP 업로드 가능. JPG는 WebP(품질 90)로
@@ -321,15 +479,18 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
           </p>
           {hasSlides ? (
             <p className="mt-1 text-sm text-zinc-600">
-              이미지가 등록되면 홈페이지에는 배너 이미지만 표시됩니다. 아래 문구는 이미지가 없을 때만
-              사용됩니다.
+              슬라이드별로 텍스트 위치·색상·그라데이션을 조절할 수 있습니다. 아래 배너 문구는 모든
+              슬라이드에 공통 적용됩니다.
             </p>
           ) : null}
         </div>
 
         {hasSlides ? (
           <ul className="space-y-3">
-            {sortSlides(slides).map((slide, index) => (
+            {sortSlides(slides).map((slide, index) => {
+              const resolvedLayout = resolveHeroSlideLayout(slide.layout);
+
+              return (
               <li
                 key={slide.id}
                 draggable
@@ -340,14 +501,50 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                   draggingId === slide.id ? "border-rose-300 opacity-70" : "border-zinc-200"
                 }`}
               >
-                <div className="relative aspect-[21/9] w-full">
+                <div className="relative aspect-[1920/600] w-full">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={slidePreviewSrc(slide)}
                     alt={`배너 슬라이드 ${index + 1}`}
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className="absolute inset-0 h-full w-full object-contain"
                     draggable={false}
                   />
+                </div>
+                <div className="space-y-3 border-t border-zinc-200 px-3 py-3">
+                  <HeroLayoutFields
+                    label="데스크톱 텍스트 위치"
+                    layout={resolvedLayout.desktop}
+                    onChange={(patch) => {
+                      setSlides((current) =>
+                        sortSlides(
+                          current.map((item) =>
+                            item.id === slide.id ? updateSlideLayout(item, "desktop", patch) : item,
+                          ),
+                        ),
+                      );
+                    }}
+                  />
+                  <HeroLayoutFields
+                    label="모바일 텍스트 위치"
+                    layout={resolvedLayout.mobile}
+                    onChange={(patch) => {
+                      setSlides((current) =>
+                        sortSlides(
+                          current.map((item) =>
+                            item.id === slide.id ? updateSlideLayout(item, "mobile", patch) : item,
+                          ),
+                        ),
+                      );
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadPending || reorderPending}
+                    onClick={() => void persistSlides(slides, `슬라이드 ${index + 1} 레이아웃을 저장했습니다.`)}
+                    className="rounded-lg border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    이 슬라이드 레이아웃 저장
+                  </button>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-200 px-3 py-2">
                   <p className="text-xs font-medium text-zinc-600">
@@ -392,10 +589,11 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                   </div>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         ) : (
-          <div className="flex aspect-[21/9] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-sm text-zinc-500">
+          <div className="flex aspect-[1920/600] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-sm text-zinc-500">
             등록된 배너 없음 (기본 그라데이션 사용)
           </div>
         )}
@@ -437,7 +635,8 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
         <div>
           <h2 className="text-lg font-semibold text-zinc-900">배너 문구</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            비워 두면 다국어 기본 문구를 사용합니다 (예: Wholesale, UPTO 70% OFF).
+            비워 두면 다국어 기본 문구를 사용합니다. 저장된 문구는 배너 이미지 위 HTML 텍스트로
+            표시됩니다.
           </p>
         </div>
 

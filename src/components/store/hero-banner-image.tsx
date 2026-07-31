@@ -2,19 +2,16 @@
 
 import { useState } from "react";
 
-import { Link } from "@/i18n/navigation";
-
-type ObjectPosition = "left" | "center" | "right";
+import type { HeroImageFocus } from "@/lib/admin/hero-image-spec";
 
 type Props = {
   src: string;
-  href: string;
   priority?: boolean;
-  objectPosition?: ObjectPosition;
-  label: string;
+  imageFocus?: HeroImageFocus;
+  className?: string;
 };
 
-const objectPositionClass: Record<ObjectPosition, string> = {
+const focusClass: Record<HeroImageFocus, string> = {
   left: "object-left",
   center: "object-center",
   right: "object-right",
@@ -22,43 +19,36 @@ const objectPositionClass: Record<ObjectPosition, string> = {
 
 export function HeroBannerImage({
   src,
-  href,
   priority = false,
-  objectPosition = "center",
-  label,
+  imageFocus = "center",
+  className,
 }: Props) {
   const [failed, setFailed] = useState(false);
 
-  const imageContent = !failed ? (
+  if (failed) {
+    return (
+      <div
+        className={`absolute inset-0 bg-[#f4f2ef] ${className ?? ""}`}
+        role="img"
+        aria-label="Banner image unavailable"
+      />
+    );
+  }
+
+  return (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
       src={src}
       alt=""
-      width={1200}
-      height={750}
-      sizes="(max-width: 1024px) 100vw, 50vw"
-      className={`absolute inset-0 block h-full w-full object-contain ${objectPositionClass[objectPosition]} lg:object-center`}
+      width={1920}
+      height={600}
+      sizes="100vw"
+      className={`absolute inset-0 block h-full w-full object-contain ${focusClass[imageFocus]} ${className ?? ""}`}
       fetchPriority={priority ? "high" : "auto"}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
       draggable={false}
       onError={() => setFailed(true)}
     />
-  ) : (
-    <div
-      className="absolute inset-0 bg-[#f4f2ef]"
-      role="img"
-      aria-label="Banner image unavailable"
-    />
-  );
-
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      className="relative block aspect-[16/10] w-full overflow-hidden bg-[#f4f2ef] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:aspect-[16/9] lg:aspect-[4/3]"
-    >
-      {imageContent}
-    </Link>
   );
 }

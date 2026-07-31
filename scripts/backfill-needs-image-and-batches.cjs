@@ -19,6 +19,8 @@ const PLACEHOLDER_PREFIX = "/images/categories/";
 const SOURCE_ROW_IMAGE_KEYS = ["image_url", "imageurl", "image", "img", "photo", "picture"];
 const PAGE_SIZE = 500;
 const dryRun = process.argv.includes("--dry-run");
+const activateWithImages = process.argv.includes("--activate-with-images");
+const MIN_STOCK = 999;
 
 function normalizeKey(input) {
   return input.toLowerCase().replace(/[\s_\-/()[\].\r\n]+/g, "");
@@ -51,9 +53,103 @@ function resolveNeedsImage(product, images) {
   return true;
 }
 
+function buildActiveStockPatch(product) {
+  const patch = {};
+  let changed = false;
+
+  if (product.status !== "active") {
+    patch.status = "active";
+    changed = true;
+  }
+  if (product.sold_out) {
+    patch.sold_out = false;
+    changed = true;
+  }
+  if (product.needs_image) {
+    patch.needs_image = false;
+    changed = true;
+  }
+  const stock = Number(product.stock ?? 0);
+  if (stock <= 0) {
+    patch.stock = MIN_STOCK;
+    changed = true;
+  }
+
+  return { patch, changed };
+}
+
 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 (async () => {
+  if (activateWithImages) {
+    let scanned = 0;
+    let withImage = 0;
+    let updated = 0;
+    let alreadyOk = 0;
+    let skippedDeleted = 0;
+    let from = 0;
+
+    while (true) {
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await sb
+        .from("products")
+        .select(
+          "id, sku, status, stock, sold_out, needs_image, image_url, source_row, images:product_images(url)",
+        )
+        .range(from, to);
+      if (error) throw new Error(error.message);
+      if (!data?.length) break;
+
+      for (const product of data) {
+        scanned += 1;
+        if (resolveNeedsImage(product, product.images || [])) {
+          continue;
+        }
+
+        withImage += 1;
+        const { patch, changed } = buildActiveStockPatch(product);
+        if (!changed) {
+          alreadyOk += 1;
+          continue;
+        }
+
+        if (dryRun) {
+          console.log("[dry-run]", product.sku, patch);
+          updated += 1;
+          continue;
+        }
+
+        const { error: updateError } = await sb
+          .from("products")
+          .update({ ...patch, updated_at: new Date().toISOString() })
+          .eq("id", product.id);
+        if (updateError) throw new Error(`${product.sku}: ${updateError.message}`);
+        updated += 1;
+      }
+
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+
+    console.log(
+      JSON.stringify(
+        {
+          mode: "activate-with-images",
+          dryRun,
+          scanned,
+          withImage,
+          updated,
+          alreadyOk,
+          skippedDeleted,
+          minStockApplied: MIN_STOCK,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
   let scanned = 0;
   let needsImageUpdated = 0;
   let batchBackfilled = 0;

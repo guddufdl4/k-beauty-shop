@@ -191,10 +191,13 @@ export interface OrderItem {
   created_at: string;
 }
 
+import type { HeroSlideLayout } from "@/lib/admin/hero-image-spec";
+
 export interface HeroSlide {
   id: string;
   image_url: string;
   order: number;
+  layout?: HeroSlideLayout;
 }
 
 export interface SiteSettings {
