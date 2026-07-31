@@ -1,18 +1,21 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { CategoryCard } from "@/components/store/category-card";
 import { EmptyState } from "@/components/store/empty-state";
-import { getCategories } from "@/lib/supabase/products";
-import { localizeCategories } from "@/lib/store/localized-category";
+import { getStorefrontCategories } from "@/lib/supabase/products";
+import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import { Link } from "@/i18n/navigation";
 
 export default async function CategoriesPage() {
   const [t, locale, { categories, meta }] = await Promise.all([
     getTranslations("categories"),
     getLocale(),
-    getCategories(),
+    getStorefrontCategories(),
   ]);
 
-  const localizedCategories = localizeCategories(categories, locale);
+  const localizedCategories = localizeCategories(
+    pickStorefrontNavCategories(categories),
+    locale,
+  );
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">

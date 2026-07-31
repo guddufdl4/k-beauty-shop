@@ -10,7 +10,10 @@ import {
 import type { ProductListSort } from "@/lib/store/products-url";
 import { isProductOnSale } from "@/lib/store/products-url";
 import { filterStorefrontCategories } from "@/lib/store/localized-category";
-import { resolveCategoryIdsForFilter } from "@/lib/store/category-tree";
+import {
+  filterCategoriesWithProducts,
+  resolveCategoryIdsForFilter,
+} from "@/lib/store/category-tree";
 import { isSupabaseConfigured } from "./config";
 import { createSafeClient } from "./safe-server";
 import { createPublicClient, createServiceClient } from "./service";
@@ -28,6 +31,8 @@ export const STOREFRONT_PRODUCTS_PAGE_SIZE = 48;
 const CACHE_REVALIDATE_SECONDS = 300;
 export const STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG = "storefront-priority-products";
 export const STOREFRONT_PRODUCTS_CACHE_TAG = "storefront-products";
+export const STOREFRONT_CATEGORY_PRODUCT_COUNTS_CACHE_TAG =
+  "storefront-category-product-counts";
 
 export type ProductStatus = "draft" | "active" | "archived";
 export type ProductContentStatus = "pending" | "complete";
@@ -815,6 +820,97 @@ export async function getCategories(): Promise<{
     ["storefront-categories"],
     { revalidate: CACHE_REVALIDATE_SECONDS },
   )();
+}
+
+function computeStaticCategoryProductCounts(): Record<string, number> {
+  const counts: Record<string, number> = {};
+
+  for (const product of STATIC_PRODUCTS) {
+    if (product.status !== "active" || !productHasRealImage(product) || !product.category_id) {
+      continue;
+    }
+
+    counts[product.category_id] = (counts[product.category_id] ?? 0) + 1;
+  }
+
+  return counts;
+}
+
+async function fetchCategoryProductCountsFromSource(): Promise<Record<string, number>> {
+  const configured = isSupabaseConfigured();
+
+  if (!configured) {
+    return computeStaticCategoryProductCounts();
+  }
+
+  const supabase = createPublicClient();
+  if (!supabase) {
+    return computeStaticCategoryProductCounts();
+  }
+
+  await ensureSoftDeleteColumnProbed(supabase);
+
+  const { data, error } = await fetchAllPages<{ category_id: string | null }>(
+    async (from, to) => {
+      let query = supabase
+        .from("products")
+        .select("category_id")
+        .eq("status", "active")
+        .eq("needs_image", false)
+        .not("category_id", "is", null)
+        .range(from, to);
+
+      query = applyDeletedAtFilter(query, "active") as typeof query;
+
+      const result = await query;
+
+      return {
+        data: (result.data ?? []) as { category_id: string | null }[],
+        error: result.error,
+      };
+    },
+  );
+
+  if (error) {
+    return computeStaticCategoryProductCounts();
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    if (!row.category_id) {
+      continue;
+    }
+
+    counts[row.category_id] = (counts[row.category_id] ?? 0) + 1;
+  }
+
+  return counts;
+}
+
+export async function getCategoryProductCounts(): Promise<Record<string, number>> {
+  return unstable_cache(
+    fetchCategoryProductCountsFromSource,
+    ["storefront-category-product-counts"],
+    {
+      revalidate: CACHE_REVALIDATE_SECONDS,
+      tags: [STOREFRONT_CATEGORY_PRODUCT_COUNTS_CACHE_TAG],
+    },
+  )();
+}
+
+export async function getStorefrontCategories(): Promise<{
+  categories: Category[];
+  meta: FetchMeta;
+}> {
+  const [{ categories, meta }, productCounts] = await Promise.all([
+    getCategories(),
+    getCategoryProductCounts(),
+  ]);
+
+  return {
+    categories: filterCategoriesWithProducts(categories, productCounts),
+    meta,
+  };
 }
 
 async function fetchCategoriesFromSource(): Promise<{

@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 
 import { getCart } from "@/lib/cart";
 
-import { getCategories } from "@/lib/supabase/products";
+import { getStorefrontCategories } from "@/lib/supabase/products";
 import { localizeCategories } from "@/lib/store/localized-category";
 
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
@@ -124,7 +124,7 @@ export async function StoreHeader({ storeName }: Props) {
 
     getLocale(),
 
-    getCategories(),
+    getStorefrontCategories(),
 
     getUsdKrwRate(),
 

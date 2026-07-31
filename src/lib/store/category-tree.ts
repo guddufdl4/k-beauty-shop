@@ -5,6 +5,8 @@ import {
   getLocalizedCategoryName,
   pickStorefrontNavCategories,
 } from "@/lib/store/localized-category";
+
+export type CategoryProductCounts = Readonly<Record<string, number>>;
 import { CATEGORY_TAXONOMY, type StorefrontNavSlug } from "@/lib/store/category-taxonomy";
 
 export type CategoryColumn = {
@@ -15,6 +17,40 @@ export type CategoryColumn = {
 export type CategoryTreeNode = Category & {
   children: CategoryTreeNode[];
 };
+
+/** Hide categories with no storefront-visible products in their subtree. */
+export function filterCategoriesWithProducts(
+  categories: Category[],
+  productCounts: CategoryProductCounts,
+): Category[] {
+  const visibleCategories = filterStorefrontCategories(categories);
+  const childrenByParentId = new Map<string, Category[]>();
+
+  for (const category of visibleCategories) {
+    if (!category.parent_id) {
+      continue;
+    }
+    const siblings = childrenByParentId.get(category.parent_id) ?? [];
+    siblings.push(category);
+    childrenByParentId.set(category.parent_id, siblings);
+  }
+
+  function hasProductsInSubtree(categoryId: string): boolean {
+    if ((productCounts[categoryId] ?? 0) > 0) {
+      return true;
+    }
+
+    for (const child of childrenByParentId.get(categoryId) ?? []) {
+      if (hasProductsInSubtree(child.id)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  return visibleCategories.filter((category) => hasProductsInSubtree(category.id));
+}
 
 export function buildCategoryTree(categories: Category[], locale = "en"): {
   topLevel: Category[];

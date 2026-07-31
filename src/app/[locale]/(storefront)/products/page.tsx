@@ -9,7 +9,7 @@ import { parseProductListSort } from "@/lib/store/products-url";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
 import {
-  getCategories,
+  getStorefrontCategories,
   getProducts,
   STOREFRONT_PRODUCTS_PAGE_SIZE,
 } from "@/lib/supabase/products";
@@ -48,7 +48,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       page: currentPage,
       requireRealImage: true,
     }),
-    getCategories(),
+    getStorefrontCategories(),
   ]);
 
   const totalPages = Math.max(
