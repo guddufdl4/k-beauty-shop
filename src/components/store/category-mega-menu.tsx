@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { CategoryIcon, DownArrowIcon } from "@/lib/store/category-icons";
+import { CategoryIcon } from "@/lib/store/category-icons";
 import { buildCategoryTree, sortCategoriesForNav } from "@/lib/store/category-tree";
 import {
   getEnglishCategoryName,
@@ -13,14 +13,6 @@ import {
 import { isStorefrontNavSlug, type StorefrontNavSlug } from "@/lib/store/category-taxonomy";
 import { buildProductsHref } from "@/lib/store/products-url";
 import type { Category } from "@/lib/supabase/products";
-
-function ChevronRightIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 type StripPanelProps = {
   categories: Category[];
@@ -59,11 +51,10 @@ function CategorySubcategoryPanel({
         </p>
         <Link
           href={buildProductsHref({ category: parent.slug })}
-          className="mt-4 inline-flex w-fit items-center gap-1 text-sm font-semibold text-accent hover:text-accent-hover"
+          className="mt-4 inline-flex w-fit text-sm font-semibold text-accent hover:text-accent-hover"
           onClick={onNavigate}
         >
           {tProducts("allInCategory", { category: localizedParent })}
-          <ChevronRightIcon />
         </Link>
       </div>
     );
@@ -92,13 +83,10 @@ function CategorySubcategoryPanel({
             <li key={subcategory.id}>
               <Link
                 href={buildProductsHref({ category: subcategory.slug })}
-                className="group flex items-center justify-between gap-3 rounded-sm px-2 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-accent-soft/35 hover:text-accent"
+                className="block rounded-sm px-2 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-accent-soft/35 hover:text-accent"
                 onClick={onNavigate}
               >
                 <span className="truncate">{subLabel}</span>
-                {nested.length > 0 ? (
-                  <ChevronRightIcon className="shrink-0 text-zinc-400 transition-colors group-hover:text-accent" />
-                ) : null}
               </Link>
               {nested.length > 0 ? (
                 <ul className="mb-1 ml-3 border-l border-zinc-100 pl-3">
@@ -150,7 +138,6 @@ function CategoryNavStripPanel({ categories, promoImageUrl, onNavigate }: StripP
             const localizedName = getLocalizedCategoryName(category, locale);
             const subtitle = tHome("categoryNavSubtitle", { category: localizedName });
             const isActive = activeParent?.id === category.id;
-            const hasChildren = (childrenByParentId.get(category.id) ?? []).length > 0;
 
             return (
               <div
@@ -177,15 +164,6 @@ function CategoryNavStripPanel({ categories, promoImageUrl, onNavigate }: StripP
                     </span>
                     <span className="mt-1 block text-[10px] text-zinc-500 sm:text-[11px]">{subtitle}</span>
                   </span>
-                  {hasChildren ? (
-                    <span className="mt-2 hidden text-accent sm:mt-0 sm:block">
-                      <ChevronRightIcon className="h-4 w-4" />
-                    </span>
-                  ) : (
-                    <span className="mt-2 text-accent transition-transform group-hover:translate-y-0.5 sm:hidden">
-                      <DownArrowIcon className="h-3.5 w-3.5" />
-                    </span>
-                  )}
                 </Link>
               </div>
             );
