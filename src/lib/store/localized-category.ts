@@ -1,4 +1,9 @@
 import type { Category } from "@/lib/supabase/products";
+import {
+  flattenTaxonomyLabels,
+  isStorefrontNavSlug,
+  STOREFRONT_NAV_SLUGS,
+} from "@/lib/store/category-taxonomy";
 
 /** English display names keyed by category slug (DB names are often Korean). */
 export const CATEGORY_EN_NAMES: Record<string, string> = {
@@ -13,7 +18,12 @@ export const CATEGORY_EN_NAMES: Record<string, string> = {
   nail: "Nail",
   set: "Sets",
   promotion: "Promotions",
+  ...Object.fromEntries(
+    Object.entries(flattenTaxonomyLabels()).map(([slug, labels]) => [slug, labels.en]),
+  ),
 };
+
+const TAXONOMY_LABELS = flattenTaxonomyLabels();
 
 export function getEnglishCategoryName(category: Pick<Category, "name" | "slug">): string {
   return CATEGORY_EN_NAMES[category.slug] ?? category.name;
@@ -23,6 +33,14 @@ export function getLocalizedCategoryName(
   category: Pick<Category, "name" | "slug">,
   locale: string,
 ): string {
+  const labels = TAXONOMY_LABELS[category.slug];
+  if (labels) {
+    if (locale === "ko") return labels.ko;
+    if (locale === "ja") return labels.ja;
+    if (locale === "zh") return labels.zh;
+    return labels.en;
+  }
+
   if (locale === "ko") {
     return category.name;
   }
@@ -65,4 +83,23 @@ export function isBarcodeLikeCategory(
 
 export function filterStorefrontCategories(categories: Category[]): Category[] {
   return categories.filter((category) => !isBarcodeLikeCategory(category));
+}
+
+export function isStorefrontNavCategory(category: Pick<Category, "slug">): boolean {
+  return isStorefrontNavSlug(category.slug);
+}
+
+export function pickStorefrontNavCategories(categories: Category[]): Category[] {
+  const visible = filterStorefrontCategories(categories);
+  const bySlug = new Map(visible.map((category) => [category.slug, category]));
+  const ordered: Category[] = [];
+
+  for (const slug of STOREFRONT_NAV_SLUGS) {
+    const category = bySlug.get(slug);
+    if (category) {
+      ordered.push(category);
+    }
+  }
+
+  return ordered;
 }

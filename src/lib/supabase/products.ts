@@ -10,6 +10,7 @@ import {
 import type { ProductListSort } from "@/lib/store/products-url";
 import { isProductOnSale } from "@/lib/store/products-url";
 import { filterStorefrontCategories } from "@/lib/store/localized-category";
+import { resolveCategoryIdsForFilter } from "@/lib/store/category-tree";
 import { isSupabaseConfigured } from "./config";
 import { createSafeClient } from "./safe-server";
 import { createPublicClient, createServiceClient } from "./service";
@@ -708,7 +709,17 @@ function filterStaticProducts(
   }
 
   if (options?.categorySlug) {
-    filtered = filtered.filter((p) => p.category?.slug === options.categorySlug);
+    const categoryIds = resolveCategoryIdsForFilter(STATIC_CATEGORIES, options.categorySlug);
+    if (categoryIds?.length) {
+      const slugSet = new Set(
+        STATIC_CATEGORIES.filter((category) => categoryIds.includes(category.id)).map(
+          (category) => category.slug,
+        ),
+      );
+      filtered = filtered.filter((p) => p.category?.slug && slugSet.has(p.category.slug));
+    } else {
+      filtered = filtered.filter((p) => p.category?.slug === options.categorySlug);
+    }
   }
 
   if (options?.search?.trim()) {
@@ -976,15 +987,27 @@ export async function getProducts(
 
   await ensureSoftDeleteColumnProbed(supabase);
 
-  let categoryId: string | null = null;
+  let categoryIds: string[] | null = null;
   if (categorySlug) {
-    const { data: cat } = await supabase
+    const { data: allCategories, error: categoriesError } = await supabase
       .from("categories")
-      .select("id")
-      .eq("slug", categorySlug)
-      .maybeSingle();
+      .select("id, name, slug, parent_id, sort_order, is_active")
+      .eq("is_active", true);
 
-    if (!cat?.id) {
+    if (categoriesError) {
+      return {
+        products: [],
+        totalCount: 0,
+        meta: { source: "database", configured: true, error: categoriesError.message },
+      };
+    }
+
+    const mappedCategories = filterStorefrontCategories(
+      (allCategories ?? []).map((row) => mapCategory(row as Record<string, unknown>)),
+    );
+    const resolvedIds = resolveCategoryIdsForFilter(mappedCategories, categorySlug);
+
+    if (!resolvedIds?.length) {
       return {
         products: [],
         totalCount: 0,
@@ -992,12 +1015,13 @@ export async function getProducts(
       };
     }
 
-    categoryId = String(cat.id);
+    categoryIds = resolvedIds;
   }
 
   const applyProductFilters = <T,>(query: T, withOrder: boolean): T => {
     let filtered = query as {
       eq: (column: string, value: string | boolean) => typeof filtered;
+      in: (column: string, values: string[]) => typeof filtered;
       or: (filter: string) => typeof filtered;
       order: (column: string, options: { ascending: boolean }) => typeof filtered;
     };
@@ -1008,8 +1032,11 @@ export async function getProducts(
       filtered = filtered.eq("status", "active");
     }
 
-    if (categoryId) {
-      filtered = filtered.eq("category_id", categoryId);
+    if (categoryIds?.length) {
+      filtered =
+        categoryIds.length === 1
+          ? filtered.eq("category_id", categoryIds[0]!)
+          : filtered.in("category_id", categoryIds);
     }
 
     if (importBatchId) {

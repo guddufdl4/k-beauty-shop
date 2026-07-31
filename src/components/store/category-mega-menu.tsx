@@ -1,48 +1,25 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { CategoryIcon, DownArrowIcon } from "@/lib/store/category-icons";
-import { buildCategoryTree } from "@/lib/store/category-tree";
+import { buildCategoryTree, sortCategoriesForNav } from "@/lib/store/category-tree";
 import {
   getEnglishCategoryName,
   getLocalizedCategoryName,
 } from "@/lib/store/localized-category";
+import { isStorefrontNavSlug, type StorefrontNavSlug } from "@/lib/store/category-taxonomy";
 import { buildProductsHref } from "@/lib/store/products-url";
 import type { Category } from "@/lib/supabase/products";
 
-const HOME_CATEGORY_SLUGS = [
-  "skincare",
-  "makeup",
-  "mask-pack",
-  "suncare",
-  "haircare",
-  "bodycare",
-  "body-care",
-] as const;
-
-function pickHomeCategories(categories: Category[]): Category[] {
-  const { topLevel } = buildCategoryTree(categories);
-  const bySlug = new Map(topLevel.map((category) => [category.slug, category]));
-
-  const ordered: Category[] = [];
-  for (const slug of HOME_CATEGORY_SLUGS) {
-    const category = bySlug.get(slug);
-    if (category) {
-      ordered.push(category);
-      bySlug.delete(slug);
-    }
-  }
-
-  for (const category of topLevel) {
-    if (bySlug.has(category.slug)) {
-      ordered.push(category);
-    }
-  }
-
-  return ordered.slice(0, 6);
+function ChevronRightIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 type StripPanelProps = {
@@ -51,45 +28,180 @@ type StripPanelProps = {
   onNavigate?: () => void;
 };
 
+function CategorySubcategoryPanel({
+  parent,
+  childrenByParentId,
+  locale,
+  onNavigate,
+}: {
+  parent: Category;
+  childrenByParentId: Map<string, Category[]>;
+  locale: string;
+  onNavigate?: () => void;
+}) {
+  const tProducts = useTranslations("products");
+  const parentSlug = parent.slug as StorefrontNavSlug;
+  const subcategories = useMemo(() => {
+    const children = childrenByParentId.get(parent.id) ?? [];
+    if (!isStorefrontNavSlug(parent.slug)) {
+      return children;
+    }
+    return sortCategoriesForNav(parentSlug, children, locale);
+  }, [childrenByParentId, locale, parent.id, parent.slug, parentSlug]);
+
+  const localizedParent = getLocalizedCategoryName(parent, locale);
+
+  if (subcategories.length === 0) {
+    return (
+      <div className="flex min-h-[14rem] flex-col justify-center px-6 py-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
+          {localizedParent}
+        </p>
+        <Link
+          href={buildProductsHref({ category: parent.slug })}
+          className="mt-4 inline-flex w-fit items-center gap-1 text-sm font-semibold text-accent hover:text-accent-hover"
+          onClick={onNavigate}
+        >
+          {tProducts("allInCategory", { category: localizedParent })}
+          <ChevronRightIcon />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-[14rem] flex-col px-5 py-5 sm:px-6 sm:py-6">
+      <div className="mb-3 flex items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+          {localizedParent}
+        </p>
+        <Link
+          href={buildProductsHref({ category: parent.slug })}
+          className="text-[11px] font-semibold uppercase tracking-wide text-accent hover:text-accent-hover"
+          onClick={onNavigate}
+        >
+          {tProducts("allInCategory", { category: localizedParent })}
+        </Link>
+      </div>
+      <ul className="space-y-0.5 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {subcategories.map((subcategory) => {
+          const nested = childrenByParentId.get(subcategory.id) ?? [];
+          const subLabel = getLocalizedCategoryName(subcategory, locale);
+
+          return (
+            <li key={subcategory.id}>
+              <Link
+                href={buildProductsHref({ category: subcategory.slug })}
+                className="group flex items-center justify-between gap-3 rounded-sm px-2 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-accent-soft/35 hover:text-accent"
+                onClick={onNavigate}
+              >
+                <span className="truncate">{subLabel}</span>
+                {nested.length > 0 ? (
+                  <ChevronRightIcon className="shrink-0 text-zinc-400 transition-colors group-hover:text-accent" />
+                ) : null}
+              </Link>
+              {nested.length > 0 ? (
+                <ul className="mb-1 ml-3 border-l border-zinc-100 pl-3">
+                  {nested.map((child) => (
+                    <li key={child.id}>
+                      <Link
+                        href={buildProductsHref({ category: child.slug })}
+                        className="block rounded-sm px-2 py-2 text-[13px] text-zinc-600 transition-colors hover:bg-accent-soft/25 hover:text-accent"
+                        onClick={onNavigate}
+                      >
+                        {getLocalizedCategoryName(child, locale)}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function CategoryNavStripPanel({ categories, promoImageUrl, onNavigate }: StripPanelProps) {
   const locale = useLocale();
   const tHome = useTranslations("home");
+  const { navCategories, childrenByParentId } = useMemo(
+    () => buildCategoryTree(categories, locale),
+    [categories, locale],
+  );
+  const [activeParentId, setActiveParentId] = useState<string | null>(
+    navCategories[0]?.id ?? null,
+  );
 
-  const visibleCategories = pickHomeCategories(categories);
-  if (visibleCategories.length === 0) {
+  const activeParent =
+    navCategories.find((category) => category.id === activeParentId) ?? navCategories[0] ?? null;
+
+  if (navCategories.length === 0) {
     return null;
   }
 
   return (
     <div className="flex overflow-hidden bg-white">
-      <div className="flex min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {visibleCategories.map((category, index) => {
-          const englishName = getEnglishCategoryName(category);
-          const localizedName = getLocalizedCategoryName(category, locale);
-          const subtitle = tHome("categoryNavSubtitle", { category: localizedName });
+      <div className="flex min-w-0 flex-col border-r border-zinc-200 sm:flex-row sm:flex-1">
+        <div className="flex min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:w-[min(100%,28rem)] sm:flex-col sm:overflow-x-hidden sm:overflow-y-auto [&::-webkit-scrollbar]:hidden">
+          {navCategories.map((category, index) => {
+            const englishName = getEnglishCategoryName(category);
+            const localizedName = getLocalizedCategoryName(category, locale);
+            const subtitle = tHome("categoryNavSubtitle", { category: localizedName });
+            const isActive = activeParent?.id === category.id;
+            const hasChildren = (childrenByParentId.get(category.id) ?? []).length > 0;
 
-          return (
-            <Link
-              key={category.id}
-              href={buildProductsHref({ category: category.slug })}
-              className={`group flex min-w-[7.5rem] flex-1 flex-col items-center px-3 py-5 text-center transition-colors hover:bg-accent-soft/40 sm:min-w-[8.5rem] sm:px-4 sm:py-6 lg:min-w-0 ${
-                index < visibleCategories.length - 1 ? "border-r border-zinc-200" : ""
-              }`}
-              onClick={onNavigate}
-            >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent transition-colors group-hover:bg-accent group-hover:text-white sm:h-16 sm:w-16">
-                <CategoryIcon slug={category.slug} className="h-7 w-7 sm:h-8 sm:w-8" />
-              </span>
-              <span className="mt-3 text-xs font-bold uppercase tracking-wide text-zinc-900 sm:text-sm">
-                {englishName}
-              </span>
-              <span className="mt-1 text-[10px] text-zinc-500 sm:text-xs">{subtitle}</span>
-              <span className="mt-2 text-accent transition-transform group-hover:translate-y-0.5">
-                <DownArrowIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </span>
-            </Link>
-          );
-        })}
+            return (
+              <div
+                key={category.id}
+                className={`min-w-[7.5rem] flex-1 sm:min-w-0 sm:flex-none ${
+                  index < navCategories.length - 1 ? "border-b border-zinc-100 sm:border-b-0 sm:border-r" : ""
+                }`}
+                onMouseEnter={() => setActiveParentId(category.id)}
+                onFocus={() => setActiveParentId(category.id)}
+              >
+                <Link
+                  href={buildProductsHref({ category: category.slug })}
+                  className={`group flex h-full flex-col items-center px-3 py-5 text-center transition-colors sm:flex-row sm:items-center sm:gap-3 sm:px-4 sm:py-4 sm:text-left ${
+                    isActive ? "bg-accent-soft/30" : "hover:bg-accent-soft/20"
+                  }`}
+                  onClick={onNavigate}
+                >
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent transition-colors group-hover:bg-accent group-hover:text-white sm:h-12 sm:w-12">
+                    <CategoryIcon slug={category.slug} className="h-7 w-7 sm:h-6 sm:w-6" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-bold uppercase tracking-wide text-zinc-900 sm:text-[11px]">
+                      {englishName}
+                    </span>
+                    <span className="mt-1 block text-[10px] text-zinc-500 sm:text-[11px]">{subtitle}</span>
+                  </span>
+                  {hasChildren ? (
+                    <span className="mt-2 hidden text-accent sm:mt-0 sm:block">
+                      <ChevronRightIcon className="h-4 w-4" />
+                    </span>
+                  ) : (
+                    <span className="mt-2 text-accent transition-transform group-hover:translate-y-0.5 sm:hidden">
+                      <DownArrowIcon className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="hidden min-w-[15rem] flex-1 bg-white sm:block lg:min-w-[18rem]">
+          {activeParent ? (
+            <CategorySubcategoryPanel
+              parent={activeParent}
+              childrenByParentId={childrenByParentId}
+              locale={locale}
+              onNavigate={onNavigate}
+            />
+          ) : null}
+        </div>
       </div>
 
       <Link
@@ -141,8 +253,7 @@ function CategoryMegaMenuInner({ categories, promoImageUrl }: Props) {
   const tNav = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-
-  const visibleCategories = pickHomeCategories(categories);
+  const { navCategories } = useMemo(() => buildCategoryTree(categories), [categories]);
 
   useEffect(() => {
     if (!open) {
@@ -169,7 +280,7 @@ function CategoryMegaMenuInner({ categories, promoImageUrl }: Props) {
     };
   }, [open]);
 
-  if (visibleCategories.length === 0) {
+  if (navCategories.length === 0) {
     return null;
   }
 
@@ -192,7 +303,7 @@ function CategoryMegaMenuInner({ categories, promoImageUrl }: Props) {
       </button>
 
       <div
-        className={`absolute left-0 top-full z-[60] min-w-[min(100vw-2rem,64rem)] border border-zinc-200 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-[opacity,transform] duration-200 ease-out ${
+        className={`absolute left-0 top-full z-[60] min-w-[min(100vw-2rem,72rem)] border border-zinc-200 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-[opacity,transform] duration-200 ease-out ${
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-1 opacity-0"

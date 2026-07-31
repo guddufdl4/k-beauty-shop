@@ -3,8 +3,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { buildCategoryTree } from "@/lib/store/category-tree";
+import { buildCategoryTree, findNavAncestorCategory, sortCategoriesForNav } from "@/lib/store/category-tree";
 import { buildProductsHref, type ProductListSort } from "@/lib/store/products-url";
+import { getLocalizedCategoryName } from "@/lib/store/localized-category";
+import { isStorefrontNavSlug } from "@/lib/store/category-taxonomy";
 import type { Category } from "@/lib/supabase/products";
 type Props = {
   initialQuery?: string;
@@ -91,17 +93,19 @@ function ActiveMarker() {
 function CategoryLink({
   category,
   isActive,
-  indent = false,
+  indent = 0,
   searchQuery,
   brandFilter,
   sort,
+  locale,
 }: {
   category: Category;
   isActive: boolean;
-  indent?: boolean;
+  indent?: number;
   searchQuery?: string;
   brandFilter?: string;
   sort?: ProductListSort;
+  locale: string;
 }) {
   const href = buildProductsHref({
     category: category.slug,
@@ -110,9 +114,12 @@ function CategoryLink({
     sort,
   });
 
+  const paddingClass =
+    indent === 0 ? "pl-0" : indent === 1 ? "pl-5" : "pl-8";
+
   const linkClassName = [
     "flex items-center gap-1.5 py-2 text-sm transition-colors",
-    indent ? "pl-5" : "pl-0",
+    paddingClass,
     isActive ? "font-semibold text-accent" : "text-zinc-700 hover:text-accent",
   ].join(" ");
 
@@ -124,7 +131,7 @@ function CategoryLink({
         aria-current={isActive ? "page" : undefined}
       >
         {isActive ? <ActiveMarker /> : <span className="w-2.5 shrink-0" aria-hidden />}
-        <span className="truncate">{category.name}</span>
+        <span className="truncate">{getLocalizedCategoryName(category, locale)}</span>
       </Link>
     </li>
   );
@@ -140,7 +147,7 @@ function CategoryNavList({
 }: CatalogSidebarProps & { className?: string }) {
   const t = useTranslations("products");
   const locale = useLocale();
-  const { topLevel, childrenByParentId, hasHierarchy } = useMemo(
+  const { navCategories, childrenByParentId, hasHierarchy } = useMemo(
     () => buildCategoryTree(categories, locale),
     [categories, locale],
   );
@@ -149,9 +156,7 @@ function CategoryNavList({
     ? categories.find((category) => category.slug === activeCategorySlug)
     : null;
 
-  const activeParent = activeCategory?.parent_id
-    ? categories.find((category) => category.id === activeCategory.parent_id)
-    : activeCategory;
+  const activeParent = findNavAncestorCategory(categories, activeCategory, navCategories);
 
   const isAllActive = !activeCategorySlug;
 
@@ -173,12 +178,16 @@ function CategoryNavList({
             <span>{t("all")}</span>
           </Link>
         </li>
-        {topLevel.map((category) => {
+        {navCategories.map((category) => {
           const isParentActive = activeParent?.id === category.id;
           const isDirectActive = activeCategorySlug === category.slug;
-          const subcategories = hasHierarchy
+          const rawSubcategories = hasHierarchy
             ? (childrenByParentId.get(category.id) ?? [])
             : [];
+          const subcategories =
+            isStorefrontNavSlug(category.slug)
+              ? sortCategoriesForNav(category.slug, rawSubcategories, locale)
+              : rawSubcategories;
           const showSubcategories =
             hasHierarchy && subcategories.length > 0 && isParentActive;
 
@@ -190,20 +199,47 @@ function CategoryNavList({
                 searchQuery={searchQuery}
                 brandFilter={brandFilter}
                 sort={sort}
+                locale={locale}
               />
               {showSubcategories ? (
                 <ul className="space-y-0.5">
-                  {subcategories.map((subcategory) => (
-                    <CategoryLink
-                      key={subcategory.id}
-                      category={subcategory}
-                      isActive={activeCategorySlug === subcategory.slug}
-                      indent
-                      searchQuery={searchQuery}
-                      brandFilter={brandFilter}
-                      sort={sort}
-                    />
-                  ))}
+                  {subcategories.map((subcategory) => {
+                    const nested = childrenByParentId.get(subcategory.id) ?? [];
+                    const isSubActive = activeCategorySlug === subcategory.slug;
+                    const showNested =
+                      nested.length > 0 &&
+                      (isSubActive || nested.some((child) => child.slug === activeCategorySlug));
+
+                    return (
+                      <li key={subcategory.id}>
+                        <CategoryLink
+                          category={subcategory}
+                          isActive={isSubActive}
+                          indent={1}
+                          searchQuery={searchQuery}
+                          brandFilter={brandFilter}
+                          sort={sort}
+                          locale={locale}
+                        />
+                        {showNested ? (
+                          <ul className="space-y-0.5">
+                            {nested.map((child) => (
+                              <CategoryLink
+                                key={child.id}
+                                category={child}
+                                isActive={activeCategorySlug === child.slug}
+                                indent={2}
+                                searchQuery={searchQuery}
+                                brandFilter={brandFilter}
+                                sort={sort}
+                                locale={locale}
+                              />
+                            ))}
+                          </ul>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : null}
             </li>
@@ -231,8 +267,8 @@ export function ProductCatalogSidebar({
 }: CatalogSidebarProps) {
   const t = useTranslations("products");
   const locale = useLocale();
-  const topLevelCategories = useMemo(
-    () => buildCategoryTree(categories, locale).topLevel,
+  const navCategories = useMemo(
+    () => buildCategoryTree(categories, locale).navCategories,
     [categories, locale],
   );
 
@@ -274,7 +310,7 @@ export function ProductCatalogSidebar({
             >
               {t("all")}
             </Link>
-            {topLevelCategories.map((category) => {
+            {navCategories.map((category) => {
               const isActive = activeCategorySlug === category.slug;
               return (
                 <Link
@@ -288,7 +324,7 @@ export function ProductCatalogSidebar({
                   className={chipClassName(isActive)}
                   aria-current={isActive ? "page" : undefined}
                 >
-                  {category.name}
+                  {getLocalizedCategoryName(category, locale)}
                 </Link>
               );
             })}
