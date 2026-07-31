@@ -124,12 +124,7 @@ export async function getProductImageBatchStats(
   const { count: withoutImage, error: missingError } = await fetchExactCount(
     supabase,
     "products",
-    (query) => {
-      const filtered = applyDeletedAtFilter(query, "active") as unknown as {
-        or: (filter: string) => ReturnType<SupabaseClient["from"]>;
-      };
-      return filtered.or("image_url.is.null,image_url.eq.");
-    },
+    (query) => applyDeletedAtFilter(query, "active").or("image_url.is.null,image_url.eq."),
   );
 
   if (missingError) {
@@ -345,10 +340,7 @@ export async function runProductImageBatch(
   const { count: remainingCount, error: remainingError } = await fetchExactCount(
     supabase,
     "products",
-    (query) =>
-      (query as unknown as { or: (filter: string) => ReturnType<SupabaseClient["from"]> }).or(
-        "image_url.is.null,image_url.eq.",
-      ),
+    (query) => query.or("image_url.is.null,image_url.eq."),
   );
 
   if (remainingError) {

@@ -153,6 +153,25 @@
     "membership": "会員登録",
     "sitemap": "サイトマップ"
   },
+  "supportPages": {
+    "shippingTitle": "配送について",
+    "shippingBody": "韓国からK-Beauty卸売注文を世界各国へ発送します。送料と所要日数は国・数量・配送業者により異なり、お問い合わせまたは注文確認後にご案内します。",
+    "returnsTitle": "返品・交換",
+    "returnsBody": "卸売の性質上、破損や誤配送などは個別に対応します。到着後7日以内に写真と注文情報を添えてご連絡ください。",
+    "faqTitle": "よくある質問",
+    "faqMoqQuestion": "最小注文数量(MOQ)は？",
+    "faqMoqAnswer": "ブランド・商品ごとにMOQが異なります。商品ページに箱単位の数量が表示されます。",
+    "faqShippingQuestion": "海外配送は可能ですか？",
+    "faqShippingAnswer": "はい。HMT Koreaは正規韓国コスメを競争力のある卸価格で世界各国に供給します。",
+    "faqAuthenticQuestion": "正規品ですか？",
+    "faqAuthenticAnswer": "すべて正規流通ルートから調達した商品です。",
+    "contactTitle": "お問い合わせ",
+    "contactBody": "卸売見積、輸出サポート、注文に関するお問い合わせはこちらからどうぞ。",
+    "contactEmailLabel": "メール",
+    "wholesaleCta": "卸売お問い合わせ",
+    "productsCta": "商品を見る",
+    "contactCta": "お問い合わせ"
+  },
   "products": {
     "catalog": "Catalog",
     "allProducts": "全商品",
@@ -347,5 +366,39 @@
     "nicknameTooLong": "ニックネームは30文字以内で入力してください。",
     "loginRequiredError": "ログインが必要です。",
     "nicknameSaved": "ニックネームを保存しました。"
+  },
+  "wholesaleInquiry": {
+    "eyebrow": "B2B 卸売",
+    "title": "卸売お問い合わせ",
+    "subtitle": "ビジネス内容とご希望のK-Beautyブランドをお知らせください。営業日1〜2日以内にご返信いたします。",
+    "companyName": "会社名",
+    "contactName": "担当者名",
+    "country": "国",
+    "email": "メール",
+    "whatsapp": "WhatsApp（任意）",
+    "interestedBrands": "ご希望ブランド",
+    "interestedBrandsPlaceholder": "例: VT, Torriden, SKINFOOD",
+    "estimatedQuantity": "予想発注数量",
+    "estimatedQuantityPlaceholder": "例: 月500個",
+    "message": "お問い合わせ内容",
+    "messagePlaceholder": "ビジネス内容、ターゲット市場、ご希望商品やMOQ要件などをお書きください。",
+    "submit": "お問い合わせを送信",
+    "submitting": "送信中…",
+    "success": "お問い合わせを受け付けました。追ってご連絡いたします。",
+    "privacyNotice": "ご入力いただいた情報は本卸売お問い合わせへの返信目的のみに使用し、第三者への販売・共有は行いません。スパム防止のため自動送信はフィルタリングされます。",
+    "spamTrapLabel": "この欄は空のままにしてください",
+    "errors": {
+      "company_name_required": "会社名を入力してください。",
+      "contact_name_required": "担当者名を入力してください。",
+      "country_required": "国を入力してください。",
+      "email_invalid": "有効なメールアドレスを入力してください。",
+      "interested_brands_required": "ご希望ブランドを入力してください。",
+      "estimated_quantity_required": "予想発注数量を入力してください。",
+      "message_required": "お問い合わせ内容を入力してください。",
+      "field_too_long": "入力内容が長すぎます。短くしてください。",
+      "submitFailed": "エラーが発生しました。しばらくしてから再度お試しください。",
+      "service_unavailable": "お問い合わせサービスは一時的に利用できません。しばらくしてから再度お試しください。",
+      "insert_failed": "お問い合わせを保存できませんでした。しばらくしてから再度お試しください。"
+    }
   }
 }

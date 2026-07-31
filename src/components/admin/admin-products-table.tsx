@@ -36,13 +36,6 @@ function useDraggableDialog(active: boolean) {
   const [offset, setOffset] = useState<DialogOffset>({ x: 0, y: 0 });
   const dragRef = useRef<DialogDragState | null>(null);
 
-  useEffect(() => {
-    if (!active) {
-      setOffset({ x: 0, y: 0 });
-      dragRef.current = null;
-    }
-  }, [active]);
-
   const onDragHandlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       if (event.button !== 0) {
@@ -91,8 +84,10 @@ function useDraggableDialog(active: boolean) {
     }
   }, []);
 
+  const displayedOffset = active ? offset : { x: 0, y: 0 };
+
   return {
-    offset,
+    offset: displayedOffset,
     dragHandleProps: {
       onPointerDown: onDragHandlePointerDown,
       onPointerMove: onDragHandlePointerMove,
@@ -413,6 +408,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   const [tableMessage, setTableMessage] = useState<string | null>(null);
   const [undoDelete, setUndoDelete] = useState<UndoDeleteEntry | null>(null);
   const [undoSecondsLeft, setUndoSecondsLeft] = useState(0);
+  const displayedUndoSeconds = undoDelete ? undoSecondsLeft : 0;
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [undoPending, setUndoPending] = useState(false);
   const [stockEditingId, setStockEditingId] = useState<string | null>(null);
@@ -422,12 +418,13 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Keep local table rows aligned when the server list refreshes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync props to editable local rows
     setProducts(initialProducts);
   }, [initialProducts]);
 
   useEffect(() => {
     if (!undoDelete) {
-      setUndoSecondsLeft(0);
       return;
     }
 
@@ -1036,7 +1033,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
       <div className="mx-6 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
         <p>
           &quot;{undoDelete.product.name}&quot; 상품을 삭제했습니다.{" "}
-          <span className="text-amber-700">{undoSecondsLeft}초 내 되돌릴 수 있습니다.</span>
+          <span className="text-amber-700">{displayedUndoSeconds}초 내 되돌릴 수 있습니다.</span>
         </p>
         <button
           type="button"

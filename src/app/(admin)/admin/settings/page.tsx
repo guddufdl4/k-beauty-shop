@@ -1,15 +1,15 @@
 import Link from "next/link";
+import { AdminHomeSettingsForm } from "@/components/admin/home-settings-form";
 import { AdminSettingsForm } from "@/components/admin/settings-form";
 import { AdminSettingsNav } from "@/components/admin/settings-nav";
-import { getSiteSettings } from "@/lib/site-settings";
-import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { getHomeSettings, getSiteSettings } from "@/lib/site-settings";import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
   const { configured, user, profile } = await getSessionProfile();
-  const settings = await getSiteSettings();
+  const [settings, homeSettings] = await Promise.all([getSiteSettings(), getHomeSettings()]);
 
   if (!configured) {
     return (
@@ -58,6 +58,9 @@ export default async function AdminSettingsPage() {
 
       <AdminSettingsNav />
       <AdminSettingsForm initialSettings={settings} />
+      <div className="mt-8">
+        <AdminHomeSettingsForm initialSettings={homeSettings} />
+      </div>
     </main>
   );
 }

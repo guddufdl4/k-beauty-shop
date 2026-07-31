@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductCard } from "@/components/store/product-card";
@@ -81,7 +81,19 @@ export function HomeTrendingSection({
 }: Props) {
   const tProducts = useTranslations("products");
   const [activeFilter, setActiveFilter] = useState<TrendingFilterKey>("all");
+  const [mobileProductLimit, setMobileProductLimit] = useState<number | null>(null);
   const products = productsByFilter[activeFilter] ?? [];
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const update = () => setMobileProductLimit(mediaQuery.matches ? 6 : null);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  const visibleProducts =
+    mobileProductLimit !== null ? products.slice(0, mobileProductLimit) : products;
   const viewAllHref =
     activeFilter === "all"
       ? "/products?sort=trending"
@@ -120,9 +132,9 @@ export function HomeTrendingSection({
         ))}
       </div>
 
-      {products.length > 0 ? (
-        <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product) => (
+      {visibleProducts.length > 0 ? (
+        <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+          {visibleProducts.map((product) => (
             <div key={product.id} className="h-full">
               <ProductCard
                 product={product}

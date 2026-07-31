@@ -183,10 +183,10 @@ function pickBetterParsedRow(
 
 function buildUniqueHeaders(headerRow: (string | number | null)[]): string[] {
   const counts = new Map<string, number>();
-  return headerRow.map((cell) => {
+  return headerRow.map((cell, index) => {
     const base = String(cell ?? "").trim();
     if (!base) {
-      return "";
+      return `__unnamed_${index}`;
     }
 
     const count = (counts.get(base) ?? 0) + 1;
@@ -747,10 +747,20 @@ function rowToRecord(
   return record;
 }
 
-function parseSheet(
+export type ParsedHanmiRowWithIndex = ParsedHanmiRow & { excelRowIndex: number };
+
+export type ParsedSheetLayout = {
+  headers: string[];
+  headerRowIndex: number;
+  hasSubHeader: boolean;
+  rows: ParsedHanmiRowWithIndex[];
+  skipped: number;
+};
+
+function parseSheetWithIndices(
   sheetName: string,
   sheet: XLSX.WorkSheet,
-): { rows: ParsedHanmiRow[]; skipped: number } {
+): ParsedSheetLayout {
   const rawRows = XLSX.utils.sheet_to_json<(string | number | null)[]>(sheet, {
     header: 1,
     defval: "",
@@ -758,7 +768,13 @@ function parseSheet(
   });
 
   if (shouldSkipSheet(sheetName, rawRows)) {
-    return { rows: [], skipped: 0 };
+    return {
+      headers: [],
+      headerRowIndex: 0,
+      hasSubHeader: false,
+      rows: [],
+      skipped: 0,
+    };
   }
 
   const headerIndex = findHeaderRowIndex(rawRows);
@@ -768,14 +784,29 @@ function parseSheet(
   );
   const dataStartIndex = headerIndex + (hasSubHeader ? 2 : 1);
   if (!headers.some(Boolean)) {
-    return { rows: [], skipped: 0 };
+    return {
+      headers: [],
+      headerRowIndex: headerIndex,
+      hasSubHeader,
+      rows: [],
+      skipped: 0,
+    };
   }
 
-  const headerLookup = buildHeaderLookup(headers.filter(Boolean));
-  const parsedRows: ParsedHanmiRow[] = [];
+  const headerLookup = buildHeaderLookup(headers);
+  const nameHeaders = [
+    ...headerLookup.name,
+    ...headers.filter(
+      (header) =>
+        header.startsWith("__unnamed_") &&
+        !headerLookup.name.includes(header),
+    ),
+  ];
+  const parsedRows: ParsedHanmiRowWithIndex[] = [];
   let skipped = 0;
 
-  for (const rawRow of rawRows.slice(dataStartIndex)) {
+  for (let rowOffset = 0; rowOffset < rawRows.length - dataStartIndex; rowOffset += 1) {
+    const rawRow = rawRows[dataStartIndex + rowOffset];
     if (!rawRow.some((cell) => String(cell ?? "").trim())) {
       continue;
     }
@@ -792,7 +823,7 @@ function parseSheet(
       normalizeBarcode(getFieldValue(record, headerLookup, "sku"));
     const primaryName = resolvePrimaryProductName(
       record,
-      headerLookup.name,
+      nameHeaders,
       brand,
       barcode,
     );
@@ -831,10 +862,28 @@ function parseSheet(
       image_url: imageUrl,
       sourceSheet: sheetName,
       sourceRow: record,
+      excelRowIndex: dataStartIndex + rowOffset,
     });
   }
 
-  return { rows: parsedRows, skipped };
+  return {
+    headers,
+    headerRowIndex: headerIndex,
+    hasSubHeader,
+    rows: parsedRows,
+    skipped,
+  };
+}
+
+function parseSheet(
+  sheetName: string,
+  sheet: XLSX.WorkSheet,
+): { rows: ParsedHanmiRow[]; skipped: number } {
+  const { rows, skipped } = parseSheetWithIndices(sheetName, sheet);
+  return {
+    rows: rows.map(({ excelRowIndex, ...row }) => { void excelRowIndex; return row; }),
+    skipped,
+  };
 }
 
 export function parseHanmiWorkbook(fileBuffer: ArrayBuffer): ParseHanmiResult {
@@ -875,6 +924,14 @@ export function parseHanmiWorkbook(fileBuffer: ArrayBuffer): ParseHanmiResult {
     rows: Array.from(rowsBySku.values()),
     sheetStats,
   };
+}
+
+/** Per-sheet parse with Excel row indices (for writing Category column back). */
+export function parseSheetWithRowIndices(
+  sheetName: string,
+  sheet: XLSX.WorkSheet,
+): ParsedSheetLayout {
+  return parseSheetWithIndices(sheetName, sheet);
 }
 
 /** SKU / barcode → English product name from one or more Hanmi workbooks. */

@@ -218,11 +218,13 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
     setMessage(null);
     setError(null);
 
-    const payloadSlides = sortSlides(nextSlides).map(({ id, image_url, order, layout }) => ({
+    const payloadSlides = sortSlides(nextSlides).map(({ id, image_url, mobile_image_url, order, layout, copy }) => ({
       id,
       image_url,
+      mobile_image_url: mobile_image_url ?? null,
       order,
       layout,
+      ...(copy ? { copy } : {}),
     }));
 
     try {
@@ -479,8 +481,8 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
           </p>
           {hasSlides ? (
             <p className="mt-1 text-sm text-zinc-600">
-              슬라이드별로 텍스트 위치·색상·그라데이션을 조절할 수 있습니다. 아래 배너 문구는 모든
-              슬라이드에 공통 적용됩니다.
+              슬라이드별로 텍스트 위치·색상·그라데이션·문구·모바일 이미지를 조절할 수 있습니다. 아래
+              배너 문구는 슬라이드별 문구가 없을 때 사용되는 기본값입니다.
             </p>
           ) : null}
         </div>
@@ -537,6 +539,92 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                       );
                     }}
                   />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <label className="block text-xs font-medium text-zinc-600">
+                      슬라이드 제목 (비우면 기본값)
+                      <input
+                        type="text"
+                        value={slide.copy?.title ?? ""}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, title: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600">
+                      슬라이드 설명
+                      <input
+                        type="text"
+                        value={slide.copy?.subtitle ?? ""}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, subtitle: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600">
+                      배지 문구
+                      <input
+                        type="text"
+                        value={slide.copy?.badge ?? ""}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, badge: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600">
+                      버튼 문구
+                      <input
+                        type="text"
+                        value={slide.copy?.button_text ?? ""}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, button_text: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                    </label>
+                  </div>
                   <button
                     type="button"
                     disabled={uploadPending || reorderPending}

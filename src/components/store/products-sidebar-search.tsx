@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { buildCategoryTree, findNavAncestorCategory, sortCategoriesForNav } from "@/lib/store/category-tree";
@@ -30,10 +30,6 @@ export function ProductsSidebarSearch({
   const t = useTranslations("nav");
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery ?? "");
-
-  useEffect(() => {
-    setQuery(initialQuery ?? "");
-  }, [initialQuery]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

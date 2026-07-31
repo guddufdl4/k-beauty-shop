@@ -153,6 +153,25 @@
     "membership": "Membership",
     "sitemap": "Sitemap"
   },
+  "supportPages": {
+    "shippingTitle": "Shipping Information",
+    "shippingBody": "We ship wholesale K-Beauty orders worldwide from Korea. Shipping costs and transit times depend on destination, order volume, and carrier selection. Our team confirms final shipping details after reviewing your inquiry or order.",
+    "returnsTitle": "Returns & Exchanges",
+    "returnsBody": "Due to the wholesale nature of our business, returns are handled on a case-by-case basis for damaged or incorrect shipments. Please contact us within 7 days of delivery with photos and your order reference.",
+    "faqTitle": "Frequently Asked Questions",
+    "faqMoqQuestion": "What is the minimum order quantity (MOQ)?",
+    "faqMoqAnswer": "MOQ varies by product and brand. Each product page shows box quantity requirements. For mixed-brand wholesale orders, submit a wholesale inquiry and our team will advise.",
+    "faqShippingQuestion": "Do you ship internationally?",
+    "faqShippingAnswer": "Yes. HMT Korea supplies authentic Korean cosmetics to buyers worldwide with competitive wholesale pricing and export support.",
+    "faqAuthenticQuestion": "Are the products authentic?",
+    "faqAuthenticAnswer": "All products are sourced directly from authorized Korean suppliers and brands.",
+    "contactTitle": "Contact Us",
+    "contactBody": "For wholesale pricing, export support, or order questions, reach out to our team.",
+    "contactEmailLabel": "Email",
+    "wholesaleCta": "Wholesale Inquiry",
+    "productsCta": "Browse Products",
+    "contactCta": "Contact Us"
+  },
   "products": {
     "catalog": "Catalog",
     "allProducts": "All products",
@@ -375,5 +394,39 @@
     "nicknameTooLong": "Nickname must be 30 characters or fewer.",
     "loginRequiredError": "You need to log in.",
     "nicknameSaved": "Nickname saved."
+  },
+  "wholesaleInquiry": {
+    "eyebrow": "B2B Wholesale",
+    "title": "Wholesale Inquiry",
+    "subtitle": "Tell us about your business and the K-Beauty brands you want to source. Our team will respond within 1–2 business days.",
+    "companyName": "Company name",
+    "contactName": "Contact name",
+    "country": "Country",
+    "email": "Email",
+    "whatsapp": "WhatsApp (optional)",
+    "interestedBrands": "Interested brands",
+    "interestedBrandsPlaceholder": "e.g. VT, Torriden, SKINFOOD",
+    "estimatedQuantity": "Estimated order quantity",
+    "estimatedQuantityPlaceholder": "e.g. 500 units / month",
+    "message": "Message",
+    "messagePlaceholder": "Tell us about your business, target market, and any specific products or MOQ requirements.",
+    "submit": "Submit inquiry",
+    "submitting": "Submitting…",
+    "success": "Thank you! Your inquiry has been received. We will contact you soon.",
+    "privacyNotice": "Your information is used only to respond to this wholesale inquiry and will not be sold or shared with third parties. Automated submissions are filtered to reduce spam.",
+    "spamTrapLabel": "Leave this field empty",
+    "errors": {
+      "company_name_required": "Please enter your company name.",
+      "contact_name_required": "Please enter a contact name.",
+      "country_required": "Please enter your country.",
+      "email_invalid": "Please enter a valid email address.",
+      "interested_brands_required": "Please tell us which brands you are interested in.",
+      "estimated_quantity_required": "Please enter an estimated order quantity.",
+      "message_required": "Please enter a message.",
+      "field_too_long": "One or more fields are too long. Please shorten your input.",
+      "submitFailed": "Something went wrong. Please try again later.",
+      "service_unavailable": "The inquiry service is temporarily unavailable. Please try again later.",
+      "insert_failed": "We could not save your inquiry. Please try again later."
+    }
   }
 }

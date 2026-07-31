@@ -191,7 +191,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let verified = await verifyStoredImageObject(() =>
+  const verified = await verifyStoredImageObject(() =>
     serviceClient.storage.from(HERO_IMAGE_BUCKET).download(storagePath),
   );
   if (!verified.ok) {

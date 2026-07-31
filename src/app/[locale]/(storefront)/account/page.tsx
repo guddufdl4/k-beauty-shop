@@ -1,6 +1,6 @@
 import { updateProfileFullName } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
-import { Link } from "@/i18n/navigation";
+import Link from "next/link";
 import { ProfileForm } from "@/components/store/profile-form";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getTranslations } from "next-intl/server";
@@ -53,9 +53,9 @@ export default async function AccountPage() {
         ) : null}
 
         {isAdmin ? (
-          <a href="/admin" className="inline-block text-sm text-rose-600 hover:underline">
+          <Link href="/admin" className="inline-block text-sm text-rose-600 hover:underline">
             {t("adminDashboard")}
-          </a>
+          </Link>
         ) : null}
       </div>
     </main>

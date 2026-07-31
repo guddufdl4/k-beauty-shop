@@ -153,6 +153,25 @@
     "membership": "会员注册",
     "sitemap": "网站地图"
   },
+  "supportPages": {
+    "shippingTitle": "配送说明",
+    "shippingBody": "我们从韩国向全球发运K-Beauty批发订单。运费和时效因国家、数量和承运商而异，提交询价或订单审核后将另行通知。",
+    "returnsTitle": "退换货",
+    "returnsBody": "批发业务原则上按个案处理破损或错发问题。请在收货后7日内提供照片和订单信息联系我们。",
+    "faqTitle": "常见问题",
+    "faqMoqQuestion": "最小起订量(MOQ)是多少？",
+    "faqMoqAnswer": "不同品牌和产品的MOQ不同，产品页会显示箱规数量。混合品牌批发请提交询价。",
+    "faqShippingQuestion": "是否支持国际配送？",
+    "faqShippingAnswer": "支持。HMT Korea以具有竞争力的批发价向全球供应正品韩国美妆。",
+    "faqAuthenticQuestion": "是否为正品？",
+    "faqAuthenticAnswer": "所有产品均来自正规韩国供应渠道。",
+    "contactTitle": "联系我们",
+    "contactBody": "如需批发报价、出口支持或订单咨询，请通过以下方式联系。",
+    "contactEmailLabel": "邮箱",
+    "wholesaleCta": "批发询价",
+    "productsCta": "浏览产品",
+    "contactCta": "联系我们"
+  },
   "products": {
     "catalog": "Catalog",
     "allProducts": "全部商品",
@@ -347,5 +366,39 @@
     "nicknameTooLong": "昵称不能超过 30 个字符。",
     "loginRequiredError": "请先登录。",
     "nicknameSaved": "昵称已保存。"
+  },
+  "wholesaleInquiry": {
+    "eyebrow": "B2B 批发",
+    "title": "批发咨询",
+    "subtitle": "请告诉我们您的业务及感兴趣的 K-Beauty 品牌。我们将在 1–2 个工作日内回复。",
+    "companyName": "公司名称",
+    "contactName": "联系人",
+    "country": "国家/地区",
+    "email": "邮箱",
+    "whatsapp": "WhatsApp（选填）",
+    "interestedBrands": "感兴趣的品牌",
+    "interestedBrandsPlaceholder": "例如：VT、Torriden、SKINFOOD",
+    "estimatedQuantity": "预计订购数量",
+    "estimatedQuantityPlaceholder": "例如：每月 500 件",
+    "message": "留言",
+    "messagePlaceholder": "请介绍您的业务、目标市场，以及具体产品或 MOQ 需求。",
+    "submit": "提交咨询",
+    "submitting": "提交中…",
+    "success": "咨询已收到，我们会尽快与您联系。",
+    "privacyNotice": "您提供的信息仅用于回复本次批发咨询，不会出售或与第三方共享。系统会过滤自动提交的垃圾信息。",
+    "spamTrapLabel": "请留空此字段",
+    "errors": {
+      "company_name_required": "请输入公司名称。",
+      "contact_name_required": "请输入联系人姓名。",
+      "country_required": "请输入国家/地区。",
+      "email_invalid": "请输入有效的邮箱地址。",
+      "interested_brands_required": "请输入感兴趣的品牌。",
+      "estimated_quantity_required": "请输入预计订购数量。",
+      "message_required": "请输入留言内容。",
+      "field_too_long": "输入内容过长，请缩短后重试。",
+      "submitFailed": "提交失败，请稍后重试。",
+      "service_unavailable": "咨询服务暂时不可用，请稍后重试。",
+      "insert_failed": "无法保存您的咨询，请稍后重试。"
+    }
   }
 }

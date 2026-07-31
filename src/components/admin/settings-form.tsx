@@ -25,6 +25,8 @@ export function AdminSettingsForm({ initialSettings }: Props) {
     const payload = {
       store_name: String(formData.get("store_name") ?? "").trim(),
       contact_email: String(formData.get("contact_email") ?? "").trim() || null,
+      instagram_url: String(formData.get("instagram_url") ?? "").trim() || null,
+      facebook_url: String(formData.get("facebook_url") ?? "").trim() || null,
       maintenance_enabled: formData.get("maintenance_enabled") === "on",
       maintenance_message: String(formData.get("maintenance_message") ?? ""),
       wholesale_price_label:
@@ -100,6 +102,35 @@ export function AdminSettingsForm({ initialSettings }: Props) {
             className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
           <p className="mt-1 text-xs text-zinc-500">푸터에 mailto 링크로 표시됩니다.</p>
+        </div>
+
+        <div>
+          <label htmlFor="instagram_url" className="block text-sm font-medium text-zinc-700">
+            Instagram URL
+          </label>
+          <input
+            id="instagram_url"
+            name="instagram_url"
+            type="url"
+            defaultValue={settings.instagram_url ?? ""}
+            placeholder="https://instagram.com/your-account"
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+          <p className="mt-1 text-xs text-zinc-500">등록된 URL만 푸터에 표시됩니다.</p>
+        </div>
+
+        <div>
+          <label htmlFor="facebook_url" className="block text-sm font-medium text-zinc-700">
+            Facebook URL
+          </label>
+          <input
+            id="facebook_url"
+            name="facebook_url"
+            type="url"
+            defaultValue={settings.facebook_url ?? ""}
+            placeholder="https://facebook.com/your-page"
+            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
         </div>
       </section>
 

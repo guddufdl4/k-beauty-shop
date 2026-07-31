@@ -448,29 +448,29 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
           </Link>
         </div>
 
-        <div className="grid min-w-0 grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-6">
+        <div className="grid min-w-0 grid-cols-3 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
           {items.map((item) => (
             <Link
               key={item.slug}
               href={item.href}
-              className="group flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="group flex min-w-0 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
-              <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 transition-colors group-hover:border-accent">
+              <div className="relative mx-auto aspect-square w-full min-h-[90px] max-w-[120px] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 transition-colors group-hover:border-accent sm:max-w-none">
                 {item.imageUrl ? (
                   <Image
                     src={item.imageUrl}
                     alt={item.label}
                     fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                    sizes="(max-width: 640px) 33vw, (max-width: 1024px) 33vw, 16vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-zinc-400">
-                    <CategoryIcon slug={item.slug} className="h-12 w-12" />
+                    <CategoryIcon slug={item.slug} className="h-10 w-10 sm:h-12 sm:w-12" />
                   </div>
                 )}
               </div>
-              <p className="mt-3 text-center text-sm font-semibold text-zinc-900 transition-colors group-hover:text-accent">
+              <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-center text-xs font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-accent sm:mt-3 sm:text-sm">
                 {item.label}
               </p>
             </Link>

@@ -72,8 +72,12 @@ export function ProductCard({
         {primaryImage ? (
           <div
             className={cn(
-              "relative aspect-square w-full max-w-full overflow-hidden bg-zinc-50",
-              isTrending ? "mb-3 rounded-lg" : compact ? "mb-3" : "mb-4 rounded-sm border border-zinc-100",
+              "relative w-full max-w-full overflow-hidden bg-zinc-50",
+              isTrending
+                ? "mb-3 h-[170px] rounded-lg sm:aspect-square sm:h-auto"
+                : compact
+                  ? "mb-3"
+                  : "mb-4 rounded-sm border border-zinc-100 aspect-square",
             )}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -93,8 +97,12 @@ export function ProductCard({
         ) : (
           <div
             className={cn(
-              "flex aspect-square w-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden bg-zinc-50 p-4 text-center",
-              isTrending ? "mb-3 rounded-lg" : compact ? "mb-3" : "mb-4 rounded-sm border border-zinc-100",
+              "flex w-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden bg-zinc-50 p-4 text-center",
+              isTrending
+                ? "mb-3 h-[170px] rounded-lg sm:aspect-square sm:h-auto"
+                : compact
+                  ? "mb-3"
+                  : "mb-4 rounded-sm border border-zinc-100 aspect-square",
             )}
           >
             <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">

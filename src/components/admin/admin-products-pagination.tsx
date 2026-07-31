@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   buildAdminProductsHref,
   getAdminProductsPaginationItems,
@@ -23,11 +23,8 @@ export function AdminProductsPagination({
   filters,
 }: Props) {
   const router = useRouter();
-  const [pageInput, setPageInput] = useState(String(currentPage));
-
-  useEffect(() => {
-    setPageInput(String(currentPage));
-  }, [currentPage]);
+  const [pageDraft, setPageDraft] = useState<string | null>(null);
+  const pageInput = pageDraft ?? String(currentPage);
 
   function handlePageJump(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,7 +35,7 @@ export function AdminProductsPagination({
 
     const targetPage = Math.min(totalPages, Math.max(1, parsed));
     if (targetPage === currentPage) {
-      setPageInput(String(targetPage));
+      setPageDraft(String(targetPage));
       return;
     }
 
@@ -123,7 +120,7 @@ export function AdminProductsPagination({
           min={1}
           max={totalPages}
           value={pageInput}
-          onChange={(event) => setPageInput(event.target.value)}
+          onChange={(event) => setPageDraft(event.target.value)}
           className="w-16 rounded-lg border border-zinc-200 px-2 py-1 text-center text-xs text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
           aria-label={"\uC774\uB3D9\uD560 \uD398\uC774\uC9C0 \uBC88\uD638"}
         />

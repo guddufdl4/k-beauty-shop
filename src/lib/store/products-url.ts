@@ -377,7 +377,7 @@ export const MAIN_NAV_LINKS: MainNavLink[] = [
   { key: "brands", href: "/brands" },
   { key: "newArrivals", href: buildProductsHref({ sort: "latest" }) },
   { key: "bestSellers", href: buildProductsHref({ sort: "trending" }) },
-  { key: "wholesale", href: "/products", highlight: true },
+  { key: "wholesale", href: "/wholesale-inquiry", highlight: true },
 ];
 
 export type HomeTrustHighlightKey =

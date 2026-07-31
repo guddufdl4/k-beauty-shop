@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
+import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
 import { buildCategoryTree } from "@/lib/store/category-tree";
 import { buildProductsHref } from "@/lib/store/products-url";
@@ -455,9 +456,9 @@ export function MobileNavPanels() {
               ))
             )}
             {profileRole === "admin" ? (
-              <a href="/admin" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
+              <NextLink href="/admin" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
                 <span>{labels.admin}</span>
-              </a>
+              </NextLink>
             ) : null}
           </nav>
         </div>

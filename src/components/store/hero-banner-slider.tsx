@@ -15,9 +15,11 @@ import { resolveHeroSlideLayout } from "@/lib/admin/hero-image-spec";
 export type HeroBannerSlide = {
   id: string;
   src: string;
+  mobileSrc?: string;
   href: string;
   brandLabel: string;
   layout?: import("@/lib/admin/hero-image-spec").HeroSlideLayout;
+  copy?: Partial<HeroCopy>;
 };
 
 export type HeroCopy = {
@@ -36,6 +38,28 @@ type Props = {
 };
 
 const AUTOPLAY_MS = 5500;
+
+function mergeSlideCopy(defaultCopy: HeroCopy, slide: HeroBannerSlide): HeroCopy {
+  const override = slide.copy;
+  if (!override) {
+    return defaultCopy;
+  }
+
+  return {
+    badge: override.badge !== undefined ? override.badge : defaultCopy.badge,
+    title: override.title?.trim() || defaultCopy.title,
+    description: override.description?.trim() || defaultCopy.description,
+    shopBestSellersLabel: override.shopBestSellersLabel?.trim() || defaultCopy.shopBestSellersLabel,
+    shopBestSellersHref: override.shopBestSellersHref?.trim() || defaultCopy.shopBestSellersHref,
+    wholesaleInquiryLabel: override.wholesaleInquiryLabel?.trim() || defaultCopy.wholesaleInquiryLabel,
+    wholesaleInquiryHref: override.wholesaleInquiryHref?.trim() || defaultCopy.wholesaleInquiryHref,
+  };
+}
+
+function preloadImage(url: string) {
+  const img = new Image();
+  img.src = url;
+}
 
 const anchorXClass: Record<HeroLayoutAnchorX, string> = {
   left: "justify-start",
@@ -67,18 +91,25 @@ function HeroCopyPanel({
   copy,
   layout,
   isMobile,
+  isPrimaryHeading,
+  hidden,
 }: {
   copy: HeroCopy;
   layout: HeroSlideLayoutPreset;
   isMobile: boolean;
+  isPrimaryHeading: boolean;
+  hidden?: boolean;
 }) {
+  const HeadingTag = isPrimaryHeading ? "h1" : "h2";
+
   return (
     <div
-      className="pointer-events-auto relative z-20 w-full"
+      className="pointer-events-auto relative z-20 w-full min-w-0"
       style={{
         maxWidth: `${layout.maxWidth}px`,
         textAlign: layout.textAlign,
       }}
+      aria-hidden={hidden || undefined}
     >
       {copy.badge ? (
         <p
@@ -88,17 +119,17 @@ function HeroCopyPanel({
           {copy.badge}
         </p>
       ) : null}
-      <h1
-        className="font-bold leading-tight tracking-tight"
+      <HeadingTag
+        className="font-bold leading-tight tracking-tight break-words"
         style={{
           color: layout.titleColor,
           fontSize: `${layout.titleSizePx}px`,
         }}
       >
         {copy.title}
-      </h1>
+      </HeadingTag>
       <p
-        className="mt-3 leading-relaxed sm:mt-4"
+        className="mt-2 leading-relaxed sm:mt-4"
         style={{
           color: layout.descriptionColor,
           fontSize: `${layout.descriptionSizePx}px`,
@@ -107,17 +138,19 @@ function HeroCopyPanel({
         {copy.description}
       </p>
       <div
-        className={`mt-5 flex flex-wrap gap-3 sm:mt-6 ${layout.textAlign === "center" ? "justify-center" : layout.textAlign === "right" ? "justify-end" : "justify-start"}`}
+        className={`mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3 ${layout.textAlign === "center" ? "justify-center" : layout.textAlign === "right" ? "justify-end" : "justify-start"}`}
       >
         <Link
           href={copy.shopBestSellersHref}
-          className="inline-flex min-h-11 items-center bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover"
+          tabIndex={hidden ? -1 : undefined}
+          className="inline-flex min-h-10 items-center bg-accent px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
         >
           {copy.shopBestSellersLabel}
         </Link>
         <Link
           href={copy.wholesaleInquiryHref}
-          className="inline-flex min-h-11 items-center border border-zinc-300 bg-white/90 px-6 py-3 text-sm font-bold uppercase tracking-wide text-zinc-800 backdrop-blur-sm transition-colors hover:border-accent hover:text-accent"
+          tabIndex={hidden ? -1 : undefined}
+          className="inline-flex min-h-10 items-center border border-zinc-300 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-zinc-800 backdrop-blur-sm transition-colors hover:border-accent hover:text-accent sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
         >
           {copy.wholesaleInquiryLabel}
         </Link>
@@ -131,32 +164,45 @@ function HeroCopyPanel({
 
 function HeroSlideFrame({
   slide,
-  copy,
+  defaultCopy,
   priority,
+  preload,
+  isActive,
 }: {
   slide: HeroBannerSlide;
-  copy: HeroCopy;
+  defaultCopy: HeroCopy;
   priority?: boolean;
+  preload?: boolean;
+  isActive: boolean;
 }) {
+  const copy = mergeSlideCopy(defaultCopy, slide);
   const { desktop, mobile } = resolveHeroSlideLayout(slide.layout);
+  const mobileImageSrc = slide.mobileSrc ?? slide.src;
+  const imageAlt = `${slide.brandLabel} K-Beauty wholesale banner`;
 
   return (
-    <div className="relative aspect-[1920/600] w-full bg-[#f4f2ef]">
+    <div className="relative w-full min-h-[280px] bg-[#f4f2ef] sm:aspect-[1920/600]">
       <Link
         href={slide.href}
         aria-label={slide.brandLabel}
+        tabIndex={isActive ? undefined : -1}
         className="absolute inset-0 z-0 block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        aria-hidden={!isActive || undefined}
       >
         <HeroBannerImage
           src={slide.src}
+          alt={imageAlt}
           priority={priority}
+          preload={preload}
           imageFocus={desktop.imageFocus}
           className="hidden sm:block"
         />
         <HeroBannerImage
-          src={slide.src}
+          src={mobileImageSrc}
+          alt={imageAlt}
           priority={priority}
-          imageFocus={mobile.imageFocus}
+          preload={preload}
+          imageFocus={slide.mobileSrc ? mobile.imageFocus : "center"}
           className="sm:hidden"
         />
       </Link>
@@ -176,8 +222,15 @@ function HeroSlideFrame({
               ? `translate(${desktop.alignX === "center" ? desktop.offsetX : 0}px, ${desktop.alignY === "center" ? desktop.offsetY : 0}px)`
               : undefined,
         }}
+        aria-hidden={!isActive || undefined}
       >
-        <HeroCopyPanel copy={copy} layout={desktop} isMobile={false} />
+        <HeroCopyPanel
+          copy={copy}
+          layout={desktop}
+          isMobile={false}
+          isPrimaryHeading={isActive}
+          hidden={!isActive}
+        />
       </div>
 
       <div
@@ -188,19 +241,22 @@ function HeroSlideFrame({
         aria-hidden
       />
       <div
-        className={`pointer-events-none absolute inset-0 z-10 flex px-4 sm:hidden ${anchorXClass[mobile.alignX]} ${anchorYClass[mobile.alignY]}`}
+        className={`pointer-events-none absolute inset-0 z-10 flex min-w-0 px-3 sm:hidden ${anchorXClass[mobile.alignX]} ${anchorYClass[mobile.alignY]}`}
         style={{
-          paddingLeft: mobile.alignX === "left" ? mobile.offsetX : undefined,
-          paddingRight: mobile.alignX === "right" ? mobile.offsetX : undefined,
+          paddingLeft: mobile.offsetX,
+          paddingRight: 12,
           paddingTop: mobile.alignY === "top" ? mobile.offsetY : undefined,
           paddingBottom: mobile.alignY === "bottom" ? mobile.offsetY : undefined,
-          transform:
-            mobile.alignX === "center" || mobile.alignY === "center"
-              ? `translate(${mobile.alignX === "center" ? mobile.offsetX : 0}px, ${mobile.alignY === "center" ? mobile.offsetY : 0}px)`
-              : undefined,
         }}
+        aria-hidden={!isActive || undefined}
       >
-        <HeroCopyPanel copy={copy} layout={mobile} isMobile />
+        <HeroCopyPanel
+          copy={copy}
+          layout={mobile}
+          isMobile
+          isPrimaryHeading={isActive}
+          hidden={!isActive}
+        />
       </div>
     </div>
   );
@@ -218,6 +274,32 @@ export function HeroBannerSlider({ slides, copy }: Props) {
 
   const slideCount = slides.length;
   const showControls = slideCount > 1;
+
+  useEffect(() => {
+    slides.slice(0, 2).forEach((slide) => {
+      preloadImage(slide.src);
+      if (slide.mobileSrc) {
+        preloadImage(slide.mobileSrc);
+      }
+    });
+  }, [slides]);
+
+  useEffect(() => {
+    if (slideCount <= 1) {
+      return;
+    }
+
+    const nextIndex = (activeIndex + 1) % slideCount;
+    const nextSlide = slides[nextIndex];
+    if (!nextSlide) {
+      return;
+    }
+
+    preloadImage(nextSlide.src);
+    if (nextSlide.mobileSrc) {
+      preloadImage(nextSlide.mobileSrc);
+    }
+  }, [activeIndex, slideCount, slides]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -349,7 +431,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       <section className="border-b border-zinc-200 bg-white">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
           <div className="relative aspect-[1920/600] w-full bg-gradient-to-br from-slate-50 via-white to-rose-50/30">
-            <HeroCopyPanel copy={copy} layout={desktop} isMobile={false} />
+            <HeroCopyPanel copy={copy} layout={desktop} isMobile={false} isPrimaryHeading />
           </div>
         </div>
       </section>
@@ -424,8 +506,15 @@ export function HeroBannerSlider({ slides, copy }: Props) {
               key={slide.id}
               className={showControls ? "min-w-full shrink-0 snap-center snap-always" : "w-full"}
               aria-hidden={showControls && index !== activeIndex ? true : undefined}
+              inert={showControls && index !== activeIndex ? true : undefined}
             >
-              <HeroSlideFrame slide={slide} copy={copy} priority={index === 0} />
+              <HeroSlideFrame
+                slide={slide}
+                defaultCopy={copy}
+                priority={index === 0}
+                preload={index <= 1}
+                isActive={!showControls || index === activeIndex}
+              />
             </div>
           ))}
         </div>

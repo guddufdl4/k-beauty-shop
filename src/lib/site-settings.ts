@@ -24,6 +24,69 @@ export type HeroSettingsPatch = Partial<HeroSettingsRecord>;
 
 type StoredHeroSettings = HeroSettingsRecord & { updated_at: string };
 
+function parseHeroSlideCopy(raw: unknown): HeroSlide["copy"] | undefined {
+  if (!raw || typeof raw !== "object") {
+    return undefined;
+  }
+
+  const record = raw as Record<string, unknown>;
+  const trimOrNull = (value: unknown): string | null | undefined => {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (value === null || value === "") {
+      return null;
+    }
+    return typeof value === "string" ? value.trim() || null : undefined;
+  };
+
+  const copy = {
+    badge: trimOrNull(record.badge),
+    title: trimOrNull(record.title),
+    subtitle: trimOrNull(record.subtitle),
+    button_text: trimOrNull(record.button_text),
+    button_link: trimOrNull(record.button_link),
+    wholesale_label: trimOrNull(record.wholesale_label),
+    wholesale_link: trimOrNull(record.wholesale_link),
+  };
+
+  const hasValue = Object.values(copy).some((value) => value !== undefined);
+  return hasValue ? copy : undefined;
+}
+
+function parseSlideRecord(record: Record<string, unknown>, index: number): HeroSlide | null {
+  const imageUrl =
+    typeof record.image_url === "string" && record.image_url.trim()
+      ? record.image_url.trim()
+      : null;
+
+  if (!imageUrl) {
+    return null;
+  }
+
+  const id =
+    typeof record.id === "string" && record.id.trim() ? record.id.trim() : `slide-${index}`;
+
+  const order =
+    typeof record.order === "number" && Number.isFinite(record.order) ? record.order : index;
+
+  const mobileImageUrl =
+    typeof record.mobile_image_url === "string" && record.mobile_image_url.trim()
+      ? record.mobile_image_url.trim()
+      : null;
+
+  const copy = parseHeroSlideCopy(record.copy);
+
+  return {
+    id,
+    image_url: imageUrl,
+    mobile_image_url: mobileImageUrl,
+    order,
+    layout: normalizeHeroSlideLayout(record.layout),
+    ...(copy ? { copy } : {}),
+  };
+}
+
 function normalizeHeroSlides(raw: unknown, legacyImageUrl: string | null): HeroSlide[] {
   const slides: HeroSlide[] = [];
 
@@ -33,32 +96,10 @@ function normalizeHeroSlides(raw: unknown, legacyImageUrl: string | null): HeroS
         continue;
       }
 
-      const record = item as Record<string, unknown>;
-      const imageUrl =
-        typeof record.image_url === "string" && record.image_url.trim()
-          ? record.image_url.trim()
-          : null;
-
-      if (!imageUrl) {
-        continue;
+      const parsed = parseSlideRecord(item as Record<string, unknown>, index);
+      if (parsed) {
+        slides.push(parsed);
       }
-
-      const id =
-        typeof record.id === "string" && record.id.trim()
-          ? record.id.trim()
-          : `slide-${index}`;
-
-      const order =
-        typeof record.order === "number" && Number.isFinite(record.order)
-          ? record.order
-          : index;
-
-      slides.push({
-        id,
-        image_url: imageUrl,
-        order,
-        layout: normalizeHeroSlideLayout(record.layout),
-      });
     }
   }
 
@@ -83,28 +124,12 @@ function parseHeroSlidesPatch(raw: unknown): HeroSlide[] | null {
       return null;
     }
 
-    const record = item as Record<string, unknown>;
-    const imageUrl =
-      typeof record.image_url === "string" && record.image_url.trim()
-        ? record.image_url.trim()
-        : null;
-
-    if (!imageUrl) {
+    const parsed = parseSlideRecord(item as Record<string, unknown>, index);
+    if (!parsed) {
       return null;
     }
 
-    const id =
-      typeof record.id === "string" && record.id.trim() ? record.id.trim() : `slide-${index}`;
-
-    const order =
-      typeof record.order === "number" && Number.isFinite(record.order) ? record.order : index;
-
-    slides.push({
-      id,
-      image_url: imageUrl,
-      order,
-      layout: normalizeHeroSlideLayout(record.layout),
-    });
+    slides.push(parsed);
   }
 
   slides.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
@@ -394,6 +419,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   id: 1,
   store_name: "HMT",
   contact_email: null,
+  instagram_url: null,
+  facebook_url: null,
   maintenance_enabled: false,
   maintenance_message: "",
   wholesale_price_label: null,
@@ -418,6 +445,8 @@ function normalizeSettings(row: Partial<SiteSettings> | null): SiteSettings {
     id: 1,
     store_name: row.store_name?.trim() || DEFAULT_SITE_SETTINGS.store_name,
     contact_email: row.contact_email?.trim() || null,
+    instagram_url: row.instagram_url?.trim() || null,
+    facebook_url: row.facebook_url?.trim() || null,
     maintenance_enabled: Boolean(row.maintenance_enabled),
     maintenance_message: row.maintenance_message?.trim() ?? "",
     wholesale_price_label: row.wholesale_price_label?.trim() || null,
@@ -492,6 +521,8 @@ export type SiteSettingsPatch = Partial<
     SiteSettings,
     | "store_name"
     | "contact_email"
+    | "instagram_url"
+    | "facebook_url"
     | "maintenance_enabled"
     | "maintenance_message"
     | "wholesale_price_label"
@@ -555,6 +586,26 @@ export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null 
       patch.contact_email = null;
     } else if (typeof record.contact_email === "string") {
       patch.contact_email = record.contact_email.trim() || null;
+    } else {
+      return null;
+    }
+  }
+
+  if ("instagram_url" in record) {
+    if (record.instagram_url === null || record.instagram_url === "") {
+      patch.instagram_url = null;
+    } else if (typeof record.instagram_url === "string") {
+      patch.instagram_url = record.instagram_url.trim() || null;
+    } else {
+      return null;
+    }
+  }
+
+  if ("facebook_url" in record) {
+    if (record.facebook_url === null || record.facebook_url === "") {
+      patch.facebook_url = null;
+    } else if (typeof record.facebook_url === "string") {
+      patch.facebook_url = record.facebook_url.trim() || null;
     } else {
       return null;
     }
@@ -702,4 +753,132 @@ export function parseSiteSettingsPatch(body: unknown): SiteSettingsPatch | null 
   }
 
   return patch;
+}
+
+const HOME_SETTINGS_PATH = "home.json";
+export const HOME_SETTINGS_CACHE_TAG = "home-settings";
+
+export type HomeSettings = {
+  trending_skus: string[];
+  updated_at: string;
+};
+
+const DEFAULT_HOME_SETTINGS: HomeSettings = {
+  trending_skus: [],
+  updated_at: new Date(0).toISOString(),
+};
+
+function normalizeHomeSettings(raw: unknown): HomeSettings {
+  if (!raw || typeof raw !== "object") {
+    return { ...DEFAULT_HOME_SETTINGS };
+  }
+
+  const record = raw as Record<string, unknown>;
+  const trendingSkus = Array.isArray(record.trending_skus)
+    ? record.trending_skus
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
+
+  return {
+    trending_skus: trendingSkus,
+    updated_at:
+      typeof record.updated_at === "string" && record.updated_at.trim()
+        ? record.updated_at.trim()
+        : DEFAULT_HOME_SETTINGS.updated_at,
+  };
+}
+
+async function fetchHomeSettings(client: SupabaseClient): Promise<HomeSettings> {
+  const { data: downloadData, error: downloadError } = await client.storage
+    .from(HERO_SETTINGS_BUCKET)
+    .download(HOME_SETTINGS_PATH);
+
+  if (!downloadError && downloadData) {
+    try {
+      const parsed = normalizeHomeSettings(JSON.parse(await downloadData.text()));
+      return parsed;
+    } catch {
+      return { ...DEFAULT_HOME_SETTINGS };
+    }
+  }
+
+  const { data: publicData } = client.storage
+    .from(HERO_SETTINGS_BUCKET)
+    .getPublicUrl(HOME_SETTINGS_PATH);
+
+  const publicUrl = publicData.publicUrl?.trim();
+  if (!publicUrl) {
+    return { ...DEFAULT_HOME_SETTINGS };
+  }
+
+  try {
+    const response = await fetch(publicUrl, { cache: "no-store" });
+    if (!response.ok) {
+      return { ...DEFAULT_HOME_SETTINGS };
+    }
+    return normalizeHomeSettings(await response.json());
+  } catch {
+    return { ...DEFAULT_HOME_SETTINGS };
+  }
+}
+
+export async function getHomeSettings(): Promise<HomeSettings> {
+  return unstable_cache(
+    async () => {
+      const service = createServiceClient();
+      if (service) {
+        return fetchHomeSettings(service);
+      }
+      const publicClient = createPublicClient();
+      if (publicClient) {
+        return fetchHomeSettings(publicClient);
+      }
+      return { ...DEFAULT_HOME_SETTINGS };
+    },
+    [HOME_SETTINGS_CACHE_TAG],
+    { revalidate: CACHE_REVALIDATE_SECONDS, tags: [HOME_SETTINGS_CACHE_TAG] },
+  )();
+}
+
+export async function getHomeSettingsFresh(): Promise<HomeSettings> {
+  const service = createServiceClient();
+  if (service) {
+    return fetchHomeSettings(service);
+  }
+  const publicClient = createPublicClient();
+  if (publicClient) {
+    return fetchHomeSettings(publicClient);
+  }
+  return { ...DEFAULT_HOME_SETTINGS };
+}
+
+export async function saveHomeSettings(
+  patch: Partial<Pick<HomeSettings, "trending_skus">>,
+): Promise<{ data: HomeSettings | null; error: string | null }> {
+  const service = createServiceClient();
+  if (!service) {
+    return { data: null, error: describeServiceClientMisconfiguration() };
+  }
+
+  const current = await fetchHomeSettings(service);
+  const next: HomeSettings = {
+    ...current,
+    ...patch,
+    trending_skus: patch.trending_skus ?? current.trending_skus,
+    updated_at: new Date().toISOString(),
+  };
+
+  const payload = Buffer.from(JSON.stringify(next), "utf-8");
+  const { error } = await service.storage.from(HERO_SETTINGS_BUCKET).upload(HOME_SETTINGS_PATH, payload, {
+    contentType: "application/json",
+    upsert: true,
+  });
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: next, error: null };
 }

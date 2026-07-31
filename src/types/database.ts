@@ -193,17 +193,31 @@ export interface OrderItem {
 
 import type { HeroSlideLayout } from "@/lib/admin/hero-image-spec";
 
+export interface HeroSlideCopy {
+  badge?: string | null;
+  title?: string | null;
+  subtitle?: string | null;
+  button_text?: string | null;
+  button_link?: string | null;
+  wholesale_label?: string | null;
+  wholesale_link?: string | null;
+}
+
 export interface HeroSlide {
   id: string;
   image_url: string;
+  mobile_image_url?: string | null;
   order: number;
   layout?: HeroSlideLayout;
+  copy?: HeroSlideCopy;
 }
 
 export interface SiteSettings {
   id: number;
   store_name: string;
   contact_email: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
   maintenance_enabled: boolean;
   maintenance_message: string;
   wholesale_price_label: string | null;
@@ -217,6 +231,21 @@ export interface SiteSettings {
   hero_button_text: string | null;
   hero_button_link: string | null;
   updated_at: string;
+}
+
+export interface WholesaleInquiry {
+  id: string;
+  company_name: string;
+  contact_name: string;
+  country: string;
+  email: string;
+  whatsapp: string | null;
+  interested_brands: string;
+  estimated_quantity: string;
+  message: string;
+  locale: string;
+  spam_trap: string | null;
+  created_at: string;
 }
 
 export interface Database {
@@ -252,6 +281,11 @@ export interface Database {
         Row: SiteSettings;
         Insert: Partial<SiteSettings>;
         Update: Partial<SiteSettings>;
+      };
+      wholesale_inquiries: {
+        Row: WholesaleInquiry;
+        Insert: Partial<WholesaleInquiry>;
+        Update: Partial<WholesaleInquiry>;
       };
     };
     Enums: {

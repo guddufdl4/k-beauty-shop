@@ -531,12 +531,16 @@ export async function fetchAllPages<T>(
   return { data: all, error: null };
 }
 
+type HeadCountQuery = ReturnType<
+  ReturnType<SupabaseClient["from"]>["select"]
+>;
+
 export async function fetchExactCount(
   supabase: SupabaseClient,
   table: string,
-  applyFilters?: (query: any) => any,
+  applyFilters?: (query: HeadCountQuery) => HeadCountQuery,
 ): Promise<{ count: number; error: string | null }> {
-  let query: any = supabase.from(table).select("*", { count: "exact", head: true });
+  let query: HeadCountQuery = supabase.from(table).select("*", { count: "exact", head: true });
   if (applyFilters) {
     query = applyFilters(query);
   }
@@ -1582,6 +1586,96 @@ export type TrendingCategorySlug = "skincare" | "makeup" | "haircare";
 
 const HOMEPAGE_TAB_LIMIT = 8;
 
+const TRENDING_BRAND_PRIORITY = [
+  "VT",
+  "SKINFOOD",
+  "TORRIDEN",
+  "COSRX",
+  "ANUA",
+  "MEDICUBE",
+  "ROUND LAB",
+] as const;
+
+function normalizeTrendingBrandKey(brand: string | null | undefined): string {
+  return (brand ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^\w\s&+.-]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function brandMatchesTarget(productBrand: string | null | undefined, target: string): boolean {
+  const normalized = normalizeTrendingBrandKey(productBrand);
+  const targetKey = normalizeTrendingBrandKey(target);
+  return normalized === targetKey || normalized.includes(targetKey) || targetKey.includes(normalized);
+}
+
+/** Pick diverse trending products — admin SKUs first, then one per priority brand. */
+export function selectDiverseTrendingProducts(
+  pool: ProductWithRelations[],
+  adminSkus: string[] | undefined,
+  limit = HOMEPAGE_TAB_LIMIT,
+): ProductWithRelations[] {
+  const visible = pool.filter((product) => productHasRealImage(product));
+
+  if (adminSkus && adminSkus.length > 0) {
+    const bySku = new Map(visible.map((product) => [product.sku.trim().toUpperCase(), product]));
+    const picked: ProductWithRelations[] = [];
+    const usedIds = new Set<string>();
+
+    for (const sku of adminSkus) {
+      const match = bySku.get(sku.trim().toUpperCase());
+      if (match && !usedIds.has(match.id)) {
+        picked.push(match);
+        usedIds.add(match.id);
+      }
+      if (picked.length >= limit) {
+        return picked;
+      }
+    }
+
+    for (const product of [...visible].sort(compareBestSellers)) {
+      if (picked.length >= limit) {
+        break;
+      }
+      if (!usedIds.has(product.id)) {
+        picked.push(product);
+        usedIds.add(product.id);
+      }
+    }
+
+    return picked.slice(0, limit);
+  }
+
+  const picked: ProductWithRelations[] = [];
+  const usedIds = new Set<string>();
+
+  for (const brandTarget of TRENDING_BRAND_PRIORITY) {
+    const match = visible.find(
+      (product) => !usedIds.has(product.id) && brandMatchesTarget(product.brand, brandTarget),
+    );
+    if (match) {
+      picked.push(match);
+      usedIds.add(match.id);
+    }
+    if (picked.length >= limit) {
+      return picked;
+    }
+  }
+
+  for (const product of [...visible].sort(compareBestSellers)) {
+    if (picked.length >= limit) {
+      break;
+    }
+    if (!usedIds.has(product.id)) {
+      picked.push(product);
+      usedIds.add(product.id);
+    }
+  }
+
+  return picked.slice(0, limit);
+}
+
 function compareBestSellers(a: ProductWithRelations, b: ProductWithRelations): number {
   const aHasImage = productHasRealImage(a) ? 1 : 0;
   const bHasImage = productHasRealImage(b) ? 1 : 0;
@@ -1631,9 +1725,10 @@ export function selectTrendingCategoryProducts(
   categorySlug: TrendingCategorySlug | null,
   categories: Category[] = [],
   limit = HOMEPAGE_TAB_LIMIT,
+  adminSkus?: string[],
 ): ProductWithRelations[] {
   if (categorySlug === null) {
-    return selectHomepageTabProducts(pool, "bestSellers", limit);
+    return selectDiverseTrendingProducts(pool, adminSkus, limit);
   }
 
   const navCategories = pickStorefrontNavCategories(categories);

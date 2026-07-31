@@ -13,6 +13,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "node_modules/**",
+    ".next.bak-build/**",
+    "tools/**",
+    "**/.venv/**",
   ]),
 ]);
 

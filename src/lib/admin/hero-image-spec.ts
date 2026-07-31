@@ -54,16 +54,16 @@ export const DEFAULT_HERO_DESKTOP_LAYOUT: HeroSlideLayoutPreset = {
 
 export const DEFAULT_HERO_MOBILE_LAYOUT: HeroSlideLayoutPreset = {
   alignX: "left",
-  alignY: "bottom",
-  offsetX: 16,
-  offsetY: 16,
-  maxWidth: 320,
+  alignY: "center",
+  offsetX: 20,
+  offsetY: 0,
+  maxWidth: 280,
   titleColor: "#18181b",
   descriptionColor: "#52525b",
-  titleSizePx: 24,
+  titleSizePx: 28,
   descriptionSizePx: 14,
   textAlign: "left",
-  gradientStrength: 80,
+  gradientStrength: 75,
   imageFocus: "center",
 };
 
@@ -99,33 +99,42 @@ function parseColor(value: unknown, fallback: string): string {
 function parseLayoutPreset(
   raw: unknown,
   defaults: HeroSlideLayoutPreset,
+  target: "desktop" | "mobile" = "desktop",
 ): HeroSlideLayoutPreset {
   if (!raw || typeof raw !== "object") {
     return { ...defaults };
   }
 
   const record = raw as Record<string, unknown>;
+  const offsetMin = target === "mobile" ? 0 : -200;
+  const offsetMax = target === "mobile" ? 48 : 400;
+  const offsetYMin = target === "mobile" ? -20 : -200;
+  const offsetYMax = target === "mobile" ? 20 : 400;
+  const maxWidthMin = target === "mobile" ? 180 : 200;
+  const maxWidthMax = target === "mobile" ? 320 : 900;
+  const titleMin = target === "mobile" ? 26 : 18;
+  const titleMax = target === "mobile" ? 30 : 72;
 
   return {
     alignX: parseAnchorX(record.alignX, defaults.alignX),
     alignY: parseAnchorY(record.alignY, defaults.alignY),
     offsetX:
       typeof record.offsetX === "number" && Number.isFinite(record.offsetX)
-        ? clampNumber(Math.round(record.offsetX), -200, 400)
+        ? clampNumber(Math.round(record.offsetX), offsetMin, offsetMax)
         : defaults.offsetX,
     offsetY:
       typeof record.offsetY === "number" && Number.isFinite(record.offsetY)
-        ? clampNumber(Math.round(record.offsetY), -200, 400)
+        ? clampNumber(Math.round(record.offsetY), offsetYMin, offsetYMax)
         : defaults.offsetY,
     maxWidth:
       typeof record.maxWidth === "number" && Number.isFinite(record.maxWidth)
-        ? clampNumber(Math.round(record.maxWidth), 200, 900)
+        ? clampNumber(Math.round(record.maxWidth), maxWidthMin, maxWidthMax)
         : defaults.maxWidth,
     titleColor: parseColor(record.titleColor, defaults.titleColor),
     descriptionColor: parseColor(record.descriptionColor, defaults.descriptionColor),
     titleSizePx:
       typeof record.titleSizePx === "number" && Number.isFinite(record.titleSizePx)
-        ? clampNumber(Math.round(record.titleSizePx), 18, 72)
+        ? clampNumber(Math.round(record.titleSizePx), titleMin, titleMax)
         : defaults.titleSizePx,
     descriptionSizePx:
       typeof record.descriptionSizePx === "number" && Number.isFinite(record.descriptionSizePx)
@@ -151,8 +160,8 @@ export function normalizeHeroSlideLayout(raw: unknown): HeroSlideLayout {
   const record = raw as Record<string, unknown>;
 
   return {
-    desktop: parseLayoutPreset(record.desktop, DEFAULT_HERO_DESKTOP_LAYOUT),
-    mobile: parseLayoutPreset(record.mobile, DEFAULT_HERO_MOBILE_LAYOUT),
+    desktop: parseLayoutPreset(record.desktop, DEFAULT_HERO_DESKTOP_LAYOUT, "desktop"),
+    mobile: parseLayoutPreset(record.mobile, DEFAULT_HERO_MOBILE_LAYOUT, "mobile"),
   };
 }
 

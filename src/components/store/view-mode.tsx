@@ -4,7 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useTranslations } from "next-intl";
@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 export type ViewMode = "auto" | "mobile" | "desktop";
 
 const STORAGE_KEY = "storefront-view-mode";
+const MODE_EVENT = "storefront-view-mode-change";
 
 type ViewModeContextValue = {
   mode: ViewMode;
@@ -33,6 +34,25 @@ function readStoredMode(): ViewMode {
   return "auto";
 }
 
+function subscribeViewMode(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) {
+      onStoreChange();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(MODE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(MODE_EVENT, onStoreChange);
+  };
+}
+
 function applyViewModeClass(mode: ViewMode) {
   const root = document.documentElement;
   root.classList.remove("view-mode-auto", "view-mode-mobile", "view-mode-desktop");
@@ -48,34 +68,19 @@ export function useViewMode() {
 }
 
 export function ViewModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ViewMode>("auto");
-  const [ready, setReady] = useState(false);
+  const mode = useSyncExternalStore(subscribeViewMode, readStoredMode, (): ViewMode => "auto");
 
   useEffect(() => {
-    const stored = readStoredMode();
-    setModeState(stored);
-    applyViewModeClass(stored);
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!ready) {
-      return;
-    }
-
-    window.localStorage.setItem(STORAGE_KEY, mode);
     applyViewModeClass(mode);
-  }, [mode, ready]);
+  }, [mode]);
 
   function setMode(next: ViewMode) {
-    setModeState(next);
+    window.localStorage.setItem(STORAGE_KEY, next);
+    applyViewModeClass(next);
+    window.dispatchEvent(new Event(MODE_EVENT));
   }
 
-  return (
-    <ViewModeContext.Provider value={{ mode, setMode }}>
-      {children}
-    </ViewModeContext.Provider>
-  );
+  return <ViewModeContext.Provider value={{ mode, setMode }}>{children}</ViewModeContext.Provider>;
 }
 
 export function StorefrontViewShell({ children }: { children: ReactNode }) {

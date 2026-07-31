@@ -4,13 +4,31 @@ import { ViewModeToggle } from "./view-mode";
 
 type Props = {
   contactEmail?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
   storeName?: string;
 };
 
-export async function StoreFooter({ contactEmail, storeName }: Props) {
+function isValidExternalUrl(value: string | null | undefined): value is string {
+  if (!value?.trim()) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export async function StoreFooter({ contactEmail, instagramUrl, facebookUrl, storeName }: Props) {
   const t = await getTranslations("footer");
   const brand = storeName?.trim() || "HMT";
   const acronym = brand.replace(/\s+/g, "").toUpperCase();
+  const showViewModeToggle = process.env.NODE_ENV === "development";
+  const showInstagram = isValidExternalUrl(instagramUrl);
+  const showFacebook = isValidExternalUrl(facebookUrl);
 
   return (
     <footer className="border-t border-zinc-200 bg-white">
@@ -29,21 +47,39 @@ export async function StoreFooter({ contactEmail, storeName }: Props) {
               {contactEmail}
             </a>
           ) : null}
-          <div className="mt-4 flex gap-3 text-zinc-400">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-accent" aria-label="Instagram">
-              IG
-            </a>
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-accent" aria-label="Facebook">
-              FB
-            </a>
-          </div>
+          {showInstagram || showFacebook ? (
+            <div className="mt-4 flex gap-3 text-zinc-400">
+              {showInstagram ? (
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-accent"
+                  aria-label="Instagram"
+                >
+                  IG
+                </a>
+              ) : null}
+              {showFacebook ? (
+                <a
+                  href={facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-accent"
+                  aria-label="Facebook"
+                >
+                  FB
+                </a>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div>
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-zinc-900">{t("infoTitle")}</h3>
           <ul className="space-y-1 text-sm text-zinc-500 sm:space-y-2">
             <li>
-              <Link href="/products" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/shipping" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("shipping")}
               </Link>
             </li>
@@ -53,17 +89,17 @@ export async function StoreFooter({ contactEmail, storeName }: Props) {
               </Link>
             </li>
             <li>
-              <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/returns" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("returns")}
               </Link>
             </li>
             <li>
-              <Link href="/about" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/faq" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("faq")}
               </Link>
             </li>
             <li>
-              <Link href="/products" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/wholesale-inquiry" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("wholesale")}
               </Link>
             </li>
@@ -89,7 +125,7 @@ export async function StoreFooter({ contactEmail, storeName }: Props) {
               </Link>
             </li>
             <li>
-              <Link href="/about" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/contact" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("contact")}
               </Link>
             </li>
@@ -124,8 +160,8 @@ export async function StoreFooter({ contactEmail, storeName }: Props) {
       </div>
 
       <div className="border-t border-zinc-100 bg-surface-muted px-4 py-5 text-center text-xs text-zinc-500">
-        <ViewModeToggle />
-        <p className="mt-4">{t("copyright", { brand })}</p>
+        {showViewModeToggle ? <ViewModeToggle /> : null}
+        <p className={showViewModeToggle ? "mt-4" : undefined}>{t("copyright", { brand })}</p>
       </div>
     </footer>
   );

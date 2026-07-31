@@ -48,15 +48,21 @@ export function StoreSearchBar({ className }: Props) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
+  const trimmedQuery = query.trim();
+  const queryTooShort = trimmedQuery.length < MIN_QUERY_LENGTH;
+  const visibleSuggestions = queryTooShort ? { products: [], brands: [] } : suggestions;
+  const visibleLoading = queryTooShort ? false : loading;
+  const visibleActiveIndex = queryTooShort ? -1 : activeIndex;
+
   const flatItems = [
-    ...suggestions.products.map((product) => ({
+    ...visibleSuggestions.products.map((product) => ({
       type: "product" as const,
       key: `product-${product.id}`,
       label: product.name,
       sublabel: product.brand,
       href: `/products/${product.slug}`,
     })),
-    ...suggestions.brands.map((brand) => ({
+    ...visibleSuggestions.brands.map((brand) => ({
       type: "brand" as const,
       key: `brand-${brand}`,
       label: brand,
@@ -65,8 +71,7 @@ export function StoreSearchBar({ className }: Props) {
     })),
   ];
 
-  const showDropdown =
-    open && query.trim().length >= MIN_QUERY_LENGTH && (loading || flatItems.length > 0);
+  const showDropdown = open && !queryTooShort && (visibleLoading || flatItems.length > 0);
 
   const fetchSuggestions = useCallback(async (value: string, signal: AbortSignal) => {
     const trimmed = value.trim();
@@ -104,9 +109,6 @@ export function StoreSearchBar({ className }: Props) {
     const trimmed = query.trim();
 
     if (trimmed.length < MIN_QUERY_LENGTH) {
-      setSuggestions({ products: [], brands: [] });
-      setLoading(false);
-      setActiveIndex(-1);
       return;
     }
 
@@ -145,8 +147,8 @@ export function StoreSearchBar({ className }: Props) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (activeIndex >= 0 && flatItems[activeIndex]) {
-      router.push(flatItems[activeIndex].href);
+    if (visibleActiveIndex >= 0 && flatItems[visibleActiveIndex]) {
+      router.push(flatItems[visibleActiveIndex].href);
       setOpen(false);
       setActiveIndex(-1);
       return;
@@ -177,9 +179,9 @@ export function StoreSearchBar({ className }: Props) {
       return;
     }
 
-    if (event.key === "Enter" && activeIndex >= 0 && flatItems[activeIndex]) {
+    if (event.key === "Enter" && visibleActiveIndex >= 0 && flatItems[visibleActiveIndex]) {
       event.preventDefault();
-      router.push(flatItems[activeIndex].href);
+      router.push(flatItems[visibleActiveIndex].href);
       setOpen(false);
       setActiveIndex(-1);
     }
@@ -206,6 +208,7 @@ export function StoreSearchBar({ className }: Props) {
             aria-label={t("searchPlaceholder")}
             aria-autocomplete="list"
             aria-controls={showDropdown ? listboxId : undefined}
+            role="combobox"
             aria-expanded={showDropdown}
             autoComplete="off"
           />

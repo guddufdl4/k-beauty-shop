@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
@@ -29,15 +29,13 @@ export function ProductsPagination({
 }: Props) {
   const t = useTranslations("products");
   const router = useRouter();
-  const [pageInput, setPageInput] = useState(String(currentPage));
-
-  useEffect(() => {
-    setPageInput(String(currentPage));
-  }, [currentPage]);
+  const [pageDraft, setPageDraft] = useState<string | null>(null);
+  const pageInput = pageDraft ?? String(currentPage);
 
   function handlePageJump(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = pageInput.trim();
+    setPageDraft(null);
     if (!/^\d+$/.test(trimmed)) {
       return;
     }
@@ -45,7 +43,7 @@ export function ProductsPagination({
     const parsed = Number.parseInt(trimmed, 10);
     const targetPage = Math.min(totalPages, Math.max(1, parsed));
     if (targetPage === currentPage) {
-      setPageInput(String(targetPage));
+      setPageDraft(String(targetPage));
       return;
     }
 
@@ -124,7 +122,7 @@ export function ProductsPagination({
             onChange={(event) => {
               const value = event.target.value;
               if (value === "" || /^\d+$/.test(value)) {
-                setPageInput(value);
+                setPageDraft(value);
               }
             }}
             className="w-14 rounded-lg border border-zinc-200 px-2 py-2 text-center text-sm text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
