@@ -5,9 +5,21 @@ import type { HeroSlide, SiteSettings } from "@/types/database";
 import { resizeHeroImageToRecommended } from "@/lib/admin/hero-image-client-resize";
 import { formatHeroImageRecommendation, HERO_IMAGE_RECOMMENDED, resolveHeroSlideLayout, type HeroSlideLayout, type HeroSlideLayoutPreset } from "@/lib/admin/hero-image-spec";
 import {
+  sanitizeHeroSlideCopy,
+  validateHeroSlidesForSave,
+} from "@/lib/store/storefront-href";
+import {
   validateClientProductImageFile,
   withStorageImageCacheBuster,
 } from "@/lib/admin/product-image-upload";
+
+const HERO_LINK_HELP =
+  "Internal links automatically preserve the current language. External links must begin with https://";
+
+type SlideLinkErrors = {
+  button_link?: string;
+  wholesale_link?: string;
+};
 
 type Props = {
   initialSettings: SiteSettings;
@@ -203,7 +215,31 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [slideLinkErrors, setSlideLinkErrors] = useState<Record<string, SlideLinkErrors>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function validateSlidesBeforeSave(nextSlides: SlideDraft[]): boolean {
+    const result = validateHeroSlidesForSave(nextSlides);
+    if (!result.ok) {
+      const nextErrors: Record<string, SlideLinkErrors> = {};
+      for (const fieldError of result.errors) {
+        if (!nextErrors[fieldError.slideId]) {
+          nextErrors[fieldError.slideId] = {};
+        }
+        nextErrors[fieldError.slideId][fieldError.field] = fieldError.message;
+      }
+      setSlideLinkErrors(nextErrors);
+      setError("링크 형식이 올바르지 않은 슬라이드가 있습니다. 입력값을 확인해 주세요.");
+      return false;
+    }
+
+    setSlideLinkErrors({});
+    return true;
+  }
+
+  function sanitizeSlideCopy(copy: HeroSlide["copy"]): HeroSlide["copy"] | undefined {
+    return sanitizeHeroSlideCopy(copy);
+  }
 
   function slidePreviewSrc(slide: SlideDraft): string {
     if (slide.previewSrc) {
@@ -214,18 +250,25 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
   }
 
   async function persistSlides(nextSlides: SlideDraft[], successMessage: string) {
+    if (!validateSlidesBeforeSave(nextSlides)) {
+      return false;
+    }
+
     setReorderPending(true);
     setMessage(null);
     setError(null);
 
-    const payloadSlides = sortSlides(nextSlides).map(({ id, image_url, mobile_image_url, order, layout, copy }) => ({
-      id,
-      image_url,
-      mobile_image_url: mobile_image_url ?? null,
-      order,
-      layout,
-      ...(copy ? { copy } : {}),
-    }));
+    const payloadSlides = sortSlides(nextSlides).map(({ id, image_url, mobile_image_url, order, layout, copy }) => {
+      const sanitizedCopy = sanitizeSlideCopy(copy);
+      return {
+        id,
+        image_url,
+        mobile_image_url: mobile_image_url ?? null,
+        order,
+        layout,
+        ...(sanitizedCopy ? { copy: sanitizedCopy } : {}),
+      };
+    });
 
     try {
       const response = await fetch("/api/admin/settings", {
@@ -251,6 +294,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
         setSettings(data.settings);
         setPreviewVersion(data.settings.updated_at);
         setSlides(initialSlides(data.settings));
+        setSlideLinkErrors({});
       } else {
         setSlides(sortSlides(nextSlides));
       }
@@ -604,7 +648,7 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                       />
                     </label>
                     <label className="block text-xs font-medium text-zinc-600">
-                      버튼 문구
+                      Primary button text
                       <input
                         type="text"
                         value={slide.copy?.button_text ?? ""}
@@ -623,6 +667,131 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                         }}
                         className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
                       />
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+                      Primary button link
+                      <input
+                        type="text"
+                        value={slide.copy?.button_link ?? ""}
+                        placeholder="/products?brand=VT"
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlideLinkErrors((current) => {
+                            const next = { ...current };
+                            if (next[slide.id]?.button_link) {
+                              const slideErrors = { ...next[slide.id] };
+                              delete slideErrors.button_link;
+                              if (Object.keys(slideErrors).length === 0) {
+                                delete next[slide.id];
+                              } else {
+                                next[slide.id] = slideErrors;
+                              }
+                            }
+                            return next;
+                          });
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, button_link: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className={`mt-1 w-full rounded-lg border px-2 py-1.5 text-sm ${
+                          slideLinkErrors[slide.id]?.button_link
+                            ? "border-red-400 focus:border-red-500"
+                            : "border-zinc-300"
+                        }`}
+                      />
+                      <span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">
+                        예: /products, /products?brand=VT, https://external-site.com
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-relaxed text-zinc-500">
+                        {HERO_LINK_HELP}
+                      </span>
+                      {slideLinkErrors[slide.id]?.button_link ? (
+                        <span className="mt-1 block text-xs text-red-600">
+                          {slideLinkErrors[slide.id]?.button_link}
+                        </span>
+                      ) : null}
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+                      Wholesale button text
+                      <input
+                        type="text"
+                        value={slide.copy?.wholesale_label ?? ""}
+                        placeholder="Wholesale Inquiry"
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, wholesale_label: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                      <span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">
+                        Leave blank to use the global translation (hero.wholesaleInquiry).
+                      </span>
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+                      Wholesale inquiry link
+                      <input
+                        type="text"
+                        value={slide.copy?.wholesale_link ?? ""}
+                        placeholder="/wholesale-inquiry"
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlideLinkErrors((current) => {
+                            const next = { ...current };
+                            if (next[slide.id]?.wholesale_link) {
+                              const slideErrors = { ...next[slide.id] };
+                              delete slideErrors.wholesale_link;
+                              if (Object.keys(slideErrors).length === 0) {
+                                delete next[slide.id];
+                              } else {
+                                next[slide.id] = slideErrors;
+                              }
+                            }
+                            return next;
+                          });
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, wholesale_link: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className={`mt-1 w-full rounded-lg border px-2 py-1.5 text-sm ${
+                          slideLinkErrors[slide.id]?.wholesale_link
+                            ? "border-red-400 focus:border-red-500"
+                            : "border-zinc-300"
+                        }`}
+                      />
+                      <span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">
+                        예: /wholesale-inquiry
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-relaxed text-zinc-500">
+                        {HERO_LINK_HELP}
+                      </span>
+                      {slideLinkErrors[slide.id]?.wholesale_link ? (
+                        <span className="mt-1 block text-xs text-red-600">
+                          {slideLinkErrors[slide.id]?.wholesale_link}
+                        </span>
+                      ) : null}
                     </label>
                   </div>
                   <button

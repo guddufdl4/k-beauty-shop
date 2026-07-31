@@ -5,13 +5,18 @@ import { HomeTrustBar, HomeCategorySection, HomeFeaturedBrandsSection } from "@/
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { buildProductsHref } from "@/lib/store/products-url";
+import {
+  DEFAULT_WHOLESALE_INQUIRY_HREF,
+  mapHeroSlideCopyToBannerCopy,
+  normalizeHeroHref,
+} from "@/lib/store/storefront-href";
 import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettingsFresh } from "@/lib/site-settings";
+import type { HeroSlide } from "@/types/database";
 import {
   getPriorityBrandProducts,
   getStorefrontCategories,
   selectTrendingCategoryProducts,
 } from "@/lib/supabase/products";
-
 export const revalidate = 60;
 
 /** Standard homepage hero brand set (VT, SKINFOOD, Torriden). */
@@ -44,6 +49,74 @@ async function loadSiteSettingsSafely() {
   }
 }
 
+function buildDefaultHeroCopy(
+  siteSettings: Awaited<ReturnType<typeof loadSiteSettingsSafely>>,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+) {
+  return {
+    badge: siteSettings.hero_badge,
+    title: siteSettings.hero_title?.trim() || t("hero.title"),
+    description: siteSettings.hero_subtitle?.trim() || t("hero.description"),
+    shopBestSellersLabel:
+      siteSettings.hero_button_text?.trim() || t("hero.shopBestSellers"),
+    shopBestSellersHref: normalizeHeroHref(
+      siteSettings.hero_button_link,
+      buildProductsHref({ sort: "trending" }),
+    ),
+    wholesaleInquiryLabel: t("hero.wholesaleInquiry"),
+    wholesaleInquiryHref: DEFAULT_WHOLESALE_INQUIRY_HREF,
+  };
+}
+
+function resolveSlideBrandLabel(
+  slide: HeroSlide,
+  brand: string,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+): string {
+  const fromTitle = slide.copy?.title?.trim();
+  if (fromTitle) {
+    return fromTitle;
+  }
+
+  const fromBadge = slide.copy?.badge?.trim();
+  if (fromBadge) {
+    return fromBadge;
+  }
+
+  return t("hero.shopBrand", { brand: brand === "skinfood" ? "SKINFOOD" : brand });
+}
+
+function mapStoredHeroSlideToBannerSlide(
+  slide: HeroSlide,
+  index: number,
+  siteSettings: Awaited<ReturnType<typeof loadSiteSettingsSafely>>,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+): HeroBannerSlide | null {
+  const src = resolveHeroImageSrc(slide.image_url, siteSettings.updated_at);
+  if (!src) {
+    return null;
+  }
+
+  const brand = resolveHeroSlideBrand(slide.id, index);
+  const brandProductsHref = buildProductsHref({ brand });
+  const slideCopyOverride = mapHeroSlideCopyToBannerCopy(slide.copy);
+
+  const primaryHref = normalizeHeroHref(slide.copy?.button_link, brandProductsHref);
+
+  const mobileSrcRaw = slide.mobile_image_url?.trim()
+    ? resolveHeroImageSrc(slide.mobile_image_url, siteSettings.updated_at)
+    : null;
+
+  return {
+    id: slide.id,
+    src,
+    ...(mobileSrcRaw ? { mobileSrc: mobileSrcRaw } : {}),
+    href: primaryHref,
+    brandLabel: resolveSlideBrandLabel(slide, brand, t),
+    ...(slide.layout ? { layout: slide.layout } : {}),
+    ...(slideCopyOverride ? { copy: slideCopyOverride } : {}),
+  };
+}
 export default async function HomePage() {
   const [t, { products, meta }, locale, usdKrwRate, { categories }] = await Promise.all([
     getTranslations("home"),
@@ -54,37 +127,11 @@ export default async function HomePage() {
   ]);
 
   const siteSettings = await loadSiteSettingsSafely();
+  const heroCopy = buildDefaultHeroCopy(siteSettings, t);
 
   const heroSlides = getHeroSlides(siteSettings)
-    .map((slide, index) => {
-      const src = resolveHeroImageSrc(slide.image_url, siteSettings.updated_at);
-      if (!src) {
-        return null;
-      }
-
-      const brand = resolveHeroSlideBrand(slide.id, index);
-
-      return {
-        id: slide.id,
-        src,
-        href: buildProductsHref({ brand }),
-        brandLabel: t("hero.shopBrand", { brand: brand === "skinfood" ? "SKINFOOD" : brand }),
-        ...(slide.layout ? { layout: slide.layout } : {}),
-      };
-    })
+    .map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, siteSettings, t))
     .filter((slide): slide is HeroBannerSlide => slide !== null);
-
-  const heroCopy = {
-    badge: siteSettings.hero_badge,
-    title: siteSettings.hero_title?.trim() || t("hero.title"),
-    description: siteSettings.hero_subtitle?.trim() || t("hero.description"),
-    shopBestSellersLabel:
-      siteSettings.hero_button_text?.trim() || t("hero.shopBestSellers"),
-    shopBestSellersHref:
-      siteSettings.hero_button_link?.trim() || buildProductsHref({ sort: "trending" }),
-    wholesaleInquiryLabel: t("hero.wholesaleInquiry"),
-    wholesaleInquiryHref: buildProductsHref({}),
-  };
 
   const trendingProducts = {
     all: selectTrendingCategoryProducts(products, null, categories),

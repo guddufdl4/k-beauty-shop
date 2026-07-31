@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Link } from "@/i18n/navigation";
 
 import { HeroBannerImage } from "@/components/store/hero-banner-image";
+import { isExternalHeroHref } from "@/lib/store/storefront-href";
 import type {
   HeroLayoutAnchorX,
   HeroLayoutAnchorY,
@@ -59,6 +60,50 @@ function mergeSlideCopy(defaultCopy: HeroCopy, slide: HeroBannerSlide): HeroCopy
 function preloadImage(url: string) {
   const img = new Image();
   img.src = url;
+}
+
+function HeroNavLink({
+  href,
+  children,
+  className,
+  tabIndex,
+  "aria-label": ariaLabel,
+  "aria-hidden": ariaHidden,
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+  tabIndex?: number;
+  "aria-label"?: string;
+  "aria-hidden"?: boolean;
+}) {
+  if (isExternalHeroHref(href)) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        tabIndex={tabIndex}
+        aria-label={ariaLabel}
+        aria-hidden={ariaHidden || undefined}
+        className={className}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      tabIndex={tabIndex}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden || undefined}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
 }
 
 const anchorXClass: Record<HeroLayoutAnchorX, string> = {
@@ -140,20 +185,24 @@ function HeroCopyPanel({
       <div
         className={`mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3 ${layout.textAlign === "center" ? "justify-center" : layout.textAlign === "right" ? "justify-end" : "justify-start"}`}
       >
-        <Link
-          href={copy.shopBestSellersHref}
-          tabIndex={hidden ? -1 : undefined}
-          className="inline-flex min-h-10 items-center bg-accent px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
-        >
-          {copy.shopBestSellersLabel}
-        </Link>
-        <Link
-          href={copy.wholesaleInquiryHref}
-          tabIndex={hidden ? -1 : undefined}
-          className="inline-flex min-h-10 items-center border border-zinc-300 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-zinc-800 backdrop-blur-sm transition-colors hover:border-accent hover:text-accent sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
-        >
-          {copy.wholesaleInquiryLabel}
-        </Link>
+        {copy.shopBestSellersLabel.trim() && copy.shopBestSellersHref.trim() ? (
+          <HeroNavLink
+            href={copy.shopBestSellersHref}
+            tabIndex={hidden ? -1 : undefined}
+            className="inline-flex min-h-10 items-center bg-accent px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
+          >
+            {copy.shopBestSellersLabel}
+          </HeroNavLink>
+        ) : null}
+        {copy.wholesaleInquiryLabel.trim() && copy.wholesaleInquiryHref.trim() ? (
+          <HeroNavLink
+            href={copy.wholesaleInquiryHref}
+            tabIndex={hidden ? -1 : undefined}
+            className="inline-flex min-h-10 items-center border border-zinc-300 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-zinc-800 backdrop-blur-sm transition-colors hover:border-accent hover:text-accent sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
+          >
+            {copy.wholesaleInquiryLabel}
+          </HeroNavLink>
+        ) : null}
       </div>
       {isMobile ? null : (
         <span className="sr-only">Hero banner content overlay</span>
@@ -182,7 +231,7 @@ function HeroSlideFrame({
 
   return (
     <div className="relative w-full min-h-[280px] bg-[#f4f2ef] sm:aspect-[1920/600]">
-      <Link
+      <HeroNavLink
         href={slide.href}
         aria-label={slide.brandLabel}
         tabIndex={isActive ? undefined : -1}
@@ -205,7 +254,7 @@ function HeroSlideFrame({
           imageFocus={slide.mobileSrc ? mobile.imageFocus : "center"}
           className="sm:hidden"
         />
-      </Link>
+      </HeroNavLink>
 
       <div className="hidden sm:block">
         <HeroGradientOverlay strength={desktop.gradientStrength} />

@@ -8,6 +8,7 @@ import {
   SITE_SETTINGS_CACHE_TAG,
   splitSiteSettingsPatch,
 } from "@/lib/site-settings";
+import { validateHeroSlidesForSave } from "@/lib/store/storefront-href";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 
@@ -80,6 +81,20 @@ export async function PATCH(request: Request) {
   }
 
   const { dbPatch, heroPatch } = splitSiteSettingsPatch(patch);
+
+  if (heroPatch.hero_slides !== undefined) {
+    const validation = validateHeroSlidesForSave(heroPatch.hero_slides);
+    if (!validation.ok) {
+      return NextResponse.json(
+        {
+          error: "히어로 슬라이드 링크 검증에 실패했습니다.",
+          fieldErrors: validation.errors,
+        },
+        { status: 400 },
+      );
+    }
+    heroPatch.hero_slides = validation.slides;
+  }
 
   if (Object.keys(dbPatch).length > 0) {
     const { error } = await supabase.from("site_settings").update(dbPatch).eq("id", 1);
