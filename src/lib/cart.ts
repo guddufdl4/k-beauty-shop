@@ -12,6 +12,7 @@ import {
   type ProductWithRelations,
 } from "@/lib/supabase/products";
 import { enrichProductImages } from "@/lib/product-images";
+import { getEffectiveProductPrice } from "@/lib/store/products-url";
 
 export const DEMO_CART_COOKIE = "kb_demo_cart";
 export const DEMO_ORDERS_COOKIE = "kb_demo_orders";
@@ -103,10 +104,10 @@ function mapFallbackItem(
     slug: product.slug,
     brand: product.brand,
     sku: product.sku,
-    unitPrice: product.price,
+    unitPrice: getEffectiveProductPrice(product),
     moq: product.moq,
     stock: product.stock,
-    lineTotal: product.price * quantity,
+    lineTotal: getEffectiveProductPrice(product) * quantity,
   };
 }
 
@@ -192,6 +193,7 @@ async function getDatabaseCart(userId: string): Promise<CartView> {
         brand,
         sku,
         price,
+        wholesale_price,
         moq,
         stock
       )
@@ -213,7 +215,12 @@ async function getDatabaseCart(userId: string): Promise<CartView> {
     }
 
     const quantity = Number(record.quantity ?? 1);
-    const unitPrice = Number(product.price ?? 0);
+    const unitPrice = getEffectiveProductPrice({
+      price: Number(product.price ?? 0),
+      wholesale_price:
+        product.wholesale_price != null ? Number(product.wholesale_price) : null,
+      compare_at_price: null,
+    });
 
     items.push({
       id: String(record.id),

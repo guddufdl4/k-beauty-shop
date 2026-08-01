@@ -158,7 +158,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   {priceColumns.secondary ? (
                     <div className="min-w-0 text-right">
                       <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                        {wholesaleLabel}
+                        {t(priceColumns.secondary.labelKey)}
                       </p>
                       <p className="text-xl font-bold text-rose-700">
                         {formatLocaleProductPrice(priceColumns.secondary.amount, locale, usdKrwRate)}

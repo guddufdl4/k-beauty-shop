@@ -8,18 +8,21 @@ export function parseProductListSort(value: string | undefined): ProductListSort
   return undefined;
 }
 
-export function isProductOnSale(product: {
-  price: number;
-  compare_at_price: number | null;
-}): boolean {
-  return product.compare_at_price != null && product.compare_at_price > product.price;
-}
-
 export type ProductPriceFields = {
   price: number;
   wholesale_price: number | null;
   compare_at_price: number | null;
 };
+
+/** Canonical storefront/cart selling price. */
+export function getEffectiveProductPrice(product: ProductPriceFields): number {
+  return product.wholesale_price ?? product.price;
+}
+
+export function isProductOnSale(product: ProductPriceFields): boolean {
+  const effectivePrice = getEffectiveProductPrice(product);
+  return product.compare_at_price != null && product.compare_at_price > effectivePrice;
+}
 
 export function hasDualPricing(product: ProductPriceFields): boolean {
   return product.wholesale_price != null;
@@ -33,7 +36,7 @@ export function getCompareAtPrice(product: ProductPriceFields): number | null {
 }
 
 export function getCardDisplayPrice(product: ProductPriceFields): number {
-  return product.wholesale_price ?? product.price;
+  return getEffectiveProductPrice(product);
 }
 
 export type PriceColumn = {
@@ -47,17 +50,18 @@ export function getProductPriceColumns(product: ProductPriceFields): {
   compareAt: number | null;
 } {
   const compareAt = getCompareAtPrice(product);
+  const effectivePrice = getEffectiveProductPrice(product);
 
   if (hasDualPricing(product)) {
     return {
-      primary: { amount: product.price, labelKey: "retailPrice" },
-      secondary: { amount: product.wholesale_price!, labelKey: "wholesalePrice" },
+      primary: { amount: effectivePrice, labelKey: "wholesalePrice" },
+      secondary: { amount: product.price, labelKey: "retailPrice" },
       compareAt,
     };
   }
 
   return {
-    primary: { amount: product.price, labelKey: "wholesalePrice" },
+    primary: { amount: effectivePrice, labelKey: "wholesalePrice" },
     secondary: null,
     compareAt,
   };
