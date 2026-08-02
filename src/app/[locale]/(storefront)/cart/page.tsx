@@ -3,19 +3,14 @@ import { Link } from "@/i18n/navigation";
 import { CartItemList } from "@/components/store/cart-item-list";
 import { getUsdKrwRate } from "@/lib/currency";
 import { formatLocalePrice } from "@/lib/utils";
-import {
-  calculateShippingCost,
-  getCart,
-  usesDatabaseCart,
-} from "@/lib/cart";
+import { calculateShippingCost, getCart } from "@/lib/cart";
 
 export const dynamic = "force-dynamic";
 
 export default async function CartPage() {
-  const [t, cart, dbCart, locale, usdKrwRate] = await Promise.all([
+  const [t, cart, locale, usdKrwRate] = await Promise.all([
     getTranslations("cart"),
     getCart(),
-    usesDatabaseCart(),
     getLocale(),
     getUsdKrwRate(),
   ]);
@@ -23,9 +18,6 @@ export default async function CartPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
       <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        {dbCart ? t("loggedInHint") : t("demoHint")}
-      </p>
 
       {cart.items.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center sm:p-10">
