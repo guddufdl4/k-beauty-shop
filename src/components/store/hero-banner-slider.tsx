@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Link } from "@/i18n/navigation";
 
 import { HeroBannerImage } from "@/components/store/hero-banner-image";
+import styles from "@/components/store/hero-banner-slider.module.css";
 import { isExternalHeroHref } from "@/lib/store/storefront-href";
 import type {
   HeroLayoutAnchorX,
@@ -118,6 +119,152 @@ const anchorYClass: Record<HeroLayoutAnchorY, string> = {
   bottom: "items-end",
 };
 
+const anchorXClassSm: Record<HeroLayoutAnchorX, string> = {
+  left: "sm:justify-start",
+  center: "sm:justify-center",
+  right: "sm:justify-end",
+};
+
+const anchorYClassSm: Record<HeroLayoutAnchorY, string> = {
+  top: "sm:items-start",
+  center: "sm:items-center",
+  bottom: "sm:items-end",
+};
+
+type HeroCopyCssVars = CSSProperties & {
+  "--hero-overlay-pl"?: string;
+  "--hero-overlay-pr"?: string;
+  "--hero-overlay-pt"?: string;
+  "--hero-overlay-pb"?: string;
+  "--hero-overlay-transform"?: string;
+  "--hero-overlay-pl-sm"?: string;
+  "--hero-overlay-pr-sm"?: string;
+  "--hero-overlay-pt-sm"?: string;
+  "--hero-overlay-pb-sm"?: string;
+  "--hero-overlay-transform-sm"?: string;
+  "--hero-max-w"?: string;
+  "--hero-max-w-sm"?: string;
+  "--hero-title-size"?: string;
+  "--hero-title-size-sm"?: string;
+  "--hero-desc-size"?: string;
+  "--hero-desc-size-sm"?: string;
+  "--hero-title-color"?: string;
+  "--hero-title-color-sm"?: string;
+  "--hero-desc-color"?: string;
+  "--hero-desc-color-sm"?: string;
+  "--hero-text-align"?: string;
+  "--hero-text-align-sm"?: string;
+  "--hero-cta-justify"?: string;
+  "--hero-cta-justify-sm"?: string;
+};
+
+function textAlignToJustify(textAlign: HeroSlideLayoutPreset["textAlign"]): string {
+  if (textAlign === "center") {
+    return "center";
+  }
+  if (textAlign === "right") {
+    return "flex-end";
+  }
+  return "flex-start";
+}
+
+function mobileOverlayEdgeStyles(preset: HeroSlideLayoutPreset) {
+  return {
+    pl: preset.offsetX,
+    pr: 12,
+    pt: preset.alignY === "top" ? preset.offsetY : 0,
+    pb: preset.alignY === "bottom" ? preset.offsetY : 0,
+    transform: "none" as const,
+  };
+}
+
+function desktopOverlayEdgeStyles(preset: HeroSlideLayoutPreset) {
+  const transform =
+    preset.alignX === "center" || preset.alignY === "center"
+      ? `translate(${preset.alignX === "center" ? preset.offsetX : 0}px, ${preset.alignY === "center" ? preset.offsetY : 0}px)`
+      : "none";
+
+  return {
+    pl: preset.alignX === "left" ? preset.offsetX : 0,
+    pr: preset.alignX === "right" ? preset.offsetX : 0,
+    pt: preset.alignY === "top" ? preset.offsetY : 0,
+    pb: preset.alignY === "bottom" ? preset.offsetY : 0,
+    transform,
+  };
+}
+
+function buildHeroCopyCssVars(
+  mobile: HeroSlideLayoutPreset,
+  desktop: HeroSlideLayoutPreset,
+): HeroCopyCssVars {
+  const mobileEdges = mobileOverlayEdgeStyles(mobile);
+  const desktopEdges = desktopOverlayEdgeStyles(desktop);
+
+  return {
+    "--hero-overlay-pl": `${mobileEdges.pl}px`,
+    "--hero-overlay-pr": `${mobileEdges.pr}px`,
+    "--hero-overlay-pt": `${mobileEdges.pt}px`,
+    "--hero-overlay-pb": `${mobileEdges.pb}px`,
+    "--hero-overlay-transform": mobileEdges.transform,
+    "--hero-overlay-pl-sm": `${desktopEdges.pl}px`,
+    "--hero-overlay-pr-sm": `${desktopEdges.pr}px`,
+    "--hero-overlay-pt-sm": `${desktopEdges.pt}px`,
+    "--hero-overlay-pb-sm": `${desktopEdges.pb}px`,
+    "--hero-overlay-transform-sm": desktopEdges.transform,
+    "--hero-max-w": `${mobile.maxWidth}px`,
+    "--hero-max-w-sm": `${desktop.maxWidth}px`,
+    "--hero-title-size": `${mobile.titleSizePx}px`,
+    "--hero-title-size-sm": `${desktop.titleSizePx}px`,
+    "--hero-desc-size": `${mobile.descriptionSizePx}px`,
+    "--hero-desc-size-sm": `${desktop.descriptionSizePx}px`,
+    "--hero-title-color": mobile.titleColor,
+    "--hero-title-color-sm": desktop.titleColor,
+    "--hero-desc-color": mobile.descriptionColor,
+    "--hero-desc-color-sm": desktop.descriptionColor,
+    "--hero-text-align": mobile.textAlign,
+    "--hero-text-align-sm": desktop.textAlign,
+    "--hero-cta-justify": textAlignToJustify(mobile.textAlign),
+    "--hero-cta-justify-sm": textAlignToJustify(desktop.textAlign),
+  };
+}
+
+function buildDesktopOnlyCopyCssVars(desktop: HeroSlideLayoutPreset): HeroCopyCssVars {
+  const justify = textAlignToJustify(desktop.textAlign);
+
+  return {
+    "--hero-max-w": `${desktop.maxWidth}px`,
+    "--hero-max-w-sm": `${desktop.maxWidth}px`,
+    "--hero-title-size": `${desktop.titleSizePx}px`,
+    "--hero-title-size-sm": `${desktop.titleSizePx}px`,
+    "--hero-desc-size": `${desktop.descriptionSizePx}px`,
+    "--hero-desc-size-sm": `${desktop.descriptionSizePx}px`,
+    "--hero-title-color": desktop.titleColor,
+    "--hero-title-color-sm": desktop.titleColor,
+    "--hero-desc-color": desktop.descriptionColor,
+    "--hero-desc-color-sm": desktop.descriptionColor,
+    "--hero-text-align": desktop.textAlign,
+    "--hero-text-align-sm": desktop.textAlign,
+    "--hero-cta-justify": justify,
+    "--hero-cta-justify-sm": justify,
+  };
+}
+
+function responsiveOverlayFlexClasses(
+  mobile: HeroSlideLayoutPreset,
+  desktop: HeroSlideLayoutPreset,
+): string {
+  const classes = [anchorXClass[mobile.alignX], anchorYClass[mobile.alignY]];
+
+  if (desktop.alignX !== mobile.alignX) {
+    classes.push(anchorXClassSm[desktop.alignX]);
+  }
+  if (desktop.alignY !== mobile.alignY) {
+    classes.push(anchorYClassSm[desktop.alignY]);
+  }
+
+  return classes.join(" ");
+}
+
 function HeroGradientOverlay({ strength }: { strength: number }) {
   const opacity = Math.min(Math.max(strength, 0), 100) / 100;
 
@@ -134,14 +281,10 @@ function HeroGradientOverlay({ strength }: { strength: number }) {
 
 function HeroCopyPanel({
   copy,
-  layout,
-  isMobile,
   isPrimaryHeading,
   hidden,
 }: {
   copy: HeroCopy;
-  layout: HeroSlideLayoutPreset;
-  isMobile: boolean;
   isPrimaryHeading: boolean;
   hidden?: boolean;
 }) {
@@ -149,42 +292,19 @@ function HeroCopyPanel({
 
   return (
     <div
-      className="pointer-events-auto relative z-20 w-full min-w-0"
-      style={{
-        maxWidth: `${layout.maxWidth}px`,
-        textAlign: layout.textAlign,
-      }}
+      className={`${styles.copyPanel} pointer-events-auto relative z-20 w-full min-w-0`}
       aria-hidden={hidden || undefined}
     >
       {copy.badge ? (
-        <p
-          className="mb-2 text-xs font-bold uppercase tracking-[0.2em] sm:text-sm"
-          style={{ color: layout.descriptionColor }}
-        >
+        <p className={`${styles.copyBadge} mb-2 text-xs font-bold uppercase tracking-[0.2em] sm:text-sm`}>
           {copy.badge}
         </p>
       ) : null}
-      <HeadingTag
-        className="font-bold leading-tight tracking-tight break-words"
-        style={{
-          color: layout.titleColor,
-          fontSize: `${layout.titleSizePx}px`,
-        }}
-      >
+      <HeadingTag className={`${styles.copyTitle} font-bold leading-tight tracking-tight break-words`}>
         {copy.title}
       </HeadingTag>
-      <p
-        className="mt-2 leading-relaxed sm:mt-4"
-        style={{
-          color: layout.descriptionColor,
-          fontSize: `${layout.descriptionSizePx}px`,
-        }}
-      >
-        {copy.description}
-      </p>
-      <div
-        className={`mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3 ${layout.textAlign === "center" ? "justify-center" : layout.textAlign === "right" ? "justify-end" : "justify-start"}`}
-      >
+      <p className={`${styles.copyDescription} mt-2 leading-relaxed sm:mt-4`}>{copy.description}</p>
+      <div className={`${styles.copyCtaRow} mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3`}>
         {copy.shopBestSellersLabel.trim() && copy.shopBestSellersHref.trim() ? (
           <HeroNavLink
             href={copy.shopBestSellersHref}
@@ -204,9 +324,7 @@ function HeroCopyPanel({
           </HeroNavLink>
         ) : null}
       </div>
-      {isMobile ? null : (
-        <span className="sr-only">Hero banner content overlay</span>
-      )}
+      <span className="sr-only">Hero banner content overlay</span>
     </div>
   );
 }
@@ -260,29 +378,6 @@ function HeroSlideFrame({
         <HeroGradientOverlay strength={desktop.gradientStrength} />
       </div>
       <div
-        className={`pointer-events-none absolute inset-0 z-10 hidden px-4 sm:flex sm:px-6 lg:px-10 ${anchorXClass[desktop.alignX]} ${anchorYClass[desktop.alignY]}`}
-        style={{
-          paddingLeft: desktop.alignX === "left" ? desktop.offsetX : undefined,
-          paddingRight: desktop.alignX === "right" ? desktop.offsetX : undefined,
-          paddingTop: desktop.alignY === "top" ? desktop.offsetY : undefined,
-          paddingBottom: desktop.alignY === "bottom" ? desktop.offsetY : undefined,
-          transform:
-            desktop.alignX === "center" || desktop.alignY === "center"
-              ? `translate(${desktop.alignX === "center" ? desktop.offsetX : 0}px, ${desktop.alignY === "center" ? desktop.offsetY : 0}px)`
-              : undefined,
-        }}
-        aria-hidden={!isActive || undefined}
-      >
-        <HeroCopyPanel
-          copy={copy}
-          layout={desktop}
-          isMobile={false}
-          isPrimaryHeading={isActive}
-          hidden={!isActive}
-        />
-      </div>
-
-      <div
         className="pointer-events-none absolute inset-0 z-10 sm:hidden"
         style={{
           background: `linear-gradient(to top, rgba(255,255,255,${mobile.gradientStrength / 100}) 0%, rgba(255,255,255,${(mobile.gradientStrength / 100) * 0.35}) 45%, transparent 72%)`,
@@ -290,19 +385,12 @@ function HeroSlideFrame({
         aria-hidden
       />
       <div
-        className={`pointer-events-none absolute inset-0 z-10 flex min-w-0 px-3 sm:hidden ${anchorXClass[mobile.alignX]} ${anchorYClass[mobile.alignY]}`}
-        style={{
-          paddingLeft: mobile.offsetX,
-          paddingRight: 12,
-          paddingTop: mobile.alignY === "top" ? mobile.offsetY : undefined,
-          paddingBottom: mobile.alignY === "bottom" ? mobile.offsetY : undefined,
-        }}
+        className={`${styles.copyOverlay} pointer-events-none absolute inset-0 z-10 flex min-w-0 px-3 sm:px-6 lg:px-10 ${responsiveOverlayFlexClasses(mobile, desktop)}`}
+        style={buildHeroCopyCssVars(mobile, desktop)}
         aria-hidden={!isActive || undefined}
       >
         <HeroCopyPanel
           copy={copy}
-          layout={mobile}
-          isMobile
           isPrimaryHeading={isActive}
           hidden={!isActive}
         />
@@ -479,8 +567,11 @@ export function HeroBannerSlider({ slides, copy }: Props) {
     return (
       <section className="border-b border-zinc-200 bg-white">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-          <div className="relative aspect-[1920/600] w-full bg-gradient-to-br from-slate-50 via-white to-rose-50/30">
-            <HeroCopyPanel copy={copy} layout={desktop} isMobile={false} isPrimaryHeading />
+          <div
+            className="relative aspect-[1920/600] w-full bg-gradient-to-br from-slate-50 via-white to-rose-50/30"
+            style={buildDesktopOnlyCopyCssVars(desktop)}
+          >
+            <HeroCopyPanel copy={copy} isPrimaryHeading />
           </div>
         </div>
       </section>

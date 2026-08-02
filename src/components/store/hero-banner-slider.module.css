@@ -1,0 +1,73 @@
+.copyOverlay {
+  padding-left: var(--hero-overlay-pl, 0);
+  padding-right: var(--hero-overlay-pr, 0);
+  padding-top: var(--hero-overlay-pt, 0);
+  padding-bottom: var(--hero-overlay-pb, 0);
+  transform: var(--hero-overlay-transform, none);
+}
+
+@media (min-width: 640px) {
+  .copyOverlay {
+    padding-left: var(--hero-overlay-pl-sm, var(--hero-overlay-pl, 0));
+    padding-right: var(--hero-overlay-pr-sm, var(--hero-overlay-pr, 0));
+    padding-top: var(--hero-overlay-pt-sm, var(--hero-overlay-pt, 0));
+    padding-bottom: var(--hero-overlay-pb-sm, var(--hero-overlay-pb, 0));
+    transform: var(--hero-overlay-transform-sm, var(--hero-overlay-transform, none));
+  }
+}
+
+.copyPanel {
+  max-width: var(--hero-max-w);
+  text-align: var(--hero-text-align);
+}
+
+@media (min-width: 640px) {
+  .copyPanel {
+    max-width: var(--hero-max-w-sm);
+    text-align: var(--hero-text-align-sm);
+  }
+}
+
+.copyBadge {
+  color: var(--hero-desc-color);
+}
+
+@media (min-width: 640px) {
+  .copyBadge {
+    color: var(--hero-desc-color-sm);
+  }
+}
+
+.copyTitle {
+  color: var(--hero-title-color);
+  font-size: var(--hero-title-size);
+}
+
+@media (min-width: 640px) {
+  .copyTitle {
+    color: var(--hero-title-color-sm);
+    font-size: var(--hero-title-size-sm);
+  }
+}
+
+.copyDescription {
+  color: var(--hero-desc-color);
+  font-size: var(--hero-desc-size);
+}
+
+@media (min-width: 640px) {
+  .copyDescription {
+    color: var(--hero-desc-color-sm);
+    font-size: var(--hero-desc-size-sm);
+  }
+}
+
+.copyCtaRow {
+  justify-content: var(--hero-cta-justify);
+}
+
+@media (min-width: 640px) {
+  .copyCtaRow {
+    justify-content: var(--hero-cta-justify-sm);
+  }
+}
