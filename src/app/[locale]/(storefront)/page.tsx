@@ -141,7 +141,7 @@ export default async function HomePage() {
   } as const;
 
   return (
-    <>
+    <main>
       <HeroBannerSlider slides={heroSlides} copy={heroCopy} />
 
       <HomeTrustBar />
@@ -183,6 +183,6 @@ export default async function HomePage() {
       </section>
 
       <HomeFeaturedBrandsSection products={products} />
-    </>
+    </main>
   );
 }

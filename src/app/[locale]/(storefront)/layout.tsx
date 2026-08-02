@@ -72,7 +72,7 @@ export default async function StorefrontLayout({
         <div className="mx-auto flex min-h-screen w-full min-w-0 max-w-full flex-col overflow-x-hidden bg-white">
           <MaintenanceBanner settings={settings} />
           <StoreHeader storeName={settings.store_name} />
-          <main className="mx-auto min-w-0 w-full max-w-full flex-1 overflow-x-hidden">{children}</main>
+          <div className="mx-auto min-w-0 w-full max-w-full flex-1 overflow-x-hidden">{children}</div>
           <StoreFooter {...publicContact} />
         </div>
       </StorefrontViewShell>
