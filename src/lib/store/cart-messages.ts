@@ -15,6 +15,7 @@ const ERROR_KEY_BY_CODE: Record<CartLibErrorCode, string> = {
   cart_empty: "errors.cartEmpty",
   order_unavailable: "errors.orderUnavailable",
   order_create_failed: "errors.orderCreateFailed",
+  auth_required: "errors.authRequired",
 };
 
 export function formatCartLibError(

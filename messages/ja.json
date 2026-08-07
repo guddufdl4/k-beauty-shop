@@ -234,6 +234,10 @@
     "pageJumpInput": "ページ番号",
     "pageJumpGo": "移動",
     "pageNumberLabel": "{page}ページ",
+    "signInToViewPrice": "ログインして価格を確認",
+    "signInToViewPriceHint": "卸売価格は会員のみ閲覧できます。",
+    "signInToViewPriceAction": "ログイン",
+    "signInToAddToCart": "カートを利用するにはログインしてください。",
     "adminEdit": {
       "badge": "管理者",
       "hint": "ストアの商品ページから直接編集できます。",
@@ -326,6 +330,8 @@
     "freeShipping": "無料",
     "freeShippingNote": "10万ウォン以上で送料無料",
     "checkout": "決済へ",
+    "loginRequired": "カートを利用するにはログインしてください。",
+    "loginAction": "ログイン",
     "change": "変更",
     "remove": "削除",
     "quantity": "数量",
@@ -346,8 +352,19 @@
       "cartUnavailable": "カートを利用できません。",
       "cartEmpty": "カートは空です。",
       "orderUnavailable": "注文を作成できません。",
-      "orderCreateFailed": "注文の作成に失敗しました。"
+      "orderCreateFailed": "注文の作成に失敗しました。",
+      "authRequired": "続行するにはログインしてください。"
     }
+  },
+  "checkout": {
+    "title": "決済",
+    "titleWithOrder": "注文 / 決済",
+    "emptyCart": "カートが空です。注文できません。",
+    "backToCart": "← カートに戻る",
+    "cancelled": "決済がキャンセルされました。もう一度お試しください。",
+    "dbHint": "注文はSupabase ordersテーブルに保存されます。",
+    "loginRequired": "決済するにはログインしてください。",
+    "loginAction": "ログイン"
   },
   "auth": {
     "loginTitle": "ログイン",

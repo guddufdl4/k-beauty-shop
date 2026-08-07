@@ -4,16 +4,36 @@ import { CartItemList } from "@/components/store/cart-item-list";
 import { getUsdKrwRate } from "@/lib/currency";
 import { formatLocalePrice } from "@/lib/utils";
 import { calculateShippingCost, getCart } from "@/lib/cart";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
 export default async function CartPage() {
-  const [t, cart, locale, usdKrwRate] = await Promise.all([
+  const [t, session, cart, locale, usdKrwRate] = await Promise.all([
     getTranslations("cart"),
+    getSessionProfile(),
     getCart(),
     getLocale(),
     getUsdKrwRate(),
   ]);
+  const isLoggedIn = Boolean(session.user);
+
+  if (!isLoggedIn) {
+    return (
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
+        <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
+        <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center sm:p-10">
+          <p className="text-zinc-600">{t("loginRequired")}</p>
+          <Link
+            href="/login"
+            className="mt-4 inline-block rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-700"
+          >
+            {t("loginAction")}
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">

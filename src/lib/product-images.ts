@@ -336,7 +336,7 @@ export function resolveNavCategorySlugForProduct(
 
 /** First real product image URL per top-level category slug (for homepage category cards). */
 export function resolveHomeCategoryImageUrls(
-  products: ProductWithRelations[],
+  products: Array<ProductImageSource & Pick<ProductWithRelations, "category">>,
   categories: Category[],
   targetSlugs: readonly string[],
 ): Record<string, string | null> {

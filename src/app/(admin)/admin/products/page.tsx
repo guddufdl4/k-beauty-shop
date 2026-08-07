@@ -17,6 +17,7 @@ import { ProductImageBatchSection } from "@/components/admin/product-image-batch
 import { getCachedProductImageBatchStats } from "@/lib/admin/product-image-batch";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getCachedBrandPriorityListStats, getProductImportBatches, getProducts, type ProductImportBatch } from "@/lib/supabase/products";
+import { isPricedStorefrontProduct } from "@/lib/store/product-visibility";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
 const ADMIN_PRODUCTS_PAGE_SIZE = 10;
@@ -323,20 +324,26 @@ export default async function AdminProductsPage({
   ]);
   const imageStats = imageStatsResult.stats;
   const batchById = new Map(batches.map((batch) => [batch.id, batch]));
-  const listProducts = products.map((product) => {
+  const listProducts = products.flatMap((product) => {
+    if (!isPricedStorefrontProduct(product)) {
+      return [];
+    }
+
     if (product.import_batch?.filename || !product.import_batch_id) {
-      return product;
+      return [product];
     }
 
     const batch = batchById.get(product.import_batch_id);
     if (!batch) {
-      return product;
+      return [product];
     }
 
-    return {
-      ...product,
-      import_batch: { id: batch.id, filename: batch.filename },
-    };
+    return [
+      {
+        ...product,
+        import_batch: { id: batch.id, filename: batch.filename },
+      },
+    ];
   });
   const lastCollectedAt = batches[0]?.created_at ?? null;
   const totalPages = Math.max(

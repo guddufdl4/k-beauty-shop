@@ -9,22 +9,29 @@ export function parseProductListSort(value: string | undefined): ProductListSort
 }
 
 export type ProductPriceFields = {
-  price: number;
-  wholesale_price: number | null;
-  compare_at_price: number | null;
+  price?: number;
+  wholesale_price?: number | null;
+  compare_at_price?: number | null;
 };
 
 /** Canonical storefront/cart selling price. */
 export function getEffectiveProductPrice(product: ProductPriceFields): number {
-  return product.wholesale_price ?? product.price;
+  return product.wholesale_price ?? product.price ?? 0;
 }
 
 export function isProductOnSale(product: ProductPriceFields): boolean {
+  if (product.price == null && product.wholesale_price == null) {
+    return false;
+  }
+
   const effectivePrice = getEffectiveProductPrice(product);
   return product.compare_at_price != null && product.compare_at_price > effectivePrice;
 }
 
-export function hasDualPricing(product: ProductPriceFields): boolean {
+export function hasDualPricing(product: {
+  wholesale_price?: number | null;
+  price?: number;
+}): boolean {
   return product.wholesale_price != null;
 }
 
@@ -32,7 +39,13 @@ export function getCompareAtPrice(product: ProductPriceFields): number | null {
   if (!isProductOnSale(product)) {
     return null;
   }
-  return product.compare_at_price;
+  return product.compare_at_price ?? null;
+}
+
+export function isPricedStorefrontProduct(
+  product: object,
+): product is ProductPriceFields & { price: number } {
+  return "price" in product && typeof (product as { price?: number }).price === "number";
 }
 
 export function getCardDisplayPrice(product: ProductPriceFields): number {
@@ -55,7 +68,7 @@ export function getProductPriceColumns(product: ProductPriceFields): {
   if (hasDualPricing(product)) {
     return {
       primary: { amount: effectivePrice, labelKey: "wholesalePrice" },
-      secondary: { amount: product.price, labelKey: "retailPrice" },
+      secondary: { amount: product.price ?? effectivePrice, labelKey: "retailPrice" },
       compareAt,
     };
   }
@@ -67,13 +80,14 @@ export function getProductPriceColumns(product: ProductPriceFields): {
   };
 }
 
-export function usesBoxQuantityField(product: ProductPriceFields): boolean {
-  return !hasDualPricing(product);
+export function usesBoxQuantityField(product: object): boolean {
+  const record = product as { wholesale_price?: number | null };
+  return record.wholesale_price == null;
 }
 
 export type MoqBadgeKey = "moqBadge" | "unitsPerBoxBadge";
 
-export function getMoqBadgeKey(product: ProductPriceFields): MoqBadgeKey {
+export function getMoqBadgeKey(product: { moq: number }): MoqBadgeKey {
   return usesBoxQuantityField(product) ? "unitsPerBoxBadge" : "moqBadge";
 }
 

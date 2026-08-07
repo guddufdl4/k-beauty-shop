@@ -20,12 +20,18 @@ import { formatLocaleProductPrice } from "@/lib/utils";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getProductBySlug } from "@/lib/supabase/products";
+import {
+  canViewProductPrices,
+  isPricedStorefrontProduct,
+  resolveStorefrontAudience,
+} from "@/lib/store/product-visibility";
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const audience = await resolveStorefrontAudience();
   const [{ slug }, t, locale, siteSettings, usdKrwRate, session] = await Promise.all([
     params,
     getTranslations("products"),
@@ -34,13 +40,16 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     getUsdKrwRate(),
     getSessionProfile(),
   ]);
-  const { product, meta } = await getProductBySlug(slug);
+  const { product, meta } = await getProductBySlug(slug, audience);
   const isAdmin = session.profile?.role === "admin";
-  const categoriesResult = isAdmin ? await getCategories() : null;
+  const canViewPrices = canViewProductPrices(audience);
 
   if (!product) {
     notFound();
   }
+
+  const categoriesResult =
+    isAdmin && isPricedStorefrontProduct(product) ? await getCategories() : null;
 
   const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
   const displayImageUrl = resolveProductImageUrl(product);
@@ -48,7 +57,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const inStock = !isProductSoldOut(product);
   const wholesaleLabel = siteSettings.wholesale_price_label || t("wholesalePrice");
   const moqLabel = siteSettings.moq_label || t("moq");
-  const priceColumns = getProductPriceColumns(product);
+  const priceColumns = isPricedStorefrontProduct(product)
+    ? getProductPriceColumns(product)
+    : null;
   const quantityLabel = usesBoxQuantityField(product) ? t("unitsPerBox") : moqLabel;
   const quantityValue = usesBoxQuantityField(product)
     ? t("unitsPerBoxValue", { count: product.moq })
@@ -118,7 +129,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         </div>
 
         <div className="flex min-w-0 max-w-full flex-1 flex-col overflow-hidden">
-          {isAdmin && categoriesResult ? (
+          {isAdmin && categoriesResult && isPricedStorefrontProduct(product) ? (
             <ProductAdminDetailPanel
               product={product}
               categories={categoriesResult.categories}
@@ -141,31 +152,44 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               ) : null}
 
               <div className="mt-8 min-w-0 space-y-4 rounded-2xl border border-rose-100 bg-white p-6">
-                <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                      {t(priceColumns.primary.labelKey)}
-                    </p>
-                    <p className="text-2xl font-bold text-zinc-900">
-                      {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
-                    </p>
-                    {priceColumns.compareAt ? (
-                      <p className="text-sm text-zinc-400 line-through">
-                        {formatLocaleProductPrice(priceColumns.compareAt, locale, usdKrwRate)}
+                {canViewPrices && priceColumns ? (
+                  <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        {t(priceColumns.primary.labelKey)}
                       </p>
+                      <p className="text-2xl font-bold text-zinc-900">
+                        {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
+                      </p>
+                      {priceColumns.compareAt ? (
+                        <p className="text-sm text-zinc-400 line-through">
+                          {formatLocaleProductPrice(priceColumns.compareAt, locale, usdKrwRate)}
+                        </p>
+                      ) : null}
+                    </div>
+                    {priceColumns.secondary ? (
+                      <div className="min-w-0 text-right">
+                        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                          {t(priceColumns.secondary.labelKey)}
+                        </p>
+                        <p className="text-xl font-bold text-rose-700">
+                          {formatLocaleProductPrice(priceColumns.secondary.amount, locale, usdKrwRate)}
+                        </p>
+                      </div>
                     ) : null}
                   </div>
-                  {priceColumns.secondary ? (
-                    <div className="min-w-0 text-right">
-                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                        {t(priceColumns.secondary.labelKey)}
-                      </p>
-                      <p className="text-xl font-bold text-rose-700">
-                        {formatLocaleProductPrice(priceColumns.secondary.amount, locale, usdKrwRate)}
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
+                ) : (
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-5">
+                    <p className="text-lg font-semibold text-zinc-800">{t("signInToViewPrice")}</p>
+                    <p className="mt-1 text-sm text-zinc-600">{t("signInToViewPriceHint")}</p>
+                    <Link
+                      href="/login"
+                      className="mt-4 inline-flex rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+                    >
+                      {t("signInToViewPriceAction")}
+                    </Link>
+                  </div>
+                )}
 
                 <dl className="grid min-w-0 grid-cols-2 gap-4 border-t border-rose-50 pt-4 text-sm">
                   <div className="min-w-0">
@@ -175,7 +199,13 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   <div className="min-w-0">
                     <dt className="text-zinc-500">{t("stock")}</dt>
                     <dd className={`font-semibold ${inStock ? "text-emerald-600" : "text-red-600"}`}>
-                      {inStock ? t("inStock", { count: product.stock }) : t("outOfStock")}
+                      {canViewPrices && isPricedStorefrontProduct(product) ? (
+                        inStock ? t("inStock", { count: product.stock }) : t("outOfStock")
+                      ) : product.sold_out ? (
+                        t("outOfStock")
+                      ) : (
+                        <span className="text-zinc-600">—</span>
+                      )}
                     </dd>
                   </div>
                   <div className="min-w-0">
@@ -197,12 +227,24 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 </dl>
               </div>
 
-              <AddToCartForm
-                productId={product.id}
-                moq={product.moq}
-                stock={product.stock}
-                soldOut={product.sold_out}
-              />
+              {canViewPrices && isPricedStorefrontProduct(product) ? (
+                <AddToCartForm
+                  productId={product.id}
+                  moq={product.moq}
+                  stock={product.stock}
+                  soldOut={product.sold_out}
+                />
+              ) : (
+                <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-5">
+                  <p className="text-sm font-medium text-zinc-700">{t("signInToAddToCart")}</p>
+                  <Link
+                    href="/login"
+                    className="mt-3 inline-flex rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+                  >
+                    {t("signInToViewPriceAction")}
+                  </Link>
+                </div>
+              )}
 
               {siteSettings.min_order_note ? (
                 <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm text-zinc-600">

@@ -238,6 +238,10 @@
     "pageJumpGo": "Go",
     "pageNumberLabel": "Page {page}",
     "imagePending": "{brand} {name} — image coming soon",
+    "signInToViewPrice": "Sign in to view price",
+    "signInToViewPriceHint": "Wholesale pricing is available to registered members.",
+    "signInToViewPriceAction": "Log in",
+    "signInToAddToCart": "Log in to add items to your cart.",
     "adminEdit": {
       "badge": "Admin",
       "hint": "You can edit this product on the storefront.",
@@ -311,6 +315,8 @@
     "payWithStripe": "Pay with Stripe",
     "placeDemoOrder": "Place order (demo · no payment)",
     "shippingRequired": "Please fill in all shipping fields.",
+    "loginRequired": "Please log in to checkout.",
+    "loginAction": "Log in",
     "orderCreateFailed": "Failed to create the order.",
     "orderLoadFailed": "Unable to load order details.",
     "stripeSessionFailed": "Failed to create a payment session. Check your Stripe keys."
@@ -354,6 +360,8 @@
     "freeShipping": "Free",
     "freeShippingNote": "Free shipping over KRW 100,000",
     "checkout": "Checkout",
+    "loginRequired": "Please log in to use your cart.",
+    "loginAction": "Log in",
     "change": "Update",
     "remove": "Remove",
     "quantity": "Quantity",
@@ -374,7 +382,8 @@
       "cartUnavailable": "Cart is unavailable.",
       "cartEmpty": "Your cart is empty.",
       "orderUnavailable": "Unable to create an order.",
-      "orderCreateFailed": "Failed to create the order."
+      "orderCreateFailed": "Failed to create the order.",
+      "authRequired": "Please log in to continue."
     }
   },
   "auth": {

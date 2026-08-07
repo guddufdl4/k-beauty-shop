@@ -9,10 +9,11 @@ import {
   getCardDisplayPrice,
   getCompareAtPrice,
   getDisplayBrandName,
+  isPricedStorefrontProduct,
   isProductSoldOut,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
-import type { ProductWithRelations } from "@/lib/supabase/products";
+import type { StorefrontProduct } from "@/lib/supabase/products";
 
 type ProductCardBadge = {
   type: "featured" | "bestSeller" | "new" | "sale";
@@ -20,7 +21,7 @@ type ProductCardBadge = {
 };
 
 type Props = {
-  product: ProductWithRelations;
+  product: StorefrontProduct;
   compact?: boolean;
   variant?: "default" | "trending";
   badge?: ProductCardBadge;
@@ -28,6 +29,7 @@ type Props = {
   usdKrwRate: number;
   moqBadge?: string;
   soldOutLabel?: string;
+  signInToViewPriceLabel?: string;
 };
 
 const SOLD_OUT_LABELS: Record<string, string> = {
@@ -46,13 +48,15 @@ export function ProductCard({
   usdKrwRate,
   moqBadge,
   soldOutLabel: soldOutLabelProp,
+  signInToViewPriceLabel,
 }: Props) {
   const isTrending = variant === "trending";
+  const showPrices = isPricedStorefrontProduct(product);
   const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
   const displayImageUrl = resolveProductImageUrl(product);
   const isPlaceholder = isCategoryPlaceholderUrl(displayImageUrl);
-  const displayPrice = getCardDisplayPrice(product);
-  const compareAtPrice = getCompareAtPrice(product);
+  const displayPrice = showPrices ? getCardDisplayPrice(product) : null;
+  const compareAtPrice = showPrices ? getCompareAtPrice(product) : null;
   const soldOut = isProductSoldOut(product);
   const soldOutLabel = soldOutLabelProp ?? SOLD_OUT_LABELS[locale] ?? SOLD_OUT_LABELS.en;
   const quantityBadge =
@@ -146,14 +150,22 @@ export function ProductCard({
         ) : null}
         <div className={cn("mt-auto flex items-end justify-between gap-2", isTrending ? "pt-2" : compact ? "mt-1" : "pt-2")}>
           <div className="min-w-0">
-            <p className={cn("font-bold text-zinc-900", isTrending || compact ? "text-sm" : "text-base")}>
-              {formatLocaleProductPrice(displayPrice, locale, usdKrwRate)}
-            </p>
-            {compareAtPrice ? (
-              <p className="text-xs text-zinc-400 line-through">
-                {formatLocaleProductPrice(compareAtPrice, locale, usdKrwRate)}
+            {showPrices && displayPrice != null ? (
+              <>
+                <p className={cn("font-bold text-zinc-900", isTrending || compact ? "text-sm" : "text-base")}>
+                  {formatLocaleProductPrice(displayPrice, locale, usdKrwRate)}
+                </p>
+                {compareAtPrice ? (
+                  <p className="text-xs text-zinc-400 line-through">
+                    {formatLocaleProductPrice(compareAtPrice, locale, usdKrwRate)}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className={cn("font-semibold text-zinc-600", isTrending || compact ? "text-sm" : "text-base")}>
+                {signInToViewPriceLabel ?? "Sign in to view price"}
               </p>
-            ) : null}
+            )}
           </div>
           {showMoq ? (
             <span className="shrink-0 rounded-sm bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">

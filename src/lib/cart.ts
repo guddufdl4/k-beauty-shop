@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { formatKRW } from "@/lib/utils";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { getAuthUser } from "@/lib/supabase/auth-helpers";
+import { getAuthUser, getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { buildMemberProductSelect } from "@/lib/store/product-visibility";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 import {
   ensureSoftDeleteColumnProbed,
@@ -90,46 +91,6 @@ export async function getCurrentUserId(): Promise<string | null> {
 export async function usesDatabaseCart(): Promise<boolean> {
   const userId = await getCurrentUserId();
   return Boolean(userId && isSupabaseConfigured());
-}
-
-function mapFallbackItem(
-  product: ProductWithRelations,
-  quantity: number,
-): CartItemView {
-  return {
-    id: product.id,
-    productId: product.id,
-    quantity,
-    name: product.name,
-    slug: product.slug,
-    brand: product.brand,
-    sku: product.sku,
-    unitPrice: getEffectiveProductPrice(product),
-    moq: product.moq,
-    stock: product.stock,
-    lineTotal: getEffectiveProductPrice(product) * quantity,
-  };
-}
-
-async function readDemoCart(): Promise<Record<string, number>> {
-  const store = await cookies();
-  const raw = store.get(DEMO_CART_COOKIE)?.value;
-
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Record<string, number>;
-    return Object.fromEntries(
-      Object.entries(parsed).filter(
-        ([productId, quantity]) =>
-          isDemoProductId(productId) && Number.isFinite(quantity) && quantity >= 1,
-      ),
-    );
-  } catch {
-    return {};
-  }
 }
 
 async function writeDemoCart(cart: Record<string, number>) {
@@ -243,30 +204,17 @@ async function getDatabaseCart(userId: string): Promise<CartView> {
   return { items, subtotal, itemCount, source: "database" };
 }
 
-async function getCookieCart(): Promise<CartView> {
-  const cart = await readDemoCart();
-  const items: CartItemView[] = [];
-
-  for (const [productId, quantity] of Object.entries(cart)) {
-    const product = await getFallbackProduct(productId);
-    if (!product) {
-      continue;
-    }
-    items.push(mapFallbackItem(product, quantity));
-  }
-
-  const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-
-  return { items, subtotal, itemCount, source: "cookie" };
-}
-
 export async function getCart(): Promise<CartView> {
   const userId = await getCurrentUserId();
-  if (userId && isSupabaseConfigured()) {
+  if (!userId) {
+    return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
+  }
+
+  if (isSupabaseConfigured()) {
     return getDatabaseCart(userId);
   }
-  return getCookieCart();
+
+  return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
 }
 
 export async function getCartItemCount(): Promise<number> {
@@ -294,13 +242,7 @@ async function resolveProductForCart(
 
   let query = supabase
     .from("products")
-    .select(
-      `
-      *,
-      category:categories(id, name, slug),
-      images:product_images(id, product_id, url, alt_text, sort_order, is_primary)
-    `,
-    )
+    .select(buildMemberProductSelect())
     .eq("id", productId)
     .eq("status", "active");
 
@@ -314,7 +256,7 @@ async function resolveProductForCart(
     return null;
   }
 
-  const record = data as Record<string, unknown>;
+  const record = data as unknown as Record<string, unknown>;
   const categoryRaw = record.category as Record<string, unknown> | null;
   const imagesRaw = (record.images as Record<string, unknown>[] | null) ?? [];
 
@@ -378,7 +320,8 @@ export type CartLibErrorCode =
   | "cart_unavailable"
   | "cart_empty"
   | "order_unavailable"
-  | "order_create_failed";
+  | "order_create_failed"
+  | "auth_required";
 
 export type CartLibResult = {
   error?: string;
@@ -409,6 +352,11 @@ export async function addToCart(
   productId: string,
   quantity: number,
 ): Promise<CartLibResult> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { errorCode: "auth_required" };
+  }
+
   const product = await resolveProductForCart(productId);
   if (!product) {
     return { errorCode: "product_not_found" };
@@ -419,11 +367,13 @@ export async function addToCart(
     return validationError;
   }
 
-  const userId = await getCurrentUserId();
-  const useDatabase =
-    Boolean(userId && isSupabaseConfigured()) && !isDemoProductId(productId);
+  if (!isSupabaseConfigured()) {
+    return { errorCode: "cart_unavailable" };
+  }
 
-  if (useDatabase && userId) {
+  const useDatabase = !isDemoProductId(productId);
+
+  if (useDatabase) {
     const supabase = await createSafeClient();
     if (!supabase) {
       return { errorCode: "cart_unavailable" };
@@ -466,22 +416,18 @@ export async function addToCart(
     return {};
   }
 
-  const cart = await readDemoCart();
-  const nextQuantity = (cart[productId] ?? 0) + quantity;
-  const nextValidation = validateQuantity(product, nextQuantity);
-  if (nextValidation) {
-    return nextValidation;
-  }
-
-  cart[productId] = nextQuantity;
-  await writeDemoCart(cart);
-  return {};
+  return { errorCode: "product_not_found" };
 }
 
 export async function updateCartQuantity(
   productId: string,
   quantity: number,
 ): Promise<CartLibResult> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { errorCode: "auth_required" };
+  }
+
   const product = await resolveProductForCart(productId);
   if (!product) {
     return { errorCode: "product_not_found" };
@@ -492,32 +438,25 @@ export async function updateCartQuantity(
     return validationError;
   }
 
-  const userId = await getCurrentUserId();
-  const useDatabase =
-    Boolean(userId && isSupabaseConfigured()) && !isDemoProductId(productId);
-
-  if (useDatabase && userId) {
-    const supabase = await createSafeClient();
-    if (!supabase) {
-      return { errorCode: "cart_unavailable" };
-    }
-
-    const { error } = await supabase
-      .from("cart_items")
-      .update({ quantity })
-      .eq("user_id", userId)
-      .eq("product_id", productId);
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    return {};
+  if (!isSupabaseConfigured() || isDemoProductId(productId)) {
+    return { errorCode: "cart_unavailable" };
   }
 
-  const cart = await readDemoCart();
-  cart[productId] = quantity;
-  await writeDemoCart(cart);
+  const supabase = await createSafeClient();
+  if (!supabase) {
+    return { errorCode: "cart_unavailable" };
+  }
+
+  const { error } = await supabase
+    .from("cart_items")
+    .update({ quantity })
+    .eq("user_id", userId)
+    .eq("product_id", productId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
   return {};
 }
 
@@ -525,31 +464,29 @@ export async function removeFromCart(
   productId: string,
 ): Promise<CartLibResult> {
   const userId = await getCurrentUserId();
-  const useDatabase =
-    Boolean(userId && isSupabaseConfigured()) && !isDemoProductId(productId);
-
-  if (useDatabase && userId) {
-    const supabase = await createSafeClient();
-    if (!supabase) {
-      return { errorCode: "cart_unavailable" };
-    }
-
-    const { error } = await supabase
-      .from("cart_items")
-      .delete()
-      .eq("user_id", userId)
-      .eq("product_id", productId);
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    return {};
+  if (!userId) {
+    return { errorCode: "auth_required" };
   }
 
-  const cart = await readDemoCart();
-  delete cart[productId];
-  await writeDemoCart(cart);
+  if (!isSupabaseConfigured() || isDemoProductId(productId)) {
+    return { errorCode: "cart_unavailable" };
+  }
+
+  const supabase = await createSafeClient();
+  if (!supabase) {
+    return { errorCode: "cart_unavailable" };
+  }
+
+  const { error } = await supabase
+    .from("cart_items")
+    .delete()
+    .eq("user_id", userId)
+    .eq("product_id", productId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
   return {};
 }
 
@@ -573,6 +510,11 @@ export function calculateShippingCost(subtotal: number): number {
 export async function createOrder(
   shippingAddress: ShippingAddress,
 ): Promise<CartLibResult & { orderNumber?: string }> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { errorCode: "auth_required" };
+  }
+
   const cart = await getCart();
   if (cart.items.length === 0) {
     return { errorCode: "cart_empty" };
@@ -593,83 +535,56 @@ export async function createOrder(
   const shippingCost = calculateShippingCost(subtotal);
   const total = subtotal + shippingCost;
   const orderNumber = generateOrderNumber();
-  const userId = await getCurrentUserId();
 
-  if (userId && isSupabaseConfigured() && cart.source === "database") {
-    const supabase = await createSafeClient();
-    if (!supabase) {
-      return { errorCode: "order_unavailable" };
-    }
-
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        order_number: orderNumber,
-        user_id: userId,
-        order_type: "b2c",
-        status: "pending",
-        subtotal,
-        shipping_cost: shippingCost,
-        total,
-        currency: "KRW",
-        shipping_address: shippingAddress,
-      })
-      .select("id")
-      .single();
-
-    if (orderError || !order) {
-      return {
-        error: orderError?.message,
-        errorCode: orderError ? undefined : "order_create_failed",
-      };
-    }
-
-    const orderItems = cart.items.map((item) => ({
-      order_id: order.id,
-      product_id: item.productId,
-      product_name: item.name,
-      product_sku: item.sku,
-      unit_price: item.unitPrice,
-      quantity: item.quantity,
-      line_total: item.lineTotal,
-    }));
-
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItems);
-
-    if (itemsError) {
-      return { error: itemsError.message };
-    }
-
-    await clearCart();
-    return { orderNumber };
+  if (!isSupabaseConfigured() || cart.source !== "database") {
+    return { errorCode: "order_unavailable" };
   }
 
-  const demoOrder: DemoOrder = {
-    order_number: orderNumber,
-    status: "pending",
-    subtotal,
-    shipping_cost: shippingCost,
-    total,
-    currency: "KRW",
-    shipping_address: shippingAddress,
-    items: cart.items.map((item) => ({
-      product_id: item.productId,
-      product_name: item.name,
-      product_sku: item.sku,
-      unit_price: item.unitPrice,
-      quantity: item.quantity,
-      line_total: item.lineTotal,
-    })),
-    created_at: new Date().toISOString(),
-  };
+  const supabase = await createSafeClient();
+  if (!supabase) {
+    return { errorCode: "order_unavailable" };
+  }
 
-  const orders = await readDemoOrders();
-  orders.unshift(demoOrder);
-  await writeDemoOrders(orders);
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      order_number: orderNumber,
+      user_id: userId,
+      order_type: "b2c",
+      status: "pending",
+      subtotal,
+      shipping_cost: shippingCost,
+      total,
+      currency: "KRW",
+      shipping_address: shippingAddress,
+    })
+    .select("id")
+    .single();
+
+  if (orderError || !order) {
+    return {
+      error: orderError?.message,
+      errorCode: orderError ? undefined : "order_create_failed",
+    };
+  }
+
+  const orderItems = cart.items.map((item) => ({
+    order_id: order.id,
+    product_id: item.productId,
+    product_name: item.name,
+    product_sku: item.sku,
+    unit_price: item.unitPrice,
+    quantity: item.quantity,
+    line_total: item.lineTotal,
+  }));
+
+  const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+
+  if (itemsError) {
+    return { error: itemsError.message };
+  }
+
   await clearCart();
-
   return { orderNumber };
 }
 
@@ -695,6 +610,10 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
       } & { source: "database" })
     | null;
 }> {
+  const userId = await getCurrentUserId();
+  const { profile } = await getSessionProfile();
+  const isAdmin = profile?.role === "admin";
+
   if (isSupabaseConfigured()) {
     const supabase = await createSafeClient();
     if (supabase) {
@@ -703,6 +622,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
         .select(
           `
           order_number,
+          user_id,
           status,
           subtotal,
           shipping_cost,
@@ -724,6 +644,12 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
 
       if (data) {
         const record = data as Record<string, unknown>;
+        const orderUserId = record.user_id ? String(record.user_id) : null;
+
+        if (!isAdmin && orderUserId !== userId) {
+          return { order: null };
+        }
+
         const items =
           (record.items as Array<Record<string, unknown>> | null) ?? [];
 
@@ -749,6 +675,10 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
         };
       }
     }
+  }
+
+  if (!userId) {
+    return { order: null };
   }
 
   const demoOrders = await readDemoOrders();

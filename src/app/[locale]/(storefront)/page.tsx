@@ -17,6 +17,7 @@ import {
   getStorefrontCategories,
   selectTrendingCategoryProducts,
 } from "@/lib/supabase/products";
+import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
 export const revalidate = 60;
 
 /** Standard homepage hero brand set (VT, SKINFOOD, Torriden). */
@@ -118,9 +119,11 @@ function mapStoredHeroSlideToBannerSlide(
   };
 }
 export default async function HomePage() {
-  const [t, { products, meta }, locale, usdKrwRate, { categories }] = await Promise.all([
+  const audience = await resolveStorefrontAudience();
+  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }] = await Promise.all([
     getTranslations("home"),
-    getPriorityBrandProducts({ limit: 200 }),
+    getTranslations("products"),
+    getPriorityBrandProducts({ limit: 200, audience }),
     getLocale(),
     getUsdKrwRate(),
     getStorefrontCategories(),
@@ -178,6 +181,7 @@ export default async function HomePage() {
             }}
             locale={locale}
             usdKrwRate={usdKrwRate}
+            signInToViewPriceLabel={tProducts("signInToViewPrice")}
           />
         </div>
       </section>

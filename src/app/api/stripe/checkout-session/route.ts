@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
-import { getOrderByNumber, saveStripeSessionId } from "@/lib/cart";
+import { getCurrentUserId, getOrderByNumber, saveStripeSessionId } from "@/lib/cart";
 import { createCheckoutSession, isStripeConfigured } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Login required." }, { status: 401 });
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Stripe 키가 설정되지 않았습니다. 데모 모드로 주문만 생성됩니다." },

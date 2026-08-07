@@ -234,6 +234,10 @@
     "pageJumpInput": "页码",
     "pageJumpGo": "跳转",
     "pageNumberLabel": "第 {page} 页",
+    "signInToViewPrice": "登录后查看价格",
+    "signInToViewPriceHint": "批发价格仅对注册会员开放。",
+    "signInToViewPriceAction": "登录",
+    "signInToAddToCart": "请登录后再加入购物车。",
     "adminEdit": {
       "badge": "管理员",
       "hint": "可在店铺商品页直接编辑。",
@@ -326,6 +330,8 @@
     "freeShipping": "免费",
     "freeShippingNote": "满 10 万韩元免运费",
     "checkout": "去结算",
+    "loginRequired": "请登录后使用购物车。",
+    "loginAction": "登录",
     "change": "修改",
     "remove": "删除",
     "quantity": "数量",
@@ -346,8 +352,19 @@
       "cartUnavailable": "购物车不可用。",
       "cartEmpty": "购物车为空。",
       "orderUnavailable": "无法创建订单。",
-      "orderCreateFailed": "创建订单失败。"
+      "orderCreateFailed": "创建订单失败。",
+      "authRequired": "请登录后继续。"
     }
+  },
+  "checkout": {
+    "title": "结算",
+    "titleWithOrder": "订单 / 结算",
+    "emptyCart": "购物车为空，无法下单。",
+    "backToCart": "← 返回购物车",
+    "cancelled": "支付已取消，请重试。",
+    "dbHint": "订单将保存至 Supabase orders 表。",
+    "loginRequired": "请登录后进行结算。",
+    "loginAction": "登录"
   },
   "auth": {
     "loginTitle": "登录",

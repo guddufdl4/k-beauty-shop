@@ -27,7 +27,7 @@ import {
   MAIN_NAV_LINKS,
   type HomeTrustHighlightKey,
 } from "@/lib/store/products-url";
-import type { Category, ProductWithRelations } from "@/lib/supabase/products";
+import type { Category, StorefrontProduct } from "@/lib/supabase/products";
 
 
 
@@ -390,7 +390,7 @@ const HOME_CATEGORY_I18N_KEY: Record<string, string> = {
 };
 
 type HomeCategorySectionProps = {
-  products: ProductWithRelations[];
+  products: StorefrontProduct[];
 };
 
 export async function HomeCategorySection({ products }: HomeCategorySectionProps) {
@@ -482,7 +482,7 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
 }
 
 type HomeFeaturedBrandsSectionProps = {
-  products: ProductWithRelations[];
+  products: StorefrontProduct[];
 };
 
 function FeaturedBrandCard({ brand }: { brand: FeaturedBrand }) {

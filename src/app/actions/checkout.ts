@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   createOrder,
+  getCurrentUserId,
   getOrderByNumber,
   markOrderPaid,
   saveStripeSessionId,
@@ -29,6 +30,12 @@ export async function placeOrder(
 ): Promise<CheckoutState> {
   const t = await getTranslations("checkout");
   const locale = await getLocale();
+
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { error: t("loginRequired") };
+  }
+
   const shippingAddress: ShippingAddress = {
     recipient_name: String(formData.get("recipient_name") ?? "").trim(),
     phone: String(formData.get("phone") ?? "").trim(),

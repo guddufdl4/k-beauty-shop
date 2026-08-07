@@ -14,6 +14,7 @@ import {
   getProducts,
   STOREFRONT_PRODUCTS_PAGE_SIZE,
 } from "@/lib/supabase/products";
+import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
 
 type ProductsPageProps = {
   searchParams: Promise<{
@@ -37,6 +38,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const brandFilter = brandQuery?.trim() || undefined;
   const sort = parseProductListSort(sortQuery);
   const currentPage = Math.max(1, Number.parseInt(pageQuery ?? "1", 10) || 1);
+  const audience = await resolveStorefrontAudience();
 
   const [{ products, totalCount, meta }, { categories }] = await Promise.all([
     getProducts({
@@ -48,6 +50,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       limit: STOREFRONT_PRODUCTS_PAGE_SIZE,
       page: currentPage,
       requireRealImage: true,
+      audience,
     }),
     getStorefrontCategories(),
   ]);
@@ -170,6 +173,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     locale={locale}
                     usdKrwRate={usdKrwRate}
                     moqBadge={t(getMoqBadgeKey(product), { count: product.moq })}
+                    signInToViewPriceLabel={t("signInToViewPrice")}
                   />
                 ))}
               </div>

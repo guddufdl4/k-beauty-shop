@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ProductCard } from "@/components/store/product-card";
-import { getMoqBadgeKey, isProductOnSale, isProductSoldOut } from "@/lib/store/products-url";
-import type { ProductWithRelations, TrendingCategorySlug } from "@/lib/supabase/products";
+import { getMoqBadgeKey, isPricedStorefrontProduct, isProductOnSale, isProductSoldOut } from "@/lib/store/products-url";
+import type { StorefrontProduct, TrendingCategorySlug } from "@/lib/supabase/products";
 
 export type TrendingFilterKey = "all" | TrendingCategorySlug;
 
-type TrendingProducts = Record<TrendingFilterKey, ProductWithRelations[]>;
+type TrendingProducts = Record<TrendingFilterKey, StorefrontProduct[]>;
 
 type BadgeLabels = {
   featured: string;
@@ -30,13 +30,14 @@ type Props = {
   badgeLabels: BadgeLabels;
   locale: string;
   usdKrwRate: number;
+  signInToViewPriceLabel: string;
 };
 
 const FILTER_ORDER: TrendingFilterKey[] = ["all", "skincare", "makeup", "haircare"];
 
 const NEW_PRODUCT_DAYS = 45;
 
-function isNewProduct(product: ProductWithRelations): boolean {
+function isNewProduct(product: StorefrontProduct): boolean {
   const created = new Date(product.created_at);
   if (Number.isNaN(created.getTime())) {
     return false;
@@ -48,7 +49,7 @@ function isNewProduct(product: ProductWithRelations): boolean {
 }
 
 function resolveProductBadge(
-  product: ProductWithRelations,
+  product: StorefrontProduct,
   badgeLabels: BadgeLabels,
 ): { type: "featured" | "bestSeller" | "new" | "sale"; label: string } | undefined {
   if (isProductSoldOut(product)) {
@@ -67,7 +68,7 @@ function resolveProductBadge(
     return { type: "new", label: badgeLabels.new };
   }
 
-  if (isProductOnSale(product)) {
+  if (isPricedStorefrontProduct(product) && isProductOnSale(product)) {
     return { type: "sale", label: badgeLabels.sale };
   }
 
@@ -83,6 +84,7 @@ export function HomeTrendingSection({
   badgeLabels,
   locale,
   usdKrwRate,
+  signInToViewPriceLabel,
 }: Props) {
   const tProducts = useTranslations("products");
   const [activeFilter, setActiveFilter] = useState<TrendingFilterKey>("all");
@@ -149,6 +151,7 @@ export function HomeTrendingSection({
                 moqBadge={tProducts(getMoqBadgeKey(product), { count: product.moq })}
                 badge={resolveProductBadge(product, badgeLabels)}
                 soldOutLabel={badgeLabels.soldOut}
+                signInToViewPriceLabel={signInToViewPriceLabel}
               />
             </div>
           ))}

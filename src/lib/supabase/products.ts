@@ -9,10 +9,21 @@ import {
   resolveNavCategorySlugForProduct,
 } from "@/lib/product-images";
 import type { ProductListSort } from "@/lib/store/products-url";
-import { isProductOnSale } from "@/lib/store/products-url";
+import {
+  buildGuestProductSelect,
+  buildMemberProductSelect,
+  canViewProductPrices,
+  resolveStorefrontAudience,
+  storefrontCacheAudienceKey,
+  toStorefrontProduct,
+  toStorefrontProducts,
+  type StorefrontAudience,
+  type StorefrontProduct,
+} from "@/lib/store/product-visibility";
 import { filterStorefrontCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import {
   buildBrandCatalog,
+  isProductOnSale,
   matchesBrandFilter,
   resolveBrandFilterValues,
 } from "@/lib/store/products-url";
@@ -106,6 +117,8 @@ export type ProductWithRelations = Product & {
   import_batch: ProductImportBatchSummary | null;
   images: ProductImage[];
 };
+
+export type { StorefrontProduct, StorefrontAudience, PublicProductWithRelations } from "@/lib/store/product-visibility";
 
 export type ProductImportBatch = {
   id: string;
@@ -739,6 +752,7 @@ function filterStaticProducts(
     importBatchId?: string;
     sort?: ProductListSort;
     requireRealImage?: boolean;
+    includePriceColumns?: boolean;
   },
 ): ProductWithRelations[] {
   let filtered = products;
@@ -779,7 +793,7 @@ function filterStaticProducts(
     );
   }
 
-  if (options?.sort === "sale") {
+  if (options?.sort === "sale" && options.includePriceColumns !== false) {
     filtered = filtered.filter((product) => isProductOnSale(product));
   } else if (options?.sort === "trending") {
     filtered = filtered.filter((product) => product.is_featured);
@@ -795,8 +809,8 @@ type ProductListOrderOptions = {
 };
 
 function compareProductsForList(
-  a: ProductWithRelations,
-  b: ProductWithRelations,
+  a: StorefrontProduct,
+  b: StorefrontProduct,
   options: ProductListOrderOptions,
 ): number {
   if (options.imageFirst === true) {
@@ -808,8 +822,10 @@ function compareProductsForList(
   }
 
   if (options.sort === "sale") {
-    const aCompare = a.compare_at_price ?? 0;
-    const bCompare = b.compare_at_price ?? 0;
+    const aCompare =
+      "compare_at_price" in a && a.compare_at_price != null ? a.compare_at_price : 0;
+    const bCompare =
+      "compare_at_price" in b && b.compare_at_price != null ? b.compare_at_price : 0;
     if (bCompare !== aCompare) {
       return bCompare - aCompare;
     }
@@ -819,9 +835,9 @@ function compareProductsForList(
 }
 
 function sortProductsForList(
-  products: ProductWithRelations[],
+  products: StorefrontProduct[],
   options: ProductListOrderOptions,
-): ProductWithRelations[] {
+): StorefrontProduct[] {
   return [...products].sort((a, b) => compareProductsForList(a, b, options));
 }
 
@@ -829,18 +845,44 @@ function sortStaticProducts(
   products: ProductWithRelations[],
   options: ProductListOrderOptions,
 ): ProductWithRelations[] {
-  return sortProductsForList(products, options);
+  return sortProductsForList(products, options) as ProductWithRelations[];
 }
-
-const PRODUCT_SELECT = `
-  *,
-  category:categories(id, name, slug),
-  images:product_images(id, product_id, url, alt_text, sort_order, is_primary)
-`;
 
 /** Lightweight select for admin product list table (skips heavy text/json columns). */
 const ADMIN_LIST_SELECT =
   "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, moq, stock, sold_out, status, image_url, import_batch_id, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), import_batch:product_import_batches(id, filename), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
+
+const ADMIN_FULL_SELECT = `*, category:categories(id, name, slug), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)`;
+
+function resolveProductSelect(
+  audience: StorefrontAudience,
+  options?: { lightSelect?: boolean; privileged?: boolean },
+): { select: string; includePriceColumns: boolean } {
+  if (options?.privileged) {
+    return {
+      select: options.lightSelect ? ADMIN_LIST_SELECT : ADMIN_FULL_SELECT,
+      includePriceColumns: true,
+    };
+  }
+
+  const includePriceColumns = canViewProductPrices(audience);
+  return {
+    select: includePriceColumns ? buildMemberProductSelect() : buildGuestProductSelect(),
+    includePriceColumns,
+  };
+}
+
+function finalizeStorefrontProductList(
+  products: ProductWithRelations[],
+  audience: StorefrontAudience,
+  privileged: boolean,
+): StorefrontProduct[] {
+  if (privileged) {
+    return products;
+  }
+
+  return toStorefrontProducts(products, audience);
+}
 
 export async function getCategories(): Promise<{
   categories: Category[];
@@ -887,7 +929,7 @@ async function fetchCategoryProductCountsFromSource(): Promise<Record<string, nu
         .from("products")
         .select("category_id")
         .eq("status", "active")
-        .eq("needs_image", false)
+        .not("image_url", "is", null)
         .not("category_id", "is", null)
         .range(from, to);
 
@@ -1016,13 +1058,23 @@ export async function getProducts(
         privileged?: boolean;
         /** Storefront: hide products without uploaded images. */
         requireRealImage?: boolean;
+        /** Resolved storefront audience; defaults via session when omitted. */
+        audience?: StorefrontAudience;
       },
-): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
+): Promise<{ products: StorefrontProduct[]; totalCount: number; meta: FetchMeta }> {
   const options =
     typeof categoryOrOptions === "string"
       ? { categorySlug: categoryOrOptions }
       : categoryOrOptions;
   const configured = isSupabaseConfigured();
+  const privileged = options?.privileged === true;
+  const audience =
+    options?.audience ??
+    (privileged ? ("admin" as StorefrontAudience) : await resolveStorefrontAudience());
+  const { select: productSelect, includePriceColumns } = resolveProductSelect(audience, {
+    lightSelect: options?.lightSelect,
+    privileged,
+  });
   const categorySlug = options?.categorySlug?.trim();
   const importBatchId = options?.importBatchId?.trim();
   const searchTerm = options?.search?.trim();
@@ -1060,6 +1112,9 @@ export async function getProducts(
       privileged: options.privileged,
       listOrderOptions,
       configured,
+      audience,
+      productSelect,
+      includePriceColumns,
     });
   }
 
@@ -1084,6 +1139,7 @@ export async function getProducts(
       importBatchId,
       sort,
       requireRealImage,
+      includePriceColumns,
     });
 
     if (deletionFilter === "deleted") {
@@ -1094,7 +1150,7 @@ export async function getProducts(
     const { products, totalCount } = paginateStaticProducts(sorted);
 
     return {
-      products,
+      products: finalizeStorefrontProductList(products, audience, privileged),
       totalCount,
       meta: { source: "static" as const, configured },
     };
@@ -1104,7 +1160,6 @@ export async function getProducts(
     return staticProductsResult();
   }
 
-  const privileged = options?.privileged === true;
   const supabase = privileged
     ? createServiceClient() ?? (await createSafeClient())
     : await createSafeClient();
@@ -1192,7 +1247,13 @@ export async function getProducts(
     }
 
     if (requireRealImage) {
-      filtered = filtered.eq("needs_image", false);
+      filtered = (
+        includePriceColumns
+          ? filtered.eq("needs_image", false)
+          : (filtered as typeof filtered & {
+              not: (column: string, operator: string, value: null) => typeof filtered;
+            }).not("image_url", "is", null)
+      ) as typeof filtered;
     }
 
     if (sort === "trending") {
@@ -1200,11 +1261,11 @@ export async function getProducts(
     }
 
     if (withOrder) {
-      if (imageFirst) {
+      if (imageFirst && includePriceColumns) {
         filtered = filtered.order("needs_image", { ascending: true });
       }
 
-      if (sort === "sale") {
+      if (sort === "sale" && includePriceColumns) {
         filtered = filtered.order("compare_at_price", { ascending: false });
       } else {
         filtered = filtered.order(orderBy, { ascending: false });
@@ -1237,9 +1298,7 @@ export async function getProducts(
 
     totalCount = count;
 
-    let query = lightSelect
-      ? supabase.from("products").select(ADMIN_LIST_SELECT)
-      : supabase.from("products").select(PRODUCT_SELECT);
+    let query = supabase.from("products").select(productSelect);
     query = applyProductFilters(query, true) as typeof query;
 
     const from = (listPage - 1) * listLimit;
@@ -1261,7 +1320,7 @@ export async function getProducts(
       mapProductWithRelations(row as unknown as Record<string, unknown>),
     );
 
-    if (sort === "sale") {
+    if (sort === "sale" && includePriceColumns) {
       products = products.filter((product) => isProductOnSale(product));
     }
 
@@ -1270,7 +1329,7 @@ export async function getProducts(
     }
 
     return {
-      products,
+      products: finalizeStorefrontProductList(products, audience, privileged),
       totalCount,
       meta: { source: "database", configured: true },
     };
@@ -1278,11 +1337,11 @@ export async function getProducts(
 
   const { data, error } = await fetchAllPages<Record<string, unknown>>(
     async (from, to) => {
-      let query = supabase.from("products").select(PRODUCT_SELECT);
+      let query = supabase.from("products").select(productSelect);
       query = applyProductFilters(query, true) as typeof query;
       const result = await query.range(from, to);
       return {
-        data: (result.data ?? []) as Record<string, unknown>[],
+        data: (result.data ?? []) as unknown as Record<string, unknown>[],
         error: result.error,
       };
     },
@@ -1300,9 +1359,9 @@ export async function getProducts(
     };
   }
 
-  let products = data.map((row) => mapProductWithRelations(row));
+  let products: ProductWithRelations[] = data.map((row) => mapProductWithRelations(row));
 
-  if (sort === "sale") {
+  if (sort === "sale" && includePriceColumns) {
     products = products.filter((product) => isProductOnSale(product));
   }
 
@@ -1310,11 +1369,11 @@ export async function getProducts(
     products = products.filter((product) => productHasRealImage(product));
   }
 
-  products = sortProductsForList(products, listOrderOptions);
+  const sorted = sortProductsForList(products, listOrderOptions);
 
   return {
-    products,
-    totalCount: products.length,
+    products: finalizeStorefrontProductList(sorted as ProductWithRelations[], audience, privileged),
+    totalCount: sorted.length,
     meta: { source: "database", configured: true },
   };
 }
@@ -1338,15 +1397,18 @@ type PriorityBrandListFetchOptions = {
   privileged?: boolean;
   listOrderOptions: ProductListOrderOptions;
   configured: boolean;
+  audience: StorefrontAudience;
+  productSelect: string;
+  includePriceColumns: boolean;
   /** Pre-built client for unstable_cache callbacks (no cookies). */
   supabase?: SupabaseClient | null;
 };
 
 function paginateProductList(
-  products: ProductWithRelations[],
+  products: StorefrontProduct[],
   limit: number | undefined,
   page: number,
-): { products: ProductWithRelations[]; totalCount: number } {
+): { products: StorefrontProduct[]; totalCount: number } {
   if (limit == null) {
     return { products, totalCount: products.length };
   }
@@ -1393,7 +1455,7 @@ async function fetchProductsByIdentifierBatchAdmin(
 
 async function fetchPriorityBrandListProducts(
   options: PriorityBrandListFetchOptions,
-): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
+): Promise<{ products: StorefrontProduct[]; totalCount: number; meta: FetchMeta }> {
   const priorityKeys = [...getBrandPriorityKeySet()];
   const {
     categorySlug,
@@ -1406,11 +1468,13 @@ async function fetchPriorityBrandListProducts(
     limit,
     page = 1,
     deletionFilter = "active",
-    lightSelect,
     privileged,
     listOrderOptions,
     configured,
     supabase: providedSupabase,
+    audience,
+    productSelect,
+    includePriceColumns,
   } = options;
 
   function finalize(products: ProductWithRelations[]) {
@@ -1421,9 +1485,10 @@ async function fetchPriorityBrandListProducts(
       brandExact,
       importBatchId,
       sort,
+      includePriceColumns,
     });
 
-    if (sort === "sale") {
+    if (sort === "sale" && includePriceColumns) {
       filtered = filtered.filter((product) => isProductOnSale(product));
     }
 
@@ -1435,7 +1500,11 @@ async function fetchPriorityBrandListProducts(
     );
 
     return {
-      products: pagedProducts,
+      products: finalizeStorefrontProductList(
+        pagedProducts as ProductWithRelations[],
+        audience,
+        Boolean(privileged),
+      ),
       totalCount,
       meta: { source: "database" as const, configured },
     };
@@ -1477,7 +1546,6 @@ async function fetchPriorityBrandListProducts(
 
   await ensureSoftDeleteColumnProbed(supabase);
 
-  const selectClause = lightSelect ? ADMIN_LIST_SELECT : PRODUCT_SELECT;
   const rowsById = new Map<string, Record<string, unknown>>();
 
   for (let index = 0; index < priorityKeys.length; index += PRIORITY_SKU_QUERY_BATCH) {
@@ -1485,7 +1553,7 @@ async function fetchPriorityBrandListProducts(
     const batchRows = await fetchProductsByIdentifierBatchAdmin(
       supabase,
       batch,
-      selectClause,
+      productSelect,
       { includeDraft, deletionFilter },
     );
 
@@ -1529,6 +1597,9 @@ async function fetchBrandPriorityListStatsFromSource(): Promise<{
     listOrderOptions: { orderBy: "created_at", imageFirst: false },
     configured: true,
     supabase,
+    audience: "admin",
+    productSelect: ADMIN_LIST_SELECT,
+    includePriceColumns: true,
   });
 
   return { targetCount, matchedCount: totalCount };
@@ -1568,7 +1639,7 @@ function getActiveStaticProducts(): ProductWithRelations[] {
 }
 
 function sortHomepagePriorityProducts(products: ProductWithRelations[]): ProductWithRelations[] {
-  return sortProductsForList(products, { orderBy: "created_at", imageFirst: true });
+  return sortProductsForList(products, { orderBy: "created_at", imageFirst: true }) as ProductWithRelations[];
 }
 
 function getStaticHomepageFallbackProducts(limit: number): ProductWithRelations[] {
@@ -1616,15 +1687,15 @@ function brandMatchesTarget(productBrand: string | null | undefined, target: str
 
 /** Pick diverse trending products — admin SKUs first, then one per priority brand. */
 export function selectDiverseTrendingProducts(
-  pool: ProductWithRelations[],
+  pool: StorefrontProduct[],
   adminSkus: string[] | undefined,
   limit = HOMEPAGE_TAB_LIMIT,
-): ProductWithRelations[] {
+): StorefrontProduct[] {
   const visible = pool.filter((product) => productHasRealImage(product));
 
   if (adminSkus && adminSkus.length > 0) {
     const bySku = new Map(visible.map((product) => [product.sku.trim().toUpperCase(), product]));
-    const picked: ProductWithRelations[] = [];
+    const picked: StorefrontProduct[] = [];
     const usedIds = new Set<string>();
 
     for (const sku of adminSkus) {
@@ -1651,7 +1722,7 @@ export function selectDiverseTrendingProducts(
     return picked.slice(0, limit);
   }
 
-  const picked: ProductWithRelations[] = [];
+  const picked: StorefrontProduct[] = [];
   const usedIds = new Set<string>();
 
   for (const brandTarget of TRENDING_BRAND_PRIORITY) {
@@ -1680,7 +1751,7 @@ export function selectDiverseTrendingProducts(
   return picked.slice(0, limit);
 }
 
-function compareBestSellers(a: ProductWithRelations, b: ProductWithRelations): number {
+function compareBestSellers(a: StorefrontProduct, b: StorefrontProduct): number {
   const aHasImage = productHasRealImage(a) ? 1 : 0;
   const bHasImage = productHasRealImage(b) ? 1 : 0;
   if (bHasImage !== aHasImage) {
@@ -1691,8 +1762,10 @@ function compareBestSellers(a: ProductWithRelations, b: ProductWithRelations): n
     return Number(b.is_featured) - Number(a.is_featured);
   }
 
-  const aCompare = a.compare_at_price ?? 0;
-  const bCompare = b.compare_at_price ?? 0;
+  const aCompare =
+    "compare_at_price" in a && a.compare_at_price != null ? a.compare_at_price : 0;
+  const bCompare =
+    "compare_at_price" in b && b.compare_at_price != null ? b.compare_at_price : 0;
   if (bCompare !== aCompare) {
     return bCompare - aCompare;
   }
@@ -1702,10 +1775,10 @@ function compareBestSellers(a: ProductWithRelations, b: ProductWithRelations): n
 
 /** Pick homepage tab products from a shared pool with tab-specific sort/filter rules. */
 export function selectHomepageTabProducts(
-  pool: ProductWithRelations[],
+  pool: StorefrontProduct[],
   tab: HomepageTabKey,
   limit = HOMEPAGE_TAB_LIMIT,
-): ProductWithRelations[] {
+): StorefrontProduct[] {
   const visible = pool.filter((product) => productHasRealImage(product));
 
   switch (tab) {
@@ -1725,12 +1798,12 @@ export function selectHomepageTabProducts(
 
 /** Trending homepage row — mixed best sellers or filtered by top-level category slug. */
 export function selectTrendingCategoryProducts(
-  pool: ProductWithRelations[],
+  pool: StorefrontProduct[],
   categorySlug: TrendingCategorySlug | null,
   categories: Category[] = [],
   limit = HOMEPAGE_TAB_LIMIT,
   adminSkus?: string[],
-): ProductWithRelations[] {
+): StorefrontProduct[] {
   if (categorySlug === null) {
     return selectDiverseTrendingProducts(pool, adminSkus, limit);
   }
@@ -1788,11 +1861,28 @@ async function fetchProductsByIdentifierBatch(
 
 export async function getPriorityBrandProducts(options?: {
   limit?: number;
-}): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
+  audience?: StorefrontAudience;
+}): Promise<{ products: StorefrontProduct[]; totalCount: number; meta: FetchMeta }> {
   const limit = options?.limit ?? 200;
+  const audience = options?.audience ?? (await resolveStorefrontAudience());
+
+  if (canViewProductPrices(audience)) {
+    const result = await fetchPriorityBrandProductsFromSource(limit, audience);
+    return {
+      ...result,
+      products: toStorefrontProducts(result.products, audience),
+    };
+  }
+
   return unstable_cache(
-    () => fetchPriorityBrandProductsFromSource(limit),
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, String(limit)],
+    async () => {
+      const result = await fetchPriorityBrandProductsFromSource(limit, "guest");
+      return {
+        ...result,
+        products: toStorefrontProducts(result.products, "guest"),
+      };
+    },
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, String(limit), storefrontCacheAudienceKey("guest")],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],
@@ -1803,12 +1893,13 @@ export async function getPriorityBrandProducts(options?: {
 async function fetchHomepageProductsFromDatabase(
   supabase: NonNullable<ReturnType<typeof createPublicClient>>,
   limit: number,
+  audience: StorefrontAudience,
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
+  const { select: productSelect } = resolveProductSelect(audience);
   let query = supabase
     .from("products")
-    .select(PRODUCT_SELECT)
+    .select(productSelect)
     .eq("status", "active")
-    .eq("needs_image", false)
     .not("image_url", "is", null)
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false })
@@ -1840,7 +1931,9 @@ async function fetchHomepageProductsFromDatabase(
 
 async function fetchPriorityBrandProductsFromSource(
   limit: number,
+  audience: StorefrontAudience = "guest",
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
+  const { select: productSelect } = resolveProductSelect(audience);
   const configured = isSupabaseConfigured();
 
   if (!configured) {
@@ -1868,7 +1961,7 @@ async function fetchPriorityBrandProductsFromSource(
   let dbProducts: ProductWithRelations[] = [];
 
   if (priorityKeys.length === 0) {
-    const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit);
+    const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit, audience);
     dbProducts = homepageResult.products;
   } else {
     const rowsById = new Map<string, Record<string, unknown>>();
@@ -1878,7 +1971,7 @@ async function fetchPriorityBrandProductsFromSource(
       const batchRows = await fetchProductsByIdentifierBatch(
         supabase,
         batch,
-        PRODUCT_SELECT,
+        productSelect,
         null,
         false,
       );
@@ -1896,7 +1989,7 @@ async function fetchPriorityBrandProductsFromSource(
       .filter((product) => !isDemoProduct(product) && productMatchesBrandPriority(product));
 
     if (dbProducts.length === 0) {
-      const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit);
+      const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit, audience);
       dbProducts = homepageResult.products;
     }
   }
@@ -1920,13 +2013,16 @@ async function fetchPriorityBrandProductsFromSource(
 
 export async function getProductBySlug(
   slug: string,
-): Promise<{ product: ProductWithRelations | null; meta: FetchMeta }> {
+  audience?: StorefrontAudience,
+): Promise<{ product: StorefrontProduct | null; meta: FetchMeta }> {
+  const resolvedAudience = audience ?? (await resolveStorefrontAudience());
+  const { select: productSelect } = resolveProductSelect(resolvedAudience);
   const configured = isSupabaseConfigured();
 
   if (!configured) {
     const product = STATIC_PRODUCTS.find((p) => p.slug === slug) ?? null;
     return {
-      product,
+      product: product ? toStorefrontProduct(product, resolvedAudience) : null,
       meta: { source: "static", configured: false },
     };
   }
@@ -1935,7 +2031,7 @@ export async function getProductBySlug(
   if (!supabase) {
     const product = STATIC_PRODUCTS.find((p) => p.slug === slug) ?? null;
     return {
-      product,
+      product: product ? toStorefrontProduct(product, resolvedAudience) : null,
       meta: { source: "static", configured: false },
     };
   }
@@ -1944,7 +2040,7 @@ export async function getProductBySlug(
 
   let detailQuery = supabase
     .from("products")
-    .select(PRODUCT_SELECT)
+    .select(productSelect)
     .eq("slug", slug)
     .eq("status", "active");
 
@@ -1957,12 +2053,12 @@ export async function getProductBySlug(
   if (error) {
     if (isMissingDeletedAtColumnError(error.message)) {
       markSoftDeleteColumnMissing();
-      return getProductBySlug(slug);
+      return getProductBySlug(slug, resolvedAudience);
     }
 
     const product = STATIC_PRODUCTS.find((p) => p.slug === slug) ?? null;
     return {
-      product,
+      product: product ? toStorefrontProduct(product, resolvedAudience) : null,
       meta: { source: "static", configured: true, error: error.message },
     };
   }
@@ -1970,7 +2066,7 @@ export async function getProductBySlug(
   if (!data) {
     const product = STATIC_PRODUCTS.find((p) => p.slug === slug) ?? null;
     return {
-      product,
+      product: product ? toStorefrontProduct(product, resolvedAudience) : null,
       meta: {
         source: product ? "static" : "database",
         configured: true,
@@ -1979,7 +2075,10 @@ export async function getProductBySlug(
   }
 
   return {
-    product: mapProductWithRelations(data as Record<string, unknown>),
+    product: toStorefrontProduct(
+      mapProductWithRelations(data as unknown as Record<string, unknown>),
+      resolvedAudience,
+    ),
     meta: { source: "database", configured: true },
   };
 }
@@ -1992,7 +2091,7 @@ export async function getAllProductsAdmin(): Promise<{
     includeDraft: true,
     imageFirst: true,
   });
-  return { products, meta };
+  return { products: products as ProductWithRelations[], meta };
 }
 
 export async function getRecentlyUpdatedProducts(limit = 12): Promise<{
@@ -2006,7 +2105,7 @@ export async function getRecentlyUpdatedProducts(limit = 12): Promise<{
     orderBy: "updated_at",
     imageFirst: false,
   });
-  return { products, meta };
+  return { products: products as ProductWithRelations[], meta };
 }
 
 export async function getProductImportBatches(): Promise<{

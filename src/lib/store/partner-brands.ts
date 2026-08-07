@@ -178,7 +178,7 @@ async function findFeaturedBrandFilterInDatabase(
 }
 
 export async function resolveFeaturedBrands(
-  products: ProductWithRelations[],
+  products: Array<{ brand: string | null }>,
 ): Promise<FeaturedBrand[]> {
   const fromPool = resolveFeaturedBrandsFromProducts(products);
   const byDisplayName = new Map(fromPool.map((brand) => [brand.displayName, brand]));
