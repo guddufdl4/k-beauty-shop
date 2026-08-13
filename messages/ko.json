@@ -7,6 +7,10 @@
     "signup": "회원가입",
     "logout": "로그아웃",
     "account": "마이페이지",
+    "myAccount": "마이페이지",
+    "orders": "주문 내역",
+    "signOut": "로그아웃",
+    "accountMenu": "계정",
     "admin": "관리자",
     "menu": "메뉴",
     "brand": "HMT",
@@ -424,7 +428,14 @@
     "nicknameRequired": "닉네임을 입력해 주세요.",
     "nicknameTooLong": "닉네임은 30자 이하로 입력해 주세요.",
     "loginRequiredError": "로그인이 필요합니다.",
-    "nicknameSaved": "닉네임이 저장되었습니다."
+    "nicknameSaved": "닉네임이 저장되었습니다.",
+    "orders": {
+      "title": "주문 내역",
+      "description": "주문 내역을 확인하고 상세 페이지로 이동할 수 있습니다.",
+      "empty": "아직 주문 내역이 없습니다.",
+      "unavailable": "데모 모드에서는 주문 내역을 사용할 수 없습니다.",
+      "status": "상태: {status}"
+    }
   },
   "wholesaleInquiry": {
     "eyebrow": "B2B 도매",

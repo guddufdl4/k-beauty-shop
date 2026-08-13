@@ -12,6 +12,7 @@ import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/loc
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 
 import { LocaleSwitcher } from "./locale-switcher";
+import { AccountMenu } from "./account-menu";
 
 import { MobileNavActions, MobileNavPanels, MobileNavRoot } from "./mobile-nav";
 
@@ -83,49 +84,6 @@ function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
 }
 
 
-
-function IconLink({
-
-  href,
-
-  label,
-
-  children,
-
-}: {
-
-  href: string;
-
-  label: string;
-
-  children: React.ReactNode;
-
-}) {
-
-  return (
-
-    <Link
-      href={href}
-      aria-label={label}
-      className="group flex flex-col items-center gap-1 text-zinc-600 hover:text-accent-hover"
-    >
-
-      <span className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 transition-colors group-hover:border-accent-soft group-hover:bg-accent-soft">
-
-        {children}
-
-      </span>
-
-      <span className="hidden text-[10px] font-medium uppercase tracking-wide xl:block">{label}</span>
-
-    </Link>
-
-  );
-
-}
-
-
-
 export async function StoreHeader({ storeName }: Props) {
 
   const [cart, { user, profile }, tNav, locale, { categories }] = await Promise.all([
@@ -146,12 +104,6 @@ export async function StoreHeader({ storeName }: Props) {
 
   const brandLabel = storeName?.trim() || tNav("brand");
   const localizedCategories = localizeCategories(categories, locale);
-
-  const accountHref = user ? "/account" : "/login";
-
-  const accountIconLabel = tNav("headerAccount");
-
-
 
   return (
 
@@ -191,6 +143,10 @@ export async function StoreHeader({ storeName }: Props) {
           signup: tNav("signup"),
           logout: tNav("logout"),
           account: tNav("account"),
+          myAccount: tNav("myAccount"),
+          orders: tNav("orders"),
+          signOut: tNav("signOut"),
+          accountMenu: tNav("accountMenu"),
           admin: tNav("admin"),
           menu: tNav("menu"),
           shop: tNav("shop"),
@@ -227,19 +183,18 @@ export async function StoreHeader({ storeName }: Props) {
 
           <div className="ml-auto flex items-center gap-2 sm:gap-4">
 
-            <div className="hidden items-center gap-3 md:flex">
+            <div className="hidden items-center gap-3 lg:flex">
 
-              <IconLink href={accountHref} label={accountIconLabel}>
-
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-
-                  <circle cx="12" cy="8" r="4" />
-
-                  <path d="M5 20c0-4 3.1-7 7-7s7 3 7 7" strokeLinecap="round" />
-
-                </svg>
-
-              </IconLink>
+              <AccountMenu
+                isLoggedIn={Boolean(user)}
+                labels={{
+                  accountMenu: tNav("accountMenu"),
+                  myAccount: tNav("myAccount"),
+                  orders: tNav("orders"),
+                  signOut: tNav("signOut"),
+                  login: tNav("login"),
+                }}
+              />
 
               <Link
                 href="/cart"

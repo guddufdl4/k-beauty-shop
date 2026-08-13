@@ -7,6 +7,10 @@
     "signup": "新規登録",
     "logout": "ログアウト",
     "account": "マイページ",
+    "myAccount": "マイページ",
+    "orders": "注文履歴",
+    "signOut": "ログアウト",
+    "accountMenu": "アカウント",
     "admin": "管理者",
     "menu": "メニュー",
     "brand": "HMT",
@@ -397,7 +401,14 @@
     "nicknameRequired": "ニックネームを入力してください。",
     "nicknameTooLong": "ニックネームは30文字以内で入力してください。",
     "loginRequiredError": "ログインが必要です。",
-    "nicknameSaved": "ニックネームを保存しました。"
+    "nicknameSaved": "ニックネームを保存しました。",
+    "orders": {
+      "title": "注文履歴",
+      "description": "注文履歴を確認し、詳細ページを開けます。",
+      "empty": "まだ注文がありません。",
+      "unavailable": "デモモードでは注文履歴を利用できません。",
+      "status": "状態: {status}"
+    }
   },
   "wholesaleInquiry": {
     "eyebrow": "B2B 卸売",

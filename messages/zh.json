@@ -7,6 +7,10 @@
     "signup": "注册",
     "logout": "退出",
     "account": "我的账户",
+    "myAccount": "我的账户",
+    "orders": "订单记录",
+    "signOut": "退出登录",
+    "accountMenu": "账户",
     "admin": "管理员",
     "menu": "菜单",
     "brand": "HMT",
@@ -397,7 +401,14 @@
     "nicknameRequired": "请输入昵称。",
     "nicknameTooLong": "昵称不能超过 30 个字符。",
     "loginRequiredError": "请先登录。",
-    "nicknameSaved": "昵称已保存。"
+    "nicknameSaved": "昵称已保存。",
+    "orders": {
+      "title": "订单记录",
+      "description": "查看订单历史并打开订单详情。",
+      "empty": "您还没有订单。",
+      "unavailable": "演示模式下无法查看订单历史。",
+      "status": "状态：{status}"
+    }
   },
   "wholesaleInquiry": {
     "eyebrow": "B2B 批发",

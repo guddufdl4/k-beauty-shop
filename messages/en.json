@@ -7,6 +7,10 @@
     "signup": "Sign up",
     "logout": "Log out",
     "account": "My account",
+    "myAccount": "My Account",
+    "orders": "Orders",
+    "signOut": "Sign out",
+    "accountMenu": "Account",
     "admin": "Admin",
     "menu": "Menu",
     "brand": "HMT",
@@ -417,7 +421,14 @@
     "nicknameRequired": "Please enter a nickname.",
     "nicknameTooLong": "Nickname must be 30 characters or fewer.",
     "loginRequiredError": "You need to log in.",
-    "nicknameSaved": "Nickname saved."
+    "nicknameSaved": "Nickname saved.",
+    "orders": {
+      "title": "Orders",
+      "description": "View your order history and open order details.",
+      "empty": "You have no orders yet.",
+      "unavailable": "Order history is unavailable in demo mode.",
+      "status": "Status: {status}"
+    }
   },
   "wholesaleInquiry": {
     "eyebrow": "B2B Wholesale",

@@ -19,6 +19,10 @@ type MobileNavLabels = {
   signup: string;
   logout: string;
   account: string;
+  myAccount: string;
+  orders: string;
+  signOut: string;
+  accountMenu: string;
   admin: string;
   menu: string;
   shop: string;
@@ -67,17 +71,6 @@ type RootProps = {
   labels: MobileNavLabels;
   children: ReactNode;
 };
-
-function accountLabel(
-  role: RootProps["profileRole"],
-  fullName: RootProps["profileFullName"],
-  labels: MobileNavLabels,
-) {
-  if (role === "admin") return labels.admin;
-  const trimmed = fullName?.trim();
-  if (trimmed) return trimmed;
-  return labels.account;
-}
 
 export function MobileNavRoot({
   cartCount,
@@ -245,7 +238,6 @@ export function MobileNavPanels() {
     cartCount,
     isLoggedIn,
     profileRole,
-    profileFullName,
     categories,
     labels,
     menuOpen,
@@ -258,7 +250,6 @@ export function MobileNavPanels() {
   const [shopOpen, setShopOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [expandedParentId, setExpandedParentId] = useState<string | null>(null);
-  const label = accountLabel(profileRole, profileFullName, labels);
 
   const { columns } = useMemo(() => buildCategoryTree(categories), [categories]);
 
@@ -440,11 +431,14 @@ export function MobileNavPanels() {
             {isLoggedIn ? (
               <>
                 <Link href="/account" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
-                  <span>{label}</span>
+                  <span>{labels.myAccount}</span>
+                </Link>
+                <Link href="/account/orders" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
+                  <span>{labels.orders}</span>
                 </Link>
                 <form action={signOut}>
-                  <button type="submit" className={`${mobileLinkClass} py-3 text-left`} onClick={closeAll}>
-                    <span>{labels.logout}</span>
+                  <button type="submit" className={`${mobileLinkClass} py-3 text-left`}>
+                    <span>{labels.signOut}</span>
                   </button>
                 </form>
               </>

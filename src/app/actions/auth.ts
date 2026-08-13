@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
 import { createClient } from "@/lib/supabase/server";
-
 export type AuthState = { error?: string; success?: string };
 
 export async function signUp(
@@ -57,8 +58,24 @@ export async function signIn(
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("[auth] signOut failed:", error.message);
+    throw new Error("Sign out failed");
+  }
+
+  const requestedLocale = await getLocale();
+  const locale = hasLocale(routing.locales, requestedLocale)
+    ? requestedLocale
+    : routing.defaultLocale;
+
   revalidatePath("/", "layout");
   revalidatePath("/account");
-  return redirect({ href: "/login", locale: await getLocale() });
+  revalidatePath("/account/orders");
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
+  revalidatePath("/products");
+
+  return redirect({ href: "/", locale });
 }
