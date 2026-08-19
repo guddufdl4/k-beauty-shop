@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import {
   applyDeletedAtFilter,
   STATIC_PRODUCTS,
@@ -300,9 +299,7 @@ async function fetchFeaturedNavBrandsFromSource(): Promise<FeaturedNavBrand[]> {
 }
 
 export async function getFeaturedNavBrands(): Promise<FeaturedNavBrand[]> {
-  return unstable_cache(fetchFeaturedNavBrandsFromSource, ["featured-nav-brands"], {
-    revalidate: 3600,
-  })();
+  return fetchFeaturedNavBrandsFromSource();
 }
 
 export async function getBrandDirectoryItems(): Promise<{
