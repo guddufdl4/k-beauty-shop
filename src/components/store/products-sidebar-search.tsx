@@ -1,8 +1,11 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { buildBrandHref } from "@/lib/store/brand-url";
+import type { BrandDirectoryItem } from "@/lib/supabase/brand-hub";
 import { buildCategoryTree, findNavAncestorCategory, sortCategoriesForNav } from "@/lib/store/category-tree";
 import {
   BRAND_INDEX_LETTERS,
@@ -338,7 +341,7 @@ export function ProductCatalogSidebar({
 }
 
 type BrandsDirectoryProps = {
-  brands: string[];
+  brands: BrandDirectoryItem[];
 };
 
 type BrandLetterFilter = "all" | (typeof BRAND_INDEX_LETTERS)[number] | "#";
@@ -351,7 +354,7 @@ export function BrandsDirectory({ brands }: BrandsDirectoryProps) {
   const availableLetters = useMemo(() => {
     const letters = new Set<string>();
     for (const brand of brands) {
-      letters.add(getBrandIndexLetter(brand));
+      letters.add(getBrandIndexLetter(brand.displayName));
     }
     return letters;
   }, [brands]);
@@ -360,7 +363,7 @@ export function BrandsDirectory({ brands }: BrandsDirectoryProps) {
     const normalizedQuery = normalizeBrandKey(query);
 
     return brands.filter((brand) => {
-      if (letter !== "all" && getBrandIndexLetter(brand) !== letter) {
+      if (letter !== "all" && getBrandIndexLetter(brand.displayName) !== letter) {
         return false;
       }
 
@@ -368,7 +371,7 @@ export function BrandsDirectory({ brands }: BrandsDirectoryProps) {
         return true;
       }
 
-      return normalizeBrandKey(brand).includes(normalizedQuery);
+      return normalizeBrandKey(brand.displayName).includes(normalizedQuery);
     });
   }, [brands, letter, query]);
 
@@ -455,11 +458,26 @@ export function BrandsDirectory({ brands }: BrandsDirectoryProps) {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filteredBrands.map((brand) => (
             <Link
-              key={brand}
-              href={buildProductsHref({ brand })}
-              className="flex h-20 items-center justify-center border border-zinc-200 bg-white px-4 text-center text-sm font-bold uppercase tracking-wide text-zinc-600 transition-colors hover:border-rose-400 hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
+              key={brand.slug}
+              href={buildBrandHref(brand.slug)}
+              aria-label={t("viewBrandLink", { brand: brand.displayName })}
+              className="flex h-20 items-center justify-center border border-zinc-200 bg-white px-4 text-center transition-colors hover:border-rose-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
             >
-              {brand}
+              {brand.logoUrl ? (
+                <Image
+                  src={brand.logoUrl}
+                  alt=""
+                  width={140}
+                  height={48}
+                  sizes="140px"
+                  loading="lazy"
+                  className="h-10 w-auto max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-sm font-bold uppercase tracking-wide text-zinc-600 transition-colors group-hover:text-rose-600">
+                  {brand.displayName}
+                </span>
+              )}
             </Link>
           ))}
         </div>

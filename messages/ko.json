@@ -285,7 +285,20 @@
     "filterAll": "전체",
     "filterOther": "#",
     "noResults": "검색 결과가 없습니다. 다른 브랜드명이나 글자를 선택해 보세요.",
-    "resultCount": "브랜드 {count} / {total}개"
+    "resultCount": "브랜드 {count} / {total}개",
+    "breadcrumb": "경로",
+    "breadcrumbHome": "홈",
+    "breadcrumbBrands": "브랜드",
+    "productCount": "상품 {count, plural, other {#개}}",
+    "exploreProducts": "{brand}에서 제공하는 도매 상품을 둘러보세요.",
+    "allCategories": "전체",
+    "noProducts": "이 브랜드에 등록된 상품이 없습니다.",
+    "viewBrand": "브랜드",
+    "viewBrandLink": "{brand} 보기",
+    "categoryProductCount": "({count})",
+    "categoryTabsLabel": "브랜드 카테고리",
+    "metaTitle": "{brand} 도매 상품",
+    "metaDescription": "{brand}의 K-Beauty 도매 상품을 둘러보세요."
   },
   "about": {
     "eyebrow": "About Us",

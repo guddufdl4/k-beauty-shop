@@ -280,7 +280,20 @@
     "filterAll": "全部",
     "filterOther": "#",
     "noResults": "没有匹配的品牌，请尝试其他名称或字母。",
-    "resultCount": "共 {total} 个品牌，显示 {count} 个"
+    "resultCount": "共 {total} 个品牌，显示 {count} 个",
+    "breadcrumb": "面包屑",
+    "breadcrumbHome": "首页",
+    "breadcrumbBrands": "品牌",
+    "productCount": "{count, plural, other {# 件商品}}",
+    "exploreProducts": "浏览 {brand} 提供的批发商品。",
+    "allCategories": "全部",
+    "noProducts": "该品牌暂无商品。",
+    "viewBrand": "品牌",
+    "viewBrandLink": "查看 {brand}",
+    "categoryProductCount": "({count})",
+    "categoryTabsLabel": "品牌分类",
+    "metaTitle": "{brand} 批发商品",
+    "metaDescription": "浏览 {brand} 的 K-Beauty 批发商品。"
   },
   "about": {
     "eyebrow": "About Us",

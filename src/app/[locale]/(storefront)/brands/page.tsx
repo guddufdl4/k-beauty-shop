@@ -1,11 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { BrandsDirectory } from "@/components/store/products-sidebar-search";
-import { getProductBrands } from "@/lib/supabase/products";
+import { getBrandDirectoryItems } from "@/lib/supabase/brand-hub";
 
 export default async function BrandsPage() {
-  const [t, { brands, meta }] = await Promise.all([
+  const [t, { items, meta }] = await Promise.all([
     getTranslations("brands"),
-    getProductBrands(),
+    getBrandDirectoryItems(),
   ]);
 
   return (
@@ -25,12 +25,12 @@ export default async function BrandsPage() {
         ) : null}
       </div>
 
-      {brands.length === 0 ? (
+      {items.length === 0 ? (
         <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-6 py-10 text-center text-zinc-600">
           {t("empty")}
         </p>
       ) : (
-        <BrandsDirectory brands={brands} />
+        <BrandsDirectory brands={items} />
       )}
     </main>
   );

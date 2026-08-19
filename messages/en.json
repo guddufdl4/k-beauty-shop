@@ -274,7 +274,20 @@
     "filterAll": "All",
     "filterOther": "#",
     "noResults": "No brands match your search. Try a different name or letter.",
-    "resultCount": "{count} of {total} brands"
+    "resultCount": "{count} of {total} brands",
+    "breadcrumb": "Breadcrumb",
+    "breadcrumbHome": "Home",
+    "breadcrumbBrands": "Brands",
+    "productCount": "{count, plural, one {# product} other {# products}}",
+    "exploreProducts": "Explore wholesale products available from {brand}.",
+    "allCategories": "All",
+    "noProducts": "No products available for this brand yet.",
+    "viewBrand": "Brand",
+    "viewBrandLink": "View {brand}",
+    "categoryProductCount": "({count})",
+    "categoryTabsLabel": "Brand categories",
+    "metaTitle": "{brand} Wholesale Products",
+    "metaDescription": "Browse wholesale K-Beauty products from {brand}."
   },
   "categories": {
     "browse": "Browse",

@@ -1,4 +1,4 @@
-﻿import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/service";
@@ -127,6 +127,10 @@ async function fetchBrandLogoMap(): Promise<Map<string, string>> {
   }
 
   return map;
+}
+
+export async function getBrandLogoMap(): Promise<Map<string, string>> {
+  return fetchBrandLogoMap();
 }
 
 async function resolvePartnerBrandsFromSource(

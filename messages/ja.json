@@ -280,7 +280,20 @@
     "filterAll": "すべて",
     "filterOther": "#",
     "noResults": "一致するブランドがありません。別の名前や文字をお試しください。",
-    "resultCount": "{total}件中{count}件"
+    "resultCount": "{total}件中{count}件",
+    "breadcrumb": "パンくず",
+    "breadcrumbHome": "ホーム",
+    "breadcrumbBrands": "ブランド",
+    "productCount": "商品 {count, plural, other {#件}}",
+    "exploreProducts": "{brand}の卸売商品をご覧ください。",
+    "allCategories": "すべて",
+    "noProducts": "このブランドの商品はまだありません。",
+    "viewBrand": "ブランド",
+    "viewBrandLink": "{brand}を見る",
+    "categoryProductCount": "({count})",
+    "categoryTabsLabel": "ブランドカテゴリー",
+    "metaTitle": "{brand} 卸売商品",
+    "metaDescription": "{brand}のK-Beauty卸売商品をご覧ください。"
   },
   "about": {
     "eyebrow": "About Us",
