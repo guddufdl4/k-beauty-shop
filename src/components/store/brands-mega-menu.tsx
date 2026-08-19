@@ -138,7 +138,7 @@ function BrandsMegaMenuInner({ brands, isLoggedIn }: Props) {
   }, [open, closeMenu]);
 
   return (
-    <div ref={rootRef} className="relative flex self-stretch">
+    <div ref={rootRef} className="flex self-stretch">
       <button
         ref={triggerRef}
         type="button"
@@ -162,19 +162,21 @@ function BrandsMegaMenuInner({ brands, isLoggedIn }: Props) {
       ) : null}
 
       <div
-        className={`absolute left-0 top-full z-[60] w-[min(100vw-2rem,72rem)] transition-[opacity,transform] duration-200 ease-out ${
+        className={`absolute inset-x-0 top-full z-[60] transition-[opacity,transform] duration-200 ease-out ${
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-1 opacity-0"
         }`}
         aria-hidden={!open}
       >
-        <BrandsMegaMenuPanel
-          brands={brands}
-          isLoggedIn={isLoggedIn}
-          panelId={panelId}
-          onNavigate={closeMenu}
-        />
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <BrandsMegaMenuPanel
+            brands={brands}
+            isLoggedIn={isLoggedIn}
+            panelId={panelId}
+            onNavigate={closeMenu}
+          />
+        </div>
       </div>
     </div>
   );

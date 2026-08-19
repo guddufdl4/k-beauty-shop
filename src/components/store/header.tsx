@@ -260,7 +260,7 @@ export async function StoreMainNav({
       aria-label={tNav("mainNavigation")}
     >
       <div className="mx-auto flex w-full max-w-7xl items-stretch px-4 sm:px-6">
-        <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-0 flex-1 items-stretch overflow-visible">
           <Link
             href="/products"
             className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
