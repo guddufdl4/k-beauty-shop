@@ -17,10 +17,11 @@ import { AccountMenu } from "./account-menu";
 import { MobileNavActions, MobileNavPanels, MobileNavRoot } from "./mobile-nav";
 
 import { StoreSearchBar } from "./store-search-bar";
-import { CategoryMegaMenu } from "./category-mega-menu";
+import { BrandsMegaMenu } from "./brands-mega-menu";
 import { CategoryIcon } from "@/lib/store/category-icons";
 import { resolveHomeCategoryImageUrls } from "@/lib/product-images";
 import { resolveFeaturedBrands, type FeaturedBrand } from "@/lib/store/partner-brands";
+import { getFeaturedNavBrands } from "@/lib/supabase/brand-hub";
 import {
   buildProductsHref,
   HOME_CATEGORY_SLUGS,
@@ -28,7 +29,7 @@ import {
   MAIN_NAV_LINKS,
   type HomeTrustHighlightKey,
 } from "@/lib/store/products-url";
-import type { Category, StorefrontProduct } from "@/lib/supabase/products";
+import type { StorefrontProduct } from "@/lib/supabase/products";
 
 
 
@@ -86,7 +87,7 @@ function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
 
 export async function StoreHeader({ storeName }: Props) {
 
-  const [cart, { user, profile }, tNav, locale, { categories }] = await Promise.all([
+  const [cart, { user, profile }, tNav, locale, featuredNavBrands] = await Promise.all([
 
     getCart(),
 
@@ -96,14 +97,13 @@ export async function StoreHeader({ storeName }: Props) {
 
     getLocale(),
 
-    getStorefrontCategories(),
+    getFeaturedNavBrands(),
 
   ]);
 
 
 
   const brandLabel = storeName?.trim() || tNav("brand");
-  const localizedCategories = localizeCategories(categories, locale);
 
   return (
 
@@ -134,9 +134,8 @@ export async function StoreHeader({ storeName }: Props) {
         isLoggedIn={Boolean(user)}
         profileRole={profile?.role ?? null}
         profileFullName={profile?.full_name ?? null}
-        categories={localizedCategories}
+        featuredBrands={featuredNavBrands}
         labels={{
-          categories: tNav("categories"),
           products: tNav("products"),
           cart: tNav("cart"),
           login: tNav("login"),
@@ -154,6 +153,9 @@ export async function StoreHeader({ storeName }: Props) {
           shopSale: tNav("shopSale"),
           shopTrending: tNav("shopTrending"),
           shopLatest: tNav("shopLatest"),
+          newArrivals: tNav("newArrivals"),
+          bestSellers: tNav("bestSellers"),
+          wholesale: tNav("wholesale"),
           about: tNav("about"),
           searchPlaceholder: tNav("searchPlaceholder"),
           searchButton: tNav("searchButton"),
@@ -227,7 +229,10 @@ export async function StoreHeader({ storeName }: Props) {
 
         <MobileNavPanels />
 
-        <StoreMainNav categories={localizedCategories} />
+        <StoreMainNav
+          featuredBrands={featuredNavBrands}
+          isLoggedIn={Boolean(user)}
+        />
 
         </div>
       </MobileNavRoot>
@@ -238,7 +243,13 @@ export async function StoreHeader({ storeName }: Props) {
 
 }
 
-export async function StoreMainNav({ categories }: { categories: Category[] }) {
+export async function StoreMainNav({
+  featuredBrands,
+  isLoggedIn,
+}: {
+  featuredBrands: Awaited<ReturnType<typeof getFeaturedNavBrands>>;
+  isLoggedIn: boolean;
+}) {
   const tNav = await getTranslations("nav");
   const standardLinks = MAIN_NAV_LINKS.filter((item) => !item.highlight);
   const wholesaleLink = MAIN_NAV_LINKS.find((item) => item.highlight);
@@ -250,20 +261,26 @@ export async function StoreMainNav({ categories }: { categories: Category[] }) {
     >
       <div className="mx-auto flex w-full max-w-7xl items-stretch px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <CategoryMegaMenu categories={categories} />
+          <Link
+            href="/products"
+            className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {tNav("shop")}
+          </Link>
+          <BrandsMegaMenu brands={featuredBrands} isLoggedIn={isLoggedIn} />
           {standardLinks.map((item) => (
             <Link
               key={item.key}
               href={item.href}
-              className="flex shrink-0 items-center px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent"
+              className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              {tNav(item.key as "skincare")}
+              {tNav(item.key as "newArrivals")}
             </Link>
           ))}
           {wholesaleLink ? (
             <Link
               href={wholesaleLink.href}
-              className="ml-auto flex shrink-0 items-center px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-accent transition-colors hover:text-accent-hover"
+              className="ml-auto flex shrink-0 items-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-accent transition-colors hover:text-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {tNav("wholesale")}
             </Link>

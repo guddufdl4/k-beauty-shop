@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import {
   applyDeletedAtFilter,
   STATIC_PRODUCTS,
@@ -13,6 +14,7 @@ import {
   type BrandCatalogEntry,
 } from "@/lib/store/brand-url";
 import {
+  HOME_FEATURED_BRANDS,
   matchesBrandFilter,
   normalizeBrandKey,
   resolveBrandFilterValues,
@@ -39,6 +41,12 @@ export type BrandCategoryTab = {
   name: string;
   count: number;
   sortOrder: number;
+};
+
+export type FeaturedNavBrand = {
+  slug: string;
+  displayName: string;
+  logoUrl: string | null;
 };
 
 type BrandHubTabContext = {
@@ -254,6 +262,47 @@ async function discoverBrandCategoryTabs(
   }
 
   return sortBrandCategoryTabs([...counts.values()].filter((tab) => tab.count > 0), tabContext.navCategories);
+}
+
+async function fetchFeaturedNavBrandsFromSource(): Promise<FeaturedNavBrand[]> {
+  const [{ brands }, logoMap] = await Promise.all([getProductBrands(), getBrandLogoMap()]);
+  const { entries } = buildBrandCatalogEntries(brands);
+
+  const entryByKey = new Map<string, BrandCatalogEntry>();
+  for (const entry of entries) {
+    entryByKey.set(normalizeBrandKey(entry.displayName), entry);
+    entryByKey.set(normalizeBrandKey(entry.filterBrand), entry);
+  }
+
+  const featured: FeaturedNavBrand[] = [];
+
+  for (const config of HOME_FEATURED_BRANDS) {
+    if (!config.enabled) {
+      continue;
+    }
+
+    const entry = entryByKey.get(normalizeBrandKey(config.displayName));
+    if (!entry) {
+      continue;
+    }
+
+    featured.push({
+      slug: entry.slug,
+      displayName: entry.displayName,
+      logoUrl:
+        logoMap.get(normalizeBrandKey(entry.displayName)) ??
+        logoMap.get(normalizeBrandKey(entry.filterBrand)) ??
+        null,
+    });
+  }
+
+  return featured;
+}
+
+export async function getFeaturedNavBrands(): Promise<FeaturedNavBrand[]> {
+  return unstable_cache(fetchFeaturedNavBrandsFromSource, ["featured-nav-brands"], {
+    revalidate: 3600,
+  })();
 }
 
 export async function getBrandDirectoryItems(): Promise<{

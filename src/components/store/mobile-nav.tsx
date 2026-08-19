@@ -1,18 +1,17 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
-import { buildCategoryTree } from "@/lib/store/category-tree";
-import { buildProductsHref } from "@/lib/store/products-url";
-import type { Category } from "@/lib/supabase/products";
+import { buildBrandHref } from "@/lib/store/brand-url";
+import { buildProductsHref, MAIN_NAV_LINKS } from "@/lib/store/products-url";
+import type { FeaturedNavBrand } from "@/lib/supabase/brand-hub";
 import { LocaleSwitcher } from "./locale-switcher";
 import { StoreSearchBar } from "./store-search-bar";
 
 type MobileNavLabels = {
-  categories: string;
   products: string;
   cart: string;
   login: string;
@@ -30,6 +29,9 @@ type MobileNavLabels = {
   shopSale: string;
   shopTrending: string;
   shopLatest: string;
+  newArrivals: string;
+  bestSellers: string;
+  wholesale: string;
   about: string;
   searchPlaceholder: string;
   searchButton: string;
@@ -40,7 +42,7 @@ type MobileNavContextValue = {
   isLoggedIn: boolean;
   profileRole?: "customer" | "admin" | "wholesale" | null;
   profileFullName?: string | null;
-  categories: Category[];
+  featuredBrands: FeaturedNavBrand[];
   labels: MobileNavLabels;
   menuOpen: boolean;
   searchOpen: boolean;
@@ -67,7 +69,7 @@ type RootProps = {
   isLoggedIn: boolean;
   profileRole?: "customer" | "admin" | "wholesale" | null;
   profileFullName?: string | null;
-  categories: Category[];
+  featuredBrands: FeaturedNavBrand[];
   labels: MobileNavLabels;
   children: ReactNode;
 };
@@ -77,7 +79,7 @@ export function MobileNavRoot({
   isLoggedIn,
   profileRole,
   profileFullName,
-  categories,
+  featuredBrands,
   labels,
   children,
 }: RootProps) {
@@ -161,7 +163,7 @@ export function MobileNavRoot({
         isLoggedIn,
         profileRole,
         profileFullName,
-        categories,
+        featuredBrands,
         labels,
         menuOpen,
         searchOpen,
@@ -238,7 +240,7 @@ export function MobileNavPanels() {
     cartCount,
     isLoggedIn,
     profileRole,
-    categories,
+    featuredBrands,
     labels,
     menuOpen,
     searchOpen,
@@ -246,21 +248,25 @@ export function MobileNavPanels() {
     panelRef,
   } = useMobileNav();
 
-  const tProducts = useTranslations("products");
+  const tHome = useTranslations("home.featuredBrands");
   const [shopOpen, setShopOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [expandedParentId, setExpandedParentId] = useState<string | null>(null);
-
-  const { columns } = useMemo(() => buildCategoryTree(categories), [categories]);
+  const [brandsOpen, setBrandsOpen] = useState(false);
 
   const shopLinks = [
+    { href: "/products", label: labels.products },
     { href: buildProductsHref({ sort: "sale" }), label: labels.shopSale },
     { href: buildProductsHref({ sort: "trending" }), label: labels.shopTrending },
     { href: buildProductsHref({ sort: "latest" }), label: labels.shopLatest },
   ];
 
-  const baseLinks = [
-    { href: "/brands", label: labels.brands },
+  const primaryLinks = MAIN_NAV_LINKS.filter((item) => !item.highlight).map((item) => ({
+    href: item.href,
+    label: labels[item.key as "newArrivals" | "bestSellers"],
+  }));
+
+  const wholesaleLink = MAIN_NAV_LINKS.find((item) => item.highlight);
+
+  const secondaryLinks = [
     { href: "/cart", label: labels.cart },
     { href: "/about", label: labels.about },
   ];
@@ -274,10 +280,7 @@ export function MobileNavPanels() {
     "flex min-h-11 w-full items-center justify-between px-1 py-3 text-[15px] font-medium text-zinc-800 transition-colors hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset";
 
   const mobileSubLinkClass =
-    "block rounded-md py-2.5 pl-3 pr-1 text-sm font-medium text-zinc-800 transition-colors hover:bg-accent-soft hover:text-accent-hover";
-
-  const mobileNestedLinkClass =
-    "block rounded-md py-2 pl-6 pr-1 text-sm font-medium text-zinc-700 transition-colors hover:bg-accent-soft hover:text-accent-hover";
+    "block rounded-md py-2.5 pl-3 pr-1 text-sm font-medium text-zinc-800 transition-colors hover:bg-accent-soft hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset";
 
   const accordionChevronClass = "h-4 w-4 shrink-0 text-zinc-400 transition-transform duration-200";
 
@@ -335,87 +338,68 @@ export function MobileNavPanels() {
                 </div>
               ) : null}
             </div>
-            {columns.length > 0 ? (
-              <div className="py-1">
-                <button
-                  type="button"
-                  className={mobileLinkClass}
-                  aria-expanded={categoriesOpen}
-                  onClick={() => setCategoriesOpen((value) => !value)}
+
+            <div className="py-1">
+              <button
+                type="button"
+                className={mobileLinkClass}
+                aria-expanded={brandsOpen}
+                onClick={() => setBrandsOpen((value) => !value)}
+              >
+                {labels.brands}
+                <svg
+                  viewBox="0 0 20 20"
+                  className={`${accordionChevronClass} ${brandsOpen ? "rotate-180" : ""}`}
+                  fill="currentColor"
+                  aria-hidden="true"
                 >
-                  {labels.categories}
-                  <svg
-                    viewBox="0 0 20 20"
-                    className={`${accordionChevronClass} ${categoriesOpen ? "rotate-180" : ""}`}
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path d="M5.3 7.7a1 1 0 011.4 0L10 10.9l3.3-3.2a1 1 0 111.4 1.4l-4 4a1 1 0 01-1.4 0l-4-4a1 1 0 010-1.4z" />
-                  </svg>
-                </button>
-                {categoriesOpen ? (
-                  <div className="mt-1 space-y-1 pb-3 pl-1">
-                    {columns.map(({ parent, children }) =>
-                      children.length > 0 ? (
-                        <div key={parent.id} className="rounded-lg border-2 border-accent-hover bg-zinc-50/80">
-                          <button
-                            type="button"
-                            className={`${mobileSubLinkClass} flex w-full items-center justify-between text-left font-semibold text-zinc-900`}
-                            aria-expanded={expandedParentId === parent.id}
-                            onClick={() =>
-                              setExpandedParentId((current) =>
-                                current === parent.id ? null : parent.id,
-                              )
-                            }
-                          >
-                            {parent.name}
-                            <svg
-                              viewBox="0 0 20 20"
-                              className={`${accordionChevronClass} h-3.5 w-3.5 ${expandedParentId === parent.id ? "rotate-180" : ""}`}
-                              fill="currentColor"
-                              aria-hidden="true"
-                            >
-                              <path d="M5.3 7.7a1 1 0 011.4 0L10 10.9l3.3-3.2a1 1 0 111.4 1.4l-4 4a1 1 0 01-1.4 0l-4-4a1 1 0 010-1.4z" />
-                            </svg>
-                          </button>
-                          {expandedParentId === parent.id ? (
-                            <div className="space-y-0.5 border-t border-accent-hover/30 px-1 pb-2 pt-1">
-                              <Link
-                                href={buildProductsHref({ category: parent.slug })}
-                                className={mobileNestedLinkClass}
-                                onClick={closeAll}
-                              >
-                                {tProducts("allInCategory", { category: parent.name })}
-                              </Link>
-                              {children.map((child) => (
-                                <Link
-                                  key={child.id}
-                                  href={buildProductsHref({ category: child.slug })}
-                                  className={mobileNestedLinkClass}
-                                  onClick={closeAll}
-                                >
-                                  {child.name}
-                                </Link>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <Link
-                          key={parent.id}
-                          href={buildProductsHref({ category: parent.slug })}
-                          className={mobileSubLinkClass}
-                          onClick={closeAll}
-                        >
-                          {parent.name}
-                        </Link>
-                      ),
-                    )}
-                  </div>
-                ) : null}
-              </div>
+                  <path d="M5.3 7.7a1 1 0 011.4 0L10 10.9l3.3-3.2a1 1 0 111.4 1.4l-4 4a1 1 0 01-1.4 0l-4-4a1 1 0 010-1.4z" />
+                </svg>
+              </button>
+              {brandsOpen ? (
+                <div className="mt-1 space-y-2 pb-3 pl-1">
+                  <p className="px-3 text-xs font-bold uppercase tracking-wide text-zinc-500">
+                    {tHome("title")}
+                  </p>
+                  {featuredBrands.map((brand) => (
+                    <Link
+                      key={brand.slug}
+                      href={buildBrandHref(brand.slug)}
+                      className={mobileSubLinkClass}
+                      onClick={closeAll}
+                    >
+                      {brand.displayName}
+                    </Link>
+                  ))}
+                  <Link href="/brands" className={mobileSubLinkClass} onClick={closeAll}>
+                    {tHome("viewAll")}
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+
+            {primaryLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`${mobileLinkClass} py-3`}
+                onClick={closeAll}
+              >
+                <span>{link.label}</span>
+              </Link>
+            ))}
+
+            {wholesaleLink ? (
+              <Link
+                href={wholesaleLink.href}
+                className={`${mobileLinkClass} py-3 text-accent`}
+                onClick={closeAll}
+              >
+                <span>{labels.wholesale}</span>
+              </Link>
             ) : null}
-            {baseLinks.map((link) => (
+
+            {secondaryLinks.map((link) => (
               <Link
                 key={`${link.href}-${link.label}`}
                 href={link.href}
@@ -428,6 +412,7 @@ export function MobileNavPanels() {
                 </span>
               </Link>
             ))}
+
             {isLoggedIn ? (
               <>
                 <Link href="/account" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
@@ -449,6 +434,7 @@ export function MobileNavPanels() {
                 </Link>
               ))
             )}
+
             {profileRole === "admin" ? (
               <NextLink href="/admin" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
                 <span>{labels.admin}</span>

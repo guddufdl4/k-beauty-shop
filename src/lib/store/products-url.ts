@@ -389,10 +389,6 @@ export type MainNavLink = {
 };
 
 export const MAIN_NAV_LINKS: MainNavLink[] = [
-  { key: "skincare", href: buildProductsHref({ category: "skincare" }) },
-  { key: "makeup", href: buildProductsHref({ category: "makeup" }) },
-  { key: "hairBody", href: buildProductsHref({ category: "haircare" }) },
-  { key: "brands", href: "/brands" },
   { key: "newArrivals", href: buildProductsHref({ sort: "latest" }) },
   { key: "bestSellers", href: buildProductsHref({ sort: "trending" }) },
   { key: "wholesale", href: "/wholesale-inquiry", highlight: true },
