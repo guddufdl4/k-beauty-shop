@@ -8,23 +8,65 @@ import { buildBrandHref } from "@/lib/store/brand-url";
 import type { FeaturedNavBrand } from "@/lib/supabase/brand-hub";
 
 type Props = {
-  brands: FeaturedNavBrand[];
+  featuredBrands: FeaturedNavBrand[];
+  moreBrands: FeaturedNavBrand[];
   isLoggedIn: boolean;
 };
 
+function FeaturedBrandLink({
+  brand,
+  onNavigate,
+}: {
+  brand: FeaturedNavBrand;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={buildBrandHref(brand.slug)}
+      className="group flex min-h-[3rem] flex-col items-center justify-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-2 text-center transition-colors hover:border-accent hover:bg-accent-soft/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+      onClick={onNavigate}
+    >
+      {brand.logoUrl ? (
+        <>
+          <Image
+            src={brand.logoUrl}
+            alt=""
+            aria-hidden
+            width={72}
+            height={24}
+            sizes="72px"
+            loading="lazy"
+            className="h-5 w-auto max-w-full object-contain"
+          />
+          <span className="line-clamp-2 text-[10px] font-semibold leading-tight text-zinc-700 transition-colors group-hover:text-accent">
+            {brand.displayName}
+          </span>
+        </>
+      ) : (
+        <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-zinc-700 transition-colors group-hover:text-accent">
+          {brand.displayName}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 function BrandsMegaMenuPanel({
-  brands,
+  featuredBrands,
+  moreBrands,
   isLoggedIn,
   panelId,
   onNavigate,
 }: {
-  brands: FeaturedNavBrand[];
+  featuredBrands: FeaturedNavBrand[];
+  moreBrands: FeaturedNavBrand[];
   isLoggedIn: boolean;
   panelId: string;
   onNavigate: () => void;
 }) {
   const tNav = useTranslations("nav");
   const tHome = useTranslations("home.featuredBrands");
+  const hasBrands = featuredBrands.length > 0 || moreBrands.length > 0;
 
   return (
     <div
@@ -33,58 +75,78 @@ function BrandsMegaMenuPanel({
       role="region"
       aria-label={tNav("brandsMenu")}
     >
-      <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1fr_auto] lg:gap-10 lg:px-8 lg:py-8">
-        <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-            {tHome("title")}
-          </p>
-          {brands.length > 0 ? (
-            <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
-              {brands.map((brand) => (
-                <li key={brand.slug}>
-                  <Link
-                    href={buildBrandHref(brand.slug)}
-                    className="group flex min-h-[4.5rem] flex-col items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-4 text-center transition-colors hover:border-accent hover:bg-accent-soft/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                    onClick={onNavigate}
-                  >
-                    {brand.logoUrl ? (
-                      <Image
-                        src={brand.logoUrl}
-                        alt=""
-                        width={120}
-                        height={40}
-                        sizes="120px"
-                        loading="lazy"
-                        className="h-8 w-auto max-w-full object-contain"
-                      />
-                    ) : (
-                      <span className="text-xs font-bold uppercase leading-tight tracking-wide text-zinc-700 transition-colors group-hover:text-accent">
-                        {brand.displayName}
-                      </span>
-                    )}
-                    <span className="sr-only">{brand.displayName}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-4 text-sm text-zinc-600">{tNav("brandsMenuEmpty")}</p>
-          )}
+      <div
+        className={
+          isLoggedIn
+            ? "px-5 py-4 sm:px-6 sm:py-5"
+            : "grid gap-4 px-5 py-4 sm:px-6 sm:py-5 lg:grid-cols-[1fr_auto] lg:items-start lg:gap-6"
+        }
+      >
+        <div className="min-w-0 space-y-4">
+          {featuredBrands.length > 0 ? (
+            <section aria-labelledby={`${panelId}-featured-heading`}>
+              <h3
+                id={`${panelId}-featured-heading`}
+                className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500"
+              >
+                {tHome("title")}
+              </h3>
+              <ul className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {featuredBrands.map((brand) => (
+                  <li key={brand.slug}>
+                    <FeaturedBrandLink brand={brand} onNavigate={onNavigate} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {moreBrands.length > 0 ? (
+            <section aria-labelledby={`${panelId}-more-heading`}>
+              <h3
+                id={`${panelId}-more-heading`}
+                className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500"
+              >
+                {tNav("moreBrands")}
+              </h3>
+              <ul className="mt-2 grid grid-cols-3 gap-x-3 gap-y-0.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {moreBrands.map((brand) => (
+                  <li key={brand.slug} className="min-w-0">
+                    <Link
+                      href={buildBrandHref(brand.slug)}
+                      className="block truncate rounded-sm py-1 text-xs font-medium text-zinc-700 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+                      onClick={onNavigate}
+                      title={brand.displayName}
+                    >
+                      {brand.displayName}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {!hasBrands ? (
+            <p className="text-sm text-zinc-600">{tNav("brandsMenuEmpty")}</p>
+          ) : null}
+
           <Link
             href="/brands"
-            className="mt-5 inline-flex text-sm font-semibold text-accent transition-colors hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            className="inline-flex text-xs font-semibold text-accent transition-colors hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             onClick={onNavigate}
           >
-            {tHome("viewAll")}
+            {tNav("browseAllBrandsAZ")}
           </Link>
         </div>
 
         {!isLoggedIn ? (
-          <aside className="flex min-w-[14rem] flex-col justify-center rounded-xl border border-zinc-200 bg-zinc-50/80 px-5 py-5 lg:min-w-[16rem]">
-            <p className="text-sm font-medium text-zinc-800">{tNav("signInWholesalePrices")}</p>
+          <aside className="flex shrink-0 flex-col justify-center rounded-lg border border-zinc-200 bg-zinc-50/80 px-4 py-3 lg:min-w-[11rem] lg:max-w-[12rem]">
+            <p className="text-xs font-medium leading-snug text-zinc-800">
+              {tNav("signInWholesalePrices")}
+            </p>
             <Link
               href="/login"
-              className="mt-4 inline-flex w-fit items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="mt-2.5 inline-flex w-fit items-center justify-center rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               onClick={onNavigate}
             >
               {tNav("login")}
@@ -96,7 +158,7 @@ function BrandsMegaMenuPanel({
   );
 }
 
-function BrandsMegaMenuInner({ brands, isLoggedIn }: Props) {
+function BrandsMegaMenuInner({ featuredBrands, moreBrands, isLoggedIn }: Props) {
   const tNav = useTranslations("nav");
   const pathname = usePathname();
   const panelId = useId();
@@ -105,7 +167,8 @@ function BrandsMegaMenuInner({ brands, isLoggedIn }: Props) {
   const [open, setOpen] = useState(false);
 
   const isBrandsActive =
-    pathname === "/brands" || (pathname.startsWith("/brands/") && pathname.length > "/brands/".length);
+    pathname === "/brands" ||
+    (pathname.startsWith("/brands/") && pathname.length > "/brands/".length);
 
   const closeMenu = useCallback(() => {
     setOpen(false);
@@ -171,7 +234,8 @@ function BrandsMegaMenuInner({ brands, isLoggedIn }: Props) {
       >
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
           <BrandsMegaMenuPanel
-            brands={brands}
+            featuredBrands={featuredBrands}
+            moreBrands={moreBrands}
             isLoggedIn={isLoggedIn}
             panelId={panelId}
             onNavigate={closeMenu}

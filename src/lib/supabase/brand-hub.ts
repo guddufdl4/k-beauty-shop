@@ -48,6 +48,36 @@ export type FeaturedNavBrand = {
   logoUrl: string | null;
 };
 
+export type NavBrandGroups = {
+  featured: FeaturedNavBrand[];
+  more: FeaturedNavBrand[];
+};
+
+const MAX_FEATURED_NAV_BRANDS = 6;
+const MAX_MORE_NAV_BRANDS = 18;
+
+function resolveNavBrandLogo(
+  entry: BrandCatalogEntry,
+  logoMap: Map<string, string>,
+): string | null {
+  return (
+    logoMap.get(normalizeBrandKey(entry.displayName)) ??
+    logoMap.get(normalizeBrandKey(entry.filterBrand)) ??
+    null
+  );
+}
+
+function toFeaturedNavBrand(
+  entry: BrandCatalogEntry,
+  logoMap: Map<string, string>,
+): FeaturedNavBrand {
+  return {
+    slug: entry.slug,
+    displayName: entry.displayName,
+    logoUrl: resolveNavBrandLogo(entry, logoMap),
+  };
+}
+
 type BrandHubTabContext = {
   categoriesById: Map<string, Category>;
   navCategories: Category[];
@@ -263,7 +293,7 @@ async function discoverBrandCategoryTabs(
   return sortBrandCategoryTabs([...counts.values()].filter((tab) => tab.count > 0), tabContext.navCategories);
 }
 
-async function fetchFeaturedNavBrandsFromSource(): Promise<FeaturedNavBrand[]> {
+async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
   const [{ brands }, logoMap] = await Promise.all([getProductBrands(), getBrandLogoMap()]);
   const { entries } = buildBrandCatalogEntries(brands);
 
@@ -274,9 +304,10 @@ async function fetchFeaturedNavBrandsFromSource(): Promise<FeaturedNavBrand[]> {
   }
 
   const featured: FeaturedNavBrand[] = [];
+  const featuredSlugs = new Set<string>();
 
   for (const config of HOME_FEATURED_BRANDS) {
-    if (!config.enabled) {
+    if (!config.enabled || featured.length >= MAX_FEATURED_NAV_BRANDS) {
       continue;
     }
 
@@ -285,21 +316,28 @@ async function fetchFeaturedNavBrandsFromSource(): Promise<FeaturedNavBrand[]> {
       continue;
     }
 
-    featured.push({
-      slug: entry.slug,
-      displayName: entry.displayName,
-      logoUrl:
-        logoMap.get(normalizeBrandKey(entry.displayName)) ??
-        logoMap.get(normalizeBrandKey(entry.filterBrand)) ??
-        null,
-    });
+    featured.push(toFeaturedNavBrand(entry, logoMap));
+    featuredSlugs.add(entry.slug);
   }
 
-  return featured;
+  const more = entries
+    .filter((entry) => !featuredSlugs.has(entry.slug))
+    .sort((a, b) =>
+      a.displayName.localeCompare(b.displayName, "en", { sensitivity: "base" }),
+    )
+    .slice(0, MAX_MORE_NAV_BRANDS)
+    .map((entry) => toFeaturedNavBrand(entry, logoMap));
+
+  return { featured, more };
+}
+
+export async function getNavBrandGroups(): Promise<NavBrandGroups> {
+  return fetchNavBrandGroupsFromSource();
 }
 
 export async function getFeaturedNavBrands(): Promise<FeaturedNavBrand[]> {
-  return fetchFeaturedNavBrandsFromSource();
+  const { featured } = await fetchNavBrandGroupsFromSource();
+  return featured;
 }
 
 export async function getBrandDirectoryItems(): Promise<{

@@ -21,7 +21,7 @@ import { BrandsMegaMenu } from "./brands-mega-menu";
 import { CategoryIcon } from "@/lib/store/category-icons";
 import { resolveHomeCategoryImageUrls } from "@/lib/product-images";
 import { resolveFeaturedBrands, type FeaturedBrand } from "@/lib/store/partner-brands";
-import { getFeaturedNavBrands } from "@/lib/supabase/brand-hub";
+import { getNavBrandGroups } from "@/lib/supabase/brand-hub";
 import {
   buildProductsHref,
   HOME_CATEGORY_SLUGS,
@@ -87,7 +87,7 @@ function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
 
 export async function StoreHeader({ storeName }: Props) {
 
-  const [cart, { user, profile }, tNav, locale, featuredNavBrands] = await Promise.all([
+  const [cart, { user, profile }, tNav, locale, navBrandGroups] = await Promise.all([
 
     getCart(),
 
@@ -97,7 +97,7 @@ export async function StoreHeader({ storeName }: Props) {
 
     getLocale(),
 
-    getFeaturedNavBrands(),
+    getNavBrandGroups(),
 
   ]);
 
@@ -134,7 +134,7 @@ export async function StoreHeader({ storeName }: Props) {
         isLoggedIn={Boolean(user)}
         profileRole={profile?.role ?? null}
         profileFullName={profile?.full_name ?? null}
-        featuredBrands={featuredNavBrands}
+        featuredBrands={navBrandGroups.featured}
         labels={{
           products: tNav("products"),
           cart: tNav("cart"),
@@ -230,7 +230,8 @@ export async function StoreHeader({ storeName }: Props) {
         <MobileNavPanels />
 
         <StoreMainNav
-          featuredBrands={featuredNavBrands}
+          featuredBrands={navBrandGroups.featured}
+          moreBrands={navBrandGroups.more}
           isLoggedIn={Boolean(user)}
         />
 
@@ -245,9 +246,11 @@ export async function StoreHeader({ storeName }: Props) {
 
 export async function StoreMainNav({
   featuredBrands,
+  moreBrands,
   isLoggedIn,
 }: {
-  featuredBrands: Awaited<ReturnType<typeof getFeaturedNavBrands>>;
+  featuredBrands: Awaited<ReturnType<typeof getNavBrandGroups>>["featured"];
+  moreBrands: Awaited<ReturnType<typeof getNavBrandGroups>>["more"];
   isLoggedIn: boolean;
 }) {
   const tNav = await getTranslations("nav");
@@ -267,7 +270,11 @@ export async function StoreMainNav({
           >
             {tNav("shop")}
           </Link>
-          <BrandsMegaMenu brands={featuredBrands} isLoggedIn={isLoggedIn} />
+          <BrandsMegaMenu
+            featuredBrands={featuredBrands}
+            moreBrands={moreBrands}
+            isLoggedIn={isLoggedIn}
+          />
           {standardLinks.map((item) => (
             <Link
               key={item.key}
