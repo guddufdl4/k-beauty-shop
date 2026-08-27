@@ -10,6 +10,7 @@ import {
 } from "@/lib/product-images";
 import type { ProductListSort } from "@/lib/store/products-url";
 import {
+  buildGuestListProductSelect,
   buildGuestProductSelect,
   buildMemberProductSelect,
   canViewProductPrices,
@@ -48,6 +49,8 @@ export const STOREFRONT_PRODUCTS_PAGE_SIZE = 48;
 const CACHE_REVALIDATE_SECONDS = 300;
 export const STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG = "storefront-priority-products";
 export const STOREFRONT_PRODUCTS_CACHE_TAG = "storefront-products";
+export const STOREFRONT_BRANDS_CACHE_TAG = "storefront-brands";
+export const STOREFRONT_BRAND_LOGOS_CACHE_TAG = "storefront-brand-logos";
 export const STOREFRONT_CATEGORY_PRODUCT_COUNTS_CACHE_TAG =
   "storefront-category-product-counts";
 
@@ -861,7 +864,7 @@ const ADMIN_FULL_SELECT = `*, category:categories(id, name, slug), images:produc
 
 function resolveProductSelect(
   audience: StorefrontAudience,
-  options?: { lightSelect?: boolean; privileged?: boolean },
+  options?: { lightSelect?: boolean; privileged?: boolean; listSelect?: boolean },
 ): { select: string; includePriceColumns: boolean } {
   if (options?.privileged) {
     return {
@@ -871,6 +874,13 @@ function resolveProductSelect(
   }
 
   const includePriceColumns = canViewProductPrices(audience);
+  if (options?.listSelect && !includePriceColumns) {
+    return {
+      select: buildGuestListProductSelect(),
+      includePriceColumns: false,
+    };
+  }
+
   return {
     select: includePriceColumns ? buildMemberProductSelect() : buildGuestProductSelect(),
     includePriceColumns,
@@ -1067,6 +1077,10 @@ export async function getProducts(
         needsImageOnly?: boolean;
         /** Resolved storefront audience; defaults via session when omitted. */
         audience?: StorefrontAudience;
+        /** Skip unstable_cache wrapper (internal). */
+        skipCache?: boolean;
+        /** Use anon public client instead of cookie-bound client. */
+        usePublicClient?: boolean;
       },
 ): Promise<{ products: StorefrontProduct[]; totalCount: number; meta: FetchMeta }> {
   const options =
@@ -1078,9 +1092,11 @@ export async function getProducts(
   const audience =
     options?.audience ??
     (privileged ? ("admin" as StorefrontAudience) : await resolveStorefrontAudience());
+  const listLimit = options?.limit;
   const { select: productSelect, includePriceColumns } = resolveProductSelect(audience, {
     lightSelect: options?.lightSelect,
     privileged,
+    listSelect: listLimit != null && !privileged,
   });
   const categorySlug = options?.categorySlug?.trim();
   const importBatchId = options?.importBatchId?.trim();
@@ -1094,13 +1110,53 @@ export async function getProducts(
   const lightSelect = options?.lightSelect === true;
   const requireRealImage = options?.requireRealImage === true;
   const needsImageOnly = options?.needsImageOnly === true;
-  const listLimit = options?.limit;
   const listPage = Math.max(1, options?.page ?? 1);
   const listOrderOptions: ProductListOrderOptions = {
     orderBy,
     sort,
     imageFirst,
   };
+
+  const guestProductsCacheable =
+    options?.skipCache !== true &&
+    !privileged &&
+    !needsImageOnly &&
+    !options?.priorityBrandList &&
+    !options?.includeDraft &&
+    deletionFilter === "active" &&
+    audience === "guest" &&
+    configured &&
+    listLimit != null;
+
+  if (guestProductsCacheable) {
+    const cacheKey = [
+      STOREFRONT_PRODUCTS_CACHE_TAG,
+      categorySlug ?? "",
+      brandFilter ?? "",
+      brandExact ? "1" : "0",
+      searchTerm ?? "",
+      sort ?? "",
+      String(listLimit),
+      String(listPage),
+      orderBy,
+      requireRealImage ? "1" : "0",
+    ];
+
+    return unstable_cache(
+      async () =>
+        getProducts({
+          ...options,
+          audience: "guest",
+          skipCache: true,
+          usePublicClient: true,
+        }),
+      cacheKey,
+      {
+        revalidate: CACHE_REVALIDATE_SECONDS,
+        tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
+      },
+    )();
+  }
 
   if (options?.priorityBrandList) {
     return fetchPriorityBrandListProducts({
@@ -1172,7 +1228,9 @@ export async function getProducts(
 
   const supabase = privileged
     ? createServiceClient() ?? (await createSafeClient())
-    : await createSafeClient();
+    : options?.usePublicClient
+      ? createPublicClient() ?? (await createSafeClient())
+      : await createSafeClient();
   if (!supabase) {
     return staticProductsResult();
   }
@@ -2229,7 +2287,7 @@ function dedupeImportBatchesForAdmin(
   });
 }
 
-export async function getProductBrands(): Promise<{
+async function fetchProductBrandsFromSource(): Promise<{
   brands: string[];
   meta: FetchMeta;
 }> {
@@ -2247,7 +2305,7 @@ export async function getProductBrands(): Promise<{
     };
   }
 
-  const supabase = await createSafeClient();
+  const supabase = createPublicClient();
   if (!supabase) {
     const brands = buildBrandCatalog(
       STATIC_PRODUCTS.filter((product) => product.status === "active").map(
@@ -2287,7 +2345,7 @@ export async function getProductBrands(): Promise<{
   if (error) {
     if (isMissingDeletedAtColumnError(error)) {
       markSoftDeleteColumnMissing();
-      return getProductBrands();
+      return fetchProductBrandsFromSource();
     }
 
     return {
@@ -2304,4 +2362,18 @@ export async function getProductBrands(): Promise<{
     brands,
     meta: { source: "database", configured: true },
   };
+}
+
+export async function getProductBrands(): Promise<{
+  brands: string[];
+  meta: FetchMeta;
+}> {
+  return unstable_cache(
+    fetchProductBrandsFromSource,
+    ["storefront-product-brands"],
+    {
+      revalidate: CACHE_REVALIDATE_SECONDS,
+      tags: [STOREFRONT_BRANDS_CACHE_TAG, STOREFRONT_PRODUCTS_CACHE_TAG],
+    },
+  )();
 }

@@ -1,10 +1,12 @@
 import {
   applyDeletedAtFilter,
   STATIC_PRODUCTS,
+  STOREFRONT_BRANDS_CACHE_TAG,
   type Category,
   type FetchMeta,
   type ProductWithRelations,
 } from "@/lib/supabase/products";
+import { unstable_cache } from "next/cache";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import {
@@ -13,6 +15,7 @@ import {
   type BrandCatalogEntry,
 } from "@/lib/store/brand-url";
 import {
+  buildBrandCatalog,
   HOME_FEATURED_BRANDS,
   matchesBrandFilter,
   normalizeBrandKey,
@@ -23,6 +26,7 @@ import {
   filterStorefrontCategories,
   pickStorefrontNavCategories,
 } from "@/lib/store/localized-category";
+import { resolveBrandLogo } from "@/lib/store/brand-logos";
 import { getBrandLogoMap } from "@/lib/store/partner-brands";
 import { getProductBrands } from "@/lib/supabase/products";
 
@@ -54,17 +58,38 @@ export type NavBrandGroups = {
 };
 
 const MAX_FEATURED_NAV_BRANDS = 6;
-const MAX_MORE_NAV_BRANDS = 18;
+const MAX_MORE_NAV_BRANDS = 24;
+
+function getStaticFallbackBrandNames(): string[] {
+  return buildBrandCatalog(
+    STATIC_PRODUCTS.filter((product) => product.status === "active").map(
+      (product) => product.brand,
+    ),
+  );
+}
+
+function resolveNavCatalogBrandNames(brands: string[], meta: FetchMeta): string[] {
+  if (brands.length > 0) {
+    return brands;
+  }
+
+  if (meta.error || meta.source === "static") {
+    return getStaticFallbackBrandNames();
+  }
+
+  return brands;
+}
 
 function resolveNavBrandLogo(
   entry: BrandCatalogEntry,
   logoMap: Map<string, string>,
 ): string | null {
-  return (
-    logoMap.get(normalizeBrandKey(entry.displayName)) ??
-    logoMap.get(normalizeBrandKey(entry.filterBrand)) ??
-    null
-  );
+  return resolveBrandLogo({
+    slug: entry.slug,
+    displayName: entry.displayName,
+    filterBrand: entry.filterBrand,
+    dbLogoMap: logoMap,
+  });
 }
 
 function toFeaturedNavBrand(
@@ -294,7 +319,11 @@ async function discoverBrandCategoryTabs(
 }
 
 async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
-  const [{ brands }, logoMap] = await Promise.all([getProductBrands(), getBrandLogoMap()]);
+  const [{ brands: productBrands, meta }, logoMap] = await Promise.all([
+    getProductBrands(),
+    getBrandLogoMap(),
+  ]);
+  const brands = resolveNavCatalogBrandNames(productBrands, meta);
   const { entries } = buildBrandCatalogEntries(brands);
 
   const entryByKey = new Map<string, BrandCatalogEntry>();
@@ -332,11 +361,18 @@ async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
 }
 
 export async function getNavBrandGroups(): Promise<NavBrandGroups> {
-  return fetchNavBrandGroupsFromSource();
+  return unstable_cache(
+    fetchNavBrandGroupsFromSource,
+    ["storefront-nav-brand-groups"],
+    {
+      revalidate: 300,
+      tags: [STOREFRONT_BRANDS_CACHE_TAG],
+    },
+  )();
 }
 
 export async function getFeaturedNavBrands(): Promise<FeaturedNavBrand[]> {
-  const { featured } = await fetchNavBrandGroupsFromSource();
+  const { featured } = await getNavBrandGroups();
   return featured;
 }
 
@@ -350,10 +386,12 @@ export async function getBrandDirectoryItems(): Promise<{
 
   const items = entries.map((entry) => ({
     ...entry,
-    logoUrl:
-      logoMap.get(normalizeBrandKey(entry.displayName)) ??
-      logoMap.get(normalizeBrandKey(entry.filterBrand)) ??
-      null,
+    logoUrl: resolveBrandLogo({
+      slug: entry.slug,
+      displayName: entry.displayName,
+      filterBrand: entry.filterBrand,
+      dbLogoMap: logoMap,
+    }),
   }));
 
   return { items, meta, collisionSlugs };
@@ -382,13 +420,15 @@ export async function getBrandHubCategoryTabs(
 export async function getBrandHubLogoUrl(
   filterBrand: string,
   displayName: string,
+  slug?: string,
 ): Promise<string | null> {
   const logoMap = await getBrandLogoMap();
-  return (
-    logoMap.get(normalizeBrandKey(displayName)) ??
-    logoMap.get(normalizeBrandKey(filterBrand)) ??
-    null
-  );
+  return resolveBrandLogo({
+    slug,
+    displayName,
+    filterBrand,
+    dbLogoMap: logoMap,
+  });
 }
 
 export function isValidBrandCategorySlug(

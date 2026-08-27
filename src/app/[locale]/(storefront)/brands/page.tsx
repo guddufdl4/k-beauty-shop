@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { BrandsDirectory } from "@/components/store/products-sidebar-search";
 import { getBrandDirectoryItems } from "@/lib/supabase/brand-hub";
 
+export const revalidate = 60;
+
 export default async function BrandsPage() {
   const [t, { items, meta }] = await Promise.all([
     getTranslations("brands"),

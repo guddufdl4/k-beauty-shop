@@ -30,6 +30,8 @@ import {
 } from "@/lib/supabase/products";
 import { routing, type AppLocale } from "@/i18n/routing";
 
+export const revalidate = 60;
+
 type BrandHubPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ category?: string; page?: string | string[] }>;
@@ -95,7 +97,7 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
 
   const [{ categories }, logoUrl] = await Promise.all([
     getStorefrontCategories(),
-    getBrandHubLogoUrl(entry.filterBrand, entry.displayName),
+    getBrandHubLogoUrl(entry.filterBrand, entry.displayName, entry.slug),
   ]);
 
   const { tabs } = await getBrandHubCategoryTabs(entry.filterBrand, categories);

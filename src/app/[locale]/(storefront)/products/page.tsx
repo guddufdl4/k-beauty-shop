@@ -16,6 +16,8 @@ import {
 } from "@/lib/supabase/products";
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
 
+export const revalidate = 60;
+
 type ProductsPageProps = {
   searchParams: Promise<{
     category?: string;

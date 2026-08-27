@@ -94,8 +94,30 @@ const PRODUCT_RELATIONS_SUFFIX = `
   images:product_images(id, product_id, url, alt_text, sort_order, is_primary)
 `;
 
+const GUEST_LIST_PRODUCT_COLUMNS = [
+  "id",
+  "category_id",
+  "name",
+  "slug",
+  "short_description",
+  "brand",
+  "sku",
+  "moq",
+  "sold_out",
+  "is_featured",
+  "is_best_seller",
+  "image_url",
+  "created_at",
+  "updated_at",
+] as const;
+
 export function buildGuestProductSelect(): string {
   return `${GUEST_PRODUCT_COLUMNS.join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
+}
+
+/** Lighter projection for paginated storefront grids (card fields only). */
+export function buildGuestListProductSelect(): string {
+  return `${GUEST_LIST_PRODUCT_COLUMNS.join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
 }
 
 export function buildMemberProductSelect(): string {

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { formatLocaleProductPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -84,14 +85,13 @@ export function ProductCard({
                   : "mb-4 rounded-sm border border-zinc-100 aspect-square",
             )}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={displayImageUrl}
               alt={primaryImage.alt_text ?? product.name}
               width={400}
               height={400}
+              sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
               loading="lazy"
-              decoding="async"
               className={cn(
                 "absolute inset-0 h-full w-full object-contain",
                 isPlaceholder && "p-8",

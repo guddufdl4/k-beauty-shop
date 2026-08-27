@@ -1,7 +1,9 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { unstable_cache } from "next/cache";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/service";
+import { STOREFRONT_BRAND_LOGOS_CACHE_TAG } from "@/lib/supabase/products";
 import {
   getBrandFilterValue,
   HOME_FEATURED_BRANDS,
@@ -10,6 +12,8 @@ import {
   resolveFeaturedBrandsFromProducts,
   type ResolvedFeaturedBrand,
 } from "@/lib/store/products-url";
+import { brandNameToSlug } from "@/lib/store/brand-url";
+import { resolveBrandLogo } from "@/lib/store/brand-logos";
 import type { ProductWithRelations } from "@/lib/supabase/products";
 
 export type PartnerBrand = {
@@ -99,14 +103,14 @@ function buildOrderedBrandNames(products: ProductWithRelations[]): string[] {
   return ordered;
 }
 
-async function fetchBrandLogoMap(): Promise<Map<string, string>> {
+async function fetchBrandLogoMapFromSource(): Promise<Record<string, string>> {
   if (!isSupabaseConfigured()) {
-    return new Map();
+    return {};
   }
 
   const supabase = createPublicClient();
   if (!supabase) {
-    return new Map();
+    return {};
   }
 
   const { data, error } = await supabase
@@ -115,14 +119,14 @@ async function fetchBrandLogoMap(): Promise<Map<string, string>> {
     .eq("is_active", true);
 
   if (error || !data) {
-    return new Map();
+    return {};
   }
 
-  const map = new Map<string, string>();
+  const map: Record<string, string> = {};
   for (const row of data) {
     const logoUrl = row.logo_url?.trim();
     if (logoUrl) {
-      map.set(normalizeBrandKey(String(row.name)), logoUrl);
+      map[normalizeBrandKey(String(row.name))] = logoUrl;
     }
   }
 
@@ -130,18 +134,32 @@ async function fetchBrandLogoMap(): Promise<Map<string, string>> {
 }
 
 export async function getBrandLogoMap(): Promise<Map<string, string>> {
-  return fetchBrandLogoMap();
+  const record = await unstable_cache(
+    fetchBrandLogoMapFromSource,
+    ["storefront-brand-logo-map"],
+    {
+      revalidate: 300,
+      tags: [STOREFRONT_BRAND_LOGOS_CACHE_TAG],
+    },
+  )();
+
+  return new Map(Object.entries(record));
 }
 
 async function resolvePartnerBrandsFromSource(
   products: ProductWithRelations[],
 ): Promise<PartnerBrand[]> {
   const brandNames = buildOrderedBrandNames(products);
-  const logoMap = await fetchBrandLogoMap();
+  const logoMap = await getBrandLogoMap();
 
   return brandNames.map((name) => ({
     name,
-    logoUrl: logoMap.get(normalizeBrandKey(name)) ?? null,
+    logoUrl: resolveBrandLogo({
+      slug: brandNameToSlug(name),
+      displayName: name,
+      filterBrand: name,
+      dbLogoMap: logoMap,
+    }),
   }));
 }
 
@@ -205,13 +223,15 @@ export async function resolveFeaturedBrands(
     .map((config) => byDisplayName.get(config.displayName))
     .filter((brand): brand is ResolvedFeaturedBrand => Boolean(brand));
 
-  const logoMap = await fetchBrandLogoMap();
+  const logoMap = await getBrandLogoMap();
 
   return brands.map((brand) => ({
     ...brand,
-    logoUrl:
-      logoMap.get(normalizeBrandKey(brand.displayName)) ??
-      logoMap.get(normalizeBrandKey(brand.filterBrand)) ??
-      null,
+    logoUrl: resolveBrandLogo({
+      slug: brandNameToSlug(brand.displayName),
+      displayName: brand.displayName,
+      filterBrand: brand.filterBrand,
+      dbLogoMap: logoMap,
+    }),
   }));
 }

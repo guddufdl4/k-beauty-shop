@@ -10,7 +10,7 @@ import {
   mapHeroSlideCopyToBannerCopy,
   normalizeHeroHref,
 } from "@/lib/store/storefront-href";
-import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettingsFresh } from "@/lib/site-settings";
+import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettings } from "@/lib/site-settings";
 import type { HeroSlide } from "@/types/database";
 import {
   getPriorityBrandProducts,
@@ -43,9 +43,9 @@ function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRA
 
 async function loadSiteSettingsSafely() {
   try {
-    return await getSiteSettingsFresh();
+    return await getSiteSettings();
   } catch (error) {
-    console.error("[home] getSiteSettingsFresh failed:", error);
+    console.error("[home] getSiteSettings failed:", error);
     return { ...DEFAULT_SITE_SETTINGS };
   }
 }

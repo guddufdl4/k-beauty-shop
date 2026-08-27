@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["sharp", "xlsx", "@imgly/background-removal-node", "onnxruntime-node"],
   images: supabaseHostname
     ? {
+        formats: ["image/avif", "image/webp"],
         remotePatterns: [
           {
             protocol: "https",
@@ -37,7 +38,9 @@ const nextConfig: NextConfig = {
           },
         ],
       }
-    : undefined,
+    : {
+        formats: ["image/avif", "image/webp"],
+      },
   experimental: {
     optimizePackageImports: ["next-intl"],
   },

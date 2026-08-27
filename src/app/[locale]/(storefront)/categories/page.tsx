@@ -5,6 +5,8 @@ import { getStorefrontCategories } from "@/lib/supabase/products";
 import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import { Link } from "@/i18n/navigation";
 
+export const revalidate = 60;
+
 export default async function CategoriesPage() {
   const [t, locale, { categories, meta }] = await Promise.all([
     getTranslations("categories"),

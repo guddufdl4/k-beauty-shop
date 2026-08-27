@@ -1,6 +1,8 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { routing } from "@/i18n/routing";
 import {
+  STOREFRONT_BRANDS_CACHE_TAG,
+  STOREFRONT_BRAND_LOGOS_CACHE_TAG,
   STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG,
   STOREFRONT_PRODUCTS_CACHE_TAG,
 } from "@/lib/supabase/products";
@@ -29,7 +31,11 @@ export function revalidateStorefrontHome(): void {
 export function revalidateStorefrontCatalog(): void {
   revalidateTag(STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "max");
   revalidateTag(STOREFRONT_PRODUCTS_CACHE_TAG, "max");
+  revalidateTag(STOREFRONT_BRANDS_CACHE_TAG, "max");
+  revalidateTag(STOREFRONT_BRAND_LOGOS_CACHE_TAG, "max");
   revalidateStorefrontPath("/");
   revalidateStorefrontPath("/products");
+  revalidateStorefrontPath("/brands");
+  revalidateStorefrontPath("/categories");
   revalidatePath("/admin/products");
 }
