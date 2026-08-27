@@ -136,12 +136,15 @@ export function ProductImageBatchSection({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2">
+            <Link
+              href="/admin/products"
+              className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 transition-colors hover:border-violet-200 hover:bg-violet-100"
+            >
               <p className="text-[11px] text-violet-700">미등록 이미지</p>
               <p className="text-xl font-bold text-violet-900">
                 {withoutImage.toLocaleString("ko-KR")}
               </p>
-            </div>
+            </Link>
             <button
               type="button"
               disabled={pending || withoutImage === 0}

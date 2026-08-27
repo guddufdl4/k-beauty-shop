@@ -2,11 +2,12 @@ export type AdminProductsSort = "recent" | null;
 
 export type AdminProductsView = "active" | "deleted";
 
-export type AdminProductsTab = "bulk" | "add" | "list";
+export type AdminProductsTab = "missing-image" | "add" | "list";
 
 export type AdminProductsFilters = {
   batchId: string | null;
   brandPriority: boolean;
+  needsImageOnly: boolean;
   q: string | null;
   brand: string | null;
   category: string | null;
@@ -14,6 +15,12 @@ export type AdminProductsFilters = {
   view: AdminProductsView;
   tab?: AdminProductsTab | null;
 };
+
+export function resolveAdminProductsNeedsImageOnly(
+  image: string | undefined | null,
+): boolean {
+  return image?.trim() === "missing";
+}
 
 export function resolveAdminProductsBrandPriority(
   priority: string | undefined | null,
@@ -27,7 +34,10 @@ export function resolveAdminProductsTab(
   if (tab === "add" || tab === "list") {
     return tab;
   }
-  return "bulk";
+  if (tab === "missing-image" || tab === "bulk") {
+    return "missing-image";
+  }
+  return "missing-image";
 }
 
 export type AdminProductsPaginationItem = number;
@@ -90,10 +100,13 @@ export function buildAdminProductsHref(
   if (filters.view === "deleted") {
     params.set("view", "deleted");
   }
+  if (filters.needsImageOnly && filters.tab !== "missing-image") {
+    params.set("image", "missing");
+  }
   if (page > 1) {
     params.set("page", String(page));
   }
-  if (filters.tab && filters.tab !== "bulk") {
+  if (filters.tab && filters.tab !== "missing-image") {
     params.set("tab", filters.tab);
   }
   const query = params.toString();

@@ -6,17 +6,17 @@ import { AdminProductsToolbar } from "@/components/admin/admin-products-toolbar"
 import {
   buildAdminProductsHref,
   resolveAdminProductsBrandPriority,
+  resolveAdminProductsNeedsImageOnly,
   resolveAdminProductsTab,
   type AdminProductsFilters,
   type AdminProductsTab,
 } from "@/lib/admin/admin-products-url";
 import { AdminProductsPagination } from "@/components/admin/admin-products-pagination";
 import { AdminProductsTable } from "@/components/admin/admin-products-table";
-import { ExcelImportSection } from "@/components/admin/excel-import-section";
 import { ProductImageBatchSection } from "@/components/admin/product-image-batch-section";
 import { getCachedProductImageBatchStats } from "@/lib/admin/product-image-batch";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { getCategories, getCachedBrandPriorityListStats, getProductImportBatches, getProducts, type ProductImportBatch } from "@/lib/supabase/products";
+import { getCategories, getCachedBrandPriorityListStats, getProductImportBatches, getProducts } from "@/lib/supabase/products";
 import { isPricedStorefrontProduct } from "@/lib/store/product-visibility";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
@@ -26,7 +26,7 @@ const CARD_CLASS =
   "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm";
 
 const PRODUCT_TABS: Array<{ id: AdminProductsTab; label: string }> = [
-  { id: "bulk", label: "대량/자동화 등록" },
+  { id: "missing-image", label: "미등록 이미지" },
   { id: "add", label: "상품 개별 등록" },
   { id: "list", label: "상품 목록 및 관리" },
 ];
@@ -42,162 +42,9 @@ type AdminProductsPageProps = {
     view?: string;
     tab?: string;
     priority?: string;
+    image?: string;
   }>;
 };
-
-function buildWeeklyUploadActivity(batches: ProductImportBatch[]) {
-  const days: Array<{ label: string; count: number }> = [];
-  const now = new Date();
-
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    const date = new Date(now);
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() - offset);
-    const nextDate = new Date(date);
-    nextDate.setDate(nextDate.getDate() + 1);
-
-    const count = batches
-      .filter((batch) => {
-        const created = new Date(batch.created_at);
-        return created >= date && created < nextDate;
-      })
-      .reduce((sum, batch) => sum + batch.imported_count, 0);
-
-    days.push({
-      label: date.toLocaleDateString("ko-KR", { weekday: "short" }),
-      count,
-    });
-  }
-
-  return days;
-}
-
-function RecentUploadStatusCard({
-  batches,
-  filters,
-}: {
-  batches: ProductImportBatch[];
-  filters: AdminProductsFilters;
-}) {
-  const totalImported = batches.reduce((sum, batch) => sum + batch.imported_count, 0);
-  const totalFailed = batches.reduce((sum, batch) => sum + batch.failed_count, 0);
-  const totalSuccess = Math.max(0, totalImported - totalFailed);
-  const weeklyActivity = buildWeeklyUploadActivity(batches);
-  const maxCount = Math.max(1, ...weeklyActivity.map((day) => day.count));
-  const recentBatch = batches[0] ?? null;
-
-  return (
-    <section
-      aria-label="최근 업로드 현황"
-      className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
-    >
-      <div className="shrink-0 border-b border-zinc-100 px-4 py-3">
-        <h2 className="text-sm font-semibold text-zinc-900">최근 업로드 현황</h2>
-        <p className="mt-0.5 text-[11px] text-zinc-500">
-          누적 {totalImported.toLocaleString("ko-KR")}건 처리
-          {recentBatch
-            ? ` · 마지막 ${new Date(recentBatch.created_at).toLocaleString("ko-KR", {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`
-            : null}
-        </p>
-      </div>
-
-      <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
-        <div>
-          <p className="mb-2 text-[11px] font-medium text-zinc-500">최근 7일 업로드</p>
-          <div className="flex h-24 items-end gap-1.5">
-            {weeklyActivity.map((day) => {
-              const heightPct = Math.round((day.count / maxCount) * 100);
-              return (
-                <div key={day.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                  <div className="flex h-20 w-full items-end justify-center">
-                    <div
-                      className="w-full max-w-8 rounded-t bg-gradient-to-t from-violet-500 to-violet-300"
-                      style={{ height: `${Math.max(day.count > 0 ? 12 : 4, heightPct)}%` }}
-                      title={`${day.count}건`}
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-400">{day.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <dl className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5">
-            <dt className="text-[11px] text-emerald-700">성공</dt>
-            <dd className="text-lg font-bold text-emerald-800">
-              {totalSuccess.toLocaleString("ko-KR")}
-            </dd>
-          </div>
-          <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2.5">
-            <dt className="text-[11px] text-red-700">오류</dt>
-            <dd className="flex items-baseline gap-2">
-              <span className="text-lg font-bold text-red-800">
-                {totalFailed.toLocaleString("ko-KR")}
-              </span>
-              {totalFailed > 0 ? (
-                <Link
-                  href={buildAdminProductsHref({ ...filters, tab: "list", sort: "recent" })}
-                  className="text-[11px] font-medium text-red-600 hover:underline"
-                >
-                  내역 보기
-                </Link>
-              ) : null}
-            </dd>
-          </div>
-        </dl>
-
-        {batches.length > 0 ? (
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-medium text-zinc-500">최근 배치</p>
-            {batches.slice(0, 3).map((batch) => (
-              <div
-                key={batch.id}
-                className="flex items-center justify-between gap-2 rounded-lg border border-zinc-100 bg-zinc-50 px-2.5 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-medium text-zinc-800">{batch.filename}</p>
-                  <p className="text-[10px] text-zinc-500">
-                    {batch.imported_count}/{batch.row_count} · 실패 {batch.failed_count}
-                  </p>
-                </div>
-                <Link
-                  href={buildAdminProductsHref({
-                    ...filters,
-                    tab: "list",
-                    batchId: batch.id,
-                  })}
-                  className="shrink-0 text-[10px] text-rose-600 hover:underline"
-                >
-                  보기
-                </Link>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="rounded-lg border border-dashed border-zinc-200 px-3 py-4 text-center text-xs text-zinc-400">
-            아직 업로드 이력이 없습니다
-          </p>
-        )}
-      </div>
-
-      <div className="shrink-0 border-t border-zinc-100 px-4 py-2.5">
-        <Link
-          href={buildAdminProductsHref({ ...filters, tab: "list", sort: "recent" })}
-          className="text-xs font-medium text-violet-600 hover:underline"
-        >
-          최근 수정 내역 보기 →
-        </Link>
-      </div>
-    </section>
-  );
-}
 
 function ProductsTabNav({
   activeTab,
@@ -219,6 +66,8 @@ function ProductsTabNav({
             href={buildAdminProductsHref({
               ...filters,
               tab: tab.id,
+              needsImageOnly: tab.id === "missing-image",
+              brandPriority: tab.id === "list" ? filters.brandPriority : false,
             })}
             className={`shrink-0 border-b-2 px-3 py-2 text-xs font-medium transition-colors sm:px-4 sm:text-sm ${
               isActive
@@ -248,6 +97,7 @@ export default async function AdminProductsPage({
     view: viewQuery,
     tab: tabQuery,
     priority: priorityQuery,
+    image: imageQuery,
   } = await searchParams;
   const activeBatchId = batchQuery?.trim() || null;
   const searchTerm = searchQuery?.trim() || undefined;
@@ -256,11 +106,15 @@ export default async function AdminProductsPage({
   const sortRecent = sortQuery?.trim() === "recent";
   const showDeleted = viewQuery?.trim() === "deleted";
   const brandPriority = resolveAdminProductsBrandPriority(priorityQuery);
+  const imageFilterActive = resolveAdminProductsNeedsImageOnly(imageQuery);
   const activeTab = resolveAdminProductsTab(tabQuery);
+  const needsImageOnly =
+    activeTab === "missing-image" || imageFilterActive;
   const currentPage = Math.max(1, Number.parseInt(pageQuery ?? "1", 10) || 1);
   const listFilters: AdminProductsFilters = {
     batchId: activeBatchId,
     brandPriority,
+    needsImageOnly,
     q: searchTerm ?? null,
     brand: brandFilter ?? null,
     category: categoryFilter ?? null,
@@ -268,10 +122,10 @@ export default async function AdminProductsPage({
     view: showDeleted ? ("deleted" as const) : ("active" as const),
     tab: activeTab,
   };
-  const needsCategories = activeTab === "list" || activeTab === "add";
-  const needsProducts = activeTab === "list";
-  const needsBatches = activeTab === "bulk" || activeTab === "list";
-  const needsImageStats = activeTab === "bulk";
+  const needsCategories = activeTab === "list" || activeTab === "add" || activeTab === "missing-image";
+  const needsProducts = activeTab === "list" || activeTab === "missing-image";
+  const needsBatches = activeTab === "list" || activeTab === "missing-image";
+  const needsImageStats = activeTab === "missing-image";
   const needsPriorityStats = activeTab === "list";
   const [
     { configured, user, profile },
@@ -302,6 +156,7 @@ export default async function AdminProductsPage({
           orderBy: sortRecent ? "updated_at" : "created_at",
           deletionFilter: showDeleted ? "deleted" : "active",
           imageFirst: true,
+          needsImageOnly,
           lightSelect: true,
         })
       : Promise.resolve({
@@ -345,7 +200,6 @@ export default async function AdminProductsPage({
       },
     ];
   });
-  const lastCollectedAt = batches[0]?.created_at ?? null;
   const totalPages = Math.max(
     1,
     Math.ceil(totalCount / ADMIN_PRODUCTS_PAGE_SIZE),
@@ -357,11 +211,20 @@ export default async function AdminProductsPage({
   const activeBatch = activeBatchId
     ? batches.find((batch) => batch.id === activeBatchId) ?? null
     : null;
-  const hasListFilters = Boolean(searchTerm || brandFilter || categoryFilter);
+  const hasListFilters = Boolean(
+    searchTerm ||
+      brandFilter ||
+      categoryFilter ||
+      (needsImageOnly && activeTab !== "missing-image"),
+  );
   const emptyMessage = showDeleted
     ? hasListFilters || activeBatchId || brandPriority
       ? "검색 조건에 맞는 삭제된 상품이 없습니다."
       : "삭제된 상품이 없습니다."
+    : needsImageOnly
+      ? hasListFilters || activeBatchId || brandPriority
+        ? "미등록 이미지 조건에 맞는 상품이 없습니다."
+        : "미등록 이미지 상품이 없습니다."
     : brandPriority
       ? hasListFilters || activeBatchId
         ? "Brand 우선 순위 리스트에서 검색 조건에 맞는 상품이 없습니다."
@@ -448,19 +311,8 @@ export default async function AdminProductsPage({
 
       <ProductsTabNav activeTab={activeTab} filters={listFilters} />
 
-      {activeTab === "bulk" ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-2">
-          <div className="grid gap-2 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
-            <div id="excel-import" className="scroll-mt-24">
-              <ExcelImportSection
-                batches={batches}
-                activeBatchId={activeBatchId}
-                variant="card"
-                lastCollectedAt={lastCollectedAt}
-              />
-            </div>
-            <RecentUploadStatusCard batches={batches} filters={listFilters} />
-          </div>
+      {activeTab === "missing-image" ? (
+        <div className="mb-2 shrink-0">
           <ProductImageBatchSection
             initialStats={imageStats}
             variant="management"
@@ -486,8 +338,11 @@ export default async function AdminProductsPage({
         </section>
       ) : null}
 
-      {activeTab === "list" ? (
-        <section className={`${CARD_CLASS} min-h-0 flex-1`} aria-label="상품 목록 및 관리">
+      {activeTab === "list" || activeTab === "missing-image" ? (
+        <section
+          className={`${CARD_CLASS} min-h-0 flex-1`}
+          aria-label={activeTab === "missing-image" ? "미등록 이미지" : "상품 목록 및 관리"}
+        >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="shrink-0 space-y-2 border-b border-zinc-100 p-2">
               <AdminProductsToolbar
@@ -496,6 +351,7 @@ export default async function AdminProductsPage({
                 batches={batches}
                 totalCount={totalCount}
                 priorityStats={priorityStats}
+                showNeedsImageToggle={activeTab === "list"}
               />
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs">
                 <div className="text-zinc-600">
@@ -511,6 +367,14 @@ export default async function AdminProductsPage({
                       {" · "}이미지 있는 상품 우선 정렬
                       {totalCount > 0
                         ? ` · 페이지 ${safePage} / ${totalPages}`
+                        : null}
+                    </span>
+                  ) : needsImageOnly ? (
+                    <span>
+                      <span className="font-medium text-violet-800">미등록 이미지</span>
+                      {" · "}이미지 없는 상품만 표시
+                      {totalCount > 0
+                        ? ` · 총 ${totalCount.toLocaleString("ko-KR")}건 · 페이지 ${safePage} / ${totalPages}`
                         : null}
                     </span>
                   ) : activeBatch ? (
@@ -536,16 +400,22 @@ export default async function AdminProductsPage({
                   >
                     스토어 보기
                   </Link>
-                  {brandPriority || activeBatchId ? (
+                  {brandPriority || activeBatchId || (needsImageOnly && activeTab === "list") ? (
                     <Link
                       href={buildAdminProductsHref({
                         ...listFilters,
+                        tab: activeTab === "missing-image" ? "missing-image" : "list",
                         batchId: null,
                         brandPriority: false,
+                        needsImageOnly: false,
                       })}
                       className="text-zinc-500 hover:underline"
                     >
-                      {brandPriority ? "우선순위 필터 해제" : "엑셀 필터 해제"}
+                      {brandPriority
+                        ? "우선순위 필터 해제"
+                        : needsImageOnly
+                          ? "미등록 이미지 필터 해제"
+                          : "엑셀 필터 해제"}
                     </Link>
                   ) : null}
                 </div>
@@ -554,7 +424,7 @@ export default async function AdminProductsPage({
 
             <div className="min-h-0 flex-1 overflow-auto">
               <AdminProductsTable
-                key={`${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
+                key={`${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${needsImageOnly ? "missing-image" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
                 products={listProducts}
                 categories={categories}
                 emptyMessage={emptyMessage}

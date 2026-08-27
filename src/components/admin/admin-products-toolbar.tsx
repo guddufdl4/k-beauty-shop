@@ -17,6 +17,7 @@ type Props = {
     targetCount: number;
     matchedCount: number;
   };
+  showNeedsImageToggle?: boolean;
 };
 
 export function AdminProductsToolbar({
@@ -25,6 +26,7 @@ export function AdminProductsToolbar({
   batches,
   totalCount,
   priorityStats,
+  showNeedsImageToggle = true,
 }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState(filters.q ?? "");
@@ -61,6 +63,7 @@ export function AdminProductsToolbar({
     navigate({
       batchId: filters.batchId,
       brandPriority: filters.brandPriority,
+      needsImageOnly: filters.needsImageOnly,
       q: query.trim() || null,
       brand: brand.trim() || null,
       category: category.trim() || null,
@@ -74,6 +77,7 @@ export function AdminProductsToolbar({
     navigate({
       batchId: filters.batchId,
       brandPriority: filters.brandPriority,
+      needsImageOnly: filters.needsImageOnly,
       q: null,
       brand: brand.trim() || null,
       category: category.trim() || null,
@@ -89,6 +93,7 @@ export function AdminProductsToolbar({
     navigate({
       batchId: filters.batchId,
       brandPriority: filters.brandPriority,
+      needsImageOnly: filters.needsImageOnly,
       q: null,
       brand: null,
       category: null,
@@ -101,6 +106,7 @@ export function AdminProductsToolbar({
     navigate({
       batchId: filters.batchId,
       brandPriority: filters.brandPriority,
+      needsImageOnly: filters.needsImageOnly,
       q: filters.q,
       brand: filters.brand,
       category: filters.category,
@@ -113,6 +119,7 @@ export function AdminProductsToolbar({
     navigate({
       batchId: batchId.trim() || null,
       brandPriority: filters.brandPriority,
+      needsImageOnly: filters.needsImageOnly,
       q: filters.q,
       brand: filters.brand,
       category: filters.category,
@@ -125,6 +132,7 @@ export function AdminProductsToolbar({
     navigate({
       batchId: filters.batchId,
       brandPriority: filters.brandPriority,
+      needsImageOnly: filters.needsImageOnly,
       q: filters.q,
       brand: filters.brand,
       category: filters.category,
@@ -133,10 +141,26 @@ export function AdminProductsToolbar({
     });
   }
 
+  function handleNeedsImageToggle() {
+    const nextNeedsImage = !filters.needsImageOnly;
+    navigate({
+      batchId: filters.batchId,
+      brandPriority: false,
+      needsImageOnly: nextNeedsImage,
+      q: filters.q,
+      brand: filters.brand,
+      category: filters.category,
+      sort: filters.sort,
+      view: filters.view,
+      tab: nextNeedsImage ? "missing-image" : "list",
+    });
+  }
+
   function handleBrandPriorityToggle() {
     navigate({
       batchId: null,
       brandPriority: !filters.brandPriority,
+      needsImageOnly: false,
       q: filters.q,
       brand: filters.brand,
       category: filters.category,
@@ -152,9 +176,11 @@ export function AdminProductsToolbar({
         <p className="text-sm font-semibold text-zinc-900">
           {filters.brandPriority
             ? "Brand 우선 순위 리스트"
-            : filters.view === "deleted"
-              ? "삭제된 상품"
-              : "전체 목록"}
+            : filters.needsImageOnly || filters.tab === "missing-image"
+              ? "미등록 이미지"
+              : filters.view === "deleted"
+                ? "삭제된 상품"
+                : "전체 목록"}
         </p>
         <label className="flex items-center gap-2 text-xs text-zinc-500">
           <span className="hidden sm:inline">정렬</span>
@@ -189,6 +215,20 @@ export function AdminProductsToolbar({
             {priorityStats.matchedCount.toLocaleString("ko-KR")}개)
           </span>
         </button>
+        {showNeedsImageToggle ? (
+          <button
+            type="button"
+            onClick={handleNeedsImageToggle}
+            className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+              filters.needsImageOnly
+                ? "border-violet-300 bg-violet-50 text-violet-800 shadow-sm"
+                : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-800"
+            }`}
+            aria-pressed={filters.needsImageOnly}
+          >
+            미등록 이미지
+          </button>
+        ) : null}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-zinc-700">

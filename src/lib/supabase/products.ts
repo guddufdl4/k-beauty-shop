@@ -752,10 +752,15 @@ function filterStaticProducts(
     importBatchId?: string;
     sort?: ProductListSort;
     requireRealImage?: boolean;
+    needsImageOnly?: boolean;
     includePriceColumns?: boolean;
   },
 ): ProductWithRelations[] {
   let filtered = products;
+
+  if (options?.needsImageOnly) {
+    filtered = filtered.filter((product) => product.needs_image === true);
+  }
 
   if (options?.requireRealImage) {
     filtered = filtered.filter((product) => productHasRealImage(product));
@@ -1058,6 +1063,8 @@ export async function getProducts(
         privileged?: boolean;
         /** Storefront: hide products without uploaded images. */
         requireRealImage?: boolean;
+        /** Admin: show only products without a registered image. */
+        needsImageOnly?: boolean;
         /** Resolved storefront audience; defaults via session when omitted. */
         audience?: StorefrontAudience;
       },
@@ -1086,6 +1093,7 @@ export async function getProducts(
   const imageFirst = options?.imageFirst === true;
   const lightSelect = options?.lightSelect === true;
   const requireRealImage = options?.requireRealImage === true;
+  const needsImageOnly = options?.needsImageOnly === true;
   const listLimit = options?.limit;
   const listPage = Math.max(1, options?.page ?? 1);
   const listOrderOptions: ProductListOrderOptions = {
@@ -1108,6 +1116,7 @@ export async function getProducts(
       orderBy,
       deletionFilter,
       imageFirst,
+      needsImageOnly,
       lightSelect,
       privileged: options.privileged,
       listOrderOptions,
@@ -1139,6 +1148,7 @@ export async function getProducts(
       importBatchId,
       sort,
       requireRealImage,
+      needsImageOnly,
       includePriceColumns,
     });
 
@@ -1254,6 +1264,10 @@ export async function getProducts(
               not: (column: string, operator: string, value: null) => typeof filtered;
             }).not("image_url", "is", null)
       ) as typeof filtered;
+    }
+
+    if (needsImageOnly && includePriceColumns) {
+      filtered = filtered.eq("needs_image", true);
     }
 
     if (sort === "trending") {
@@ -1393,6 +1407,7 @@ type PriorityBrandListFetchOptions = {
   orderBy?: "created_at" | "updated_at";
   deletionFilter?: ProductDeletionFilter;
   imageFirst?: boolean;
+  needsImageOnly?: boolean;
   lightSelect?: boolean;
   privileged?: boolean;
   listOrderOptions: ProductListOrderOptions;
@@ -1485,6 +1500,7 @@ async function fetchPriorityBrandListProducts(
       brandExact,
       importBatchId,
       sort,
+      needsImageOnly: options.needsImageOnly,
       includePriceColumns,
     });
 
