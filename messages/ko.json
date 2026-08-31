@@ -55,7 +55,10 @@
     "label": "화면 보기",
     "auto": "자동",
     "mobile": "모바일",
-    "desktop": "PC"
+    "desktop": "PC",
+    "switchToDesktop": "PC 화면으로",
+    "forcedModeHint": "모바일 화면으로 보는 중입니다",
+    "forcedDesktopHint": "PC 화면으로 보는 중입니다"
   },
   "home": {
     "eyebrow": "Premium K-Beauty Export",

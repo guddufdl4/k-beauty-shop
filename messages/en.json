@@ -55,7 +55,10 @@
     "label": "View mode",
     "auto": "Auto",
     "mobile": "Mobile",
-    "desktop": "Desktop"
+    "desktop": "Desktop",
+    "switchToDesktop": "View desktop site",
+    "forcedModeHint": "You are viewing the mobile layout",
+    "forcedDesktopHint": "You are viewing the desktop layout"
   },
   "home": {
     "eyebrow": "Premium K-Beauty Export",
@@ -202,8 +205,8 @@
     "sortSale": "Sale",
     "sortTrending": "Trending",
     "sortLatest": "Latest",
-    "productCount": "{count} products",
-    "productCountWithCategory": "{count} products · {category}",
+    "productCount": "{count, plural, one {# product} other {# products}}",
+    "productCountWithCategory": "{count, plural, one {# product} other {# products}} · {category}",
     "all": "All",
     "categoryFilter": "Category",
     "subcategoryFilter": "Subcategory",

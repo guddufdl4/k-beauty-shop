@@ -55,7 +55,10 @@
     "label": "表示モード",
     "auto": "自動",
     "mobile": "モバイル",
-    "desktop": "PC"
+    "desktop": "PC",
+    "switchToDesktop": "PC表示に戻る",
+    "forcedModeHint": "モバイル表示中です",
+    "forcedDesktopHint": "PC表示中です"
   },
   "home": {
     "eyebrow": "Premium K-Beauty Export",

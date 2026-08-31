@@ -55,7 +55,10 @@
     "label": "显示模式",
     "auto": "自动",
     "mobile": "移动版",
-    "desktop": "电脑版"
+    "desktop": "电脑版",
+    "switchToDesktop": "返回电脑版",
+    "forcedModeHint": "当前为移动版布局",
+    "forcedDesktopHint": "当前为电脑版布局"
   },
   "home": {
     "eyebrow": "Premium K-Beauty Export",

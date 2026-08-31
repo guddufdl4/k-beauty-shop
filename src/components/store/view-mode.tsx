@@ -83,14 +83,48 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
   return <ViewModeContext.Provider value={{ mode, setMode }}>{children}</ViewModeContext.Provider>;
 }
 
+function ViewModeExitBar() {
+  const t = useTranslations("viewMode");
+  const { mode, setMode } = useViewMode();
+
+  if (mode === "auto") {
+    return null;
+  }
+
+  return (
+    <div className="sticky top-0 z-[70] flex flex-wrap items-center justify-center gap-2 border-b border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white">
+      <p className="text-xs font-medium text-zinc-200">
+        {mode === "mobile" ? t("forcedModeHint") : t("forcedDesktopHint")}
+      </p>
+      <button
+        type="button"
+        className="min-h-9 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        onClick={() => setMode("desktop")}
+      >
+        {t("switchToDesktop")}
+      </button>
+      <button
+        type="button"
+        className="min-h-9 rounded-full border border-zinc-500 px-3 py-1.5 text-xs font-medium text-zinc-100 hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        onClick={() => setMode("auto")}
+      >
+        {t("auto")}
+      </button>
+    </div>
+  );
+}
+
 export function StorefrontViewShell({ children }: { children: ReactNode }) {
   const { mode } = useViewMode();
 
   if (mode === "mobile") {
     return (
-      <div className="view-mode-shell min-h-screen bg-zinc-100 py-3 sm:py-4">
-        <div className="mx-auto w-full max-w-[430px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg ring-1 ring-zinc-900/5">
-          <div className="storefront-view-root">{children}</div>
+      <div className="min-h-screen bg-zinc-100">
+        <ViewModeExitBar />
+        <div className="view-mode-shell py-3 sm:py-4">
+          <div className="mx-auto w-full max-w-[430px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg ring-1 ring-zinc-900/5">
+            <div className="storefront-view-root">{children}</div>
+          </div>
         </div>
       </div>
     );
@@ -98,9 +132,12 @@ export function StorefrontViewShell({ children }: { children: ReactNode }) {
 
   if (mode === "desktop") {
     return (
-      <div className="view-mode-shell min-h-screen overflow-x-hidden bg-zinc-100">
-        <div className="storefront-view-root mx-auto min-h-screen min-w-0 w-full max-w-7xl bg-white shadow-sm">
-          {children}
+      <div className="min-h-screen overflow-x-hidden bg-zinc-100">
+        <ViewModeExitBar />
+        <div className="view-mode-shell">
+          <div className="storefront-view-root mx-auto min-h-screen min-w-0 w-full max-w-7xl bg-white shadow-sm">
+            {children}
+          </div>
         </div>
       </div>
     );

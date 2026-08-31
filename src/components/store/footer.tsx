@@ -38,7 +38,6 @@ export async function StoreFooter({
   const t = await getTranslations("footer");
   const brand = store_name?.trim() || "HMT KOREA";
   const acronym = brand.replace(/\s+/g, "").toUpperCase();
-  const showViewModeToggle = process.env.NODE_ENV === "development";
   const showInstagram = isValidExternalUrl(instagram_url);
   const showFacebook = isValidExternalUrl(facebook_url);
   const showWhatsApp = Boolean(public_whatsapp?.trim());
@@ -208,8 +207,8 @@ export async function StoreFooter({
       </div>
 
       <div className="border-t border-zinc-100 bg-surface-muted px-4 py-5 text-center text-xs text-zinc-500">
-        {showViewModeToggle ? <ViewModeToggle /> : null}
-        <p className={showViewModeToggle ? "mt-4" : undefined}>{t("copyright", { brand })}</p>
+        <ViewModeToggle />
+        <p className="mt-4">{t("copyright", { brand })}</p>
       </div>
     </footer>
   );
