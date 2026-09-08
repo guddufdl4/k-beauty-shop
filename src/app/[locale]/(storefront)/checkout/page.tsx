@@ -1,33 +1,33 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { getUsdKrwRate } from "@/lib/currency";
-import {
-  calculateShippingCost,
-  getCart,
-} from "@/lib/cart";
+import { getCart } from "@/lib/cart";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { getStripeStatusMessage, isStripeConfigured } from "@/lib/stripe";
+import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function CheckoutPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ cancelled?: string }>;
-}) {
-  const [cart, session, params, t, locale, usdKrwRate] = await Promise.all([
+export default async function CheckoutPage() {
+  const [cart, session, t, locale, usdKrwRate] = await Promise.all([
     getCart(),
     getSessionProfile(),
-    searchParams,
     getTranslations("checkout"),
     getLocale(),
     getUsdKrwRate(),
   ]);
   const isLoggedIn = Boolean(session.user);
-  const shippingCost = calculateShippingCost(cart.subtotal);
-  const total = cart.subtotal + shippingCost;
-  const stripeEnabled = isStripeConfigured();
+
+  let defaultCompanyName = "";
+  if (session.user) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("company_name")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    defaultCompanyName = typeof data?.company_name === "string" ? data.company_name : "";
+  }
 
   if (!isLoggedIn) {
     return (
@@ -69,21 +69,15 @@ export default async function CheckoutPage({
         {t("backToCart")}
       </Link>
       <h1 className="mt-4 text-2xl font-bold sm:text-3xl">{t("titleWithOrder")}</h1>
-      {params.cancelled ? (
-        <p className="mt-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {t("cancelled")}
-        </p>
-      ) : null}
-      <p className="mt-2 text-sm text-zinc-600">{t("dbHint")}</p>
+      <p className="mt-2 text-sm text-zinc-600">{t("quoteHint")}</p>
       <div className="mt-8">
         <CheckoutForm
           cart={cart}
-          shippingCost={shippingCost}
-          total={total}
-          stripeEnabled={stripeEnabled}
-          stripeMessage={getStripeStatusMessage()}
           locale={locale}
           usdKrwRate={usdKrwRate}
+          defaultCompanyName={defaultCompanyName}
+          defaultContactName={session.profile?.full_name ?? ""}
+          defaultEmail={session.profile?.email ?? session.user?.email ?? ""}
         />
       </div>
     </main>

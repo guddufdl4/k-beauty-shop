@@ -3,28 +3,36 @@
 import { revalidatePath } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
-  createOrder,
+  clearCart,
+  getCart,
   getCurrentUserId,
-  getOrderByNumber,
   markOrderPaid,
-  saveStripeSessionId,
-  type ShippingAddress,
 } from "@/lib/cart";
-import { formatCartLibError } from "@/lib/store/cart-messages";
 import {
-  createCheckoutSession,
-  isStripeConfigured,
-  verifyCheckoutSession,
-} from "@/lib/stripe";
+  escapeHtml,
+  sendQuoteInquiryEmail,
+} from "@/lib/email";
+import { createServiceClient } from "@/lib/supabase/service";
+import { formatKRW } from "@/lib/utils";
+import { verifyCheckoutSession, isStripeConfigured } from "@/lib/stripe";
 
 export type CheckoutState = {
   error?: string;
-  orderNumber?: string;
-  checkoutUrl?: string;
-  demoMode?: boolean;
+  success?: boolean;
 };
 
-export async function placeOrder(
+const MAX_FIELD = 500;
+const MAX_MESSAGE = 5000;
+
+function trimField(value: FormDataEntryValue | null): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+export async function submitQuoteRequest(
   _prev: CheckoutState,
   formData: FormData,
 ): Promise<CheckoutState> {
@@ -36,84 +44,159 @@ export async function placeOrder(
     return { error: t("loginRequired") };
   }
 
-  const shippingAddress: ShippingAddress = {
-    recipient_name: String(formData.get("recipient_name") ?? "").trim(),
-    phone: String(formData.get("phone") ?? "").trim(),
-    line1: String(formData.get("line1") ?? "").trim(),
-    city: String(formData.get("city") ?? "").trim(),
-    postal_code: String(formData.get("postal_code") ?? "").trim(),
-    country_code: String(formData.get("country_code") ?? "KR")
-      .trim()
-      .toUpperCase()
-      .slice(0, 2),
-  };
-
-  if (
-    !shippingAddress.recipient_name ||
-    !shippingAddress.phone ||
-    !shippingAddress.line1 ||
-    !shippingAddress.city ||
-    !shippingAddress.postal_code ||
-    !shippingAddress.country_code
-  ) {
-    return { error: t("shippingRequired") };
+  if (trimField(formData.get("spam_trap"))) {
+    return { success: true };
   }
 
-  const result = await createOrder(shippingAddress);
-  const orderError = formatCartLibError(result, await getTranslations("cart"));
-  if (orderError || !result.orderNumber) {
-    return { error: orderError ?? t("orderCreateFailed") };
+  const companyName = trimField(formData.get("company_name"));
+  const contactName = trimField(formData.get("contact_name"));
+  const email = trimField(formData.get("email"));
+  const phone = trimField(formData.get("phone"));
+  const country = trimField(formData.get("country"));
+  const destination = trimField(formData.get("destination"));
+  const message = trimField(formData.get("message"));
+
+  if (!companyName || companyName.length > MAX_FIELD) {
+    return { error: t("companyRequired") };
+  }
+  if (!contactName || contactName.length > MAX_FIELD) {
+    return { error: t("contactRequired") };
+  }
+  if (!email || !isValidEmail(email) || email.length > MAX_FIELD) {
+    return { error: t("emailInvalid") };
+  }
+  if (!country || country.length > MAX_FIELD) {
+    return { error: t("countryRequired") };
+  }
+  if (phone.length > MAX_FIELD || destination.length > MAX_FIELD) {
+    return { error: t("fieldTooLong") };
+  }
+  if (message.length > MAX_MESSAGE) {
+    return { error: t("fieldTooLong") };
   }
 
-  revalidatePath("/cart");
-  revalidatePath("/checkout");
-  revalidatePath("/account");
-  revalidatePath("/", "layout");
-
-  if (!isStripeConfigured()) {
-    return {
-      orderNumber: result.orderNumber,
-      demoMode: true,
-    };
+  const cart = await getCart();
+  if (cart.items.length === 0) {
+    return { error: t("emptyCart") };
   }
 
-  const { order } = await getOrderByNumber(result.orderNumber);
-  if (!order) {
-    return {
-      error: t("orderLoadFailed"),
-      orderNumber: result.orderNumber,
-      demoMode: true,
-    };
-  }
+  const totalUnits = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+  const brands = [...new Set(cart.items.map((item) => item.brand).filter(Boolean))];
 
-  const session = await createCheckoutSession({
-    orderNumber: order.order_number,
-    locale,
-    total: order.total,
-    shippingCost: order.shipping_cost,
-    lineItems: order.items.map((item) => ({
-      name: item.product_name,
-      quantity: item.quantity,
-      unitAmount: item.unit_price,
-    })),
+  const lineText = cart.items
+    .map(
+      (item) =>
+        `${item.sku} | ${item.brand} | ${item.name} | qty ${item.quantity} | ${formatKRW(item.unitPrice)} | ${formatKRW(item.lineTotal)}`,
+    )
+    .join("\n");
+
+  const text = [
+    "HMT Korea wholesale quote request",
+    `Locale: ${locale}`,
+    `Company: ${companyName}`,
+    `Contact: ${contactName}`,
+    `Email: ${email}`,
+    `Phone: ${phone || "-"}`,
+    `Country: ${country}`,
+    `Destination: ${destination || "-"}`,
+    `Notes: ${message || "-"}`,
+    "",
+    "Requested items:",
+    lineText,
+    "",
+    `Reference subtotal (KRW): ${formatKRW(cart.subtotal)}`,
+    `Total units: ${totalUnits}`,
+  ].join("\n");
+
+  const rows = cart.items
+    .map(
+      (item) => `<tr>
+        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.sku)}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.brand)}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.name)}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${item.quantity}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${escapeHtml(formatKRW(item.unitPrice))}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${escapeHtml(formatKRW(item.lineTotal))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const html = `<div style="font-family:Arial,sans-serif;color:#18181b">
+    <h2>HMT Korea wholesale quote request</h2>
+    <p>A buyer submitted product quantities from the storefront cart. This is not a paid order.</p>
+    <table style="border-collapse:collapse;margin:16px 0">
+      <tr><td style="padding:4px 12px 4px 0"><strong>Company</strong></td><td>${escapeHtml(companyName)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Contact</strong></td><td>${escapeHtml(contactName)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Email</strong></td><td>${escapeHtml(email)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Phone</strong></td><td>${escapeHtml(phone || "-")}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Country</strong></td><td>${escapeHtml(country)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Destination</strong></td><td>${escapeHtml(destination || "-")}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Locale</strong></td><td>${escapeHtml(locale)}</td></tr>
+    </table>
+    ${message ? `<p><strong>Notes</strong><br/>${escapeHtml(message).replaceAll("\n", "<br/>")}</p>` : ""}
+    <table style="border-collapse:collapse;width:100%;font-size:14px">
+      <thead>
+        <tr>
+          <th style="padding:8px;border:1px solid #e4e4e7;text-align:left">SKU</th>
+          <th style="padding:8px;border:1px solid #e4e4e7;text-align:left">Brand</th>
+          <th style="padding:8px;border:1px solid #e4e4e7;text-align:left">Product</th>
+          <th style="padding:8px;border:1px solid #e4e4e7;text-align:right">Qty</th>
+          <th style="padding:8px;border:1px solid #e4e4e7;text-align:right">Unit (KRW)</th>
+          <th style="padding:8px;border:1px solid #e4e4e7;text-align:right">Line (KRW)</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p><strong>Reference subtotal:</strong> ${escapeHtml(formatKRW(cart.subtotal))} · <strong>Total units:</strong> ${totalUnits}</p>
+  </div>`;
+
+  const sent = await sendQuoteInquiryEmail({
+    subject: `[HMT Korea] Quote request · ${companyName} · ${cart.items.length} SKUs`,
+    html,
+    text,
+    replyTo: email,
   });
 
-  if (!session.url) {
+  if (!sent.ok) {
     return {
-      error: session.error ?? t("stripeSessionFailed"),
-      orderNumber: result.orderNumber,
-      demoMode: true,
+      error: sent.error === "email_not_configured" ? t("emailNotConfigured") : t("emailSendFailed"),
     };
   }
 
-  if (session.sessionId) {
-    await saveStripeSessionId(result.orderNumber, session.sessionId);
+  const service = createServiceClient();
+  if (service) {
+    const { error } = await service.from("wholesale_inquiries").insert({
+      company_name: companyName,
+      contact_name: contactName,
+      country,
+      email,
+      whatsapp: phone || null,
+      interested_brands: brands.join(", ").slice(0, MAX_FIELD) || "Cart quote",
+      estimated_quantity: `${totalUnits} units`,
+      message: [
+        destination ? `Destination: ${destination}` : "",
+        message,
+        "",
+        lineText,
+        `Reference subtotal (KRW): ${formatKRW(cart.subtotal)}`,
+      ]
+        .filter(Boolean)
+        .join("\n")
+        .slice(0, MAX_MESSAGE),
+      locale,
+    });
+
+    if (error) {
+      console.error("[quote] inquiry insert failed:", error.message);
+    }
   }
 
-  return {
-    orderNumber: result.orderNumber,
-    checkoutUrl: session.url,
-  };
+  await clearCart();
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
+  revalidatePath("/", "layout");
+
+  return { success: true };
 }
 
 export async function confirmOrderPayment(

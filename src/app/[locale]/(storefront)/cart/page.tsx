@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { CartItemList } from "@/components/store/cart-item-list";
 import { getUsdKrwRate } from "@/lib/currency";
 import { formatLocalePrice } from "@/lib/utils";
-import { calculateShippingCost, getCart } from "@/lib/cart";
+import { getCart } from "@/lib/cart";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +38,7 @@ export default async function CartPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
       <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
+      <p className="mt-2 text-sm text-zinc-600">{t("quoteHint")}</p>
 
       {cart.items.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center sm:p-10">
@@ -55,21 +56,11 @@ export default async function CartPage() {
 
           <aside className="h-fit rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
             <h2 className="text-lg font-semibold">{t("orderSummary")}</h2>
-            <div className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-zinc-600">{t("subtotal")}</span>
-                <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-600">{t("shipping")}</span>
-                <span>
-                  {calculateShippingCost(cart.subtotal) === 0
-                    ? t("freeShipping")
-                    : formatLocalePrice(calculateShippingCost(cart.subtotal), locale, usdKrwRate)}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-500">{t("freeShippingNote")}</p>
+            <div className="mt-4 flex justify-between text-sm">
+              <span className="text-zinc-600">{t("subtotal")}</span>
+              <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
             </div>
+            <p className="mt-3 text-xs text-zinc-500">{t("quoteNote")}</p>
             <Link
               href="/checkout"
               className="mt-6 block w-full rounded-xl bg-rose-600 py-3 text-center font-semibold text-white hover:bg-rose-700"

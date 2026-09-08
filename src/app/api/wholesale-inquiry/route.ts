@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { escapeHtml, sendQuoteInquiryEmail } from "@/lib/email";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -122,6 +123,47 @@ export async function POST(request: Request) {
   if (error) {
     console.error("[wholesale-inquiry] insert failed:", error.message);
     return NextResponse.json({ error: "insert_failed" }, { status: 500 });
+  }
+
+  const data = result.data;
+  const text = [
+    "HMT Korea wholesale inquiry",
+    `Locale: ${data.locale}`,
+    `Company: ${data.company_name}`,
+    `Contact: ${data.contact_name}`,
+    `Email: ${data.email}`,
+    `WhatsApp: ${data.whatsapp || "-"}`,
+    `Country: ${data.country}`,
+    `Interested brands: ${data.interested_brands}`,
+    `Estimated quantity: ${data.estimated_quantity}`,
+    "",
+    data.message,
+  ].join("\n");
+
+  const html = `<div style="font-family:Arial,sans-serif;color:#18181b">
+    <h2>HMT Korea wholesale inquiry</h2>
+    <table style="border-collapse:collapse;margin:16px 0">
+      <tr><td style="padding:4px 12px 4px 0"><strong>Company</strong></td><td>${escapeHtml(data.company_name)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Contact</strong></td><td>${escapeHtml(data.contact_name)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Email</strong></td><td>${escapeHtml(data.email)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>WhatsApp</strong></td><td>${escapeHtml(data.whatsapp || "-")}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Country</strong></td><td>${escapeHtml(data.country)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Brands</strong></td><td>${escapeHtml(data.interested_brands)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Quantity</strong></td><td>${escapeHtml(data.estimated_quantity)}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Locale</strong></td><td>${escapeHtml(data.locale)}</td></tr>
+    </table>
+    <p>${escapeHtml(data.message).replaceAll("\n", "<br/>")}</p>
+  </div>`;
+
+  const sent = await sendQuoteInquiryEmail({
+    subject: `[HMT Korea] Wholesale inquiry · ${data.company_name}`,
+    html,
+    text,
+    replyTo: data.email,
+  });
+
+  if (!sent.ok) {
+    console.error("[wholesale-inquiry] email failed:", sent.error);
   }
 
   return NextResponse.json({ success: true });
