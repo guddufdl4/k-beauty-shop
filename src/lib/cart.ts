@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getAuthUser, getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { buildMemberProductSelect } from "@/lib/store/product-visibility";
 import { createSafeClient } from "@/lib/supabase/safe-server";
+import { createServiceClient } from "@/lib/supabase/service";
 import {
   ensureSoftDeleteColumnProbed,
   isSoftDeleteColumnAvailable,
@@ -76,11 +77,119 @@ export function isDemoProductId(productId: string): boolean {
   );
 }
 
-export function generateOrderNumber(): string {
+export function generateOrderNumber(prefix = "KB"): string {
   const now = new Date();
   const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
   const suffix = String(Math.floor(1000 + Math.random() * 9000));
-  return `KB-${ymd}-${suffix}`;
+  return `${prefix}-${ymd}-${suffix}`;
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+export type QuoteBuyer = {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  country: string;
+  destination: string;
+  notes: string;
+};
+
+export async function createQuoteOrderFromCart(
+  cart: CartView,
+  buyer: QuoteBuyer,
+): Promise<{ orderNumber?: string }> {
+  const service = createServiceClient();
+  if (!service || cart.items.length === 0) {
+    return {};
+  }
+
+  const currentUserId = await getCurrentUserId();
+  let userId = currentUserId;
+
+  if (!userId) {
+    const { data: admin } = await service
+      .from("profiles")
+      .select("id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
+    userId = admin?.id ?? null;
+  }
+
+  const orderNumber = generateOrderNumber("QT");
+  const countryCode = buyer.country.length === 2 ? buyer.country.toUpperCase() : "XX";
+  const shippingAddress: ShippingAddress & { line2?: string; email?: string; company_name?: string } = {
+    recipient_name: buyer.contactName,
+    phone: buyer.phone || "-",
+    line1: buyer.companyName,
+    line2: [buyer.email, buyer.destination].filter(Boolean).join(" · ") || null,
+    city: buyer.country,
+    postal_code: "-",
+    country_code: countryCode,
+    email: buyer.email,
+    company_name: buyer.companyName,
+  };
+
+  const notes = [
+    `Quote request · ${buyer.companyName} · ${buyer.email}`,
+    buyer.phone ? `Phone: ${buyer.phone}` : "",
+    buyer.destination ? `Destination: ${buyer.destination}` : "",
+    buyer.notes,
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 5000);
+
+  const payload: Record<string, unknown> = {
+    order_number: orderNumber,
+    order_type: "b2b",
+    status: "pending",
+    subtotal: cart.subtotal,
+    shipping_cost: 0,
+    total: cart.subtotal,
+    currency: "KRW",
+    shipping_address: shippingAddress,
+    notes,
+    payment_provider: "quote",
+  };
+
+  if (userId) {
+    payload.user_id = userId;
+  }
+
+  const { data: order, error: orderError } = await service
+    .from("orders")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (orderError || !order) {
+    console.error("[quote] order insert failed:", orderError?.message);
+    return {};
+  }
+
+  const orderItems = cart.items.map((item) => ({
+    order_id: order.id,
+    product_id: isUuid(item.productId) ? item.productId : null,
+    product_name: item.name,
+    product_sku: item.sku,
+    unit_price: item.unitPrice,
+    quantity: item.quantity,
+    line_total: item.lineTotal,
+  }));
+
+  const { error: itemsError } = await service.from("order_items").insert(orderItems);
+  if (itemsError) {
+    console.error("[quote] order items insert failed:", itemsError.message);
+    await service.from("orders").delete().eq("id", order.id);
+    return {};
+  }
+
+  return { orderNumber };
 }
 
 export async function getCurrentUserId(): Promise<string | null> {
@@ -91,6 +200,26 @@ export async function getCurrentUserId(): Promise<string | null> {
 export async function usesDatabaseCart(): Promise<boolean> {
   const userId = await getCurrentUserId();
   return Boolean(userId && isSupabaseConfigured());
+}
+
+async function readDemoCart(): Promise<Record<string, number>> {
+  const store = await cookies();
+  const raw = store.get(DEMO_CART_COOKIE)?.value;
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, quantity]) => Number(quantity) > 0),
+    );
+  } catch {
+    return {};
+  }
 }
 
 async function writeDemoCart(cart: Record<string, number>) {
@@ -204,17 +333,58 @@ async function getDatabaseCart(userId: string): Promise<CartView> {
   return { items, subtotal, itemCount, source: "database" };
 }
 
+function cartItemFromProduct(
+  product: ProductWithRelations,
+  quantity: number,
+): CartItemView {
+  const unitPrice = getEffectiveProductPrice(product);
+  return {
+    id: product.id,
+    productId: product.id,
+    quantity,
+    name: product.name,
+    slug: product.slug,
+    brand: product.brand,
+    sku: product.sku,
+    unitPrice,
+    moq: product.moq,
+    stock: product.stock,
+    lineTotal: unitPrice * quantity,
+  };
+}
+
+async function getCookieCart(): Promise<CartView> {
+  const raw = await readDemoCart();
+  const items: CartItemView[] = [];
+
+  for (const [productId, quantity] of Object.entries(raw)) {
+    const qty = Number(quantity);
+    if (!Number.isFinite(qty) || qty < 1) {
+      continue;
+    }
+    const product = await resolveProductForCart(productId);
+    if (!product) {
+      continue;
+    }
+    items.push(cartItemFromProduct(product, qty));
+  }
+
+  const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  return { items, subtotal, itemCount, source: "cookie" };
+}
+
 export async function getCart(): Promise<CartView> {
   const userId = await getCurrentUserId();
   if (!userId) {
-    return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
+    return getCookieCart();
   }
 
   if (isSupabaseConfigured()) {
     return getDatabaseCart(userId);
   }
 
-  return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
+  return getCookieCart();
 }
 
 export async function getCartItemCount(): Promise<number> {
@@ -352,14 +522,22 @@ export async function addToCart(
   productId: string,
   quantity: number,
 ): Promise<CartLibResult> {
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    return { errorCode: "auth_required" };
-  }
-
   const product = await resolveProductForCart(productId);
   if (!product) {
     return { errorCode: "product_not_found" };
+  }
+
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    const cart = await readDemoCart();
+    const nextQuantity = Number(cart[productId] ?? 0) + quantity;
+    const validationError = validateQuantity(product, nextQuantity);
+    if (validationError) {
+      return validationError;
+    }
+    cart[productId] = nextQuantity;
+    await writeDemoCart(cart);
+    return {};
   }
 
   const validationError = validateQuantity(product, quantity);
@@ -423,14 +601,26 @@ export async function updateCartQuantity(
   productId: string,
   quantity: number,
 ): Promise<CartLibResult> {
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    return { errorCode: "auth_required" };
-  }
-
   const product = await resolveProductForCart(productId);
   if (!product) {
     return { errorCode: "product_not_found" };
+  }
+
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    const cart = await readDemoCart();
+    if (quantity <= 0) {
+      delete cart[productId];
+      await writeDemoCart(cart);
+      return {};
+    }
+    const validationError = validateQuantity(product, quantity);
+    if (validationError) {
+      return validationError;
+    }
+    cart[productId] = quantity;
+    await writeDemoCart(cart);
+    return {};
   }
 
   const validationError = validateQuantity(product, quantity);
@@ -465,7 +655,10 @@ export async function removeFromCart(
 ): Promise<CartLibResult> {
   const userId = await getCurrentUserId();
   if (!userId) {
-    return { errorCode: "auth_required" };
+    const cart = await readDemoCart();
+    delete cart[productId];
+    await writeDemoCart(cart);
+    return {};
   }
 
   if (!isSupabaseConfigured() || isDemoProductId(productId)) {
@@ -615,7 +808,9 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
   const isAdmin = profile?.role === "admin";
 
   if (isSupabaseConfigured()) {
-    const supabase = await createSafeClient();
+    const supabase = isAdmin
+      ? createServiceClient() ?? (await createSafeClient())
+      : await createSafeClient();
     if (supabase) {
       const { data } = await supabase
         .from("orders")

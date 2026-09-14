@@ -51,7 +51,7 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <AdminStatCard label="전체 주문" value={String(stats.total)} />
-        <AdminStatCard label="결제 대기" value={String(stats.pending)} />
+        <AdminStatCard label="견적 요청" value={String(stats.quotes)} />
         <AdminStatCard label="결제 완료" value={String(stats.paid)} />
       </div>
 

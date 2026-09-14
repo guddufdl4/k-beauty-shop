@@ -1,6 +1,7 @@
 import { readDemoOrders } from "@/lib/cart";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSafeClient } from "@/lib/supabase/safe-server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export type AdminOrderRow = {
   order_number: string;
@@ -9,6 +10,10 @@ export type AdminOrderRow = {
   payment_provider: string | null;
   paid_at: string | null;
   created_at: string;
+  company_name: string | null;
+  contact_name: string | null;
+  email: string | null;
+  notes: string | null;
   source: "database" | "cookie";
 };
 
@@ -16,7 +21,16 @@ export type AdminOrderStats = {
   total: number;
   pending: number;
   paid: number;
+  quotes: number;
 };
+
+function snapshotField(
+  address: Record<string, unknown> | null,
+  key: string,
+): string | null {
+  const value = address?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
 
 export async function listAdminOrders(): Promise<{
   configured: boolean;
@@ -24,26 +38,38 @@ export async function listAdminOrders(): Promise<{
   demoNote?: string;
 }> {
   if (isSupabaseConfigured()) {
-    const supabase = await createSafeClient();
+    const supabase = createServiceClient() ?? (await createSafeClient());
     if (supabase) {
       const { data, error } = await supabase
         .from("orders")
-        .select("order_number, status, total, payment_provider, paid_at, created_at")
+        .select(
+          "order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes",
+        )
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(200);
 
       if (!error && data) {
         return {
           configured: true,
-          orders: data.map((row) => ({
-            order_number: String(row.order_number),
-            status: String(row.status),
-            total: Number(row.total),
-            payment_provider: row.payment_provider ? String(row.payment_provider) : null,
-            paid_at: row.paid_at ? String(row.paid_at) : null,
-            created_at: String(row.created_at),
-            source: "database" as const,
-          })),
+          orders: data.map((row) => {
+            const address =
+              row.shipping_address && typeof row.shipping_address === "object"
+                ? (row.shipping_address as Record<string, unknown>)
+                : null;
+            return {
+              order_number: String(row.order_number),
+              status: String(row.status),
+              total: Number(row.total),
+              payment_provider: row.payment_provider ? String(row.payment_provider) : null,
+              paid_at: row.paid_at ? String(row.paid_at) : null,
+              created_at: String(row.created_at),
+              company_name: snapshotField(address, "company_name") ?? snapshotField(address, "line1"),
+              contact_name: snapshotField(address, "recipient_name"),
+              email: snapshotField(address, "email"),
+              notes: row.notes ? String(row.notes) : null,
+              source: "database" as const,
+            };
+          }),
         };
       }
     }
@@ -60,6 +86,10 @@ export async function listAdminOrders(): Promise<{
       payment_provider: order.status === "paid" ? "demo" : null,
       paid_at: order.status === "paid" ? order.created_at : null,
       created_at: order.created_at,
+      company_name: null,
+      contact_name: order.shipping_address.recipient_name,
+      email: null,
+      notes: null,
       source: "cookie" as const,
     })),
     demoNote:
@@ -74,5 +104,6 @@ export async function getAdminOrderStats(): Promise<AdminOrderStats> {
     total: orders.length,
     pending: orders.filter((o) => o.status === "pending").length,
     paid: orders.filter((o) => o.status === "paid").length,
+    quotes: orders.filter((o) => o.payment_provider === "quote").length,
   };
 }

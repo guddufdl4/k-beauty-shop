@@ -5,7 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import {
   clearCart,
   getCart,
-  getCurrentUserId,
+  createQuoteOrderFromCart,
   markOrderPaid,
 } from "@/lib/cart";
 import {
@@ -38,11 +38,6 @@ export async function submitQuoteRequest(
 ): Promise<CheckoutState> {
   const t = await getTranslations("checkout");
   const locale = await getLocale();
-
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    return { error: t("loginRequired") };
-  }
 
   if (trimField(formData.get("spam_trap"))) {
     return { success: true };
@@ -150,18 +145,15 @@ export async function submitQuoteRequest(
     <p><strong>Reference subtotal:</strong> ${escapeHtml(formatKRW(cart.subtotal))} · <strong>Total units:</strong> ${totalUnits}</p>
   </div>`;
 
-  const sent = await sendQuoteInquiryEmail({
-    subject: `[HMT Korea] Quote request · ${companyName} · ${cart.items.length} SKUs`,
-    html,
-    text,
-    replyTo: email,
+  await createQuoteOrderFromCart(cart, {
+    companyName,
+    contactName,
+    email,
+    phone,
+    country,
+    destination,
+    notes: message,
   });
-
-  if (!sent.ok) {
-    return {
-      error: sent.error === "email_not_configured" ? t("emailNotConfigured") : t("emailSendFailed"),
-    };
-  }
 
   const service = createServiceClient();
   if (service) {
@@ -191,9 +183,24 @@ export async function submitQuoteRequest(
     }
   }
 
+  const sent = await sendQuoteInquiryEmail({
+    subject: `[HMT Korea] Quote request · ${companyName} · ${cart.items.length} SKUs`,
+    html,
+    text,
+    replyTo: email,
+  });
+
+  if (!sent.ok) {
+    return {
+      error: sent.error === "email_not_configured" ? t("emailNotConfigured") : t("emailSendFailed"),
+    };
+  }
+
   await clearCart();
   revalidatePath("/cart");
   revalidatePath("/checkout");
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
   revalidatePath("/", "layout");
 
   return { success: true };
