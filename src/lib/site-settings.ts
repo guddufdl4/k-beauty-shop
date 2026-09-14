@@ -547,22 +547,26 @@ const OPTIONAL_SITE_SETTINGS_COLUMNS = [
   "facebook_url",
 ] as const;
 
-function missingSiteSettingsColumn(message: string): string | null {
-  const schemaCache = message.match(
-    /Could not find the '([a-z_]+)' column of 'site_settings'/i,
+function postgrestErrorText(error: { message?: string; code?: string; details?: string } | null): string {
+  if (!error) {
+    return "";
+  }
+  return [error.code, error.message, error.details].filter(Boolean).join(" ");
+}
+
+function missingSiteSettingsColumns(errorText: string, patch: Record<string, unknown>): string[] {
+  const mentioned = OPTIONAL_SITE_SETTINGS_COLUMNS.filter(
+    (column) => column in patch && errorText.includes(column),
   );
-  if (schemaCache?.[1]) {
-    return schemaCache[1];
+  if (mentioned.length > 0) {
+    return mentioned;
   }
 
-  const postgres = message.match(/column ["']?([a-z_]+)["']? of relation ["']?site_settings["']? does not exist/i);
-  if (postgres?.[1]) {
-    return postgres[1];
+  if (/schema cache|PGRST204|does not exist/i.test(errorText)) {
+    return OPTIONAL_SITE_SETTINGS_COLUMNS.filter((column) => column in patch);
   }
 
-  return OPTIONAL_SITE_SETTINGS_COLUMNS.find((column) =>
-    message.includes(column) && /does not exist|schema cache/i.test(message),
-  ) ?? null;
+  return [];
 }
 
 export async function saveSiteSettingsDbPatch(
@@ -574,6 +578,8 @@ export async function saveSiteSettingsDbPatch(
   }
 
   const nextPatch: Record<string, unknown> = { ...patch };
+  delete nextPatch.instagram_url;
+  delete nextPatch.facebook_url;
   if (Object.keys(nextPatch).length === 0) {
     return { error: null };
   }
@@ -599,9 +605,11 @@ export async function saveSiteSettingsDbPatch(
         return { error: null };
       }
 
-      const missingOnUpsert = missingSiteSettingsColumn(upsertError.message);
-      if (missingOnUpsert && missingOnUpsert in nextPatch) {
-        delete nextPatch[missingOnUpsert];
+      const missingOnUpsert = missingSiteSettingsColumns(postgrestErrorText(upsertError), nextPatch);
+      if (missingOnUpsert.length > 0) {
+        for (const column of missingOnUpsert) {
+          delete nextPatch[column];
+        }
         continue;
       }
 
@@ -609,9 +617,11 @@ export async function saveSiteSettingsDbPatch(
     }
 
     if (error) {
-      const missing = missingSiteSettingsColumn(error.message);
-      if (missing && missing in nextPatch) {
-        delete nextPatch[missing];
+      const missing = missingSiteSettingsColumns(postgrestErrorText(error), nextPatch);
+      if (missing.length > 0) {
+        for (const column of missing) {
+          delete nextPatch[column];
+        }
         continue;
       }
       return { error: error.message };

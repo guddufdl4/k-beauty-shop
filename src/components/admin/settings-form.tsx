@@ -22,7 +22,7 @@ export function AdminSettingsForm({ initialSettings }: Props) {
     const form = event.currentTarget;
     const formData = new FormData(form);
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       store_name: String(formData.get("store_name") ?? "").trim(),
       contact_email: String(formData.get("contact_email") ?? "").trim() || null,
       public_email: String(formData.get("public_email") ?? "").trim() || null,
@@ -32,8 +32,6 @@ export function AdminSettingsForm({ initialSettings }: Props) {
       business_hours: String(formData.get("business_hours") ?? "").trim() || null,
       avg_lead_time: String(formData.get("avg_lead_time") ?? "").trim() || null,
       company_registration: String(formData.get("company_registration") ?? "").trim() || null,
-      instagram_url: String(formData.get("instagram_url") ?? "").trim() || null,
-      facebook_url: String(formData.get("facebook_url") ?? "").trim() || null,
       maintenance_enabled: formData.get("maintenance_enabled") === "on",
       maintenance_message: String(formData.get("maintenance_message") ?? ""),
       wholesale_price_label:
@@ -225,7 +223,7 @@ export function AdminSettingsForm({ initialSettings }: Props) {
             placeholder="https://instagram.com/your-account"
             className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
-          <p className="mt-1 text-xs text-zinc-500">등록된 URL만 푸터에 표시됩니다.</p>
+          <p className="mt-1 text-xs text-zinc-500">등록된 URL만 푸터에 표시됩니다. 지금은 연락처·상호 저장과 별도로, DB 컬럼 추가 후에 반영됩니다.</p>
         </div>
 
         <div>
