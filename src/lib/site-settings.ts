@@ -4,6 +4,7 @@ import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
 import type { HeroSlide, SiteSettings } from "@/types/database";
 import { normalizeHeroSlideLayout } from "@/lib/admin/hero-image-spec";
+import { displayPublicStoreName } from "@/lib/site-url";
 
 const HERO_SETTINGS_BUCKET = "site-config";
 const HERO_SETTINGS_PATH = "hero.json";
@@ -534,6 +535,92 @@ export function splitSiteSettingsPatch(patch: SiteSettingsPatch): {
   };
 }
 
+const OPTIONAL_SITE_SETTINGS_COLUMNS = [
+  "public_email",
+  "public_phone",
+  "public_whatsapp",
+  "company_address",
+  "business_hours",
+  "avg_lead_time",
+  "company_registration",
+  "instagram_url",
+  "facebook_url",
+] as const;
+
+function missingSiteSettingsColumn(message: string): string | null {
+  const schemaCache = message.match(
+    /Could not find the '([a-z_]+)' column of 'site_settings'/i,
+  );
+  if (schemaCache?.[1]) {
+    return schemaCache[1];
+  }
+
+  const postgres = message.match(/column ["']?([a-z_]+)["']? of relation ["']?site_settings["']? does not exist/i);
+  if (postgres?.[1]) {
+    return postgres[1];
+  }
+
+  return OPTIONAL_SITE_SETTINGS_COLUMNS.find((column) =>
+    message.includes(column) && /does not exist|schema cache/i.test(message),
+  ) ?? null;
+}
+
+export async function saveSiteSettingsDbPatch(
+  patch: SiteSettingsDbPatch,
+): Promise<{ error: string | null }> {
+  const service = createServiceClient();
+  if (!service) {
+    return { error: describeServiceClientMisconfiguration() };
+  }
+
+  const nextPatch: Record<string, unknown> = { ...patch };
+  if (Object.keys(nextPatch).length === 0) {
+    return { error: null };
+  }
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const { data, error } = await service
+      .from("site_settings")
+      .update(nextPatch)
+      .eq("id", 1)
+      .select("id")
+      .maybeSingle();
+
+    if (!error && data) {
+      return { error: null };
+    }
+
+    if (!error && !data) {
+      const { error: upsertError } = await service.from("site_settings").upsert({
+        id: 1,
+        ...nextPatch,
+      });
+      if (!upsertError) {
+        return { error: null };
+      }
+
+      const missingOnUpsert = missingSiteSettingsColumn(upsertError.message);
+      if (missingOnUpsert && missingOnUpsert in nextPatch) {
+        delete nextPatch[missingOnUpsert];
+        continue;
+      }
+
+      return { error: upsertError.message };
+    }
+
+    if (error) {
+      const missing = missingSiteSettingsColumn(error.message);
+      if (missing && missing in nextPatch) {
+        delete nextPatch[missing];
+        continue;
+      }
+      return { error: error.message };
+    }
+  }
+
+  return { error: "설정 저장에 실패했습니다." };
+}
+
 export type PublicSiteContact = {
   store_name: string;
   public_email: string | null;
@@ -550,7 +637,7 @@ export type PublicSiteContact = {
 /** Public storefront contact fields — never exposes internal contact_email. */
 export function getPublicSiteContact(settings: SiteSettings): PublicSiteContact {
   return {
-    store_name: settings.store_name?.trim() || DEFAULT_SITE_SETTINGS.store_name,
+    store_name: displayPublicStoreName(settings.store_name?.trim() || DEFAULT_SITE_SETTINGS.store_name),
     public_email: settings.public_email?.trim() || null,
     public_phone: settings.public_phone?.trim() || null,
     public_whatsapp: settings.public_whatsapp?.trim() || null,

@@ -73,6 +73,7 @@ export function AdminSettingsForm({ initialSettings }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
+      noValidate
       className="space-y-8 rounded-2xl border border-rose-100 bg-white p-6 shadow-sm"
     >
       <section className="space-y-4">
@@ -218,7 +219,8 @@ export function AdminSettingsForm({ initialSettings }: Props) {
           <input
             id="instagram_url"
             name="instagram_url"
-            type="url"
+            type="text"
+            inputMode="url"
             defaultValue={settings.instagram_url ?? ""}
             placeholder="https://instagram.com/your-account"
             className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
@@ -233,7 +235,8 @@ export function AdminSettingsForm({ initialSettings }: Props) {
           <input
             id="facebook_url"
             name="facebook_url"
-            type="url"
+            type="text"
+            inputMode="url"
             defaultValue={settings.facebook_url ?? ""}
             placeholder="https://facebook.com/your-page"
             className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
