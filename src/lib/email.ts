@@ -2,7 +2,6 @@ export const QUOTE_INQUIRY_RECIPIENTS = [
   "jessicajung@hanmitrd.com",
   "johnkim@hanmitrd.com",
   "guddufdlehsqjfwk@naver.com",
-  // Resend onboarding@resend.dev can only deliver to this account email until a domain is verified.
   "guddufdl1234@gmail.com",
 ] as const;
 
@@ -14,7 +13,7 @@ function quoteInquiryRecipients(): string[] {
   return [...new Set([...QUOTE_INQUIRY_RECIPIENTS.map((value) => value.toLowerCase()), ...extras])];
 }
 
-const DEFAULT_FROM = "HMT Korea <onboarding@resend.dev>";
+const DEFAULT_FROM = "HMT Korea <noreply@hmtkorea.com>";
 
 export function isQuoteMailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim());
