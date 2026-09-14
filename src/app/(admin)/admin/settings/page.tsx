@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { AdminHomeSettingsForm } from "@/components/admin/home-settings-form";
 import { AdminSettingsForm } from "@/components/admin/settings-form";
+import { AdminSocialSettingsForm } from "@/components/admin/social-settings-form";
 import { AdminSettingsNav } from "@/components/admin/settings-nav";
-import { getHomeSettings, getSiteSettings } from "@/lib/site-settings";import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { getHomeSettings, getSiteSettings } from "@/lib/site-settings";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +60,9 @@ export default async function AdminSettingsPage() {
 
       <AdminSettingsNav />
       <AdminSettingsForm initialSettings={settings} />
+      <div className="mt-8">
+        <AdminSocialSettingsForm initialSettings={settings} />
+      </div>
       <div className="mt-8">
         <AdminHomeSettingsForm initialSettings={homeSettings} />
       </div>

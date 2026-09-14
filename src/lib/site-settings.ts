@@ -631,6 +631,42 @@ export async function saveSiteSettingsDbPatch(
   return { error: "설정 저장에 실패했습니다." };
 }
 
+export async function saveSiteSettingsSocialPatch(input: {
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+}): Promise<{ error: string | null }> {
+  const service = createServiceClient();
+  if (!service) {
+    return { error: describeServiceClientMisconfiguration() };
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (input.instagram_url !== undefined) {
+    patch.instagram_url = input.instagram_url;
+  }
+  if (input.facebook_url !== undefined) {
+    patch.facebook_url = input.facebook_url;
+  }
+  if (Object.keys(patch).length === 0) {
+    return { error: null };
+  }
+
+  const { error } = await service.from("site_settings").update(patch).eq("id", 1).select("id").maybeSingle();
+  if (!error) {
+    return { error: null };
+  }
+
+  const text = postgrestErrorText(error);
+  if (/schema cache|PGRST204|facebook_url|instagram_url|does not exist/i.test(text)) {
+    return {
+      error:
+        "Instagram·Facebook 저장용 DB 컬럼이 아직 없습니다. Supabase SQL Editor에서 015_site_settings_social_and_grants.sql 을 실행한 뒤 다시 저장하세요.",
+    };
+  }
+
+  return { error: error.message };
+}
+
 export type PublicSiteContact = {
   store_name: string;
   public_email: string | null;

@@ -6,6 +6,7 @@ import {
   parseSiteSettingsPatch,
   saveHeroSettings,
   saveSiteSettingsDbPatch,
+  saveSiteSettingsSocialPatch,
   SITE_SETTINGS_CACHE_TAG,
   splitSiteSettingsPatch,
 } from "@/lib/site-settings";
@@ -73,6 +74,12 @@ export async function PATCH(request: Request) {
   }
 
   const { dbPatch, heroPatch } = splitSiteSettingsPatch(patch);
+  const socialPatch = {
+    instagram_url: dbPatch.instagram_url,
+    facebook_url: dbPatch.facebook_url,
+  };
+  const hasSocialPatch =
+    socialPatch.instagram_url !== undefined || socialPatch.facebook_url !== undefined;
 
   if (heroPatch.hero_slides !== undefined) {
     const validation = validateHeroSlidesForSave(heroPatch.hero_slides);
@@ -90,6 +97,13 @@ export async function PATCH(request: Request) {
 
   if (Object.keys(dbPatch).length > 0) {
     const { error } = await saveSiteSettingsDbPatch(dbPatch);
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 });
+    }
+  }
+
+  if (hasSocialPatch) {
+    const { error } = await saveSiteSettingsSocialPatch(socialPatch);
     if (error) {
       return NextResponse.json({ error }, { status: 500 });
     }

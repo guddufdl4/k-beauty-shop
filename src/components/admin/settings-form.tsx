@@ -209,37 +209,6 @@ export function AdminSettingsForm({ initialSettings }: Props) {
             className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           />
         </div>
-
-        <div>
-          <label htmlFor="instagram_url" className="block text-sm font-medium text-zinc-700">
-            Instagram URL
-          </label>
-          <input
-            id="instagram_url"
-            name="instagram_url"
-            type="text"
-            inputMode="url"
-            defaultValue={settings.instagram_url ?? ""}
-            placeholder="https://instagram.com/your-account"
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-          />
-          <p className="mt-1 text-xs text-zinc-500">등록된 URL만 푸터에 표시됩니다. 지금은 연락처·상호 저장과 별도로, DB 컬럼 추가 후에 반영됩니다.</p>
-        </div>
-
-        <div>
-          <label htmlFor="facebook_url" className="block text-sm font-medium text-zinc-700">
-            Facebook URL
-          </label>
-          <input
-            id="facebook_url"
-            name="facebook_url"
-            type="text"
-            inputMode="url"
-            defaultValue={settings.facebook_url ?? ""}
-            placeholder="https://facebook.com/your-page"
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-          />
-        </div>
       </section>
 
       <section className="space-y-4 border-t border-zinc-100 pt-6">
