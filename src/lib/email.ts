@@ -2,6 +2,8 @@ export const QUOTE_INQUIRY_RECIPIENTS = [
   "jessicajung@hanmitrd.com",
   "johnkim@hanmitrd.com",
   "guddufdlehsqjfwk@naver.com",
+  // Resend onboarding@resend.dev can only deliver to this account email until a domain is verified.
+  "guddufdl1234@gmail.com",
 ] as const;
 
 function quoteInquiryRecipients(): string[] {
