@@ -126,7 +126,7 @@ export async function createQuoteOrderFromCart(
     recipient_name: buyer.contactName,
     phone: buyer.phone || "-",
     line1: buyer.companyName,
-    line2: [buyer.email, buyer.destination].filter(Boolean).join(" · ") || null,
+    line2: [buyer.email, buyer.destination].filter(Boolean).join(" · ") || undefined,
     city: buyer.country,
     postal_code: "-",
     country_code: countryCode,
