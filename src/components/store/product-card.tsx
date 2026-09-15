@@ -8,7 +8,6 @@ import {
 } from "@/lib/product-images";
 import {
   getCardDisplayPrice,
-  getCompareAtPrice,
   getDisplayBrandName,
   isPricedStorefrontProduct,
   isProductSoldOut,
@@ -57,7 +56,6 @@ export function ProductCard({
   const displayImageUrl = resolveProductImageUrl(product);
   const isPlaceholder = isCategoryPlaceholderUrl(displayImageUrl);
   const displayPrice = showPrices ? getCardDisplayPrice(product) : null;
-  const compareAtPrice = showPrices ? getCompareAtPrice(product) : null;
   const soldOut = isProductSoldOut(product);
   const soldOutLabel = soldOutLabelProp ?? SOLD_OUT_LABELS[locale] ?? SOLD_OUT_LABELS.en;
   const quantityBadge =
@@ -155,11 +153,6 @@ export function ProductCard({
                 <p className={cn("font-bold text-zinc-900", isTrending || compact ? "text-sm" : "text-base")}>
                   {formatLocaleProductPrice(displayPrice, locale, usdKrwRate)}
                 </p>
-                {compareAtPrice ? (
-                  <p className="text-xs text-zinc-400 line-through">
-                    {formatLocaleProductPrice(compareAtPrice, locale, usdKrwRate)}
-                  </p>
-                ) : null}
               </>
             ) : (
               <p className={cn("font-semibold text-zinc-600", isTrending || compact ? "text-sm" : "text-base")}>

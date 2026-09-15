@@ -501,11 +501,6 @@ export function ProductAdminDetailPanel({
                   <p className="text-2xl font-bold text-zinc-900">
                     {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
                   </p>
-                  {priceColumns.compareAt ? (
-                    <p className="text-sm text-zinc-400 line-through">
-                      {formatLocaleProductPrice(priceColumns.compareAt, locale, usdKrwRate)}
-                    </p>
-                  ) : null}
                 </div>
                 {priceColumns.secondary ? (
                   <div className="min-w-0 text-right">

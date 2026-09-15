@@ -35,11 +35,8 @@ export function hasDualPricing(product: {
   return product.wholesale_price != null;
 }
 
-export function getCompareAtPrice(product: ProductPriceFields): number | null {
-  if (!isProductOnSale(product)) {
-    return null;
-  }
-  return product.compare_at_price ?? null;
+export function getCompareAtPrice(_product: ProductPriceFields): number | null {
+  return null;
 }
 
 export function isPricedStorefrontProduct(
@@ -62,7 +59,7 @@ export function getProductPriceColumns(product: ProductPriceFields): {
   secondary: PriceColumn | null;
   compareAt: number | null;
 } {
-  const compareAt = getCompareAtPrice(product);
+  const compareAt = null;
   const effectivePrice = getEffectiveProductPrice(product);
 
   if (hasDualPricing(product)) {

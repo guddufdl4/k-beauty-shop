@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { getTranslations, getLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { isRedundantProductDescription } from "@/lib/store/product-copy";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { ProductAdminDetailPanel } from "@/components/store/product-admin-detail-panel";
 import { ProductImagePlaceholder } from "@/components/store/product-image-placeholder";
@@ -29,6 +32,28 @@ import {
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const [locale, audience] = await Promise.all([getLocale(), resolveStorefrontAudience()]);
+  const { product } = await getProductBySlug(slug, audience);
+  if (!product) {
+    return {};
+  }
+
+  const imageUrl = resolveProductImageUrl(product);
+  const description = isRedundantProductDescription(product.description, product.name, product.brand)
+    ? undefined
+    : product.description?.trim();
+
+  return buildStorefrontMetadata({
+    locale,
+    path: `/products/${product.slug}`,
+    title: product.name,
+    description,
+    ogImage: isCategoryPlaceholderUrl(imageUrl) ? null : imageUrl,
+  });
+}
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const audience = await resolveStorefrontAudience();
@@ -161,11 +186,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                       <p className="text-2xl font-bold text-zinc-900">
                         {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
                       </p>
-                      {priceColumns.compareAt ? (
-                        <p className="text-sm text-zinc-400 line-through">
-                          {formatLocaleProductPrice(priceColumns.compareAt, locale, usdKrwRate)}
-                        </p>
-                      ) : null}
                     </div>
                     {priceColumns.secondary ? (
                       <div className="min-w-0 text-right">
@@ -182,6 +202,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-5">
                     <p className="text-lg font-semibold text-zinc-800">{t("signInToViewPrice")}</p>
                     <p className="mt-1 text-sm text-zinc-600">{t("signInToViewPriceHint")}</p>
+                    <p className="mt-2 text-sm text-zinc-600">{t("signInToAddToCart")}</p>
                     <Link
                       href="/login"
                       className="mt-4 inline-flex rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
@@ -234,17 +255,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   stock={product.stock}
                   soldOut={product.sold_out}
                 />
-              ) : (
-                <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-5">
-                  <p className="text-sm font-medium text-zinc-700">{t("signInToAddToCart")}</p>
-                  <Link
-                    href="/login"
-                    className="mt-3 inline-flex rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
-                  >
-                    {t("signInToViewPriceAction")}
-                  </Link>
-                </div>
-              )}
+              ) : null}
 
               {siteSettings.min_order_note ? (
                 <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm text-zinc-600">
@@ -252,12 +263,14 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 </p>
               ) : null}
 
-              {product.description ? (
-                <section className="mt-10 min-w-0">
-                  <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
-                  <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">{product.description}</p>
-                </section>
-              ) : null}
+              <section className="mt-10 min-w-0">
+                <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
+                <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">
+                  {isRedundantProductDescription(product.description, product.name, product.brand)
+                    ? t("descriptionFallback")
+                    : product.description}
+                </p>
+              </section>
 
               {product.ingredients ? (
                 <section className="mt-8 min-w-0">
