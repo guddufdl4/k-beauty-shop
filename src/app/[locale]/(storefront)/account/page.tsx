@@ -7,10 +7,15 @@ import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountPage() {
-  const [{ configured, user, profile }, t] = await Promise.all([
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ verified?: string }>;
+}) {
+  const [{ configured, user, profile }, t, { verified }] = await Promise.all([
     getSessionProfile(),
     getTranslations("account"),
+    searchParams,
   ]);
 
   if (configured && !user) {
@@ -23,6 +28,7 @@ export default async function AccountPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
       <h1 className="text-3xl font-bold">{t("title")}</h1>
+      {verified ? <p className="mt-4 text-sm text-green-700">{t("emailConfirmed")}</p> : null}
       <p className="mt-2 text-zinc-600">{isAdmin ? t("adminNotice") : t("nicknameDescription")}</p>
 
       <div className="mt-8 max-w-md space-y-8">

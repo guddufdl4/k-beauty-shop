@@ -24,6 +24,8 @@ export interface Profile {
   company_name: string | null;
   phone: string | null;
   country_code: string | null;
+  username: string | null;
+  preferred_currency: "USD" | "KRW" | null;
   role: UserRole;
   wholesale_approved: boolean;
   wholesale_tier: string | null;

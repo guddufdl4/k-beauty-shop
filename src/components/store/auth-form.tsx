@@ -33,7 +33,9 @@ export function AuthForm({
         <input
           id="email"
           name="email"
-          type="email"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
           required
           className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
         />

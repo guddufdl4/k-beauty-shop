@@ -34,6 +34,20 @@ export function resolveSiteUrl(): string {
   return FALLBACK_SITE_URL;
 }
 
+/** Confirmation emails must never point at localhost (phones cannot open it). */
+export function resolveAuthEmailBaseUrl(): string {
+  const configured =
+    process.env.AUTH_REDIRECT_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    FALLBACK_SITE_URL;
+  const normalized = configured.replace(/\/$/, "");
+  if (/localhost|127\.0\.0\.1/i.test(normalized)) {
+    return FALLBACK_SITE_URL;
+  }
+  return normalized;
+}
+
 export function localePath(locale: string, path = ""): string {
   const suffix = path ? (path.startsWith("/") ? path : `/${path}`) : "";
   return `/${locale}${suffix}`;

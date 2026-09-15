@@ -89,3 +89,46 @@ export async function sendQuoteInquiryEmail(input: SendEmailInput): Promise<{ ok
 
   return { ok: true };
 }
+
+export async function sendCustomerEmail(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const to = input.to.trim().toLowerCase();
+  if (!apiKey || !to) {
+    return { ok: false, error: "email_not_configured" };
+  }
+
+  const from = process.env.RESEND_FROM?.trim() || DEFAULT_FROM;
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error("[email] Resend customer mail failed:", to, response.status, detail.slice(0, 400));
+      return { ok: false, error: "email_send_failed" };
+    }
+  } catch (error) {
+    console.error("[email] Resend customer mail error:", to, error);
+    return { ok: false, error: "email_send_failed" };
+  }
+
+  return { ok: true };
+}

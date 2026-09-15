@@ -17,7 +17,11 @@ function hasSupabaseAuthCookie(
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api")) {
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/auth")
+  ) {
     return updateSession(request);
   }
 
