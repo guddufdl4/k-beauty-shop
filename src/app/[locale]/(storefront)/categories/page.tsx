@@ -4,8 +4,15 @@ import { EmptyState } from "@/components/store/empty-state";
 import { getStorefrontCategories } from "@/lib/supabase/products";
 import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import { Link } from "@/i18n/navigation";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import type { Metadata } from "next";
 
 export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return buildStorefrontMetadata({ locale, path: "/categories" });
+}
 
 export default async function CategoriesPage() {
   const [t, locale, { categories, meta }] = await Promise.all([

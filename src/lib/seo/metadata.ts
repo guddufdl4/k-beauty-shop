@@ -5,8 +5,10 @@ import { PUBLIC_STORE_NAME, absoluteLocaleUrl, resolveSiteUrl } from "@/lib/site
 const GOOGLE_LISTING_SEO = {
   title: `${PUBLIC_STORE_NAME} | Authentic K-Beauty Wholesale`,
   description:
-    "Authentic K-Beauty wholesale, supplied directly from Korea. Discover a wide range of Korean beauty brands at competitive prices.",
+    "Authentic K-Beauty wholesale, supplied directly from Korea. Discover a wide range of Korean beauty brands at competitive price",
 } as const;
+
+export { GOOGLE_LISTING_SEO };
 
 export const STOREFRONT_SEO: Record<AppLocale, { title: string; description: string }> = {
   en: GOOGLE_LISTING_SEO,
@@ -25,11 +27,10 @@ export function buildStorefrontMetadata(options: {
   const locale = (routing.locales.includes(options.locale as AppLocale)
     ? options.locale
     : routing.defaultLocale) as AppLocale;
-  const seo = STOREFRONT_SEO[locale];
   const path = options.path ?? "";
   const canonical = absoluteLocaleUrl(locale, path);
-  const title = options.title ?? seo.title;
-  const description = options.description ?? seo.description;
+  const title = GOOGLE_LISTING_SEO.title;
+  const description = GOOGLE_LISTING_SEO.description;
   const siteUrl = resolveSiteUrl();
   const languages: Record<string, string> = {
     "x-default": absoluteLocaleUrl(routing.defaultLocale, path),
