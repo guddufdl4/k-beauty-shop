@@ -25,43 +25,55 @@ export function collapseRepeatedBrandPrefix(name: string, brand?: string | null)
     return result;
   }
 
-  result = result.replace(/^([A-Za-z0-9][A-Za-z0-9.&'’-]*)\s+\1\b/gi, "$1");
+  const collapseLeadingDuplicateWords = (value: string) => {
+    const parts = value.split(/\s+/).filter(Boolean);
+    while (
+      parts.length >= 2 &&
+      parts[0].toLowerCase() === parts[1].toLowerCase()
+    ) {
+      parts.splice(1, 1);
+    }
+    return parts.join(" ");
+  };
 
-  const trimmedBrand = String(brand ?? "").replace(/\s+/g, " ").trim();
-  if (!trimmedBrand) {
-    return result;
-  }
+  result = collapseLeadingDuplicateWords(result);
 
-  const escapedBrand = trimmedBrand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  result = result.replace(new RegExp(`^(${escapedBrand})(?:\\s+\\1)+\\b`, "i"), "$1");
-
-  const firstWord = trimmedBrand.split(/\s+/)[0];
-  if (firstWord && firstWord.length >= 3) {
-    const escapedFirst = firstWord.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    result = result.replace(new RegExp(`^(${escapedFirst})(?:\\s+\\1)+\\b`, "i"), "$1");
+  const trimmedBrand = sanitizeProductName(String(brand ?? ""));
+  if (trimmedBrand) {
+    const doubledPrefix = `${trimmedBrand.toLowerCase()} ${trimmedBrand.toLowerCase()}`;
+    while (
+      result.toLowerCase() === doubledPrefix ||
+      result.toLowerCase().startsWith(`${doubledPrefix} `)
+    ) {
+      result = result.slice(trimmedBrand.length).trim();
+    }
+    result = collapseLeadingDuplicateWords(result);
   }
 
   return result.replace(/\s+/g, " ").trim();
 }
 
 export function nameAlreadyIncludesBrand(name: string, brand?: string | null): boolean {
-  const trimmedName = String(name ?? "").trim();
-  const trimmedBrand = String(brand ?? "").trim();
+  const trimmedName = sanitizeProductName(name).toLowerCase();
+  const trimmedBrand = sanitizeProductName(String(brand ?? "")).toLowerCase();
   if (!trimmedName || !trimmedBrand) {
     return false;
   }
-  const nameLower = trimmedName.toLowerCase();
-  const brandLower = trimmedBrand.toLowerCase();
-  return nameLower === brandLower || nameLower.startsWith(`${brandLower} `);
+  if (trimmedName === trimmedBrand || trimmedName.startsWith(`${trimmedBrand} `)) {
+    return true;
+  }
+  const nameFirst = trimmedName.split(/\s+/)[0];
+  const brandFirst = trimmedBrand.split(/\s+/)[0];
+  return Boolean(nameFirst && brandFirst && brandFirst.length >= 3 && nameFirst === brandFirst);
 }
 
 export function formatProductDisplayName(name: string, brand?: string | null): string {
-  const trimmedName = collapseRepeatedBrandPrefix(name, brand);
-  const trimmedBrand = brand?.trim();
+  const trimmedBrand = sanitizeProductName(String(brand ?? ""));
+  const trimmedName = collapseRepeatedBrandPrefix(name, trimmedBrand);
   if (!trimmedBrand || nameAlreadyIncludesBrand(trimmedName, trimmedBrand)) {
-    return trimmedName;
+    return collapseRepeatedBrandPrefix(trimmedName, trimmedBrand);
   }
-  return `${trimmedBrand} ${trimmedName}`;
+  return collapseRepeatedBrandPrefix(`${trimmedBrand} ${trimmedName}`, trimmedBrand);
 }
 
 export function isRedundantProductDescription(

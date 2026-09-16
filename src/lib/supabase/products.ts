@@ -21,7 +21,7 @@ import {
   type StorefrontAudience,
   type StorefrontProduct,
 } from "@/lib/store/product-visibility";
-import { sanitizeProductName } from "@/lib/store/product-copy";
+import { collapseRepeatedBrandPrefix } from "@/lib/store/product-copy";
 import { filterStorefrontCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import { interleaveByBrand } from "@/lib/store/brand-diversity";
 import {
@@ -616,7 +616,7 @@ function mapProduct(row: Record<string, unknown>): Product {
   return {
     id: String(row.id),
     category_id: row.category_id ? String(row.category_id) : null,
-    name: sanitizeProductName(String(row.name)),
+    name: collapseRepeatedBrandPrefix(String(row.name), row.brand ? String(row.brand) : null),
     slug: String(row.slug),
     description: row.description ? String(row.description) : null,
     short_description: row.short_description
