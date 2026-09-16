@@ -15,8 +15,15 @@ export type ProductPriceFields = {
 };
 
 /** Canonical storefront/cart selling price. */
+export function usableShopPrice(value?: number | null): number | null {
+  if (value == null || !Number.isFinite(value) || value <= 1) {
+    return null;
+  }
+  return value;
+}
+
 export function getEffectiveProductPrice(product: ProductPriceFields): number {
-  return product.wholesale_price ?? product.price ?? 0;
+  return usableShopPrice(product.wholesale_price) ?? usableShopPrice(product.price) ?? 0;
 }
 
 export function isProductOnSale(product: ProductPriceFields): boolean {
@@ -32,7 +39,7 @@ export function hasDualPricing(product: {
   wholesale_price?: number | null;
   price?: number;
 }): boolean {
-  return product.wholesale_price != null;
+  return usableShopPrice(product.wholesale_price) != null;
 }
 
 export function getCompareAtPrice(_product: ProductPriceFields): number | null {
@@ -65,7 +72,7 @@ export function getProductPriceColumns(product: ProductPriceFields): {
   if (hasDualPricing(product)) {
     return {
       primary: { amount: effectivePrice, labelKey: "wholesalePrice" },
-      secondary: { amount: product.price ?? effectivePrice, labelKey: "retailPrice" },
+      secondary: { amount: usableShopPrice(product.price) ?? effectivePrice, labelKey: "retailPrice" },
       compareAt,
     };
   }
@@ -79,7 +86,7 @@ export function getProductPriceColumns(product: ProductPriceFields): {
 
 export function usesBoxQuantityField(product: object): boolean {
   const record = product as { wholesale_price?: number | null };
-  return record.wholesale_price == null;
+  return usableShopPrice(record.wholesale_price) == null;
 }
 
 export type MoqBadgeKey = "moqBadge" | "unitsPerBoxBadge";
@@ -92,10 +99,7 @@ export function isProductSoldOut(product: {
   sold_out?: boolean;
   stock?: number;
 }): boolean {
-  if (product.sold_out) {
-    return true;
-  }
-  return typeof product.stock === "number" && product.stock <= 0;
+  return Boolean(product.sold_out);
 }
 
 export type ProductsPaginationItem = number | "ellipsis";

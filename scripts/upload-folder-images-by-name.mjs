@@ -6,10 +6,12 @@
  *   node scripts/upload-folder-images-by-name.mjs --dir "C:\path\to\images"
  *   node scripts/upload-folder-images-by-name.mjs --dir "..." --dry-run
  *   node scripts/upload-folder-images-by-name.mjs --dir "..." --audit
+ *   node scripts/upload-folder-images-by-name.mjs --dir "..." --excel "Brand 07 30.xlsx" [--dry-run]
  */
 
 import fs from "fs";
 import path from "path";
+import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeProductImageBuffer } from "./lib/normalize-product-image.mjs";
 
@@ -37,6 +39,7 @@ function parseCliArgs(argv) {
   let overwrite = false;
   let auditOnly = false;
   let imagesDir = null;
+  let excelPath = null;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--dry-run") dryRun = true;
@@ -44,8 +47,10 @@ function parseCliArgs(argv) {
     else if (arg === "--audit") auditOnly = true;
     else if (arg === "--dir" && argv[i + 1]) imagesDir = argv[++i].trim();
     else if (arg.startsWith("--dir=")) imagesDir = arg.slice("--dir=".length).trim();
+    else if (arg === "--excel" && argv[i + 1]) excelPath = argv[++i].trim();
+    else if (arg.startsWith("--excel=")) excelPath = arg.slice("--excel=".length).trim();
   }
-  return { dryRun, overwrite, auditOnly, imagesDir };
+  return { dryRun, overwrite, auditOnly, imagesDir, excelPath };
 }
 
 function classifyImageUrl(url) {
@@ -248,27 +253,69 @@ function stripEmbeddedExtensions(stem) {
 
 function stripSizeAndSampleSuffixes(stem) {
   return stripEmbeddedExtensions(stem)
-    .replace(/\(\s*\d+\s*pcs?\s*\)/gi, "")
-    .replace(/\(\s*\d+\s*\)/g, "")
-    .replace(/\b\d+\s*pcs?\b/gi, "")
-    .replace(/\b\d+\s*ea\b/gi, "")
-    .replace(/\b\d+(\.\d+)?\s*ml\b/gi, "")
-    .replace(/\b\d+(\.\d+)?\s*g\b/gi, "")
-    .replace(/[_\s-]+\d+(\.\d+)?\s*ml\b/gi, "")
-    .replace(/\s*\(\s*S\s*\)\s*/gi, " ")
-    .replace(/\s*\(\s*F\s*\)\s*$/gi, "")
-    .replace(/\s*\(\s*GWP\s*\)\s*/gi, " ")
-    .replace(/\s*\(\s*R\d+\s*\)\s*$/gi, "")
-    .replace(/\s*\(\s*REFILL\s*\)\s*$/gi, "")
-    .replace(/\s*\(\s*VEGAN\s*\)\s*$/gi, "")
-    .replace(/\s*\[\s*Duty\s*Free\s*\]\s*/gi, " ")
+    .replace(/\s*\(\s*\d+\s*\)\s*$/g, "")
     .replace(/\s*_N\b/gi, "")
     .replace(/\s*_AD\b/gi, "")
     .replace(/\.NEW$/i, "")
     .replace(/\.\.+$/g, "")
-    .replace(/\s+[FR]\s*$/i, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function collapseRepeatedLeadingToken(text) {
+  return String(text ?? "")
+    .trim()
+    .replace(/^(\S+)(?:\s+\1)+/i, "$1");
+}
+
+function stripTrailingVolumeLabel(text) {
+  return String(text ?? "")
+    .replace(/\s+\d+(?:\.\d+)?\s*(ml|g|mg|oz)\s*$/i, "")
+    .trim();
+}
+
+function filenameSafeVariants(text) {
+  const raw = String(text ?? "");
+  const withoutForbidden = raw.replace(/[:/\\*?"<>|;；]/g, " ");
+  const collapsedForbidden = raw.replace(/[:/\\*?"<>|;；]/g, "");
+  return [raw, withoutForbidden, collapsedForbidden];
+}
+
+function extractVolumeTokens(text) {
+  const t = String(text ?? "").toLowerCase();
+  return [...t.matchAll(/(\d+(?:\.\d+)?)\s*(ml|g|mg|oz)\b/gi)].map(
+    (m) => `${m[1]}${m[2].toLowerCase()}`,
+  );
+}
+
+function extractShadeTokens(text) {
+  const t = String(text ?? "").toLowerCase();
+  const found = new Set();
+  for (const m of t.matchAll(/#\s*(\d{1,3}[a-z]?)/g)) found.add(m[1]);
+  for (const m of t.matchAll(/\b(?:no\.?|n0\.?|shade|호수)\s*(\d{1,3}[a-z]?)\b/g)) {
+    found.add(m[1]);
+  }
+  return [...found];
+}
+
+function variantConflictScore(fileText, product) {
+  const haystack = `${product.name ?? ""} ${product.sku ?? ""} ${product.brand ?? ""}`;
+  const fileVols = extractVolumeTokens(fileText);
+  const productVols = extractVolumeTokens(haystack);
+  if (fileVols.length && productVols.length) {
+    const productSet = new Set(productVols);
+    if (!fileVols.some((v) => productSet.has(v))) return -1;
+  }
+  const fileShades = extractShadeTokens(fileText);
+  const productShades = extractShadeTokens(haystack);
+  if (fileShades.length && productShades.length) {
+    const productSet = new Set(productShades);
+    if (!fileShades.some((v) => productSet.has(v))) return -1;
+  }
+  let boost = 0;
+  if (fileVols.length && productVols.some((v) => fileVols.includes(v))) boost += 0.08;
+  if (fileShades.length && productShades.some((v) => fileShades.includes(v))) boost += 0.08;
+  return boost;
 }
 
 function cleanFilenameStem(stem) {
@@ -401,20 +448,32 @@ function buildProductLookups(products) {
   };
 
   for (const p of products) {
-    const nameKey = normalizeKey(cleanFilenameStem(p.name));
-    const brandNameKey = normalizeKey(
-      cleanFilenameStem(`${p.brand ?? ""} ${p.name ?? ""}`.trim()),
-    );
-    if (nameKey) {
+    const nameVariants = [
+      p.name,
+      stripTrailingVolumeLabel(p.name),
+      collapseRepeatedLeadingToken(p.name),
+    ];
+    const brandNameVariants = [
+      `${p.brand ?? ""} ${p.name ?? ""}`.trim(),
+      `${p.brand ?? ""} ${stripTrailingVolumeLabel(p.name ?? "")}`.trim(),
+      collapseRepeatedLeadingToken(`${p.brand ?? ""} ${p.name ?? ""}`.trim()),
+    ];
+    for (const name of nameVariants) {
+      const nameKey = normalizeKey(cleanFilenameStem(name));
+      if (!nameKey) continue;
       if (!byName.has(nameKey)) byName.set(nameKey, []);
-      byName.get(nameKey).push(p);
+      if (!byName.get(nameKey).some((row) => row.id === p.id)) byName.get(nameKey).push(p);
       const item = { key: nameKey, product: p, kind: "name" };
       nameList.push(item);
       indexTokens(item);
     }
-    if (brandNameKey && brandNameKey !== nameKey) {
+    for (const brandName of brandNameVariants) {
+      const brandNameKey = normalizeKey(cleanFilenameStem(brandName));
+      if (!brandNameKey) continue;
       if (!byBrandName.has(brandNameKey)) byBrandName.set(brandNameKey, []);
-      byBrandName.get(brandNameKey).push(p);
+      if (!byBrandName.get(brandNameKey).some((row) => row.id === p.id)) {
+        byBrandName.get(brandNameKey).push(p);
+      }
       const item = { key: brandNameKey, product: p, kind: "brandName" };
       nameList.push(item);
       indexTokens(item);
@@ -474,7 +533,15 @@ function buildMatchCandidates(imageEntry, imagesDir) {
   const addText = (text, source) => {
     const raw = String(text ?? "").trim();
     if (!raw) return;
-    for (const variant of [raw, cleanFilenameStem(raw), stripSizeAndSampleSuffixes(raw)]) {
+    for (const variant of [
+      raw,
+      collapseRepeatedLeadingToken(raw),
+      stripTrailingVolumeLabel(raw),
+      stripTrailingVolumeLabel(collapseRepeatedLeadingToken(raw)),
+      ...filenameSafeVariants(raw),
+      cleanFilenameStem(raw),
+      stripSizeAndSampleSuffixes(raw),
+    ]) {
       const cleaned = cleanFilenameStem(variant);
       const norm = normalizeKey(cleaned);
       if (!norm || seen.has(`${source}:${norm}`)) continue;
@@ -509,18 +576,23 @@ function brandMatchBoost(product, norm) {
   return 0;
 }
 
-function resolveAmbiguous(matches, norm) {
+function resolveAmbiguous(matches, norm, fileText = "") {
   if (matches.length === 1) return matches[0];
-  const sorted = [...matches].sort((a, b) => {
-    const aBrand = brandMatchBoost(a, norm) > 0 ? 1 : 0;
-    const bBrand = brandMatchBoost(b, norm) > 0 ? 1 : 0;
+  const scored = matches
+    .map((product) => ({ product, conflict: variantConflictScore(fileText || norm, product) }))
+    .filter((item) => item.conflict !== -1);
+  if (!scored.length) return null;
+  scored.sort((a, b) => {
+    if (b.conflict !== a.conflict) return b.conflict - a.conflict;
+    const aBrand = brandMatchBoost(a.product, norm) > 0 ? 1 : 0;
+    const bBrand = brandMatchBoost(b.product, norm) > 0 ? 1 : 0;
     if (aBrand !== bBrand) return bBrand - aBrand;
-    const aExact = normalizeKey(a.name) === norm ? 1 : 0;
-    const bExact = normalizeKey(b.name) === norm ? 1 : 0;
+    const aExact = normalizeKey(a.product.name) === norm ? 1 : 0;
+    const bExact = normalizeKey(b.product.name) === norm ? 1 : 0;
     if (aExact !== bExact) return bExact - aExact;
-    return (a.name?.length ?? 0) - (b.name?.length ?? 0);
+    return (a.product.name?.length ?? 0) - (b.product.name?.length ?? 0);
   });
-  return sorted[0];
+  return scored[0].product;
 }
 
 function getFuzzyCandidates(norm, tokenIndex) {
@@ -559,24 +631,30 @@ function scoreCandidateAgainstProducts(candidate, lookups) {
 
   if (norm && byName.has(norm)) {
     const matches = byName.get(norm);
-    return {
-      product: resolveAmbiguous(matches, norm),
-      method: matches.length === 1 ? "exact-name" : "exact-name-ambiguous",
-      score: 0.99,
-      matchedKey: norm,
-      candidate,
-    };
+    const product = resolveAmbiguous(matches, norm, candidate.raw);
+    if (product) {
+      return {
+        product,
+        method: matches.length === 1 ? "exact-name" : "exact-name-ambiguous",
+        score: 0.99,
+        matchedKey: norm,
+        candidate,
+      };
+    }
   }
 
   if (norm && byBrandName.has(norm)) {
     const matches = byBrandName.get(norm);
-    return {
-      product: resolveAmbiguous(matches, norm),
-      method: matches.length === 1 ? "exact-brand-name" : "exact-brand-name-ambiguous",
-      score: 0.985,
-      matchedKey: norm,
-      candidate,
-    };
+    const product = resolveAmbiguous(matches, norm, candidate.raw);
+    if (product) {
+      return {
+        product,
+        method: matches.length === 1 ? "exact-brand-name" : "exact-brand-name-ambiguous",
+        score: 0.985,
+        matchedKey: norm,
+        candidate,
+      };
+    }
   }
 
   let best = null;
@@ -586,6 +664,8 @@ function scoreCandidateAgainstProducts(candidate, lookups) {
   for (const item of fuzzyItems) {
     const productKey = item.key;
     if (!productKey || !norm) continue;
+    const conflict = variantConflictScore(candidate.raw, item.product);
+    if (conflict === -1) continue;
 
     if (productKey === norm) {
       return {
@@ -602,7 +682,9 @@ function scoreCandidateAgainstProducts(candidate, lookups) {
       const longer = Math.max(productKey.length, norm.length);
       const containScore = shorter / longer;
       const score =
-        containScore * (item.kind === "name" ? 0.97 : 0.94) + brandMatchBoost(item.product, norm);
+        containScore * (item.kind === "name" ? 0.97 : 0.94) +
+        brandMatchBoost(item.product, norm) +
+        Math.max(0, conflict);
       if (score > bestScore) {
         bestScore = score;
         best = {
@@ -617,6 +699,7 @@ function scoreCandidateAgainstProducts(candidate, lookups) {
 
     let overlap = tokenOverlapScore(norm, productKey);
     overlap += brandMatchBoost(item.product, norm);
+    overlap += Math.max(0, conflict);
     if (overlap > bestScore) {
       bestScore = overlap;
       best = {
@@ -745,16 +828,724 @@ async function triggerStorefrontRevalidation() {
   }
 }
 
+const EXCEL_SKIP_SHEETS = new Set(["REJURAN(NOT VALID)"]);
+const BRAND_SHEET_ALIASES = {
+  anuax: ["ANUA", "Anua"],
+  medicubex: ["MEDICUBE", "Medicube"],
+  medicube: ["Medicube(X)", "Medicube(XX)"],
+  drjartfrom2507: ["Dr.Jart", "Dr Jart"],
+  rejuranfrom202602: ["Rejuran", "REJURAN"],
+};
+
+function normalizeHeader(input) {
+  return String(input ?? "")
+    .toLowerCase()
+    .replace(/[\s_\-/()[\].\r\n]+/g, "");
+}
+
+function isMetadataHeaderRow(row) {
+  const texts = (row ?? []).map((c) => String(c ?? "").trim().toLowerCase()).filter(Boolean);
+  if (!texts.length) return true;
+  const joined = texts.join(" ");
+  if (joined.startsWith("moa:") || joined.startsWith("moa ")) return true;
+  if (texts.some((t) => t.startsWith("updated"))) return true;
+  if (texts.length <= 2 && texts.some((t) => t.includes("inbox"))) return true;
+  return false;
+}
+
+function excelHeaderScore(row) {
+  const keys = [
+    "product",
+    "name",
+    "barcode",
+    "price",
+    "brand",
+    "sku",
+    "no",
+    "바코드",
+    "제품명",
+    "상품명",
+    "inbox",
+  ];
+  const texts = (row ?? []).map((c) => normalizeHeader(c));
+  const nonEmpty = texts.filter(Boolean).length;
+  let score = texts.filter((t) => keys.some((k) => t.includes(k))).length;
+  if (nonEmpty >= 3) score += 1;
+  if (nonEmpty >= 5) score += 1;
+  if (isMetadataHeaderRow(row)) score -= 8;
+  if (texts[0] === "no" || texts[0] === "no.") score += 2;
+  return score;
+}
+
+function findExcelHeaderRow(rows) {
+  let best = 0;
+  let score = -999;
+  for (let i = 0; i < Math.min(rows.length, 12); i += 1) {
+    const s = excelHeaderScore(rows[i]);
+    if (s > score) {
+      score = s;
+      best = i;
+    }
+  }
+  return score > 0 ? best : 0;
+}
+
+function isMostlyEnglish(text) {
+  const s = String(text ?? "").replace(/\r\n/g, " ");
+  const latin = (s.match(/[a-zA-Z]/g) ?? []).length;
+  const korean = (s.match(/[가-힣]/g) ?? []).length;
+  return latin > korean;
+}
+
+function findNameColumnIndices(headers) {
+  const cols = [];
+  for (let i = 0; i < headers.length; i += 1) {
+    const h = normalizeHeader(headers[i]);
+    if (!h) continue;
+    if (
+      h.includes("productname") ||
+      h === "name" ||
+      h.includes("nameeng") ||
+      h.includes("nameenglish") ||
+      (h.includes("name") && h.includes("eng"))
+    ) {
+      cols.push(i);
+    }
+  }
+  return cols;
+}
+
+function detectEnglishNameColumn(headers, dataRows) {
+  for (let i = 0; i < headers.length; i += 1) {
+    const h = normalizeHeader(headers[i]);
+    if (
+      h.includes("english") ||
+      h.includes("nameeng") ||
+      h.includes("nameenglish") ||
+      (h.includes("name") && h.includes("eng"))
+    ) {
+      return i;
+    }
+  }
+
+  const nameCols = findNameColumnIndices(headers);
+  if (nameCols.length === 1) return nameCols[0];
+  if (nameCols.length > 1) {
+    let best = nameCols[0];
+    let bestScore = -1;
+    for (const col of nameCols) {
+      let score = 0;
+      for (const row of dataRows.slice(0, 40)) {
+        if (isMostlyEnglish(row[col])) score += 1;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = col;
+      }
+    }
+    return best;
+  }
+  return -1;
+}
+
+function detectKoreanNameColumn(headers, dataRows, englishCol) {
+  const nameCols = findNameColumnIndices(headers).filter((c) => c !== englishCol);
+  if (!nameCols.length) return -1;
+  if (nameCols.length === 1) return nameCols[0];
+  let best = nameCols[0];
+  let bestScore = -1;
+  for (const col of nameCols) {
+    let score = 0;
+    for (const row of dataRows.slice(0, 40)) {
+      if (!isMostlyEnglish(row[col])) score += 1;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = col;
+    }
+  }
+  return best;
+}
+
+function findExcelColumn(headers, aliases) {
+  for (let i = 0; i < headers.length; i += 1) {
+    const h = normalizeHeader(headers[i]);
+    if (!h) continue;
+    for (const alias of aliases) {
+      const a = normalizeHeader(alias);
+      if (h === a || h.includes(a) || a.includes(h)) return i;
+    }
+  }
+  return -1;
+}
+
+function normalizeBarcode(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits || digits.length < 6) return null;
+  return digits;
+}
+
+function normalizeSheetBrand(sheetName) {
+  return String(sheetName ?? "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\s+from\s+.*/i, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sheetBrandVariants(sheetName) {
+  const raw = String(sheetName ?? "").trim();
+  const normalized = normalizeSheetBrand(raw);
+  const variants = new Set([raw, normalized]);
+  const key = normalizeKey(raw);
+  for (const alias of BRAND_SHEET_ALIASES[key] ?? []) variants.add(alias);
+  if (normalized !== raw) variants.add(normalized);
+  return [...variants];
+}
+
+function brandsCompatible(sheetBrand, productBrand) {
+  const variants = sheetBrandVariants(sheetBrand).map((b) => normalizeKey(b)).filter(Boolean);
+  const productKey = normalizeKey(productBrand);
+  if (!variants.length || !productKey) return true;
+  return variants.some(
+    (v) => v === productKey || v.includes(productKey) || productKey.includes(v),
+  );
+}
+
+function cleanExcelName(name) {
+  return String(name ?? "")
+    .replace(/\r\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseBrandPriorityExcel(excelPath) {
+  const buffer = fs.readFileSync(excelPath);
+  const wb = XLSX.read(buffer, { type: "buffer" });
+  const entries = [];
+
+  for (const sheetName of wb.SheetNames) {
+    if (EXCEL_SKIP_SHEETS.has(sheetName)) continue;
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
+      header: 1,
+      defval: "",
+      blankrows: false,
+    });
+    if (rows.length < 2) continue;
+
+    const headerIdx = findExcelHeaderRow(rows);
+    const headers = (rows[headerIdx] ?? []).map((c) => String(c ?? "").trim());
+    const dataRows = rows.slice(headerIdx + 1).filter((row) => row?.some((c) => String(c ?? "").trim()));
+    const englishCol = detectEnglishNameColumn(headers, dataRows);
+    if (englishCol < 0) continue;
+
+    const koreanCol = detectKoreanNameColumn(headers, dataRows, englishCol);
+    const barcodeCol = findExcelColumn(headers, [
+      "ea barcode",
+      "barcode(ean)",
+      "barcode",
+      "ean",
+      "바코드",
+    ]);
+    const skuCol = findExcelColumn(headers, ["sku", "product code", "상품코드", "품번"]);
+    const brandCol = findExcelColumn(headers, ["brand", "브랜드"]);
+
+    for (let rowIdx = 0; rowIdx < dataRows.length; rowIdx += 1) {
+      const row = dataRows[rowIdx];
+      const englishName = cleanExcelName(row[englishCol]);
+      if (!englishName) continue;
+
+      const koreanName = koreanCol >= 0 ? cleanExcelName(row[koreanCol]) : "";
+      const brand =
+        (brandCol >= 0 ? cleanExcelName(row[brandCol]) : "") || normalizeSheetBrand(sheetName);
+      const barcode =
+        normalizeBarcode(barcodeCol >= 0 ? row[barcodeCol] : "") ??
+        normalizeBarcode(skuCol >= 0 ? row[skuCol] : "");
+
+      entries.push({
+        sheet: sheetName,
+        brand,
+        englishName,
+        koreanName,
+        barcode,
+        rowNumber: headerIdx + rowIdx + 2,
+      });
+    }
+  }
+
+  return entries;
+}
+
+function buildExcelNameCandidates(entry) {
+  const seen = new Set();
+  const candidates = [];
+  const add = (text, source) => {
+    const raw = cleanExcelName(text);
+    if (!raw) return;
+    for (const variant of [
+      raw,
+      collapseRepeatedLeadingToken(raw),
+      stripTrailingVolumeLabel(raw),
+      stripTrailingVolumeLabel(collapseRepeatedLeadingToken(raw)),
+      ...filenameSafeVariants(raw),
+      cleanFilenameStem(raw),
+      stripSizeAndSampleSuffixes(raw),
+    ]) {
+      const cleaned = cleanFilenameStem(variant);
+      const norm = normalizeKey(cleaned);
+      if (!norm || seen.has(`${source}:${norm}`)) continue;
+      seen.add(`${source}:${norm}`);
+      candidates.push({ raw: variant, cleaned, norm, source });
+    }
+  };
+
+  add(entry.englishName, "excel-en");
+  if (entry.koreanName) add(entry.koreanName, "excel-kr");
+  add(`${entry.brand} ${entry.englishName}`, "excel-brand-en");
+  if (entry.barcode) {
+    candidates.push({
+      raw: entry.barcode,
+      cleaned: entry.barcode,
+      norm: entry.barcode,
+      source: "excel-barcode",
+    });
+  }
+  return candidates;
+}
+
+function findDbProductForExcelEntry(entry, lookups) {
+  const { bySku, byBarcode, byName, byBrandName, tokenIndex } = lookups;
+
+  if (entry.barcode) {
+    for (const map of [byBarcode, bySku]) {
+      for (const key of [entry.barcode, normalizeKey(entry.barcode)]) {
+        if (key && map.has(key)) {
+          const product = map.get(key);
+          if (brandsCompatible(entry.sheet, product.brand)) {
+            return { product, method: "excel-barcode", score: 1, matchedKey: key };
+          }
+        }
+      }
+    }
+  }
+
+  const candidates = buildExcelNameCandidates(entry);
+  let best = null;
+
+  for (const candidate of candidates) {
+    const match = scoreCandidateAgainstProducts(candidate, lookups);
+    if (!match?.product) continue;
+    if (!brandsCompatible(entry.sheet, match.product.brand)) continue;
+    const boosted = { ...match, score: match.score + (candidate.source.startsWith("excel-en") ? 0.01 : 0) };
+    if (!best || boosted.score > best.score) best = boosted;
+  }
+
+  if (best && best.score >= 0.62) return best;
+
+  const englishNorm = normalizeKey(cleanFilenameStem(entry.englishName));
+  if (englishNorm && byName.has(englishNorm)) {
+    const matches = byName.get(englishNorm).filter((p) => brandsCompatible(entry.sheet, p.brand));
+    if (matches.length === 1) {
+      return {
+        product: matches[0],
+        method: "excel-exact-name",
+        score: 0.99,
+        matchedKey: englishNorm,
+      };
+    }
+    if (matches.length > 1) {
+      return {
+        product: resolveAmbiguous(matches, englishNorm, entry.englishName),
+        method: "excel-exact-name-ambiguous",
+        score: 0.98,
+        matchedKey: englishNorm,
+      };
+    }
+  }
+
+  const brandNameNorm = normalizeKey(cleanFilenameStem(`${entry.brand} ${entry.englishName}`));
+  if (brandNameNorm && byBrandName.has(brandNameNorm)) {
+    const matches = byBrandName
+      .get(brandNameNorm)
+      .filter((p) => brandsCompatible(entry.sheet, p.brand));
+    if (matches.length >= 1) {
+      return {
+        product: resolveAmbiguous(matches, brandNameNorm, `${entry.brand} ${entry.englishName}`),
+        method: "excel-exact-brand-name",
+        score: 0.985,
+        matchedKey: brandNameNorm,
+      };
+    }
+  }
+
+  return best;
+}
+
+function scoreImageAgainstNameNorm(imageNorm, nameNorm, brand) {
+  if (!imageNorm || !nameNorm) return 0;
+  if (imageNorm === nameNorm) return 0.99;
+  if (imageNorm.includes(nameNorm) || nameNorm.includes(imageNorm)) {
+    const shorter = Math.min(imageNorm.length, nameNorm.length);
+    const longer = Math.max(imageNorm.length, nameNorm.length);
+    return (shorter / longer) * 0.97;
+  }
+  let score = tokenOverlapScore(nameNorm, imageNorm);
+  const brandKey = normalizeKey(brand);
+  if (brandKey && imageNorm.includes(brandKey)) score += 0.03;
+  if (score < 0.72) {
+    const ratio = levenshteinRatio(nameNorm, imageNorm);
+    if (ratio >= 0.82) score = Math.max(score, ratio * 0.96);
+  }
+  return score;
+}
+
+function buildImageLookups(allImages, imagesDir) {
+  const byNorm = new Map();
+  const entries = [];
+  const tokenIndex = new Map();
+
+  const indexTokens = (norm, imageEntry, source) => {
+    const tokens = norm.match(/[a-z0-9가-힣]{2,}/g) ?? [];
+    for (const token of tokens) {
+      if (!tokenIndex.has(token)) tokenIndex.set(token, []);
+      tokenIndex.get(token).push({ norm, imageEntry, source });
+    }
+  };
+
+  for (const imageEntry of allImages) {
+    for (const candidate of buildMatchCandidates(imageEntry, imagesDir)) {
+      if (!candidate.norm) continue;
+      if (!byNorm.has(candidate.norm)) byNorm.set(candidate.norm, []);
+      byNorm.get(candidate.norm).push({ imageEntry, candidate });
+      entries.push({ norm: candidate.norm, imageEntry, candidate });
+      indexTokens(candidate.norm, imageEntry, candidate.source);
+    }
+  }
+
+  return { byNorm, entries, tokenIndex };
+}
+
+function getImageFuzzyCandidates(norm, tokenIndex) {
+  const tokens = norm.match(/[a-z0-9가-힣]{2,}/g) ?? [];
+  if (!tokens.length) return [];
+  const seen = new Set();
+  const items = [];
+  for (const token of tokens) {
+    for (const item of tokenIndex.get(token) ?? []) {
+      const key = `${item.imageEntry.full}:${item.norm}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push(item);
+    }
+  }
+  return items;
+}
+
+function findImageForExcelEntry(entry, imageLookups, imagesDir) {
+  const { byNorm, tokenIndex } = imageLookups;
+  const nameCandidates = buildExcelNameCandidates(entry);
+  let best = null;
+
+  for (const nameCandidate of nameCandidates) {
+    if (nameCandidate.source === "excel-barcode") {
+      for (const key of [nameCandidate.norm, nameCandidate.raw]) {
+        for (const hit of byNorm.get(key) ?? []) {
+          const score = 1;
+          if (!best || score > best.score) {
+            best = {
+              imageEntry: hit.imageEntry,
+              method: "excel-barcode-filename",
+              score,
+              matchedKey: key,
+            };
+          }
+        }
+      }
+      continue;
+    }
+
+    const exactHits = byNorm.get(nameCandidate.norm) ?? [];
+    for (const hit of exactHits) {
+      const score = 0.99;
+      if (!best || score > best.score) {
+        best = {
+          imageEntry: hit.imageEntry,
+          method: "excel-exact-filename",
+          score,
+          matchedKey: nameCandidate.norm,
+          nameSource: nameCandidate.source,
+        };
+      }
+    }
+
+    const fuzzyItems = getImageFuzzyCandidates(nameCandidate.norm, tokenIndex);
+    for (const item of fuzzyItems) {
+      const score = scoreImageAgainstNameNorm(item.norm, nameCandidate.norm, entry.brand);
+      if (score >= 0.62 && (!best || score > best.score)) {
+        best = {
+          imageEntry: item.imageEntry,
+          method: "excel-name-to-file",
+          score,
+          matchedKey: `${nameCandidate.norm}~${item.norm}`,
+          nameSource: nameCandidate.source,
+        };
+      }
+    }
+  }
+
+  return best;
+}
+
+async function runExcelDrivenUpload({
+  excelPath,
+  imagesDir,
+  dryRun,
+  overwrite,
+  supabase,
+  products,
+  lookups,
+  allImages,
+}) {
+  const excelEntries = parseBrandPriorityExcel(excelPath);
+  const imageLookups = buildImageLookups(allImages, imagesDir);
+  const report = {
+    mode: "excel",
+    dryRun,
+    overwrite,
+    excelPath,
+    imagesDir,
+    excelRows: excelEntries.length,
+    productCount: products.length,
+    totalImageFiles: allImages.length,
+    matchedDb: 0,
+    matchedImage: 0,
+    selectedForUpload: 0,
+    uploaded: 0,
+    skippedHasImage: 0,
+    skippedNoDb: 0,
+    skippedNoImage: 0,
+    skippedDuplicate: 0,
+    invalidImage: [],
+    uploadErrors: [],
+    updatedProducts: [],
+    noDbProduct: [],
+    noImageFile: [],
+    matchMethods: {},
+  };
+
+  const planned = [];
+
+  console.error(
+    `Excel mode: ${excelEntries.length} rows from ${excelPath}, ${allImages.length} local images, ${products.length} DB products`,
+  );
+
+  for (const entry of excelEntries) {
+    const dbMatch = findDbProductForExcelEntry(entry, lookups);
+    if (!dbMatch?.product) {
+      report.skippedNoDb += 1;
+      report.noDbProduct.push({
+        sheet: entry.sheet,
+        brand: entry.brand,
+        englishName: entry.englishName,
+        barcode: entry.barcode,
+        rowNumber: entry.rowNumber,
+      });
+      continue;
+    }
+    report.matchedDb += 1;
+
+    const imageMatch = findImageForExcelEntry(entry, imageLookups, imagesDir);
+    if (!imageMatch?.imageEntry) {
+      report.skippedNoImage += 1;
+      report.noImageFile.push({
+        sheet: entry.sheet,
+        brand: entry.brand,
+        englishName: entry.englishName,
+        productSku: dbMatch.product.sku,
+        productName: dbMatch.product.name,
+        rowNumber: entry.rowNumber,
+      });
+      continue;
+    }
+    report.matchedImage += 1;
+
+    planned.push({ entry, dbMatch, imageMatch });
+  }
+
+  const bestByProduct = new Map();
+  for (const item of planned) {
+    const productId = item.dbMatch.product.id;
+    const existing = bestByProduct.get(productId);
+    if (!existing) {
+      bestByProduct.set(productId, item);
+      continue;
+    }
+    report.skippedDuplicate += 1;
+    const better =
+      item.imageMatch.score > existing.imageMatch.score ||
+      (item.imageMatch.score === existing.imageMatch.score &&
+        fileQuality(item.imageMatch.imageEntry) > fileQuality(existing.imageMatch.imageEntry))
+        ? item
+        : existing;
+    bestByProduct.set(productId, better);
+  }
+
+  report.selectedForUpload = bestByProduct.size;
+  console.error(
+    `Excel match summary: db=${report.matchedDb}, image=${report.matchedImage}, upload candidates=${report.selectedForUpload}, noDb=${report.skippedNoDb}, noImage=${report.skippedNoImage}`,
+  );
+
+  let uploadProgress = 0;
+  for (const { entry, dbMatch, imageMatch } of bestByProduct.values()) {
+    const product = dbMatch.product;
+    const imageEntry = imageMatch.imageEntry;
+    report.matchMethods[dbMatch.method] = (report.matchMethods[dbMatch.method] ?? 0) + 1;
+
+    const hadImage = hasRealImageUrl(product.image_url);
+    if (!overwrite && hadImage) {
+      report.skippedHasImage += 1;
+      continue;
+    }
+
+    if (dryRun) {
+      report.updatedProducts.push({
+        sheet: entry.sheet,
+        sku: product.sku,
+        name: product.name,
+        excelName: entry.englishName,
+        file: imageEntry.relativePath,
+        dbMethod: dbMatch.method,
+        imageMethod: imageMatch.method,
+        score: imageMatch.score,
+        wouldOverwrite: hadImage,
+      });
+      continue;
+    }
+
+    const rawBuffer = fs.readFileSync(imageEntry.full);
+    const mimeType = detectMimeType(rawBuffer);
+    if (!mimeType) {
+      report.invalidImage.push({ file: imageEntry.relativePath, reason: "unknown mime" });
+      continue;
+    }
+
+    let buffer;
+    try {
+      buffer = await normalizeProductImageBuffer(rawBuffer);
+    } catch {
+      report.invalidImage.push({ file: imageEntry.relativePath, reason: "normalize failed" });
+      continue;
+    }
+
+    const storagePath = `${sanitizeStorageKey(product.sku || product.barcode || product.id)}.jpg`;
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(storagePath, buffer, { contentType: "image/jpeg", upsert: true });
+
+    if (uploadError) {
+      report.uploadErrors.push({
+        sku: product.sku,
+        name: product.name,
+        file: imageEntry.relativePath,
+        error: uploadError.message,
+      });
+      continue;
+    }
+
+    const { data: publicData } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
+    const publicUrl = publicData.publicUrl?.trim();
+    if (!publicUrl) {
+      report.uploadErrors.push({
+        sku: product.sku,
+        name: product.name,
+        file: imageEntry.relativePath,
+        error: "public URL missing",
+      });
+      continue;
+    }
+
+    try {
+      await updateProductImage(supabase, product, publicUrl);
+      report.uploaded += 1;
+      report.updatedProducts.push({
+        sheet: entry.sheet,
+        sku: product.sku,
+        name: product.name,
+        excelName: entry.englishName,
+        file: imageEntry.relativePath,
+        dbMethod: dbMatch.method,
+        imageMethod: imageMatch.method,
+        score: imageMatch.score,
+        image_url: publicUrl,
+        overwritten: hadImage,
+      });
+      uploadProgress += 1;
+      if (uploadProgress % 50 === 0) {
+        console.error(`  uploaded ${uploadProgress}/${report.selectedForUpload}`);
+      }
+    } catch (err) {
+      report.uploadErrors.push({
+        sku: product.sku,
+        name: product.name,
+        file: imageEntry.relativePath,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  ensureLogsDir();
+  const reportPath = path.join(LOGS_DIR, "upload-excel-images.log");
+  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+
+  if (!dryRun && report.uploaded > 0) {
+    await triggerStorefrontRevalidation();
+  }
+
+  console.log(
+    JSON.stringify(
+      {
+        mode: report.mode,
+        dryRun: report.dryRun,
+        excelPath: report.excelPath,
+        imagesDir: report.imagesDir,
+        excelRows: report.excelRows,
+        matchedDb: report.matchedDb,
+        matchedImage: report.matchedImage,
+        selectedForUpload: report.selectedForUpload,
+        uploaded: report.uploaded,
+        skippedHasImage: report.skippedHasImage,
+        skippedNoDb: report.skippedNoDb,
+        skippedNoImage: report.skippedNoImage,
+        skippedDuplicate: report.skippedDuplicate,
+        invalidImageCount: report.invalidImage.length,
+        uploadErrorCount: report.uploadErrors.length,
+        matchMethods: report.matchMethods,
+        noDbSample: report.noDbProduct.slice(0, 20),
+        noImageSample: report.noImageFile.slice(0, 20),
+        uploadErrors: report.uploadErrors.slice(0, 20),
+        sampleUpdated: report.updatedProducts.slice(0, 20),
+        reportPath,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 async function main() {
-  const { dryRun, overwrite, auditOnly, imagesDir } = parseCliArgs(process.argv.slice(2));
+  const { dryRun, overwrite, auditOnly, imagesDir, excelPath } = parseCliArgs(process.argv.slice(2));
   if (!imagesDir) {
     console.error(
-      "Usage: node scripts/upload-folder-images-by-name.mjs --dir <folder> [--dry-run] [--overwrite] [--audit]",
+      "Usage: node scripts/upload-folder-images-by-name.mjs --dir <folder> [--excel <file.xlsx>] [--dry-run] [--overwrite] [--audit]",
     );
     process.exit(1);
   }
   if (!fs.existsSync(imagesDir)) {
     console.error(`Folder not found: ${imagesDir}`);
+    process.exit(1);
+  }
+  if (excelPath && !fs.existsSync(excelPath)) {
+    console.error(`Excel file not found: ${excelPath}`);
     process.exit(1);
   }
 
@@ -773,6 +1564,20 @@ async function main() {
   const allImages = collectLocalImages(imagesDir);
   const products = await fetchAllProducts(supabase);
   const lookups = buildProductLookups(products);
+
+  if (excelPath) {
+    await runExcelDrivenUpload({
+      excelPath,
+      imagesDir,
+      dryRun,
+      overwrite,
+      supabase,
+      products,
+      lookups,
+      allImages,
+    });
+    return;
+  }
 
   const report = {
     dryRun,

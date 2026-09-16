@@ -506,13 +506,13 @@ function validateQuantity(
   if (!Number.isFinite(quantity) || quantity < 1) {
     return { errorCode: "invalid_quantity" };
   }
-  if (product.sold_out || product.stock <= 0) {
+  if (product.sold_out) {
     return { errorCode: "out_of_stock" };
   }
   if (quantity < product.moq) {
     return { errorCode: "moq_not_met", errorParams: { moq: product.moq } };
   }
-  if (quantity > product.stock) {
+  if (product.stock > 0 && quantity > product.stock) {
     return { errorCode: "insufficient_stock", errorParams: { stock: product.stock } };
   }
   return null;

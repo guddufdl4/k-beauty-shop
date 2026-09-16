@@ -7,7 +7,6 @@ import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import {
   getProductPriceColumns,
-  isProductSoldOut,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
 import { formatLocaleProductPrice } from "@/lib/utils";
@@ -231,7 +230,6 @@ export function ProductAdminDetailPanel({
     }
   };
 
-  const inStock = !isProductSoldOut(product);
   const priceColumns = getProductPriceColumns({
     price: product.price,
     wholesale_price: product.wholesale_price,
@@ -521,8 +519,12 @@ export function ProductAdminDetailPanel({
                 </div>
                 <div className="min-w-0">
                   <dt className="text-zinc-500">{t("stock")}</dt>
-                  <dd className={`font-semibold ${inStock ? "text-emerald-600" : "text-red-600"}`}>
-                    {inStock ? t("inStock", { count: product.stock }) : t("outOfStock")}
+                  <dd className={`font-semibold ${product.sold_out ? "text-red-600" : "text-emerald-600"}`}>
+                    {product.sold_out
+                      ? t("outOfStock")
+                      : product.stock > 0
+                        ? t("inStock", { count: product.stock })
+                        : "—"}
                   </dd>
                 </div>
                 <div className="min-w-0">

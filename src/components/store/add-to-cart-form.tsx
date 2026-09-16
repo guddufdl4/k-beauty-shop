@@ -23,7 +23,7 @@ export function AddToCartForm({ productId, moq, stock, soldOut = false, disabled
   const [state, formAction, pending] = useActionState(addToCart, initialState);
   const unavailable = isProductSoldOut({ sold_out: soldOut, stock });
   const safeMoq = Math.max(1, moq);
-  const maxQuantity = stock > 0 ? stock : safeMoq;
+  const maxQuantity = stock > 0 ? stock : 9999;
 
   return (
     <form action={formAction} className="mt-6 space-y-3">

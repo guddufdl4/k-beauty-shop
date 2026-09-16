@@ -21,7 +21,9 @@ import {
   type StorefrontAudience,
   type StorefrontProduct,
 } from "@/lib/store/product-visibility";
+import { sanitizeProductName } from "@/lib/store/product-copy";
 import { filterStorefrontCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
+import { interleaveByBrand } from "@/lib/store/brand-diversity";
 import {
   buildBrandCatalog,
   isProductOnSale,
@@ -142,6 +144,8 @@ export type FetchMeta = {
   source: DataSource;
   configured: boolean;
   error?: string;
+  /** False when the head count query failed but row results may still be valid. */
+  countAvailable?: boolean;
 };
 
 const STATIC_CATEGORIES: Category[] = [
@@ -559,7 +563,9 @@ export async function fetchExactCount(
   table: string,
   applyFilters?: (query: HeadCountQuery) => HeadCountQuery,
 ): Promise<{ count: number; error: string | null }> {
-  let query: HeadCountQuery = supabase.from(table).select("*", { count: "exact", head: true });
+  // Anon RLS grants column-scoped SELECT only (see 013_product_price_column_grants.sql).
+  // head + select("*") returns count=null without error; use a public column instead.
+  let query: HeadCountQuery = supabase.from(table).select("id", { count: "exact", head: true });
   if (applyFilters) {
     query = applyFilters(query);
   }
@@ -569,7 +575,11 @@ export async function fetchExactCount(
     return { count: 0, error: error.message };
   }
 
-  return { count: count ?? 0, error: null };
+  if (count == null) {
+    return { count: 0, error: "missing count" };
+  }
+
+  return { count, error: null };
 }
 
 function escapeIlikePattern(value: string): string {
@@ -606,7 +616,7 @@ function mapProduct(row: Record<string, unknown>): Product {
   return {
     id: String(row.id),
     category_id: row.category_id ? String(row.category_id) : null,
-    name: String(row.name),
+    name: sanitizeProductName(String(row.name)),
     slug: String(row.slug),
     description: row.description ? String(row.description) : null,
     short_description: row.short_description
@@ -1315,13 +1325,23 @@ export async function getProducts(
     }
 
     if (requireRealImage) {
-      filtered = (
-        includePriceColumns
-          ? filtered.eq("needs_image", false)
-          : (filtered as typeof filtered & {
-              not: (column: string, operator: string, value: null) => typeof filtered;
-            }).not("image_url", "is", null)
-      ) as typeof filtered;
+      if (includePriceColumns) {
+        filtered = filtered.eq("needs_image", false);
+      } else {
+        const guestImageFilter = filtered as typeof filtered & {
+          not: (
+            column: string,
+            operator: string,
+            value: string | null,
+          ) => typeof filtered;
+        };
+        filtered = guestImageFilter.not("image_url", "is", null) as typeof filtered;
+        filtered = guestImageFilter.not(
+          "image_url",
+          "like",
+          "/images/categories/%",
+        ) as typeof filtered;
+      }
     }
 
     if (needsImageOnly && includePriceColumns) {
@@ -1348,6 +1368,8 @@ export async function getProducts(
   };
 
   let totalCount = 0;
+  let countAvailable = true;
+  let countErrorMessage: string | undefined;
 
   if (listLimit != null) {
     const { count, error: countError } = await fetchExactCount(
@@ -1362,13 +1384,12 @@ export async function getProducts(
         return getProducts(categoryOrOptions);
       }
 
-      return {
-        ...staticProductsResult(),
-        meta: { source: "static", configured: true, error: countError },
-      };
+      countAvailable = false;
+      countErrorMessage = countError;
+      console.error("[getProducts] product count unavailable:", countError);
+    } else {
+      totalCount = count;
     }
-
-    totalCount = count;
 
     let query = supabase.from("products").select(productSelect);
     query = applyProductFilters(query, true) as typeof query;
@@ -1403,7 +1424,12 @@ export async function getProducts(
     return {
       products: finalizeStorefrontProductList(products, audience, privileged),
       totalCount,
-      meta: { source: "database", configured: true },
+      meta: {
+        source: "database",
+        configured: true,
+        countAvailable,
+        ...(countErrorMessage ? { error: countErrorMessage } : {}),
+      },
     };
   }
 
@@ -1724,8 +1750,9 @@ function finalizeHomepageProducts(
   products: ProductWithRelations[],
   limit: number,
 ): ProductWithRelations[] {
-  return sortHomepagePriorityProducts(
-    products.filter((product) => productHasRealImage(product)),
+  return interleaveByBrand(
+    sortHomepagePriorityProducts(products.filter((product) => productHasRealImage(product))),
+    2,
   ).slice(0, limit);
 }
 
@@ -1793,7 +1820,7 @@ export function selectDiverseTrendingProducts(
       }
     }
 
-    return picked.slice(0, limit);
+    return interleaveByBrand(picked, 2).slice(0, limit);
   }
 
   const picked: StorefrontProduct[] = [];
@@ -1812,17 +1839,11 @@ export function selectDiverseTrendingProducts(
     }
   }
 
-  for (const product of [...visible].sort(compareBestSellers)) {
-    if (picked.length >= limit) {
-      break;
-    }
-    if (!usedIds.has(product.id)) {
-      picked.push(product);
-      usedIds.add(product.id);
-    }
-  }
+  const remainder = [...visible]
+    .sort(compareBestSellers)
+    .filter((product) => !usedIds.has(product.id));
 
-  return picked.slice(0, limit);
+  return [...picked, ...interleaveByBrand(remainder, 2)].slice(0, limit);
 }
 
 function compareBestSellers(a: StorefrontProduct, b: StorefrontProduct): number {
@@ -1888,7 +1909,7 @@ export function selectTrendingCategoryProducts(
     const navSlug = resolveNavCategorySlugForProduct(product, categories, navCategories);
     return navSlug === categorySlug;
   });
-  return [...filtered].sort(compareBestSellers).slice(0, limit);
+  return interleaveByBrand([...filtered].sort(compareBestSellers), 2).slice(0, limit);
 }
 
 function quoteInFilterValues(values: string[]): string {
@@ -2374,6 +2395,70 @@ export async function getProductBrands(): Promise<{
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_BRANDS_CACHE_TAG, STOREFRONT_PRODUCTS_CACHE_TAG],
+    },
+  )();
+}
+
+export type PublicProductSitemapRow = {
+  slug: string;
+  updated_at: string;
+};
+
+const SITEMAP_PRODUCT_LIMIT = 8000;
+
+export async function getPublicProductSitemapRows(): Promise<PublicProductSitemapRow[]> {
+  return unstable_cache(
+    async () => {
+      if (!isSupabaseConfigured()) {
+        return [];
+      }
+
+      const supabase = createPublicClient();
+      if (!supabase) {
+        return [];
+      }
+
+      await ensureSoftDeleteColumnProbed(supabase);
+
+      const { data, error } = await fetchAllPages<{ slug: string; updated_at: string }>(
+        async (from, to) => {
+          let query = supabase
+            .from("products")
+            .select("slug, updated_at")
+            .eq("status", "active")
+            .not("image_url", "is", null)
+            .not("image_url", "like", "/images/categories/%")
+            .order("updated_at", { ascending: false })
+            .range(from, to);
+
+          if (isSoftDeleteColumnAvailable()) {
+            query = query.is("deleted_at", null);
+          }
+
+          const result = await query;
+          return {
+            data: (result.data ?? []) as { slug: string; updated_at: string }[],
+            error: result.error,
+          };
+        },
+      );
+
+      if (error) {
+        return [];
+      }
+
+      return data
+        .filter((row) => row.slug?.trim())
+        .slice(0, SITEMAP_PRODUCT_LIMIT)
+        .map((row) => ({
+          slug: row.slug.trim(),
+          updated_at: row.updated_at,
+        }));
+    },
+    ["storefront-product-sitemap-rows"],
+    {
+      revalidate: CACHE_REVALIDATE_SECONDS,
+      tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
     },
   )();
 }

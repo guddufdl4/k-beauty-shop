@@ -6,8 +6,21 @@ function normalizeComparable(value: string): string {
     .replace(/\s+/g, " ");
 }
 
+/** Strip characters that break Windows filenames and image matching (; | : * ? " < > \ /). */
+export function sanitizeProductName(name: string): string {
+  return String(name ?? "")
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, " ")
+    .replace(/\uFFFD/g, "")
+    .replace(/[;；|｜*?"<>\\/／:：]+/g, " ")
+    .replace(/_{2,}/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^[-_,.]+|[-_,.]+$/g, "")
+    .trim();
+}
+
 export function collapseRepeatedBrandPrefix(name: string, brand?: string | null): string {
-  let result = String(name ?? "").replace(/\s+/g, " ").trim();
+  let result = sanitizeProductName(name);
   if (!result) {
     return result;
   }

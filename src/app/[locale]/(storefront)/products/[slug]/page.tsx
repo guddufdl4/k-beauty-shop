@@ -13,7 +13,6 @@ import {
 } from "@/lib/product-images";
 import {
   getProductPriceColumns,
-  isProductSoldOut,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
 import { getDisplayBrandName } from "@/lib/store/products-url";
@@ -79,7 +78,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
   const displayImageUrl = resolveProductImageUrl(product);
   const isPlaceholder = isCategoryPlaceholderUrl(displayImageUrl);
-  const inStock = !isProductSoldOut(product);
   const wholesaleLabel = siteSettings.wholesale_price_label || t("wholesalePrice");
   const moqLabel = siteSettings.moq_label || t("moq");
   const priceColumns = isPricedStorefrontProduct(product)
@@ -219,9 +217,15 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   </div>
                   <div className="min-w-0">
                     <dt className="text-zinc-500">{t("stock")}</dt>
-                    <dd className={`font-semibold ${inStock ? "text-emerald-600" : "text-red-600"}`}>
+                    <dd className={`font-semibold ${product.sold_out ? "text-red-600" : "text-emerald-600"}`}>
                       {canViewPrices && isPricedStorefrontProduct(product) ? (
-                        inStock ? t("inStock", { count: product.stock }) : t("outOfStock")
+                        product.sold_out ? (
+                          t("outOfStock")
+                        ) : product.stock > 0 ? (
+                          t("inStock", { count: product.stock })
+                        ) : (
+                          <span className="text-zinc-600">—</span>
+                        )
                       ) : product.sold_out ? (
                         t("outOfStock")
                       ) : (

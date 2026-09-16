@@ -67,6 +67,7 @@ type ProductPayload = {
   short_description: string | null;
   image_url: string | null;
   price: number;
+  wholesale_price: number | null;
   compare_at_price?: number | null;
   moq: number;
   stock: number;
@@ -456,6 +457,7 @@ export async function POST(request: Request) {
       short_description: volume,
       image_url,
       price: resolvedPrice,
+      wholesale_price: resolvedPrice,
       compare_at_price: parseImportPrice(msrp),
       moq,
       stock,
