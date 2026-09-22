@@ -11,6 +11,9 @@ export function storefrontHref(path: string = ""): string {
   return `/${routing.defaultLocale}${suffix}`;
 }
 
+/** Default hero wholesale-inquiry CTA. */
+export const DEFAULT_WHOLESALE_INQUIRY_HREF = "/wholesale-inquiry";
+
 /** Default hero ordering-guide CTA. */
 export const DEFAULT_ORDER_GUIDE_HREF = "/order-guide";
 
