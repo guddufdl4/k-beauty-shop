@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { formatProductDisplayName } from "@/lib/store/product-copy";
 
 type Props = {
   name: string;
@@ -11,8 +12,7 @@ type Props = {
 };
 
 export function formatProductCopyName(name: string, brand?: string | null): string {
-  const trimmedBrand = brand?.trim();
-  return trimmedBrand ? `${trimmedBrand} ${name}` : name;
+  return formatProductDisplayName(name, brand);
 }
 
 export function ProductNameWithCopy({
@@ -24,7 +24,6 @@ export function ProductNameWithCopy({
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copyText = formatProductCopyName(name, brand);
-  const trimmedBrand = brand?.trim();
 
   const handleCopy = useCallback(
     async (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -69,14 +68,7 @@ export function ProductNameWithCopy({
           className ?? textClassName,
         )}
       >
-        {trimmedBrand ? (
-          <>
-            <span className="font-normal">{trimmedBrand} </span>
-            <span className="font-medium">{name}</span>
-          </>
-        ) : (
-          name
-        )}
+        {copyText}
       </button>
 
       {toastVisible ? (

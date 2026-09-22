@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { slugify } from "@/lib/utils";
 import { resolveHanmiCategory } from "@/lib/admin/hanmi-category-map";
+import { collapseRepeatedBrandPrefix } from "@/lib/store/product-copy";
 
 export type ImportField =
   | "name"
@@ -39,6 +40,8 @@ const HEADER_ALIASES: Record<ImportField, string[]> = {
     "wholesaleprice",
     "whlolesaleprice",
     "wholesale",
+    "supplyprice",
+    "공급가",
     "도매가",
   ],
   moq: [
@@ -63,7 +66,17 @@ const HEADER_ALIASES: Record<ImportField, string[]> = {
     "박스수량",
   ],
   stock: ["qty", "quantity", "stock", "재고", "재고수량"],
-  barcode: ["barcode", "eabarcode", "boxbarcode", "바코드", "ean", "upc"],
+  barcode: [
+    "barcode",
+    "barcdoes",
+    "barcodes",
+    "barcdode",
+    "eabarcode",
+    "boxbarcode",
+    "바코드",
+    "ean",
+    "upc",
+  ],
   category: ["category", "classification", "카테고리", "분류"],
   description: ["desc", "상세설명", "설명"],
   image_url: ["image", "imageurl", "대표이미지", "이미지"],
@@ -119,9 +132,44 @@ function normalizeHeader(input: string): string {
   return input.toLowerCase().replace(/[\s_\-/()[\].\r\n]+/g, "");
 }
 
+function coerceScientificBarcode(input: string): string | null {
+  const trimmed = input.trim();
+  if (!/[eE][+-]?\d+$/.test(trimmed)) {
+    return null;
+  }
+  const numeric = Number(trimmed);
+  if (!Number.isFinite(numeric) || numeric < 10_000_000) {
+    return null;
+  }
+  const rounded = String(Math.round(numeric));
+  return rounded.length >= 8 && rounded.length <= 14 ? rounded : null;
+}
+
 function normalizeBarcode(input: string): string | null {
-  const digits = input.replace(/\D/g, "");
-  return digits.length >= 8 ? digits : null;
+  const scientific = coerceScientificBarcode(String(input ?? ""));
+  if (scientific) {
+    return scientific;
+  }
+
+  const digits = String(input ?? "").replace(/\D/g, "");
+  if (digits.length < 8) {
+    return null;
+  }
+  if (digits.length <= 14) {
+    return digits;
+  }
+
+  const koreanEan = digits.match(/88\d{11}/);
+  if (koreanEan) {
+    return koreanEan[0];
+  }
+
+  if (digits.length % 13 === 0) {
+    return digits.slice(0, 13);
+  }
+
+  const any13 = digits.match(/\d{13}/);
+  return any13 ? any13[0] : digits.slice(0, 13);
 }
 
 export function parseNumber(input: unknown): number | null {
@@ -142,6 +190,56 @@ export function parseNumber(input: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+const DEFAULT_IMPORT_USD_KRW_RATE = 1300;
+let importUsdKrwRate = DEFAULT_IMPORT_USD_KRW_RATE;
+
+function looksLikeUsdPrice(raw: string): boolean {
+  return /(?:us\s*\$|usd|\$)/i.test(raw) && !/(?:₩|krw|원)/i.test(raw);
+}
+
+function looksLikeKrwPrice(raw: string): boolean {
+  return /(?:₩|krw|원)/i.test(raw);
+}
+
+/** Convert Excel money cells to KRW. US$ list prices use the import FX rate. */
+export function parseMoneyToKrw(
+  input: unknown,
+  usdKrwRate = importUsdKrwRate,
+): number | null {
+  if (typeof input === "number" && Number.isFinite(input)) {
+    if (input <= 0) {
+      return null;
+    }
+    // Bare USD-looking amounts (e.g. 40) stay as KRW only when they are wholesale-scale.
+    return Math.round(input);
+  }
+
+  if (typeof input !== "string") {
+    return null;
+  }
+
+  const raw = input.trim();
+  if (!raw) {
+    return null;
+  }
+
+  const amount = parseNumber(raw);
+  if (amount == null || amount <= 0) {
+    return null;
+  }
+
+  const rate =
+    Number.isFinite(usdKrwRate) && usdKrwRate > 0
+      ? usdKrwRate
+      : DEFAULT_IMPORT_USD_KRW_RATE;
+
+  if (looksLikeUsdPrice(raw)) {
+    return Math.round(amount * rate);
+  }
+
+  return Math.round(amount);
+}
+
 /** Valid wholesale price only; missing/zero/negative returns null (never a fake 1 won). */
 export function parseImportPrice(price: number | null | undefined): number | null {
   if (price == null || !Number.isFinite(price)) {
@@ -157,6 +255,15 @@ function scoreParsedRow(row: ParsedHanmiRow): number {
   if (row.price != null && row.price > 0) {
     score += 4;
   }
+  if (row.price != null && row.price >= 200) {
+    score += 3;
+  }
+  if (row.msrp != null && row.msrp >= 200) {
+    score += 2;
+  }
+  if ((row.moq ?? 1) > 1) {
+    score += 4;
+  }
   if (row.image_url) {
     score += 2;
   }
@@ -166,7 +273,25 @@ function scoreParsedRow(row: ParsedHanmiRow): number {
   if (row.barcode) {
     score += 1;
   }
+  if (!isPlaceholderProductName(row.name, row.brand, row.sku, row.barcode)) {
+    score += 5;
+  }
+  score += medicubeSheetRank(row.sourceSheet);
   return score;
+}
+
+function medicubeSheetRank(sheetName: string): number {
+  const normalized = normalizeHeader(sheetName);
+  if (normalized === "medicube") {
+    return 12;
+  }
+  if (normalized === "medicubexx") {
+    return 8;
+  }
+  if (normalized === "medicubex") {
+    return 2;
+  }
+  return 0;
 }
 
 function pickBetterParsedRow(
@@ -175,7 +300,7 @@ function pickBetterParsedRow(
 ): ParsedHanmiRow {
   const currentScore = scoreParsedRow(current);
   const candidateScore = scoreParsedRow(candidate);
-  if (candidateScore >= currentScore) {
+  if (candidateScore > currentScore) {
     return candidate;
   }
   return current;
@@ -258,6 +383,14 @@ function isWholesalePriceHeader(normalized: string): boolean {
   }
 
   if (
+    (normalized.includes("supply") || normalized.includes("공급")) &&
+    !normalized.includes("rate") &&
+    !normalized.includes("율")
+  ) {
+    return true;
+  }
+
+  if (
     normalized.includes("wholesale") ||
     normalized.includes("whlolesale") ||
     normalized.includes("fob") ||
@@ -275,14 +408,20 @@ function wholesalePriceHeaderPriority(header: string): number {
   if (normalized === "price") {
     return 0;
   }
-  if (normalized.includes("wholesale") || normalized.includes("whlolesale")) {
+  if (
+    (normalized.includes("supply") || normalized.includes("공급")) &&
+    !normalized.includes("rate")
+  ) {
     return 1;
   }
-  if (normalized.includes("fob")) {
+  if (normalized.includes("wholesale") || normalized.includes("whlolesale")) {
     return 2;
   }
-  if (normalized.includes("도매")) {
+  if (normalized.includes("fob")) {
     return 3;
+  }
+  if (normalized.includes("도매")) {
+    return 4;
   }
 
   return 9;
@@ -298,7 +437,7 @@ function getWholesalePriceValue(
   );
 
   for (const header of headers) {
-    const parsed = parseImportPrice(parseNumber(String(row[header] ?? "").trim()));
+    const parsed = parseImportPrice(parseMoneyToKrw(row[header]));
     if (parsed != null) {
       return parsed;
     }
@@ -317,7 +456,7 @@ function getMsrpValue(
       continue;
     }
 
-    const parsed = parseImportPrice(parseNumber(String(row[header] ?? "").trim()));
+    const parsed = parseImportPrice(parseMoneyToKrw(row[header]));
     if (parsed != null) {
       return parsed;
     }
@@ -482,6 +621,15 @@ function headerMatchesField(
     return isWholesalePriceHeader(normalized);
   }
 
+  if (field === "barcode") {
+    if (/boxbarcode|eabarcode/.test(normalized)) {
+      return true;
+    }
+    if (/^barc/.test(normalized) && !normalized.includes("inbox")) {
+      return true;
+    }
+  }
+
   return (
     normalized.includes(normalizedAlias) || normalizedAlias.includes(normalized)
   );
@@ -529,6 +677,61 @@ function getFieldValue(
   return getFieldValues(row, lookup[field])[0] ?? "";
 }
 
+function pickNormalizedBarcode(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return normalizeBarcode(String(Math.round(value)));
+  }
+  return normalizeBarcode(String(value ?? ""));
+}
+
+function pickBarcodeFromRecord(
+  record: Record<string, unknown>,
+  lookup: Record<ImportField, string[]>,
+): string | null {
+  for (const value of getFieldValues(record, lookup.barcode)) {
+    const normalized = pickNormalizedBarcode(value);
+    if (normalized && normalized.length <= 14) {
+      return normalized;
+    }
+  }
+
+  const skuNormalized = pickNormalizedBarcode(getFieldValue(record, lookup, "sku"));
+  if (skuNormalized && skuNormalized.length <= 14) {
+    return skuNormalized;
+  }
+
+  for (const [key, value] of Object.entries(record)) {
+    if (key.startsWith("__") || value == null) {
+      continue;
+    }
+    const normalized = pickNormalizedBarcode(value);
+    if (
+      normalized &&
+      normalized.startsWith("88") &&
+      normalized.length >= 12 &&
+      normalized.length <= 14
+    ) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+/** Read a unit barcode from a stored import row or raw Excel record. */
+export function extractBarcodeFromSourceRow(
+  record: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!record || typeof record !== "object") {
+    return null;
+  }
+  const headers = Object.keys(record).filter((key) => !key.startsWith("__"));
+  if (headers.length === 0) {
+    return null;
+  }
+  return pickBarcodeFromRecord(record, buildHeaderLookup(headers));
+}
+
 /** Read volume/capacity from a stored import row or raw Excel record. */
 export function extractVolumeFromSourceRow(
   record: Record<string, unknown>,
@@ -558,6 +761,188 @@ function isLatinProductName(text: string): boolean {
     return false;
   }
   return /[A-Za-z]/.test(trimmed);
+}
+
+/** Pull the English line out of Hanmi cells that mix Korean + English. */
+export function extractEnglishProductName(text: string): string | null {
+  const trimmed = String(text ?? "").trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const chunks = trimmed
+    .split(/[\r\n]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const latinChunks = chunks.filter((part) => isLatinProductName(part));
+  if (latinChunks.length > 0) {
+    return latinChunks.reduce((best, current) =>
+      current.length > best.length ? current : best,
+    );
+  }
+
+  if (containsHangul(trimmed)) {
+    const latinRuns = trimmed.match(/[A-Za-z][A-Za-z0-9][A-Za-z0-9 .,'&+/()%*®™-]{2,}/g);
+    if (latinRuns) {
+      const best = latinRuns
+        .map((part) => part.trim().replace(/[.,;:]+$/g, ""))
+        .filter((part) => isLatinProductName(part) && (part.split(/\s+/).length >= 2 || part.length >= 8))
+        .sort((a, b) => b.length - a.length)[0];
+      if (best) {
+        return best;
+      }
+    }
+  }
+
+  return isLatinProductName(trimmed) ? trimmed : null;
+}
+
+/** Hanmi often uses "English brand / Korean product" in one cell. */
+export function composeSlashSeparatedProductName(text: string): string | null {
+  const raw = String(text ?? "").replace(/\r\n/g, "\n").trim();
+  if (!raw.includes("/")) {
+    return extractEnglishProductName(raw);
+  }
+
+  const [leftRaw, ...rightParts] = raw.split("/");
+  const left = extractEnglishProductName(leftRaw) || leftRaw.replace(/\s+/g, " ").trim();
+  const right = rightParts
+    .join(" ")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (left && right && containsHangul(right)) {
+    return `${left.replace(/[/\s]+$/g, "")} ${right}`.trim();
+  }
+
+  if (right && isLatinProductName(right)) {
+    const prefix = left && isLatinProductName(left) ? `${left} ${right}` : right;
+    return prefix.replace(/\s+/g, " ").trim();
+  }
+
+  return extractEnglishProductName(raw);
+}
+
+export { collapseRepeatedBrandPrefix };
+
+export function compactVolumeText(value: string): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[\s*/()[\].,·•_:：-]+/g, "");
+}
+
+export function isCapacityOnlyLabel(volume: string | null | undefined): boolean {
+  const trimmed = String(volume ?? "").trim();
+  if (!trimmed || trimmed.length > 40) {
+    return false;
+  }
+  if (/^\d{6,}$/.test(trimmed.replace(/\D/g, "")) && !/[a-z가-힣]/i.test(trimmed)) {
+    return false;
+  }
+  if (
+    !/\d+(?:[.,]\d+)?\s*(ml|㎖|g|kg|oz|fl\.?\s*oz|l|ℓ|mg|ea|pcs|sheet|sheets)/i.test(
+      trimmed,
+    )
+  ) {
+    return false;
+  }
+
+  const leftover = trimmed
+    .replace(
+      /\d+(?:[.,]\d+)?\s*(ml|㎖|g|kg|oz|fl\.?\s*oz|l|ℓ|mg|ea|pcs|sheet|sheets)/gi,
+      " ",
+    )
+    .replace(/[*x×/()[\]:,._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const leftoverWords = leftover
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter(
+      (word) =>
+        !/^(and|with|of|set|kit|pack|box|ea|x|capsule|ampoule)$/i.test(word),
+    );
+  return !leftoverWords.some((word) => /[a-z가-힣]{3,}/i.test(word));
+}
+
+export function appendVolumeIfMissing(name: string, volume: string | null): string {
+  const trimmedName = String(name ?? "").trim();
+  const trimmedVolume = String(volume ?? "").trim();
+  if (!trimmedName || !trimmedVolume || !isCapacityOnlyLabel(trimmedVolume)) {
+    return trimmedName;
+  }
+  if (/\d+(?:[.,]\d+)?\s*(ml|㎖|g|kg|oz|l|ℓ)\b/i.test(trimmedName)) {
+    return trimmedName;
+  }
+  if (/^\d{8,}$/.test(trimmedVolume.replace(/\D/g, "")) && !/[a-z가-힣]/i.test(trimmedVolume)) {
+    return trimmedName;
+  }
+
+  const compactName = compactVolumeText(trimmedName);
+  const compactVolume = compactVolumeText(trimmedVolume);
+  if (compactVolume && compactName.includes(compactVolume)) {
+    return trimmedName;
+  }
+
+  return `${trimmedName} ${trimmedVolume}`.trim();
+}
+
+export function isPlaceholderProductName(
+  name: string,
+  brand: string,
+  sku: string,
+  barcode?: string | null,
+): boolean {
+  const n = String(name ?? "").trim();
+  const b = String(brand ?? "").trim();
+  const id = String(barcode || sku || "").trim();
+  if (!n) {
+    return true;
+  }
+  if (/^\d+$/.test(n) && n.length >= 4) {
+    return true;
+  }
+  if (/[-_\s]dup$/i.test(n) || /\bdup\b/i.test(n)) {
+    return true;
+  }
+  if (/^ml\s*\(/i.test(n)) {
+    return true;
+  }
+  if (/^[a-z0-9]+(?:-[a-z0-9]+)+$/i.test(n) && n.split("-").length >= 3) {
+    return true;
+  }
+  if (
+    b &&
+    n.toLowerCase().includes(b.toLowerCase()) &&
+    /[a-z0-9]+(?:-[a-z0-9]+){2,}/i.test(n)
+  ) {
+    return true;
+  }
+  if (id && n === id) {
+    return true;
+  }
+  if (b && n.toLowerCase() === b.toLowerCase()) {
+    return true;
+  }
+  if (b && id) {
+    const once = `${b} ${id}`;
+    const twice = `${b} ${b} ${id}`;
+    if (n === once || n === twice) {
+      return true;
+    }
+  }
+  if (b && id && /^\d{8,}$/.test(id) && n.includes(id) && n.toLowerCase().startsWith(b.toLowerCase())) {
+    return true;
+  }
+  if (id && n.endsWith(` ${id}`) && b && n.startsWith(b)) {
+    const rest = n.slice(b.length).trim();
+    if (rest === id || rest === `${b} ${id}`) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function headerBaseForClassification(header: string): string {
@@ -612,33 +997,32 @@ export function resolvePrimaryProductName(
   brand: string,
   barcode: string | null,
 ): string {
-  const classified = nameHeaders.map((header, index) => ({
-    header,
-    kind: classifyNameHeader(header, index, nameHeaders.length),
-    value: String(row[header] ?? "").trim(),
-  }));
+  const classified = nameHeaders.map((header, index) => {
+    const value = String(row[header] ?? "").trim();
+    return {
+      header,
+      kind: classifyNameHeader(header, index, nameHeaders.length),
+      value,
+      composed: composeSlashSeparatedProductName(value),
+      english: extractEnglishProductName(value),
+    };
+  });
 
-  for (const { kind, value } of classified) {
-    if (kind === "english" && isLatinProductName(value)) {
-      return value;
+  for (const { kind, composed, english } of classified) {
+    if (kind === "english" && composed && !composed.endsWith("/")) {
+      return composed;
+    }
+    if (kind === "english" && english && !english.endsWith("/")) {
+      return english;
     }
   }
 
-  for (const { kind, value } of classified) {
-    if (kind === "neutral" && isLatinProductName(value)) {
-      return value;
+  for (const { composed, english } of classified) {
+    if (composed && !composed.endsWith("/") && (composed.includes(" ") || containsHangul(composed))) {
+      return composed;
     }
-  }
-
-  for (const { kind, value } of classified) {
-    if (kind !== "korean" && isLatinProductName(value)) {
-      return value;
-    }
-  }
-
-  for (const { value } of classified) {
-    if (isLatinProductName(value)) {
-      return value;
+    if (english && !english.endsWith("/")) {
+      return english;
     }
   }
 
@@ -818,14 +1202,18 @@ function parseSheetWithIndices(
 
     const record = rowToRecord(headers, rawRow);
     const brand = inferBrand(sheetName, getFieldValue(record, headerLookup, "brand"));
-    const barcode =
-      normalizeBarcode(getFieldValue(record, headerLookup, "barcode")) ??
-      normalizeBarcode(getFieldValue(record, headerLookup, "sku"));
-    const primaryName = resolvePrimaryProductName(
-      record,
-      nameHeaders,
+    const barcode = pickBarcodeFromRecord(record, headerLookup);
+    const primaryName = collapseRepeatedBrandPrefix(
+      appendVolumeIfMissing(
+        resolvePrimaryProductName(
+          record,
+          nameHeaders,
+          brand,
+          barcode,
+        ),
+        getFieldValue(record, headerLookup, "volume").trim() || null,
+      ),
       brand,
-      barcode,
     );
     const sku = buildSku(brand, primaryName, barcode);
     const price = getWholesalePriceValue(record, headerLookup);
@@ -886,7 +1274,15 @@ function parseSheet(
   };
 }
 
-export function parseHanmiWorkbook(fileBuffer: ArrayBuffer): ParseHanmiResult {
+export function parseHanmiWorkbook(
+  fileBuffer: ArrayBuffer,
+  options?: { usdKrwRate?: number },
+): ParseHanmiResult {
+  importUsdKrwRate =
+    options?.usdKrwRate && options.usdKrwRate > 0
+      ? options.usdKrwRate
+      : DEFAULT_IMPORT_USD_KRW_RATE;
+
   const workbook = XLSX.read(fileBuffer, { type: "array" });
   const sheetStats: ParseHanmiResult["sheetStats"] = [];
   const rowsBySku = new Map<string, ParsedHanmiRow>();

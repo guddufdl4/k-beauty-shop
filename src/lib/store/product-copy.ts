@@ -19,8 +19,27 @@ export function sanitizeProductName(name: string): string {
     .trim();
 }
 
+export function stripCatalogNoiseFromName(name: string): string {
+  const sanitized = sanitizeProductName(name);
+  const withoutCodes = sanitized
+    .replace(/(^|[\s_/-])\d{8,14}(?=$|[\s_/-])/g, "$1")
+    .replace(
+      /(^|[\s_/-])(\d{6,7})(?=$|[\s_/-])/g,
+      (full, prefix: string, num: string) => {
+        if (/^(19|20)\d{2}$/.test(num)) {
+          return full;
+        }
+        return prefix;
+      },
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  const letterCount = withoutCodes.replace(/[^a-zA-Z가-힣]/g, "").length;
+  return letterCount >= 16 ? withoutCodes : sanitized;
+}
+
 export function collapseRepeatedBrandPrefix(name: string, brand?: string | null): string {
-  let result = sanitizeProductName(name);
+  let result = stripCatalogNoiseFromName(name);
   if (!result) {
     return result;
   }

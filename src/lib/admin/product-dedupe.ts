@@ -21,7 +21,21 @@ export function barcodeVariants(value: string): string[] {
 
 export function normalizeBarcode(value: string | null | undefined): string | null {
   const digits = String(value ?? "").replace(/\D/g, "");
-  return digits.length >= 8 ? digits : null;
+  if (digits.length < 8) {
+    return null;
+  }
+  if (digits.length <= 14) {
+    return digits;
+  }
+  const koreanEan = digits.match(/88\d{11}/);
+  if (koreanEan) {
+    return koreanEan[0];
+  }
+  if (digits.length % 13 === 0) {
+    return digits.slice(0, 13);
+  }
+  const any13 = digits.match(/\d{13}/);
+  return any13 ? any13[0] : digits.slice(0, 13);
 }
 
 export function canonicalBarcode(value: string | null | undefined): string | null {

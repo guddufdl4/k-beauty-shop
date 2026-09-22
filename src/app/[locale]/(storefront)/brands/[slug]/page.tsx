@@ -28,7 +28,8 @@ import {
   getStorefrontCategories,
   STOREFRONT_PRODUCTS_PAGE_SIZE,
 } from "@/lib/supabase/products";
-import { routing, type AppLocale } from "@/i18n/routing";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import type { AppLocale } from "@/i18n/routing";
 
 export const revalidate = 60;
 
@@ -36,14 +37,6 @@ type BrandHubPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ category?: string; page?: string | string[] }>;
 };
-
-function resolveSiteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-  return "https://hmtkorea.com";
-}
 
 export async function generateMetadata({ params }: BrandHubPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -54,19 +47,14 @@ export async function generateMetadata({ params }: BrandHubPageProps): Promise<M
 
   const locale = (await getLocale()) as AppLocale;
   const t = await getTranslations({ locale, namespace: "brands" });
-  const siteUrl = resolveSiteUrl();
   const path = buildBrandHref(entry.slug);
 
-  return {
+  return buildStorefrontMetadata({
+    locale,
+    path,
     title: t("metaTitle", { brand: entry.displayName }),
     description: t("metaDescription", { brand: entry.displayName }),
-    alternates: {
-      canonical: `${siteUrl}/${locale}${path}`,
-      languages: Object.fromEntries(
-        routing.locales.map((entryLocale) => [entryLocale, `${siteUrl}/${entryLocale}${path}`]),
-      ),
-    },
-  };
+  });
 }
 
 export default async function BrandHubPage({ params, searchParams }: BrandHubPageProps) {
@@ -150,9 +138,13 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
   const currentPage = pageParam.page;
   const totalPages =
     totalCount === 0 ? 1 : Math.ceil(totalCount / STOREFRONT_PRODUCTS_PAGE_SIZE);
+  const countAvailable = meta.countAvailable !== false;
   const pageStart =
-    totalCount === 0 ? 0 : (currentPage - 1) * STOREFRONT_PRODUCTS_PAGE_SIZE + 1;
-  const pageEnd = Math.min(currentPage * STOREFRONT_PRODUCTS_PAGE_SIZE, totalCount);
+    products.length === 0
+      ? 0
+      : (currentPage - 1) * STOREFRONT_PRODUCTS_PAGE_SIZE + 1;
+  const pageEnd =
+    products.length === 0 ? 0 : pageStart + products.length - 1;
   const allProductCount = categoryFilter ? (allProductsCountResult?.totalCount ?? 0) : totalCount;
 
   const categoryTabs = tabs.map((tab) => {
@@ -215,15 +207,17 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
             <p className="mt-3 max-w-2xl text-zinc-600">
               {t("exploreProducts", { brand: entry.displayName })}
             </p>
-            <p className="mt-4 text-sm font-medium text-zinc-600">
-              {t("productCount", { count: totalCount })}
-              {totalCount > 0 ? (
-                <span className="font-normal text-zinc-400">
-                  {" "}
-                  · {pageStart.toLocaleString(locale)}–{pageEnd.toLocaleString(locale)}
-                </span>
-              ) : null}
-            </p>
+            {countAvailable ? (
+              <p className="mt-4 text-sm font-medium text-zinc-600">
+                {t("productCount", { count: totalCount })}
+                {totalCount > 0 && products.length > 0 ? (
+                  <span className="font-normal text-zinc-400">
+                    {" "}
+                    · {pageStart.toLocaleString(locale)}–{pageEnd.toLocaleString(locale)}
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
           </div>
         </div>
       </header>

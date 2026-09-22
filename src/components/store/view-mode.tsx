@@ -68,13 +68,17 @@ export function useViewMode() {
 }
 
 export function ViewModeProvider({ children }: { children: ReactNode }) {
-  const mode = useSyncExternalStore(subscribeViewMode, readStoredMode, (): ViewMode => "auto");
+  const storedMode = useSyncExternalStore(subscribeViewMode, readStoredMode, (): ViewMode => "auto");
+  const mode = process.env.NODE_ENV === "production" ? "auto" : storedMode;
 
   useEffect(() => {
     applyViewModeClass(mode);
   }, [mode]);
 
   function setMode(next: ViewMode) {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
     window.localStorage.setItem(STORAGE_KEY, next);
     applyViewModeClass(next);
     window.dispatchEvent(new Event(MODE_EVENT));
@@ -88,6 +92,10 @@ function ViewModeExitBar() {
   const { mode, setMode } = useViewMode();
 
   if (mode === "auto") {
+    return null;
+  }
+
+  if (process.env.NODE_ENV === "production") {
     return null;
   }
 
@@ -156,6 +164,10 @@ const toggleButtonBase =
 export function ViewModeToggle() {
   const t = useTranslations("viewMode");
   const { mode, setMode } = useViewMode();
+
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
 
   const options: { value: ViewMode; label: string }[] = [
     { value: "auto", label: t("auto") },

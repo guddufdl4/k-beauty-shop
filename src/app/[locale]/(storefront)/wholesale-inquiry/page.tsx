@@ -1,5 +1,18 @@
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import { WholesaleInquiryForm } from "./wholesale-inquiry-form";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: "wholesaleInquiry" });
+  return buildStorefrontMetadata({
+    locale,
+    path: "/wholesale-inquiry",
+    title: t("title"),
+    description: t("subtitle"),
+  });
+}
 
 export default async function WholesaleInquiryPage() {
   const t = await getTranslations("wholesaleInquiry");
