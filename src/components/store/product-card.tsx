@@ -146,8 +146,8 @@ export function ProductCard({
         {!compact && !isTrending && product.short_description ? (
           <p className="line-clamp-2 text-xs text-zinc-500">{product.short_description}</p>
         ) : null}
-        <div className={cn("mt-auto flex items-end justify-between gap-2", isTrending ? "pt-2" : compact ? "mt-1" : "pt-2")}>
-          <div className="min-w-0">
+        <div className={cn("mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-2")}>
+          <div className="min-w-0 flex-1">
             {showPrices && displayPrice != null ? (
               <>
                 <p className={cn("font-bold text-zinc-900", isTrending || compact ? "text-sm" : "text-base")}>
@@ -161,7 +161,7 @@ export function ProductCard({
             )}
           </div>
           {showMoq ? (
-            <span className="shrink-0 rounded-sm bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+            <span className="shrink-0 rounded-sm bg-zinc-100 px-2 py-0.5 text-[11px] font-medium leading-5 text-zinc-600">
               {quantityBadge}
             </span>
           ) : null}

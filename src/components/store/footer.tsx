@@ -36,7 +36,7 @@ export async function StoreFooter({
   facebook_url,
 }: Props) {
   const t = await getTranslations("footer");
-  const brand = store_name?.trim() || "HMT KOREA";
+  const brand = store_name?.trim() || "HMT Korea";
   const acronym = brand.replace(/\s+/g, "").toUpperCase();
   const showInstagram = isValidExternalUrl(instagram_url);
   const showFacebook = isValidExternalUrl(facebook_url);
@@ -131,7 +131,7 @@ export async function StoreFooter({
               </Link>
             </li>
             <li>
-              <Link href="/payment" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/cart" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("payment")}
               </Link>
             </li>
@@ -167,7 +167,7 @@ export async function StoreFooter({
               </Link>
             </li>
             <li>
-              <Link href="/cart" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/order-guide" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("orderGuide")}
               </Link>
             </li>
@@ -193,12 +193,17 @@ export async function StoreFooter({
               </Link>
             </li>
             <li>
+              <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+                {t("privacy")}
+              </Link>
+            </li>
+            <li>
               <Link href="/signup" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("membership")}
               </Link>
             </li>
             <li>
-              <Link href="/" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link href="/sitemap" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("sitemap")}
               </Link>
             </li>
@@ -207,8 +212,10 @@ export async function StoreFooter({
       </div>
 
       <div className="border-t border-zinc-100 bg-surface-muted px-4 py-5 text-center text-xs text-zinc-500">
-        <ViewModeToggle />
-        <p className="mt-4">{t("copyright", { brand })}</p>
+        {process.env.NODE_ENV === "development" ? <ViewModeToggle /> : null}
+        <p className={process.env.NODE_ENV === "development" ? "mt-4" : undefined}>
+          {t("copyright", { brand })}
+        </p>
       </div>
     </footer>
   );

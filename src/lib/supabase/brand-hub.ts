@@ -397,6 +397,92 @@ export async function getBrandDirectoryItems(): Promise<{
   return { items, meta, collisionSlugs };
 }
 
+const MAX_NEW_ORDER_BRANDS = 12;
+
+async function fetchRecentBrandKeys(limit: number): Promise<string[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const supabase = await createSafeClient();
+  if (!supabase) {
+    return [];
+  }
+
+  let query = supabase
+    .from("products")
+    .select("brand, created_at")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  query = applyDeletedAtFilter(query, "active") as typeof query;
+
+  const { data, error } = await query;
+  if (error || !data) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const keys: string[] = [];
+  for (const row of data) {
+    const brand = typeof row.brand === "string" ? row.brand.trim() : "";
+    if (!brand) continue;
+    const key = normalizeBrandKey(brand);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    keys.push(key);
+    if (keys.length >= limit) break;
+  }
+  return keys;
+}
+
+export type OrderBrandGroups = {
+  top: BrandDirectoryItem[];
+  newest: BrandDirectoryItem[];
+};
+
+export async function getOrderBrandGroups(
+  items: BrandDirectoryItem[],
+): Promise<OrderBrandGroups> {
+  const byKey = new Map<string, BrandDirectoryItem>();
+  for (const item of items) {
+    byKey.set(normalizeBrandKey(item.displayName), item);
+    byKey.set(normalizeBrandKey(item.filterBrand), item);
+  }
+
+  const top: BrandDirectoryItem[] = [];
+  const used = new Set<string>();
+  for (const config of HOME_FEATURED_BRANDS) {
+    if (!config.enabled) continue;
+    const item = byKey.get(normalizeBrandKey(config.displayName));
+    if (!item || used.has(item.slug)) continue;
+    top.push(item);
+    used.add(item.slug);
+  }
+
+  const recentKeys = await fetchRecentBrandKeys(MAX_NEW_ORDER_BRANDS + top.length + 8);
+  const newest: BrandDirectoryItem[] = [];
+  for (const key of recentKeys) {
+    const item = byKey.get(key);
+    if (!item || used.has(item.slug)) continue;
+    newest.push(item);
+    used.add(item.slug);
+    if (newest.length >= MAX_NEW_ORDER_BRANDS) break;
+  }
+
+  if (newest.length < Math.min(MAX_NEW_ORDER_BRANDS, 6)) {
+    for (const item of items) {
+      if (used.has(item.slug)) continue;
+      newest.push(item);
+      used.add(item.slug);
+      if (newest.length >= MAX_NEW_ORDER_BRANDS) break;
+    }
+  }
+
+  return { top, newest };
+}
+
 export async function resolveBrandHubEntry(slug: string): Promise<BrandCatalogEntry | null> {
   const { brands } = await getProductBrands();
   const { entries, collisionSlugs } = buildBrandCatalogEntries(brands);

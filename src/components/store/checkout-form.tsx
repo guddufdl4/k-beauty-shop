@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   submitQuoteRequest,
@@ -34,6 +34,8 @@ export function CheckoutForm({
 }: Props) {
   const t = useTranslations("checkout");
   const [state, formAction, pending] = useActionState(submitQuoteRequest, initialState);
+  const [tradeTerms, setTradeTerms] = useState("");
+  const [shippingMethod, setShippingMethod] = useState("");
 
   if (state.success) {
     return (
@@ -66,6 +68,11 @@ export function CheckoutForm({
             <input name="company_name" required maxLength={500} defaultValue={defaultCompanyName} className={inputClassName} />
           </label>
           <label className="block">
+            <span className="text-sm text-zinc-600">{t("country")}</span>
+            <input name="country" required maxLength={500} className={inputClassName} />
+          </label>
+          <p className="sm:col-span-2 text-sm font-medium text-zinc-800">{t("contactSection")}</p>
+          <label className="block">
             <span className="text-sm text-zinc-600">{t("contactName")}</span>
             <input name="contact_name" required maxLength={500} defaultValue={defaultContactName} className={inputClassName} />
           </label>
@@ -73,18 +80,71 @@ export function CheckoutForm({
             <span className="text-sm text-zinc-600">{t("email")}</span>
             <input name="email" type="email" required maxLength={500} defaultValue={defaultEmail} className={inputClassName} />
           </label>
-          <label className="block">
+          <label className="block sm:col-span-2">
             <span className="text-sm text-zinc-600">{t("phone")}</span>
             <input name="phone" type="tel" maxLength={500} className={inputClassName} />
           </label>
-          <label className="block">
-            <span className="text-sm text-zinc-600">{t("country")}</span>
-            <input name="country" required maxLength={500} className={inputClassName} />
+          <label className="block sm:col-span-2">
+            <span className="text-sm text-zinc-600">{t("consignee")}</span>
+            <input name="consignee" maxLength={500} placeholder={t("consigneePlaceholder")} className={inputClassName} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">{t("destination")}</span>
-            <input name="destination" maxLength={500} placeholder={t("destinationPlaceholder")} className={inputClassName} />
+            <span className="text-sm text-zinc-600">{t("notifyParty")}</span>
+            <input name="notify_party" maxLength={500} placeholder={t("notifyPartyPlaceholder")} className={inputClassName} />
           </label>
+          <label className="block sm:col-span-2">
+            <span className="text-sm text-zinc-600">{t("shippingAddress")}</span>
+            <textarea
+              name="shipping_address"
+              rows={3}
+              maxLength={500}
+              placeholder={t("shippingAddressPlaceholder")}
+              className={`${inputClassName} resize-y`}
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm text-zinc-600">{t("tradeTerms")}</span>
+            <select
+              name="trade_terms"
+              value={tradeTerms}
+              onChange={(event) => setTradeTerms(event.target.value)}
+              className={inputClassName}
+            >
+              <option value="">{t("selectOptional")}</option>
+              <option value="EXW">EXW</option>
+              <option value="FOB">FOB</option>
+              <option value="DAP">DAP</option>
+              <option value="ETC">ETC</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm text-zinc-600">{t("shippingMethod")}</span>
+            <select
+              name="shipping_method"
+              value={shippingMethod}
+              onChange={(event) => setShippingMethod(event.target.value)}
+              className={inputClassName}
+            >
+              <option value="">{t("selectOptional")}</option>
+              <option value="Forwarder">Forwarder</option>
+              <option value="UPS">UPS</option>
+              <option value="FedEx">FedEx</option>
+              <option value="DHL">DHL</option>
+              <option value="ETC">ETC</option>
+            </select>
+          </label>
+          {tradeTerms === "ETC" ? (
+            <label className="block sm:col-span-2">
+              <span className="text-sm text-zinc-600">{t("tradeTermsEtc")}</span>
+              <input name="trade_terms_etc" required maxLength={500} className={inputClassName} />
+            </label>
+          ) : null}
+          {shippingMethod === "ETC" ? (
+            <label className="block sm:col-span-2">
+              <span className="text-sm text-zinc-600">{t("shippingMethodEtc")}</span>
+              <input name="shipping_method_etc" required maxLength={500} className={inputClassName} />
+            </label>
+          ) : null}
           <label className="block sm:col-span-2">
             <span className="text-sm text-zinc-600">{t("message")}</span>
             <textarea name="message" rows={4} maxLength={5000} placeholder={t("messagePlaceholder")} className={`${inputClassName} resize-y`} />

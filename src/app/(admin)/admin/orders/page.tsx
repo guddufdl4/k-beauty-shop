@@ -124,6 +124,8 @@ function OrdersTable({ orders }: { orders: Awaited<ReturnType<typeof listAdminOr
             <th className="px-4 py-3">상태</th>
             <th className="px-4 py-3">회사 / 담당자</th>
             <th className="px-4 py-3">이메일</th>
+            <th className="px-4 py-3">운송조건</th>
+            <th className="px-4 py-3">배송</th>
             <th className="px-4 py-3">유형</th>
             <th className="px-4 py-3">합계</th>
             <th className="px-4 py-3">일시</th>
@@ -146,6 +148,13 @@ function OrdersTable({ orders }: { orders: Awaited<ReturnType<typeof listAdminOr
                 <p className="text-xs text-zinc-500">{order.contact_name || "—"}</p>
               </td>
               <td className="px-4 py-3 text-zinc-600">{order.email || "—"}</td>
+              <td className="px-4 py-3 text-zinc-600">
+                <p>{order.trade_terms || "—"}</p>
+                <p className="text-xs text-zinc-500">
+                  {[order.consignee, order.notify_party, order.shipping_address_text].filter(Boolean).join(" · ")}
+                </p>
+              </td>
+              <td className="px-4 py-3 text-zinc-600">{order.shipping_method || "—"}</td>
               <td className="px-4 py-3 text-zinc-600">{paymentLabel(order)}</td>
               <td className="px-4 py-3 font-medium">{formatKRW(order.total)}</td>
               <td className="px-4 py-3 text-zinc-600">

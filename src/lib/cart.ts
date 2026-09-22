@@ -95,6 +95,13 @@ export type QuoteBuyer = {
   phone: string;
   country: string;
   destination: string;
+  consignee: string;
+  notifyParty: string;
+  shippingAddress: string;
+  tradeTerms: string;
+  tradeTermsEtc: string;
+  shippingMethod: string;
+  shippingMethodEtc: string;
   notes: string;
 };
 
@@ -122,22 +129,50 @@ export async function createQuoteOrderFromCart(
 
   const orderNumber = generateOrderNumber("QT");
   const countryCode = buyer.country.length === 2 ? buyer.country.toUpperCase() : "XX";
-  const shippingAddress: ShippingAddress & { line2?: string; email?: string; company_name?: string } = {
+  const shippingAddress: ShippingAddress & {
+    line2?: string;
+    email?: string;
+    company_name?: string;
+    consignee?: string;
+    notify_party?: string;
+    shipping_address?: string;
+    trade_terms?: string;
+    trade_terms_etc?: string;
+    shipping_method?: string;
+    shipping_method_etc?: string;
+  } = {
     recipient_name: buyer.contactName,
     phone: buyer.phone || "-",
     line1: buyer.companyName,
-    line2: [buyer.email, buyer.destination].filter(Boolean).join(" · ") || undefined,
+    line2: [buyer.email, buyer.shippingAddress || buyer.destination].filter(Boolean).join(" · ") || undefined,
     city: buyer.country,
     postal_code: "-",
     country_code: countryCode,
     email: buyer.email,
     company_name: buyer.companyName,
+    consignee: buyer.consignee || undefined,
+    notify_party: buyer.notifyParty || undefined,
+    shipping_address: buyer.shippingAddress || buyer.destination || undefined,
+    trade_terms: buyer.tradeTerms || undefined,
+    trade_terms_etc: buyer.tradeTermsEtc || undefined,
+    shipping_method: buyer.shippingMethod || undefined,
+    shipping_method_etc: buyer.shippingMethodEtc || undefined,
   };
 
   const notes = [
     `Quote request · ${buyer.companyName} · ${buyer.email}`,
     buyer.phone ? `Phone: ${buyer.phone}` : "",
-    buyer.destination ? `Destination: ${buyer.destination}` : "",
+    buyer.consignee ? `Consignee: ${buyer.consignee}` : "",
+    buyer.notifyParty ? `Notify party: ${buyer.notifyParty}` : "",
+    buyer.shippingAddress || buyer.destination
+      ? `Shipping address: ${buyer.shippingAddress || buyer.destination}`
+      : "",
+    buyer.tradeTerms
+      ? `Trade terms: ${buyer.tradeTerms}${buyer.tradeTermsEtc ? ` (${buyer.tradeTermsEtc})` : ""}`
+      : "",
+    buyer.shippingMethod
+      ? `Shipping method: ${buyer.shippingMethod}${buyer.shippingMethodEtc ? ` (${buyer.shippingMethodEtc})` : ""}`
+      : "",
     buyer.notes,
   ]
     .filter(Boolean)

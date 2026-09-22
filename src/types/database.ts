@@ -204,6 +204,8 @@ export interface HeroSlideCopy {
   button_link?: string | null;
   wholesale_label?: string | null;
   wholesale_link?: string | null;
+  order_guide_label?: string | null;
+  order_guide_link?: string | null;
 }
 
 export interface HeroSlide {

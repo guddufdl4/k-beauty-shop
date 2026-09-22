@@ -32,6 +32,8 @@ export type HeroCopy = {
   shopBestSellersHref: string;
   wholesaleInquiryLabel: string;
   wholesaleInquiryHref: string;
+  orderGuideLabel: string;
+  orderGuideHref: string;
 };
 
 type Props = {
@@ -55,6 +57,8 @@ function mergeSlideCopy(defaultCopy: HeroCopy, slide: HeroBannerSlide): HeroCopy
     shopBestSellersHref: override.shopBestSellersHref?.trim() || defaultCopy.shopBestSellersHref,
     wholesaleInquiryLabel: override.wholesaleInquiryLabel?.trim() || defaultCopy.wholesaleInquiryLabel,
     wholesaleInquiryHref: override.wholesaleInquiryHref?.trim() || defaultCopy.wholesaleInquiryHref,
+    orderGuideLabel: override.orderGuideLabel?.trim() || defaultCopy.orderGuideLabel,
+    orderGuideHref: override.orderGuideHref?.trim() || defaultCopy.orderGuideHref,
   };
 }
 
@@ -323,6 +327,15 @@ function HeroCopyPanel({
             {copy.wholesaleInquiryLabel}
           </HeroNavLink>
         ) : null}
+        {copy.orderGuideLabel.trim() && copy.orderGuideHref.trim() ? (
+          <HeroNavLink
+            href={copy.orderGuideHref}
+            tabIndex={hidden ? -1 : undefined}
+            className="inline-flex min-h-10 items-center border-2 border-accent bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-accent backdrop-blur-sm transition-colors hover:bg-accent hover:text-white sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
+          >
+            {copy.orderGuideLabel}
+          </HeroNavLink>
+        ) : null}
       </div>
       <span className="sr-only">Hero banner content overlay</span>
     </div>
@@ -413,7 +426,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
   const showControls = slideCount > 1;
 
   useEffect(() => {
-    slides.slice(0, 2).forEach((slide) => {
+    slides.slice(0, 1).forEach((slide) => {
       preloadImage(slide.src);
       if (slide.mobileSrc) {
         preloadImage(slide.mobileSrc);
@@ -652,7 +665,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
                 slide={slide}
                 defaultCopy={copy}
                 priority={index === 0}
-                preload={index <= 1}
+                preload={index === 0}
                 isActive={!showControls || index === activeIndex}
               />
             </div>

@@ -11,8 +11,8 @@ export function storefrontHref(path: string = ""): string {
   return `/${routing.defaultLocale}${suffix}`;
 }
 
-/** Default hero secondary CTA — next-intl resolves to `/{locale}/wholesale-inquiry`. */
-export const DEFAULT_WHOLESALE_INQUIRY_HREF = "/wholesale-inquiry";
+/** Default hero ordering-guide CTA. */
+export const DEFAULT_ORDER_GUIDE_HREF = "/order-guide";
 
 export function isExternalHeroHref(href: string): boolean {
   return /^https:\/\//i.test(href.trim());
@@ -27,7 +27,7 @@ export type HeroLinkValidationResult =
   | { ok: true; value: string | null }
   | { ok: false; error: string };
 
-export type HeroSlideLinkField = "button_link" | "wholesale_link";
+export type HeroSlideLinkField = "button_link" | "wholesale_link" | "order_guide_link";
 
 export type HeroSlideValidationError = {
   slideIndex: number;
@@ -76,8 +76,9 @@ export function validateHeroLinkInput(raw: string | null | undefined): HeroLinkV
 export function validateHeroSlideCopyLinks(copy: HeroSlideCopy | undefined): {
   button_link?: string;
   wholesale_link?: string;
+  order_guide_link?: string;
 } {
-  const errors: { button_link?: string; wholesale_link?: string } = {};
+  const errors: { button_link?: string; wholesale_link?: string; order_guide_link?: string } = {};
 
   if (copy?.button_link != null && copy.button_link !== "") {
     const result = validateHeroLinkInput(copy.button_link);
@@ -93,6 +94,13 @@ export function validateHeroSlideCopyLinks(copy: HeroSlideCopy | undefined): {
     }
   }
 
+  if (copy?.order_guide_link != null && copy.order_guide_link !== "") {
+    const result = validateHeroLinkInput(copy.order_guide_link);
+    if (!result.ok) {
+      errors.order_guide_link = result.error;
+    }
+  }
+
   return errors;
 }
 
@@ -104,6 +112,7 @@ export function sanitizeHeroSlideCopy(copy: HeroSlideCopy | undefined): HeroSlid
 
   const buttonLinkResult = validateHeroLinkInput(copy.button_link);
   const wholesaleLinkResult = validateHeroLinkInput(copy.wholesale_link);
+  const orderGuideLinkResult = validateHeroLinkInput(copy.order_guide_link);
 
   const sanitized: HeroSlideCopy = {
     ...copy,
@@ -112,6 +121,9 @@ export function sanitizeHeroSlideCopy(copy: HeroSlideCopy | undefined): HeroSlid
     wholesale_link:
       wholesaleLinkResult.ok && wholesaleLinkResult.value ? wholesaleLinkResult.value : null,
     wholesale_label: copy.wholesale_label?.trim() || null,
+    order_guide_link:
+      orderGuideLinkResult.ok && orderGuideLinkResult.value ? orderGuideLinkResult.value : null,
+    order_guide_label: copy.order_guide_label?.trim() || null,
   };
 
   const hasValue = Object.entries(sanitized).some(
@@ -132,7 +144,7 @@ export function validateHeroSlidesForSave(
     const copy = slide.copy;
 
     if (copy) {
-      for (const field of ["button_link", "wholesale_link"] as const) {
+      for (const field of ["button_link", "wholesale_link", "order_guide_link"] as const) {
         const raw = copy[field];
         if (raw != null && raw !== "") {
           const result = validateHeroLinkInput(raw);
@@ -189,6 +201,8 @@ export type HeroBannerCopyOverride = {
   shopBestSellersHref?: string;
   wholesaleInquiryLabel?: string;
   wholesaleInquiryHref?: string;
+  orderGuideLabel?: string;
+  orderGuideHref?: string;
 };
 
 export function mapHeroSlideCopyToBannerCopy(
@@ -220,6 +234,12 @@ export function mapHeroSlideCopyToBannerCopy(
   }
   if (slideCopy.wholesale_link?.trim()) {
     mapped.wholesaleInquiryHref = normalizeHeroHref(slideCopy.wholesale_link, "");
+  }
+  if (slideCopy.order_guide_label?.trim()) {
+    mapped.orderGuideLabel = slideCopy.order_guide_label.trim();
+  }
+  if (slideCopy.order_guide_link?.trim()) {
+    mapped.orderGuideHref = normalizeHeroHref(slideCopy.order_guide_link, "");
   }
 
   return Object.keys(mapped).length > 0 ? mapped : undefined;

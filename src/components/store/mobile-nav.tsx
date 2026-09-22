@@ -26,6 +26,7 @@ type MobileNavLabels = {
   menu: string;
   shop: string;
   brands: string;
+  allProducts: string;
   shopSale: string;
   shopTrending: string;
   shopLatest: string;
@@ -253,7 +254,8 @@ export function MobileNavPanels() {
   const [brandsOpen, setBrandsOpen] = useState(false);
 
   const shopLinks = [
-    { href: "/products", label: labels.products },
+    { href: "/brands", label: labels.shop },
+    { href: "/products", label: labels.allProducts },
     { href: buildProductsHref({ sort: "sale" }), label: labels.shopSale },
     { href: buildProductsHref({ sort: "trending" }), label: labels.shopTrending },
     { href: buildProductsHref({ sort: "latest" }), label: labels.shopLatest },

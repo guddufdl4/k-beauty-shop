@@ -48,7 +48,14 @@ export async function submitQuoteRequest(
   const email = trimField(formData.get("email"));
   const phone = trimField(formData.get("phone"));
   const country = trimField(formData.get("country"));
-  const destination = trimField(formData.get("destination"));
+  const consignee = trimField(formData.get("consignee"));
+  const notifyParty = trimField(formData.get("notify_party"));
+  const shippingAddress = trimField(formData.get("shipping_address"));
+  const destination = shippingAddress || trimField(formData.get("destination"));
+  const tradeTerms = trimField(formData.get("trade_terms"));
+  const tradeTermsEtc = trimField(formData.get("trade_terms_etc"));
+  const shippingMethod = trimField(formData.get("shipping_method"));
+  const shippingMethodEtc = trimField(formData.get("shipping_method_etc"));
   const message = trimField(formData.get("message"));
 
   if (!companyName || companyName.length > MAX_FIELD) {
@@ -63,8 +70,24 @@ export async function submitQuoteRequest(
   if (!country || country.length > MAX_FIELD) {
     return { error: t("countryRequired") };
   }
-  if (phone.length > MAX_FIELD || destination.length > MAX_FIELD) {
+  if (
+    phone.length > MAX_FIELD ||
+    destination.length > MAX_FIELD ||
+    consignee.length > MAX_FIELD ||
+    notifyParty.length > MAX_FIELD ||
+    shippingAddress.length > MAX_FIELD ||
+    tradeTerms.length > MAX_FIELD ||
+    tradeTermsEtc.length > MAX_FIELD ||
+    shippingMethod.length > MAX_FIELD ||
+    shippingMethodEtc.length > MAX_FIELD
+  ) {
     return { error: t("fieldTooLong") };
+  }
+  if (tradeTerms === "ETC" && !tradeTermsEtc) {
+    return { error: t("tradeTermsEtcRequired") };
+  }
+  if (shippingMethod === "ETC" && !shippingMethodEtc) {
+    return { error: t("shippingMethodEtcRequired") };
   }
   if (message.length > MAX_MESSAGE) {
     return { error: t("fieldTooLong") };
@@ -93,7 +116,11 @@ export async function submitQuoteRequest(
     `Email: ${email}`,
     `Phone: ${phone || "-"}`,
     `Country: ${country}`,
-    `Destination: ${destination || "-"}`,
+    `Consignee: ${consignee || "-"}`,
+    `Notify party: ${notifyParty || "-"}`,
+    `Shipping address: ${destination || "-"}`,
+    `Trade terms: ${tradeTerms || "-"}${tradeTermsEtc ? ` (${tradeTermsEtc})` : ""}`,
+    `Shipping method: ${shippingMethod || "-"}${shippingMethodEtc ? ` (${shippingMethodEtc})` : ""}`,
     `Notes: ${message || "-"}`,
     "",
     "Requested items:",
@@ -125,7 +152,11 @@ export async function submitQuoteRequest(
       <tr><td style="padding:4px 12px 4px 0"><strong>Email</strong></td><td>${escapeHtml(email)}</td></tr>
       <tr><td style="padding:4px 12px 4px 0"><strong>Phone</strong></td><td>${escapeHtml(phone || "-")}</td></tr>
       <tr><td style="padding:4px 12px 4px 0"><strong>Country</strong></td><td>${escapeHtml(country)}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Destination</strong></td><td>${escapeHtml(destination || "-")}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Consignee</strong></td><td>${escapeHtml(consignee || "-")}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Notify party</strong></td><td>${escapeHtml(notifyParty || "-")}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Shipping address</strong></td><td>${escapeHtml(destination || "-")}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Trade terms</strong></td><td>${escapeHtml(tradeTerms || "-")}${tradeTermsEtc ? ` (${escapeHtml(tradeTermsEtc)})` : ""}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0"><strong>Shipping method</strong></td><td>${escapeHtml(shippingMethod || "-")}${shippingMethodEtc ? ` (${escapeHtml(shippingMethodEtc)})` : ""}</td></tr>
       <tr><td style="padding:4px 12px 4px 0"><strong>Locale</strong></td><td>${escapeHtml(locale)}</td></tr>
     </table>
     ${message ? `<p><strong>Notes</strong><br/>${escapeHtml(message).replaceAll("\n", "<br/>")}</p>` : ""}
@@ -152,6 +183,13 @@ export async function submitQuoteRequest(
     phone,
     country,
     destination,
+    consignee,
+    notifyParty,
+    shippingAddress,
+    tradeTerms,
+    tradeTermsEtc,
+    shippingMethod,
+    shippingMethodEtc,
     notes: message,
   });
 
@@ -166,7 +204,13 @@ export async function submitQuoteRequest(
       interested_brands: brands.join(", ").slice(0, MAX_FIELD) || "Cart quote",
       estimated_quantity: `${totalUnits} units`,
       message: [
-        destination ? `Destination: ${destination}` : "",
+        consignee ? `Consignee: ${consignee}` : "",
+        notifyParty ? `Notify party: ${notifyParty}` : "",
+        destination ? `Shipping address: ${destination}` : "",
+        tradeTerms ? `Trade terms: ${tradeTerms}${tradeTermsEtc ? ` (${tradeTermsEtc})` : ""}` : "",
+        shippingMethod
+          ? `Shipping method: ${shippingMethod}${shippingMethodEtc ? ` (${shippingMethodEtc})` : ""}`
+          : "",
         message,
         "",
         lineText,

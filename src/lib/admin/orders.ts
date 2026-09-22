@@ -13,6 +13,11 @@ export type AdminOrderRow = {
   company_name: string | null;
   contact_name: string | null;
   email: string | null;
+  consignee: string | null;
+  notify_party: string | null;
+  shipping_address_text: string | null;
+  trade_terms: string | null;
+  shipping_method: string | null;
   notes: string | null;
   source: "database" | "cookie";
 };
@@ -66,6 +71,16 @@ export async function listAdminOrders(): Promise<{
               company_name: snapshotField(address, "company_name") ?? snapshotField(address, "line1"),
               contact_name: snapshotField(address, "recipient_name"),
               email: snapshotField(address, "email"),
+              consignee: snapshotField(address, "consignee"),
+              notify_party: snapshotField(address, "notify_party"),
+              shipping_address_text:
+                snapshotField(address, "shipping_address") ?? snapshotField(address, "line2"),
+              trade_terms: [snapshotField(address, "trade_terms"), snapshotField(address, "trade_terms_etc")]
+                .filter(Boolean)
+                .join(" "),
+              shipping_method: [snapshotField(address, "shipping_method"), snapshotField(address, "shipping_method_etc")]
+                .filter(Boolean)
+                .join(" "),
               notes: row.notes ? String(row.notes) : null,
               source: "database" as const,
             };
@@ -89,6 +104,11 @@ export async function listAdminOrders(): Promise<{
       company_name: null,
       contact_name: order.shipping_address.recipient_name,
       email: null,
+      consignee: null,
+      notify_party: null,
+      shipping_address_text: order.shipping_address.line1,
+      trade_terms: null,
+      shipping_method: null,
       notes: null,
       source: "cookie" as const,
     })),

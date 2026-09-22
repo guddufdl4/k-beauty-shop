@@ -49,6 +49,8 @@ function parseHeroSlideCopy(raw: unknown): HeroSlide["copy"] | undefined {
     button_link: trimOrNull(record.button_link),
     wholesale_label: trimOrNull(record.wholesale_label),
     wholesale_link: trimOrNull(record.wholesale_link),
+    order_guide_label: trimOrNull(record.order_guide_label),
+    order_guide_link: trimOrNull(record.order_guide_link),
   };
 
   const hasValue = Object.values(copy).some((value) => value !== undefined);

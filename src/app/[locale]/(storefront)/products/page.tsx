@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { ProductCard } from "@/components/store/product-card";
 import { EmptyState } from "@/components/store/empty-state";
 import { ProductCatalogSidebar } from "@/components/store/products-sidebar-search";
@@ -7,6 +9,7 @@ import { ProductsPagination } from "@/components/store/products-pagination";
 import { RelatedSearchTerms } from "@/components/store/related-search-terms";
 import { getDisplayBrandName } from "@/lib/store/products-url";
 import { getMoqBadgeKey, parseProductListSort } from "@/lib/store/products-url";
+import { interleaveByBrand } from "@/lib/store/brand-diversity";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
 import {
@@ -28,6 +31,16 @@ type ProductsPageProps = {
   }>;
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: "products" });
+  return buildStorefrontMetadata({
+    locale,
+    path: "/products",
+    title: t("allProducts"),
+  });
+}
+
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const [
     { category: categorySlug, brand: brandQuery, q: searchQuery, page: pageQuery, sort: sortQuery },
@@ -41,32 +54,44 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const sort = parseProductListSort(sortQuery);
   const currentPage = Math.max(1, Number.parseInt(pageQuery ?? "1", 10) || 1);
   const audience = await resolveStorefrontAudience();
+  const isDefaultBrowse = !brandFilter && !searchTerm && !categorySlug && !sort;
+  const queryLimit =
+    isDefaultBrowse && currentPage === 1
+      ? STOREFRONT_PRODUCTS_PAGE_SIZE * 20
+      : STOREFRONT_PRODUCTS_PAGE_SIZE;
+  const queryPage = isDefaultBrowse && currentPage === 1 ? 1 : currentPage;
 
-  const [{ products, totalCount, meta }, { categories }] = await Promise.all([
+  const [{ products: fetchedProducts, totalCount, meta }, { categories }] = await Promise.all([
     getProducts({
       categorySlug,
       brand: brandFilter,
       brandExact: Boolean(brandFilter),
       search: searchTerm,
       sort,
-      limit: STOREFRONT_PRODUCTS_PAGE_SIZE,
-      page: currentPage,
+      limit: queryLimit,
+      page: queryPage,
       requireRealImage: true,
       audience,
     }),
     getStorefrontCategories(),
   ]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalCount / STOREFRONT_PRODUCTS_PAGE_SIZE),
-  );
+  const products =
+    isDefaultBrowse && currentPage === 1
+      ? interleaveByBrand(fetchedProducts, 2).slice(0, STOREFRONT_PRODUCTS_PAGE_SIZE)
+      : fetchedProducts;
+
+  const countAvailable = meta.countAvailable !== false;
+  const totalPages = countAvailable
+    ? Math.max(1, Math.ceil(totalCount / STOREFRONT_PRODUCTS_PAGE_SIZE))
+    : Math.max(1, currentPage);
   const safePage = Math.min(currentPage, totalPages);
   const pageStart =
-    totalCount === 0
+    products.length === 0
       ? 0
       : (safePage - 1) * STOREFRONT_PRODUCTS_PAGE_SIZE + 1;
-  const pageEnd = Math.min(safePage * STOREFRONT_PRODUCTS_PAGE_SIZE, totalCount);
+  const pageEnd =
+    products.length === 0 ? 0 : pageStart + products.length - 1;
 
   const activeCategory = categorySlug
     ? categories.find((c) => c.slug === categorySlug)
@@ -120,17 +145,27 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
                   {pageTitle}
                 </h1>
-              </div>
-              <p className="shrink-0 text-sm font-medium text-zinc-600 sm:text-base">
-                {t("productCount", { count: totalCount })}
-                {totalCount > 0 ? (
-                  <span className="font-normal text-zinc-400">
-                    {" "}
-                    · {pageStart.toLocaleString(locale)}–
-                    {pageEnd.toLocaleString(locale)}
-                  </span>
+                {!brandFilter && !searchTerm ? (
+                  <Link
+                    href="/brands"
+                    className="mt-2 inline-flex text-sm font-medium text-accent hover:underline"
+                  >
+                    {t("chooseBrandFirst")}
+                  </Link>
                 ) : null}
-              </p>
+              </div>
+              {countAvailable ? (
+                <p className="shrink-0 text-sm font-medium text-zinc-600 sm:text-base">
+                  {t("productCount", { count: totalCount })}
+                  {totalCount > 0 && products.length > 0 ? (
+                    <span className="font-normal text-zinc-400">
+                      {" "}
+                      · {pageStart.toLocaleString(locale)}–
+                      {pageEnd.toLocaleString(locale)}
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
             </div>
 
             {!meta.configured ? (
@@ -180,7 +215,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 ))}
               </div>
 
-              {totalPages > 1 ? (
+              {countAvailable && totalPages > 1 ? (
                 <ProductsPagination
                   currentPage={safePage}
                   totalPages={totalPages}

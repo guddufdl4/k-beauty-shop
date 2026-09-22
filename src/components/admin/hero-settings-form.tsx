@@ -19,6 +19,7 @@ const HERO_LINK_HELP =
 type SlideLinkErrors = {
   button_link?: string;
   wholesale_link?: string;
+  order_guide_link?: string;
 };
 
 type Props = {
@@ -790,6 +791,78 @@ export function AdminHeroSettingsForm({ initialSettings }: Props) {
                       {slideLinkErrors[slide.id]?.wholesale_link ? (
                         <span className="mt-1 block text-xs text-red-600">
                           {slideLinkErrors[slide.id]?.wholesale_link}
+                        </span>
+                      ) : null}
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+                      Ordering guide button text
+                      <input
+                        type="text"
+                        value={slide.copy?.order_guide_label ?? ""}
+                        placeholder="HOW TO ORDER"
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, order_guide_label: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm"
+                      />
+                      <span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">
+                        Leave blank to use the default HOW TO ORDER button. Existing shop and wholesale buttons stay as they are.
+                      </span>
+                    </label>
+                    <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+                      Ordering guide link
+                      <input
+                        type="text"
+                        value={slide.copy?.order_guide_link ?? ""}
+                        placeholder="/order-guide"
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSlideLinkErrors((current) => {
+                            const next = { ...current };
+                            if (next[slide.id]?.order_guide_link) {
+                              const slideErrors = { ...next[slide.id] };
+                              delete slideErrors.order_guide_link;
+                              if (Object.keys(slideErrors).length === 0) {
+                                delete next[slide.id];
+                              } else {
+                                next[slide.id] = slideErrors;
+                              }
+                            }
+                            return next;
+                          });
+                          setSlides((current) =>
+                            current.map((item) =>
+                              item.id === slide.id
+                                ? {
+                                    ...item,
+                                    copy: { ...item.copy, order_guide_link: value || null },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        className={`mt-1 w-full rounded-lg border px-2 py-1.5 text-sm ${
+                          slideLinkErrors[slide.id]?.order_guide_link
+                            ? "border-red-400 focus:border-red-500"
+                            : "border-zinc-300"
+                        }`}
+                      />
+                      <span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">
+                        예: /order-guide
+                      </span>
+                      {slideLinkErrors[slide.id]?.order_guide_link ? (
+                        <span className="mt-1 block text-xs text-red-600">
+                          {slideLinkErrors[slide.id]?.order_guide_link}
                         </span>
                       ) : null}
                     </label>

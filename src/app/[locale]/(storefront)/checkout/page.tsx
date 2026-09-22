@@ -16,7 +16,6 @@ export default async function CheckoutPage() {
     getLocale(),
     getUsdKrwRate(),
   ]);
-  const isLoggedIn = Boolean(session.user);
 
   let defaultCompanyName = "";
   if (session.user) {
@@ -27,23 +26,6 @@ export default async function CheckoutPage() {
       .eq("id", session.user.id)
       .maybeSingle();
     defaultCompanyName = typeof data?.company_name === "string" ? data.company_name : "";
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-        <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
-        <div className="mt-8 rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center sm:p-10">
-          <p className="text-zinc-600">{t("loginRequired")}</p>
-          <Link
-            href="/login"
-            className="mt-4 inline-block rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-700"
-          >
-            {t("loginAction")}
-          </Link>
-        </div>
-      </main>
-    );
   }
 
   if (cart.items.length === 0) {

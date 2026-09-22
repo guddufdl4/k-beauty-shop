@@ -7,6 +7,7 @@ import { getUsdKrwRate } from "@/lib/currency";
 import { buildProductsHref } from "@/lib/store/products-url";
 import {
   DEFAULT_WHOLESALE_INQUIRY_HREF,
+  DEFAULT_ORDER_GUIDE_HREF,
   mapHeroSlideCopyToBannerCopy,
   normalizeHeroHref,
 } from "@/lib/store/storefront-href";
@@ -18,10 +19,17 @@ import {
   selectTrendingCategoryProducts,
 } from "@/lib/supabase/products";
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import type { Metadata } from "next";
 export const revalidate = 60;
 
 /** Standard homepage hero brand set (VT, SKINFOOD, Torriden). */
 const HERO_BRAND_ORDER = ["VT", "skinfood", "Torriden"] as const;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return buildStorefrontMetadata({ locale, path: "" });
+}
 
 function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRAND_ORDER)[number] {
   const id = slideId.toLowerCase();
@@ -39,6 +47,31 @@ function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRA
   }
 
   return HERO_BRAND_ORDER[order] ?? HERO_BRAND_ORDER[0];
+}
+
+function brandHeroCopyFallback(
+  brand: (typeof HERO_BRAND_ORDER)[number],
+  t: Awaited<ReturnType<typeof getTranslations>>,
+) {
+  if (brand === "VT") {
+    return {
+      title: t("hero.brandVtTitle"),
+      description: t("hero.brandVtDescription"),
+      shopBestSellersLabel: t("hero.brandVtCta"),
+    };
+  }
+  if (brand === "skinfood") {
+    return {
+      title: t("hero.brandSkinfoodTitle"),
+      description: t("hero.brandSkinfoodDescription"),
+      shopBestSellersLabel: t("hero.brandSkinfoodCta"),
+    };
+  }
+  return {
+    title: t("hero.brandTorridenTitle"),
+    description: t("hero.brandTorridenDescription"),
+    shopBestSellersLabel: t("hero.brandTorridenCta"),
+  };
 }
 
 async function loadSiteSettingsSafely() {
@@ -66,6 +99,8 @@ function buildDefaultHeroCopy(
     ),
     wholesaleInquiryLabel: t("hero.wholesaleInquiry"),
     wholesaleInquiryHref: DEFAULT_WHOLESALE_INQUIRY_HREF,
+    orderGuideLabel: t("hero.orderGuide"),
+    orderGuideHref: DEFAULT_ORDER_GUIDE_HREF,
   };
 }
 
@@ -100,7 +135,8 @@ function mapStoredHeroSlideToBannerSlide(
 
   const brand = resolveHeroSlideBrand(slide.id, index);
   const brandProductsHref = buildProductsHref({ brand });
-  const slideCopyOverride = mapHeroSlideCopyToBannerCopy(slide.copy);
+  const adminCopy = mapHeroSlideCopyToBannerCopy(slide.copy);
+  const brandCopy = brandHeroCopyFallback(brand, t);
 
   const primaryHref = normalizeHeroHref(slide.copy?.button_link, brandProductsHref);
 
@@ -115,7 +151,10 @@ function mapStoredHeroSlideToBannerSlide(
     href: primaryHref,
     brandLabel: resolveSlideBrandLabel(slide, brand, t),
     ...(slide.layout ? { layout: slide.layout } : {}),
-    ...(slideCopyOverride ? { copy: slideCopyOverride } : {}),
+    copy: {
+      ...brandCopy,
+      ...adminCopy,
+    },
   };
 }
 export default async function HomePage() {
