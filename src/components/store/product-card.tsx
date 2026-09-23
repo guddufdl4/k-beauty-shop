@@ -57,7 +57,7 @@ export function ProductCard({
   priority = false,
 }: Props) {
   const localeFromApp = useLocale();
-  const activeLocale = localeFromApp || locale;
+  const activeLocale = locale || localeFromApp;
   const isTrending = variant === "trending";
   const showPrices = isPricedStorefrontProduct(product);
   const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];

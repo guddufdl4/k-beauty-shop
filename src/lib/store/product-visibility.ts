@@ -122,6 +122,16 @@ export function buildGuestListProductSelect(): string {
   return `${GUEST_LIST_PRODUCT_COLUMNS.join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
 }
 
+const MEMBER_LIST_PRODUCT_COLUMNS = [
+  ...GUEST_LIST_PRODUCT_COLUMNS,
+  "stock",
+  ...MEMBER_PRICE_COLUMNS,
+] as const;
+
+export function buildMemberListProductSelect(): string {
+  return `${MEMBER_LIST_PRODUCT_COLUMNS.join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
+}
+
 export function buildMemberProductSelect(): string {
   return `${[...GUEST_PRODUCT_COLUMNS, ...MEMBER_INTERNAL_COLUMNS, ...MEMBER_PRICE_COLUMNS].join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
 }

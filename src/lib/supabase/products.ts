@@ -11,6 +11,7 @@ import {
 import type { ProductListSort } from "@/lib/store/products-url";
 import {
   buildGuestListProductSelect,
+  buildMemberListProductSelect,
   buildGuestProductSelect,
   buildMemberProductSelect,
   canViewProductPrices,
@@ -751,33 +752,37 @@ async function hydrateProductLocaleNames(
   supabase: SupabaseClient,
   products: ProductWithRelations[],
 ): Promise<ProductWithRelations[]> {
-  const needsSource = products.filter((product) => !product.source_row);
-  if (needsSource.length === 0) {
+  if (products.length === 0) {
     return products;
   }
 
   const reader = createServiceClient() ?? supabase;
-  const { data, error } = await reader
-    .from("products")
-    .select("id, source_row")
-    .in("id", needsSource.map((product) => product.id));
+  const ids = products.map((product) => product.id);
+  const sourceById = new Map<string, Record<string, unknown>>();
 
-  if (error || !data?.length) {
-    return products;
+  for (let offset = 0; offset < ids.length; offset += 80) {
+    const { data, error } = await reader
+      .from("products")
+      .select("id, source_row")
+      .in("id", ids.slice(offset, offset + 80));
+
+    if (error) {
+      break;
+    }
+
+    for (const row of data ?? []) {
+      if (row.source_row && typeof row.source_row === "object") {
+        sourceById.set(String(row.id), row.source_row as Record<string, unknown>);
+      }
+    }
   }
 
-  const sourceById = new Map<string, Record<string, unknown>>();
-  for (const row of data) {
-    if (row.source_row && typeof row.source_row === "object") {
-      sourceById.set(String(row.id), row.source_row as Record<string, unknown>);
-    }
+  if (sourceById.size === 0) {
+    return products.map((product) => withLocalizedNameFields(product));
   }
 
   return products.map((product) => {
-    const source_row = product.source_row ?? sourceById.get(product.id) ?? null;
-    if (!source_row) {
-      return product;
-    }
+    const source_row = sourceById.get(product.id) ?? product.source_row ?? null;
     return withLocalizedNameFields({ ...product, source_row });
   });
 }
@@ -925,10 +930,10 @@ function resolveProductSelect(
   }
 
   const includePriceColumns = canViewProductPrices(audience);
-  if (options?.listSelect && !includePriceColumns) {
+  if (options?.listSelect) {
     return {
-      select: buildGuestListProductSelect(),
-      includePriceColumns: false,
+      select: includePriceColumns ? buildMemberListProductSelect() : buildGuestListProductSelect(),
+      includePriceColumns,
     };
   }
 
@@ -1188,7 +1193,7 @@ export async function getProducts(
   if (guestProductsCacheable) {
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
-      "locale-names-v3",
+      "locale-names-v4",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -2030,7 +2035,7 @@ export async function getPriorityBrandProducts(options?: {
         products: toStorefrontProducts(result.products, "guest"),
       };
     },
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v3", String(limit), storefrontCacheAudienceKey("guest")],
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", String(limit), storefrontCacheAudienceKey("guest")],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],

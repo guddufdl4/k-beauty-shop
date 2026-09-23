@@ -99,11 +99,17 @@ export function resolveProductNamePair(product: NamedProduct): { en: string | nu
       const value = cleanName(String(raw ?? ""), brand);
       if (!value) return;
       const kind = classifyNameHeader(header, index, nameEntries.length);
-      if (kind === "english" || (kind === "neutral" && isLatinName(value))) {
+      const latin = isLatinName(value);
+      const hangul = containsHangul(value);
+      if (latin) {
         en = pickBetter(en, value);
       }
-      if (kind === "korean" || (kind === "neutral" && containsHangul(value))) {
+      if (hangul) {
         ko = pickBetter(ko, value);
+      }
+      if (!latin && !hangul) {
+        if (kind === "english") en = pickBetter(en, value);
+        if (kind === "korean") ko = pickBetter(ko, value);
       }
     });
 
