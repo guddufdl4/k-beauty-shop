@@ -83,7 +83,7 @@ const HEADER_ALIASES: Record<ImportField, string[]> = {
   category: ["category", "classification", "카테고리", "분류"],
   description: ["desc", "상세설명", "설명"],
   image_url: ["image", "imageurl", "대표이미지", "이미지"],
-  volume: ["volume", "용량", "size", "netwt", "netweight", "capacity", "spec", "규격"],
+  volume: ["volume", "용량", "size", "netwt", "netweight", "capacity", "spec", "규격", "gml", "netcontent", "contentsize"],
   color: ["color", "colour", "색상"],
 };
 
@@ -655,6 +655,16 @@ function headerMatchesField(
 
   if (field === "price") {
     return isWholesalePriceHeader(normalized);
+  }
+
+  if (field === "volume") {
+    return (
+      normalized === "gml" ||
+      normalized === "ml" ||
+      normalized === "용량" ||
+      normalized.endsWith("용량") ||
+      (normalized.includes("volume") && !normalized.includes("msrp"))
+    );
   }
 
   if (field === "barcode") {

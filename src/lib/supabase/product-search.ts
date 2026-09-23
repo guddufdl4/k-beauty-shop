@@ -215,7 +215,7 @@ async function fetchSuggestionsFromDatabase(
       ...product,
       category_id: null,
       description: null,
-      short_description: null,
+      short_description: product.short_description ?? null,
       price: 0,
       wholesale_price: null,
       compare_at_price: null,

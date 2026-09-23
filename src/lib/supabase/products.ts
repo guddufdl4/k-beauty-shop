@@ -1188,7 +1188,7 @@ export async function getProducts(
   if (guestProductsCacheable) {
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
-      "locale-names-v2",
+      "locale-names-v3",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -2030,7 +2030,7 @@ export async function getPriorityBrandProducts(options?: {
         products: toStorefrontProducts(result.products, "guest"),
       };
     },
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v1", String(limit), storefrontCacheAudienceKey("guest")],
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v3", String(limit), storefrontCacheAudienceKey("guest")],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],

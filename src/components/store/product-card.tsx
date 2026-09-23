@@ -16,7 +16,7 @@ import {
   isProductSoldOut,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
-import { getLocalizedProductName } from "@/lib/store/localized-product-name";
+import { getLocalizedProductName, extractProductVolume } from "@/lib/store/localized-product-name";
 import type { StorefrontProduct } from "@/lib/supabase/products";
 
 type ProductCardBadge = {
@@ -67,6 +67,7 @@ export function ProductCard({
   const soldOut = isProductSoldOut(product);
   const soldOutLabel = soldOutLabelProp ?? SOLD_OUT_LABELS[activeLocale] ?? SOLD_OUT_LABELS.en;
   const displayName = getLocalizedProductName(product, activeLocale);
+  const volume = extractProductVolume(product);
   const quantityBadge =
     moqBadge ??
     (usesBoxQuantityField(product) ? `${product.moq}/box` : `MOQ ${product.moq}`);
@@ -154,8 +155,8 @@ export function ProductCard({
         >
           {displayName}
         </h3>
-        {!compact && !isTrending && product.short_description ? (
-          <p className="line-clamp-2 text-xs text-zinc-500">{product.short_description}</p>
+        {volume ? (
+          <p className="text-xs text-zinc-500">{volume}</p>
         ) : null}
         <div className={cn("mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-2")}>
           <div className="min-w-0 flex-1">
