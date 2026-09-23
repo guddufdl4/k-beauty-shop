@@ -44,8 +44,9 @@ function CartItemRow({
             <input
               name="quantity"
               type="number"
-              min={item.moq}
-              max={item.stock > 0 ? item.stock : item.moq}
+              min={Math.max(1, item.moq)}
+              max={999999}
+              step={1}
               defaultValue={item.quantity}
               className="w-24 rounded-lg border border-zinc-300 px-3 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
             />

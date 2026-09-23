@@ -583,9 +583,6 @@ function validateQuantity(
   if (quantity < product.moq) {
     return { errorCode: "moq_not_met", errorParams: { moq: product.moq } };
   }
-  if (product.stock > 0 && quantity > product.stock) {
-    return { errorCode: "insufficient_stock", errorParams: { stock: product.stock } };
-  }
   return null;
 }
 
