@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
   FormEvent,
@@ -35,6 +35,7 @@ const MIN_QUERY_LENGTH = 2;
 
 export function StoreSearchBar({ className }: Props) {
   const t = useTranslations("nav");
+  const locale = useLocale();
   const router = useRouter();
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -84,7 +85,7 @@ export function StoreSearchBar({ className }: Props) {
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/search/suggestions?q=${encodeURIComponent(trimmed)}`,
+        `/api/search/suggestions?q=${encodeURIComponent(trimmed)}&locale=${encodeURIComponent(locale)}`,
         { signal },
       );
       if (!response.ok) {
@@ -102,7 +103,7 @@ export function StoreSearchBar({ className }: Props) {
         setLoading(false);
       }
     }
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     const controller = new AbortController();

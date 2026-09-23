@@ -8,6 +8,6 @@ export async function GET(request: Request) {
     return Response.json({ products: [], brands: [] });
   }
 
-  const suggestions = await getSearchSuggestions(query);
+  const suggestions = await getSearchSuggestions(query, undefined, searchParams.get("locale") ?? "en");
   return Response.json(suggestions);
 }

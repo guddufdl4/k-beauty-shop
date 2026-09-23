@@ -5,6 +5,7 @@ import type {
   ProductImportBatchSummary,
   ProductWithRelations,
 } from "@/lib/supabase/products";
+import { omitProductSourceRow, withLocalizedNameFields } from "@/lib/store/localized-product-name";
 
 export type StorefrontAudience = "guest" | "member" | "admin";
 
@@ -85,6 +86,7 @@ const MEMBER_INTERNAL_COLUMNS = [
   "needs_description",
   "status",
   "deleted_at",
+  "source_row",
 ] as const;
 
 const MEMBER_PRICE_COLUMNS = ["price", "wholesale_price", "compare_at_price"] as const;
@@ -131,27 +133,30 @@ export function isPricedStorefrontProduct(
 }
 
 function projectPublicProduct(product: Product): PublicProduct {
+  const named = withLocalizedNameFields(product);
   return {
-    id: product.id,
-    category_id: product.category_id,
-    name: product.name,
-    slug: product.slug,
-    description: product.description,
-    short_description: product.short_description,
-    brand: product.brand,
-    sku: product.sku,
-    barcode: product.barcode,
-    moq: product.moq,
-    sold_out: product.sold_out,
-    weight_grams: product.weight_grams,
-    ingredients: product.ingredients,
-    how_to_use: product.how_to_use,
-    country_of_origin: product.country_of_origin,
-    is_featured: product.is_featured,
-    is_best_seller: product.is_best_seller,
-    image_url: product.image_url,
-    created_at: product.created_at,
-    updated_at: product.updated_at,
+    id: named.id,
+    category_id: named.category_id,
+    name: named.name,
+    slug: named.slug,
+    description: named.description,
+    short_description: named.short_description,
+    brand: named.brand,
+    sku: named.sku,
+    barcode: named.barcode,
+    moq: named.moq,
+    sold_out: named.sold_out,
+    weight_grams: named.weight_grams,
+    ingredients: named.ingredients,
+    how_to_use: named.how_to_use,
+    country_of_origin: named.country_of_origin,
+    is_featured: named.is_featured,
+    is_best_seller: named.is_best_seller,
+    image_url: named.image_url,
+    created_at: named.created_at,
+    updated_at: named.updated_at,
+    name_en: named.name_en,
+    name_ko: named.name_ko,
   };
 }
 
@@ -174,22 +179,19 @@ export function toStorefrontProduct(
   product: ProductWithRelations,
   audience: StorefrontAudience,
 ): StorefrontProduct {
+  const named = omitProductSourceRow(withLocalizedNameFields(product));
   if (canViewProductPrices(audience)) {
-    return product;
+    return named;
   }
 
-  return toPublicProductWithRelations(product);
+  return toPublicProductWithRelations(named);
 }
 
 export function toStorefrontProducts(
   products: ProductWithRelations[],
   audience: StorefrontAudience,
 ): StorefrontProduct[] {
-  if (canViewProductPrices(audience)) {
-    return products;
-  }
-
-  return products.map(toPublicProductWithRelations);
+  return products.map((product) => toStorefrontProduct(product, audience));
 }
 
 export function storefrontCacheAudienceKey(audience: StorefrontAudience): string {

@@ -1,3 +1,4 @@
+import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
 import { formatKRW } from "@/lib/utils";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/supabase/products";
 import { enrichProductImages } from "@/lib/product-images";
 import { getEffectiveProductPrice } from "@/lib/store/products-url";
+import { getLocalizedProductName } from "@/lib/store/localized-product-name";
 import { cartMeetsMinOrderUsd, getUsdKrwRate, MIN_ORDER_USD } from "@/lib/currency";
 
 export const DEMO_CART_COOKIE = "kb_demo_cart";
@@ -304,7 +306,7 @@ async function getFallbackProduct(
   return FALLBACK_PRODUCTS.find((product) => product.id === productId) ?? null;
 }
 
-async function getDatabaseCart(userId: string): Promise<CartView> {
+async function getDatabaseCart(userId: string, locale: string): Promise<CartView> {
   const supabase = await createSafeClient();
   if (!supabase) {
     return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
@@ -357,7 +359,7 @@ async function getDatabaseCart(userId: string): Promise<CartView> {
       id: String(record.id),
       productId: String(record.product_id),
       quantity,
-      name: String(product.name),
+      name: cartProductDisplayName(product, locale),
       slug: String(product.slug),
       brand: String(product.brand),
       sku: String(product.sku),
@@ -374,16 +376,42 @@ async function getDatabaseCart(userId: string): Promise<CartView> {
   return { items, subtotal, itemCount, source: "database" };
 }
 
+function cartProductDisplayName(
+  product: {
+    name?: unknown;
+    brand?: unknown;
+    source_row?: unknown;
+    name_en?: unknown;
+    name_ko?: unknown;
+  },
+  locale: string,
+): string {
+  return getLocalizedProductName(
+    {
+      name: String(product.name ?? ""),
+      brand: product.brand ? String(product.brand) : null,
+      name_en: typeof product.name_en === "string" ? product.name_en : null,
+      name_ko: typeof product.name_ko === "string" ? product.name_ko : null,
+      source_row:
+        product.source_row && typeof product.source_row === "object"
+          ? (product.source_row as Record<string, unknown>)
+          : null,
+    },
+    locale,
+  );
+}
+
 function cartItemFromProduct(
   product: ProductWithRelations,
   quantity: number,
+  locale: string,
 ): CartItemView {
   const unitPrice = getEffectiveProductPrice(product);
   return {
     id: product.id,
     productId: product.id,
     quantity,
-    name: product.name,
+    name: cartProductDisplayName(product, locale),
     slug: product.slug,
     brand: product.brand,
     sku: product.sku,
@@ -394,7 +422,7 @@ function cartItemFromProduct(
   };
 }
 
-async function getCookieCart(): Promise<CartView> {
+async function getCookieCart(locale: string): Promise<CartView> {
   const raw = await readDemoCart();
   const items: CartItemView[] = [];
 
@@ -407,7 +435,7 @@ async function getCookieCart(): Promise<CartView> {
     if (!product) {
       continue;
     }
-    items.push(cartItemFromProduct(product, qty));
+    items.push(cartItemFromProduct(product, qty, locale));
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
@@ -416,16 +444,17 @@ async function getCookieCart(): Promise<CartView> {
 }
 
 export async function getCart(): Promise<CartView> {
+  const locale = await getLocale();
   const userId = await getCurrentUserId();
   if (!userId) {
-    return getCookieCart();
+    return getCookieCart(locale);
   }
 
   if (isSupabaseConfigured()) {
-    return getDatabaseCart(userId);
+    return getDatabaseCart(userId, locale);
   }
 
-  return getCookieCart();
+  return getCookieCart(locale);
 }
 
 export async function getCartItemCount(): Promise<number> {

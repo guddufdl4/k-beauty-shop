@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { isRedundantProductDescription } from "@/lib/store/product-copy";
+import {
+  getLocalizedProductDescription,
+  getLocalizedProductName,
+} from "@/lib/store/localized-product-name";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { ProductAdminDetailPanel } from "@/components/store/product-admin-detail-panel";
 import { ProductImagePlaceholder } from "@/components/store/product-image-placeholder";
@@ -41,14 +45,19 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   }
 
   const imageUrl = resolveProductImageUrl(product);
-  const description = isRedundantProductDescription(product.description, product.name, product.brand)
-    ? undefined
-    : product.description?.trim();
+  const displayName = getLocalizedProductName(product, locale);
+  const localizedDescription = getLocalizedProductDescription(product, locale);
+  const description =
+    !localizedDescription ||
+    isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
+    isRedundantProductDescription(localizedDescription, product.name, product.brand)
+      ? undefined
+      : localizedDescription;
 
   return buildStorefrontMetadata({
     locale,
     path: `/products/${product.slug}`,
-    title: product.name,
+    title: displayName,
     description,
     ogImage: isCategoryPlaceholderUrl(imageUrl) ? null : imageUrl,
   });
@@ -87,6 +96,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const quantityValue = usesBoxQuantityField(product)
     ? t("unitsPerBoxValue", { count: product.moq })
     : t("moqUnit", { count: product.moq });
+  const displayName = getLocalizedProductName(product, locale);
+  const localizedDescription = getLocalizedProductDescription(product, locale);
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 overflow-x-hidden px-4 py-10">
@@ -109,7 +120,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           </>
         ) : null}
         <span className="mx-2">/</span>
-        <span className="text-zinc-800">{product.name}</span>
+        <span className="text-zinc-800">{displayName}</span>
       </nav>
 
       <div className="grid min-w-0 max-w-full grid-cols-1 gap-8 lg:grid-cols-2">
@@ -121,15 +132,15 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={displayImageUrl}
-                alt={primaryImage.alt_text ?? product.name}
+                alt={primaryImage.alt_text ?? displayName}
                 className={`absolute inset-0 h-full w-full object-contain${isPlaceholder ? " p-10" : ""}`}
               />
             </div>
           ) : (
             <ProductImagePlaceholder
               brand={product.brand}
-              name={product.name}
-              ariaLabel={t("imagePending", { brand: product.brand, name: product.name })}
+              name={displayName}
+              ariaLabel={t("imagePending", { brand: product.brand, name: displayName })}
             />
           )}
           {product.images.length > 1 && !isPlaceholder ? (
@@ -142,7 +153,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={img.url}
-                    alt={img.alt_text ?? product.name}
+                    alt={img.alt_text ?? displayName}
                     className="absolute inset-0 h-full w-full object-contain"
                   />
                 </div>
@@ -168,7 +179,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 {getDisplayBrandName(product.brand)}
               </p>
               <h1 className="mt-2 text-balance break-words text-3xl font-bold tracking-tight text-zinc-900">
-                {product.name}
+                {displayName}
               </h1>
               {product.short_description ? (
                 <p className="mt-3 break-words text-lg text-zinc-600">{product.short_description}</p>
@@ -270,9 +281,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <section className="mt-10 min-w-0">
                 <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
                 <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">
-                  {isRedundantProductDescription(product.description, product.name, product.brand)
+                  {!localizedDescription ||
+                  isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
+                  isRedundantProductDescription(localizedDescription, product.name, product.brand)
                     ? t("descriptionFallback")
-                    : product.description}
+                    : localizedDescription}
                 </p>
               </section>
 

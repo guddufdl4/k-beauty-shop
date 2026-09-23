@@ -22,6 +22,7 @@ import {
   type StorefrontProduct,
 } from "@/lib/store/product-visibility";
 import { collapseRepeatedBrandPrefix } from "@/lib/store/product-copy";
+import { withLocalizedNameFields } from "@/lib/store/localized-product-name";
 import { filterStorefrontCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import { interleaveByBrand } from "@/lib/store/brand-diversity";
 import {
@@ -113,6 +114,10 @@ export type Product = {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+  /** Excel English name, when the sheet had one. */
+  name_en?: string | null;
+  /** Excel Korean name, when the sheet had one. */
+  name_ko?: string | null;
 };
 
 export type ProductImportBatchSummary = Pick<ProductImportBatch, "id" | "filename">;
@@ -613,7 +618,7 @@ function parseDecimal(value: unknown): number {
 }
 
 function mapProduct(row: Record<string, unknown>): Product {
-  return {
+  const mapped: Product = {
     id: String(row.id),
     category_id: row.category_id ? String(row.category_id) : null,
     name: collapseRepeatedBrandPrefix(String(row.name), row.brand ? String(row.brand) : null),
@@ -657,6 +662,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   };
+  return withLocalizedNameFields(mapped);
 }
 
 function mapCategory(row: Record<string, unknown>): Category {
@@ -741,8 +747,43 @@ function mapProductWithRelations(row: Record<string, unknown>): ProductWithRelat
   });
 }
 
+async function hydrateProductLocaleNames(
+  supabase: SupabaseClient,
+  products: ProductWithRelations[],
+): Promise<ProductWithRelations[]> {
+  const needsSource = products.filter((product) => !product.source_row);
+  if (needsSource.length === 0) {
+    return products;
+  }
+
+  const reader = createServiceClient() ?? supabase;
+  const { data, error } = await reader
+    .from("products")
+    .select("id, source_row")
+    .in("id", needsSource.map((product) => product.id));
+
+  if (error || !data?.length) {
+    return products;
+  }
+
+  const sourceById = new Map<string, Record<string, unknown>>();
+  for (const row of data) {
+    if (row.source_row && typeof row.source_row === "object") {
+      sourceById.set(String(row.id), row.source_row as Record<string, unknown>);
+    }
+  }
+
+  return products.map((product) => {
+    const source_row = product.source_row ?? sourceById.get(product.id) ?? null;
+    if (!source_row) {
+      return product;
+    }
+    return withLocalizedNameFields({ ...product, source_row });
+  });
+}
+
 function matchesProductSearch(
-  product: Pick<ProductWithRelations, "name" | "sku" | "brand" | "barcode">,
+  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "sku" | "brand" | "barcode">,
   search: string,
 ): boolean {
   const term = search.trim().toLowerCase();
@@ -750,7 +791,7 @@ function matchesProductSearch(
     return true;
   }
 
-  return [product.name, product.sku, product.brand, product.barcode ?? ""].some(
+  return [product.name, product.name_en ?? "", product.name_ko ?? "", product.sku, product.brand, product.barcode ?? ""].some(
     (value) => value.toLowerCase().includes(term),
   );
 }
@@ -1147,6 +1188,7 @@ export async function getProducts(
   if (guestProductsCacheable) {
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
+      "locale-names-v2",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -1418,6 +1460,7 @@ export async function getProducts(
     let products = (data ?? []).map((row) =>
       mapProductWithRelations(row as unknown as Record<string, unknown>),
     );
+    products = await hydrateProductLocaleNames(supabase, products);
 
     if (sort === "sale" && includePriceColumns) {
       products = products.filter((product) => isProductOnSale(product));
@@ -1464,6 +1507,7 @@ export async function getProducts(
   }
 
   let products: ProductWithRelations[] = data.map((row) => mapProductWithRelations(row));
+  products = await hydrateProductLocaleNames(supabase, products);
 
   if (sort === "sale" && includePriceColumns) {
     products = products.filter((product) => isProductOnSale(product));
@@ -1671,9 +1715,12 @@ async function fetchPriorityBrandListProducts(
     }
   }
 
-  const products = [...rowsById.values()]
-    .map((row) => mapProductWithRelations(row))
-    .filter(
+  const products = (
+    await hydrateProductLocaleNames(
+      supabase,
+      [...rowsById.values()].map((row) => mapProductWithRelations(row)),
+    )
+  ).filter(
       (product) => !isDemoProduct(product) && productMatchesBrandPriority(product),
     );
 
@@ -1983,7 +2030,7 @@ export async function getPriorityBrandProducts(options?: {
         products: toStorefrontProducts(result.products, "guest"),
       };
     },
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, String(limit), storefrontCacheAudienceKey("guest")],
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v1", String(limit), storefrontCacheAudienceKey("guest")],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],
@@ -2019,9 +2066,12 @@ async function fetchHomepageProductsFromDatabase(
     };
   }
 
-  const products = (data as unknown as Record<string, unknown>[])
-    .map((row) => mapProductWithRelations(row))
-    .filter((product) => !isDemoProduct(product) && productHasRealImage(product));
+  const products = (
+    await hydrateProductLocaleNames(
+      supabase,
+      (data as unknown as Record<string, unknown>[]).map((row) => mapProductWithRelations(row)),
+    )
+  ).filter((product) => !isDemoProduct(product) && productHasRealImage(product));
 
   return {
     products,
@@ -2087,9 +2137,12 @@ async function fetchPriorityBrandProductsFromSource(
       }
     }
 
-    dbProducts = [...rowsById.values()]
-      .map((row) => mapProductWithRelations(row))
-      .filter((product) => !isDemoProduct(product) && productMatchesBrandPriority(product));
+    dbProducts = (
+      await hydrateProductLocaleNames(
+        supabase,
+        [...rowsById.values()].map((row) => mapProductWithRelations(row)),
+      )
+    ).filter((product) => !isDemoProduct(product) && productMatchesBrandPriority(product));
 
     if (dbProducts.length === 0) {
       const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit, audience);
@@ -2177,11 +2230,12 @@ export async function getProductBySlug(
     };
   }
 
+  const mapped = await hydrateProductLocaleNames(supabase, [
+    mapProductWithRelations(data as unknown as Record<string, unknown>),
+  ]);
+
   return {
-    product: toStorefrontProduct(
-      mapProductWithRelations(data as unknown as Record<string, unknown>),
-      resolvedAudience,
-    ),
+    product: toStorefrontProduct(mapped[0]!, resolvedAudience),
     meta: { source: "database", configured: true },
   };
 }

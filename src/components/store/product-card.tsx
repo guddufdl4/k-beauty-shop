@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { formatLocaleProductPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -13,6 +16,7 @@ import {
   isProductSoldOut,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
+import { getLocalizedProductName } from "@/lib/store/localized-product-name";
 import type { StorefrontProduct } from "@/lib/supabase/products";
 
 type ProductCardBadge = {
@@ -52,6 +56,8 @@ export function ProductCard({
   signInToViewPriceLabel,
   priority = false,
 }: Props) {
+  const localeFromApp = useLocale();
+  const activeLocale = localeFromApp || locale;
   const isTrending = variant === "trending";
   const showPrices = isPricedStorefrontProduct(product);
   const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
@@ -59,7 +65,8 @@ export function ProductCard({
   const isPlaceholder = isCategoryPlaceholderUrl(displayImageUrl);
   const displayPrice = showPrices ? getCardDisplayPrice(product) : null;
   const soldOut = isProductSoldOut(product);
-  const soldOutLabel = soldOutLabelProp ?? SOLD_OUT_LABELS[locale] ?? SOLD_OUT_LABELS.en;
+  const soldOutLabel = soldOutLabelProp ?? SOLD_OUT_LABELS[activeLocale] ?? SOLD_OUT_LABELS.en;
+  const displayName = getLocalizedProductName(product, activeLocale);
   const quantityBadge =
     moqBadge ??
     (usesBoxQuantityField(product) ? `${product.moq}/box` : `MOQ ${product.moq}`);
@@ -87,7 +94,7 @@ export function ProductCard({
           >
             <Image
               src={displayImageUrl}
-              alt={primaryImage.alt_text ?? product.name}
+              alt={primaryImage.alt_text ?? displayName}
               width={400}
               height={400}
               sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
@@ -145,7 +152,7 @@ export function ProductCard({
             isTrending || compact ? "min-h-[2.5rem] text-sm" : "text-base",
           )}
         >
-          {product.name}
+          {displayName}
         </h3>
         {!compact && !isTrending && product.short_description ? (
           <p className="line-clamp-2 text-xs text-zinc-500">{product.short_description}</p>
@@ -155,7 +162,7 @@ export function ProductCard({
             {showPrices && displayPrice != null ? (
               <>
                 <p className={cn("font-bold text-zinc-900", isTrending || compact ? "text-sm" : "text-base")}>
-                  {formatLocaleProductPrice(displayPrice, locale, usdKrwRate)}
+                {formatLocaleProductPrice(displayPrice, activeLocale, usdKrwRate)}
                 </p>
               </>
             ) : (

@@ -12,6 +12,7 @@ import {
   getDisplayBrandName,
 } from "@/lib/store/products-url";
 import { STATIC_PRODUCTS, type ProductWithRelations } from "./products";
+import { getLocalizedProductName, withLocalizedNameFields } from "@/lib/store/localized-product-name";
 
 export type SearchSuggestionProduct = {
   id: string;
@@ -73,11 +74,13 @@ function scoreFieldMatch(value: string, query: string): number {
 }
 
 function scoreProductMatch(
-  product: Pick<ProductWithRelations, "name" | "brand" | "sku" | "barcode">,
+  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "brand" | "sku" | "barcode">,
   query: string,
 ): number {
   return Math.max(
     scoreFieldMatch(product.name, query),
+    scoreFieldMatch(product.name_en ?? "", query),
+    scoreFieldMatch(product.name_ko ?? "", query),
     scoreFieldMatch(product.brand, query),
     scoreFieldMatch(getDisplayBrandName(product.brand), query),
     scoreFieldMatch(product.sku, query),
@@ -86,7 +89,7 @@ function scoreProductMatch(
 }
 
 function productMatchesQuery(
-  product: Pick<ProductWithRelations, "name" | "brand" | "sku" | "barcode" | "status">,
+  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "brand" | "sku" | "barcode" | "status">,
   query: string,
 ): boolean {
   if (product.status !== "active") {
@@ -96,11 +99,12 @@ function productMatchesQuery(
 }
 
 function mapSuggestionProduct(
-  product: Pick<ProductWithRelations, "id" | "name" | "brand" | "slug" | "sku">,
+  product: Pick<ProductWithRelations, "id" | "name" | "name_en" | "name_ko" | "brand" | "slug" | "sku" | "source_row">,
+  locale: string,
 ): SearchSuggestionProduct {
   return {
     id: product.id,
-    name: product.name,
+    name: getLocalizedProductName(product, locale),
     brand: getDisplayBrandName(product.brand),
     slug: product.slug,
     sku: product.sku,
@@ -111,6 +115,7 @@ function buildSuggestionsFromProducts(
   products: ProductWithRelations[],
   query: string,
   limit: number,
+  locale: string,
 ): SearchSuggestions {
   const normalizedQuery = normalizeQuery(query);
   const rankedProducts = products
@@ -146,18 +151,19 @@ function buildSuggestionsFromProducts(
     .slice(0, 5);
 
   return {
-    products: rankedProducts.map(({ product }) => mapSuggestionProduct(product)),
+    products: rankedProducts.map(({ product }) => mapSuggestionProduct(product, locale)),
     brands,
   };
 }
 
-function staticSuggestions(query: string, limit: number): SearchSuggestions {
-  return buildSuggestionsFromProducts(STATIC_PRODUCTS, query, limit);
+function staticSuggestions(query: string, limit: number, locale: string): SearchSuggestions {
+  return buildSuggestionsFromProducts(STATIC_PRODUCTS, query, limit, locale);
 }
 
 async function fetchSuggestionsFromDatabase(
   query: string,
   limit: number,
+  locale: string,
 ): Promise<SearchSuggestions | null> {
   const supabase = createPublicClient() ?? (await createSafeClient());
   if (!supabase) {
@@ -169,7 +175,7 @@ async function fetchSuggestionsFromDatabase(
   const escaped = escapeIlikePattern(query);
   let productQuery = supabase
     .from("products")
-    .select("id, name, brand, slug, sku, barcode, status, image_url")
+    .select("id, name, brand, slug, sku, barcode, status, image_url, source_row")
     .eq("status", "active")
     .eq("needs_image", false)
     .or(
@@ -187,16 +193,22 @@ async function fetchSuggestionsFromDatabase(
     return error ? null : { products: [], brands: [] };
   }
 
-  const products = data.map((row) => ({
-    id: String(row.id),
-    name: String(row.name),
-    brand: String(row.brand),
-    slug: String(row.slug),
-    sku: String(row.sku),
-    barcode: row.barcode ? String(row.barcode) : null,
-    status: "active" as const,
-    image_url: row.image_url ? String(row.image_url) : null,
-  }));
+  const products = data.map((row) =>
+    withLocalizedNameFields({
+      id: String(row.id),
+      name: String(row.name),
+      brand: String(row.brand),
+      slug: String(row.slug),
+      sku: String(row.sku),
+      barcode: row.barcode ? String(row.barcode) : null,
+      status: "active" as const,
+      image_url: row.image_url ? String(row.image_url) : null,
+      source_row:
+        row.source_row && typeof row.source_row === "object"
+          ? (row.source_row as Record<string, unknown>)
+          : null,
+    }),
+  );
 
   return buildSuggestionsFromProducts(
     products.map((product) => ({
@@ -216,7 +228,7 @@ async function fetchSuggestionsFromDatabase(
       country_of_origin: null,
       import_batch_id: null,
       external_sku: null,
-      source_row: null,
+      source_row: product.source_row ?? null,
       content_status: "complete" as const,
       needs_image: false,
       needs_description: false,
@@ -231,12 +243,14 @@ async function fetchSuggestionsFromDatabase(
     })),
     query,
     limit,
+    locale,
   );
 }
 
 export async function getSearchSuggestions(
   query: string,
   limit = DEFAULT_SUGGESTION_LIMIT,
+  locale = "en",
 ): Promise<SearchSuggestions> {
   const trimmed = query.trim();
   if (trimmed.length < MIN_QUERY_LENGTH) {
@@ -244,15 +258,15 @@ export async function getSearchSuggestions(
   }
 
   if (!isSupabaseConfigured()) {
-    return staticSuggestions(trimmed, limit);
+    return staticSuggestions(trimmed, limit, locale);
   }
 
-  const fromDb = await fetchSuggestionsFromDatabase(trimmed, limit);
+  const fromDb = await fetchSuggestionsFromDatabase(trimmed, limit, locale);
   if (fromDb) {
     return fromDb;
   }
 
-  return staticSuggestions(trimmed, limit);
+  return staticSuggestions(trimmed, limit, locale);
 }
 
 async function fetchDistinctBrands(
