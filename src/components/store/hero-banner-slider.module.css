@@ -29,12 +29,12 @@
 }
 
 .copyBadge {
-  color: var(--hero-desc-color);
+  color: #e11d73;
 }
 
 @media (min-width: 640px) {
   .copyBadge {
-    color: var(--hero-desc-color-sm);
+    color: #e11d73;
   }
 }
 

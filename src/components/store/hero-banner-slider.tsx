@@ -51,13 +51,19 @@ function mergeSlideCopy(defaultCopy: HeroCopy, slide: HeroBannerSlide): HeroCopy
 
   return {
     badge: override.badge !== undefined ? override.badge : defaultCopy.badge,
-    title: override.title?.trim() || defaultCopy.title,
-    description: override.description?.trim() || defaultCopy.description,
+    title: override.title?.trim() ? override.title.trim() : defaultCopy.title,
+    description: override.description?.trim() ? override.description.trim() : defaultCopy.description,
     shopBestSellersLabel: override.shopBestSellersLabel?.trim() || defaultCopy.shopBestSellersLabel,
     shopBestSellersHref: override.shopBestSellersHref?.trim() || defaultCopy.shopBestSellersHref,
-    wholesaleInquiryLabel: override.wholesaleInquiryLabel?.trim() || defaultCopy.wholesaleInquiryLabel,
+    wholesaleInquiryLabel:
+      override.wholesaleInquiryLabel !== undefined
+        ? override.wholesaleInquiryLabel.trim()
+        : defaultCopy.wholesaleInquiryLabel,
     wholesaleInquiryHref: override.wholesaleInquiryHref?.trim() || defaultCopy.wholesaleInquiryHref,
-    orderGuideLabel: override.orderGuideLabel?.trim() || defaultCopy.orderGuideLabel,
+    orderGuideLabel:
+      override.orderGuideLabel !== undefined
+        ? override.orderGuideLabel.trim()
+        : defaultCopy.orderGuideLabel,
     orderGuideHref: override.orderGuideHref?.trim() || defaultCopy.orderGuideHref,
   };
 }
@@ -300,20 +306,24 @@ function HeroCopyPanel({
       aria-hidden={hidden || undefined}
     >
       {copy.badge ? (
-        <p className={`${styles.copyBadge} mb-2 text-xs font-bold uppercase tracking-[0.2em] sm:text-sm`}>
+        <p className={`${styles.copyBadge} mb-2 text-[13px] font-extrabold italic tracking-wide sm:text-[17px] sm:mb-3`}>
           {copy.badge}
         </p>
       ) : null}
-      <HeadingTag className={`${styles.copyTitle} font-bold leading-tight tracking-tight break-words`}>
-        {copy.title}
-      </HeadingTag>
-      <p className={`${styles.copyDescription} mt-2 leading-relaxed sm:mt-4`}>{copy.description}</p>
-      <div className={`${styles.copyCtaRow} mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3`}>
+      {copy.title.trim() ? (
+        <HeadingTag className={`${styles.copyTitle} font-black leading-[1.08] tracking-tight break-words`}>
+          {copy.title}
+        </HeadingTag>
+      ) : null}
+      {copy.description.trim() ? (
+        <p className={`${styles.copyDescription} mt-2 leading-relaxed sm:mt-3`}>{copy.description}</p>
+      ) : null}
+      <div className={`${styles.copyCtaRow} mt-4 flex flex-wrap gap-2 sm:mt-5 sm:gap-3`}>
         {copy.shopBestSellersLabel.trim() && copy.shopBestSellersHref.trim() ? (
           <HeroNavLink
             href={copy.shopBestSellersHref}
             tabIndex={hidden ? -1 : undefined}
-            className="inline-flex min-h-10 items-center bg-accent px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
+            className="inline-flex min-h-10 items-center rounded-full bg-accent px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
           >
             {copy.shopBestSellersLabel}
           </HeroNavLink>

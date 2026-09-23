@@ -232,14 +232,14 @@ export function mapHeroSlideCopyToBannerCopy(
   if (slideCopy.button_link?.trim()) {
     mapped.shopBestSellersHref = normalizeHeroHref(slideCopy.button_link, "");
   }
-  if (slideCopy.wholesale_label?.trim()) {
-    mapped.wholesaleInquiryLabel = slideCopy.wholesale_label.trim();
+  if (slideCopy.wholesale_label !== undefined) {
+    mapped.wholesaleInquiryLabel = slideCopy.wholesale_label?.trim() ?? "";
   }
   if (slideCopy.wholesale_link?.trim()) {
     mapped.wholesaleInquiryHref = normalizeHeroHref(slideCopy.wholesale_link, "");
   }
-  if (slideCopy.order_guide_label?.trim()) {
-    mapped.orderGuideLabel = slideCopy.order_guide_label.trim();
+  if (slideCopy.order_guide_label !== undefined) {
+    mapped.orderGuideLabel = slideCopy.order_guide_label?.trim() ?? "";
   }
   if (slideCopy.order_guide_link?.trim()) {
     mapped.orderGuideHref = normalizeHeroHref(slideCopy.order_guide_link, "");

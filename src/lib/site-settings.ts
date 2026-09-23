@@ -4,6 +4,7 @@ import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
 import type { HeroSlide, SiteSettings } from "@/types/database";
 import { normalizeHeroSlideLayout } from "@/lib/admin/hero-image-spec";
+import { withHomepageLeadHeroSlide } from "@/lib/store/homepage-lead-hero";
 import { displayPublicStoreName } from "@/lib/site-url";
 
 const HERO_SETTINGS_BUCKET = "site-config";
@@ -140,16 +141,18 @@ function parseHeroSlidesPatch(raw: unknown): HeroSlide[] | null {
 }
 
 export function getHeroSlides(settings: Pick<SiteSettings, "hero_slides" | "hero_image_url">): HeroSlide[] {
+  let slides: HeroSlide[] = [];
+
   if (settings.hero_slides.length > 0) {
-    return [...settings.hero_slides].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+    slides = [...settings.hero_slides].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+  } else {
+    const legacyUrl = settings.hero_image_url?.trim();
+    if (legacyUrl) {
+      slides = [{ id: "legacy", image_url: legacyUrl, order: 0 }];
+    }
   }
 
-  const legacyUrl = settings.hero_image_url?.trim();
-  if (legacyUrl) {
-    return [{ id: "legacy", image_url: legacyUrl, order: 0 }];
-  }
-
-  return [];
+  return withHomepageLeadHeroSlide(slides);
 }
 
 const DEFAULT_STORED_HERO: StoredHeroSettings = {

@@ -60,11 +60,23 @@ export function resolveHeroImageSrc(
   url: string | null | undefined,
   version: string,
 ): string | null {
-  if (!isPublicImageUrl(url)) {
+  const trimmed = url?.trim();
+  if (!trimmed) {
     return null;
   }
 
-  return withStorageImageCacheBuster(url.trim(), version);
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.includes("://")) {
+    if (trimmed.includes("..")) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  if (!isPublicImageUrl(trimmed)) {
+    return null;
+  }
+
+  return withStorageImageCacheBuster(trimmed, version);
 }
 
 /** Build a Supabase Storage public object URL from sanitized project URL. */

@@ -12,6 +12,7 @@ import {
   normalizeHeroHref,
 } from "@/lib/store/storefront-href";
 import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettings } from "@/lib/site-settings";
+import { HOMEPAGE_LEAD_HERO_SLIDE_ID } from "@/lib/store/homepage-lead-hero";
 import type { HeroSlide } from "@/types/database";
 import {
   getPriorityBrandProducts,
@@ -136,9 +137,13 @@ function mapStoredHeroSlideToBannerSlide(
   const brand = resolveHeroSlideBrand(slide.id, index);
   const brandProductsHref = buildProductsHref({ brand });
   const adminCopy = mapHeroSlideCopyToBannerCopy(slide.copy);
-  const brandCopy = brandHeroCopyFallback(brand, t);
+  const isLeadSlide = slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID;
+  const brandCopy = isLeadSlide ? undefined : brandHeroCopyFallback(brand, t);
 
-  const primaryHref = normalizeHeroHref(slide.copy?.button_link, brandProductsHref);
+  const primaryHref = normalizeHeroHref(
+    slide.copy?.button_link,
+    isLeadSlide ? DEFAULT_ORDER_GUIDE_HREF : brandProductsHref,
+  );
 
   const mobileSrcRaw = slide.mobile_image_url?.trim()
     ? resolveHeroImageSrc(slide.mobile_image_url, siteSettings.updated_at)
