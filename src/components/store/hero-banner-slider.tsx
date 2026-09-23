@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 
 import { Link } from "@/i18n/navigation";
 
@@ -22,6 +30,9 @@ export type HeroBannerSlide = {
   brandLabel: string;
   layout?: import("@/lib/admin/hero-image-spec").HeroSlideLayout;
   copy?: Partial<HeroCopy>;
+  imageFit?: "contain" | "cover";
+  imageWidth?: number;
+  imageHeight?: number;
 };
 
 export type HeroCopy = {
@@ -43,6 +54,18 @@ type Props = {
 
 const AUTOPLAY_MS = 5500;
 
+function mergeCopyLabel(override: string | undefined, fallback: string): string {
+  return override !== undefined ? override.trim() : fallback;
+}
+
+function mergeCopyHref(override: string | undefined, fallback: string): string {
+  if (override === undefined) {
+    return fallback;
+  }
+
+  return override.trim() || fallback;
+}
+
 function mergeSlideCopy(defaultCopy: HeroCopy, slide: HeroBannerSlide): HeroCopy {
   const override = slide.copy;
   if (!override) {
@@ -51,20 +74,27 @@ function mergeSlideCopy(defaultCopy: HeroCopy, slide: HeroBannerSlide): HeroCopy
 
   return {
     badge: override.badge !== undefined ? override.badge : defaultCopy.badge,
-    title: override.title?.trim() ? override.title.trim() : defaultCopy.title,
-    description: override.description?.trim() ? override.description.trim() : defaultCopy.description,
-    shopBestSellersLabel: override.shopBestSellersLabel?.trim() || defaultCopy.shopBestSellersLabel,
-    shopBestSellersHref: override.shopBestSellersHref?.trim() || defaultCopy.shopBestSellersHref,
-    wholesaleInquiryLabel:
-      override.wholesaleInquiryLabel !== undefined
-        ? override.wholesaleInquiryLabel.trim()
-        : defaultCopy.wholesaleInquiryLabel,
-    wholesaleInquiryHref: override.wholesaleInquiryHref?.trim() || defaultCopy.wholesaleInquiryHref,
-    orderGuideLabel:
-      override.orderGuideLabel !== undefined
-        ? override.orderGuideLabel.trim()
-        : defaultCopy.orderGuideLabel,
-    orderGuideHref: override.orderGuideHref?.trim() || defaultCopy.orderGuideHref,
+    title: override.title !== undefined ? override.title.trim() : defaultCopy.title,
+    description:
+      override.description !== undefined ? override.description.trim() : defaultCopy.description,
+    shopBestSellersLabel: mergeCopyLabel(
+      override.shopBestSellersLabel,
+      defaultCopy.shopBestSellersLabel,
+    ),
+    shopBestSellersHref: mergeCopyHref(
+      override.shopBestSellersHref,
+      defaultCopy.shopBestSellersHref,
+    ),
+    wholesaleInquiryLabel: mergeCopyLabel(
+      override.wholesaleInquiryLabel,
+      defaultCopy.wholesaleInquiryLabel,
+    ),
+    wholesaleInquiryHref: mergeCopyHref(
+      override.wholesaleInquiryHref,
+      defaultCopy.wholesaleInquiryHref,
+    ),
+    orderGuideLabel: mergeCopyLabel(override.orderGuideLabel, defaultCopy.orderGuideLabel),
+    orderGuideHref: mergeCopyHref(override.orderGuideHref, defaultCopy.orderGuideHref),
   };
 }
 
@@ -73,21 +103,35 @@ function preloadImage(url: string) {
   img.src = url;
 }
 
+function stopCarouselPointer(event: PointerEvent<HTMLElement>) {
+  event.stopPropagation();
+}
+
+function isCarouselInteractiveTarget(target: EventTarget | null): boolean {
+  const element =
+    target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+  return Boolean(element?.closest("a[href], button"));
+}
+
 function HeroNavLink({
   href,
   children,
   className,
   tabIndex,
+  isolatePointer,
   "aria-label": ariaLabel,
   "aria-hidden": ariaHidden,
 }: {
   href: string;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   tabIndex?: number;
+  isolatePointer?: boolean;
   "aria-label"?: string;
   "aria-hidden"?: boolean;
 }) {
+  const onPointerDown = isolatePointer ? stopCarouselPointer : undefined;
+
   if (isExternalHeroHref(href)) {
     return (
       <a
@@ -98,6 +142,7 @@ function HeroNavLink({
         aria-label={ariaLabel}
         aria-hidden={ariaHidden || undefined}
         className={className}
+        onPointerDown={onPointerDown}
       >
         {children}
       </a>
@@ -111,6 +156,7 @@ function HeroNavLink({
       aria-label={ariaLabel}
       aria-hidden={ariaHidden || undefined}
       className={className}
+      onPointerDown={onPointerDown}
     >
       {children}
     </Link>
@@ -304,9 +350,10 @@ function HeroCopyPanel({
     <div
       className={`${styles.copyPanel} pointer-events-auto relative z-20 w-full min-w-0`}
       aria-hidden={hidden || undefined}
+      onPointerDown={stopCarouselPointer}
     >
       {copy.badge ? (
-        <p className={`${styles.copyBadge} mb-2 text-[13px] font-extrabold italic tracking-wide sm:text-[17px] sm:mb-3`}>
+        <p className={`${styles.copyBadge} mb-2 text-[13px] font-extrabold uppercase tracking-wide sm:text-[17px] sm:mb-3`}>
           {copy.badge}
         </p>
       ) : null}
@@ -318,12 +365,17 @@ function HeroCopyPanel({
       {copy.description.trim() ? (
         <p className={`${styles.copyDescription} mt-2 leading-relaxed sm:mt-3`}>{copy.description}</p>
       ) : null}
-      <div className={`${styles.copyCtaRow} mt-4 flex flex-wrap gap-2 sm:mt-5 sm:gap-3`}>
+      <div
+        className={`${styles.copyCtaRow} flex flex-wrap gap-2 sm:gap-3${
+          copy.badge || copy.title.trim() || copy.description.trim() ? " mt-4 sm:mt-5" : ""
+        }`}
+      >
         {copy.shopBestSellersLabel.trim() && copy.shopBestSellersHref.trim() ? (
           <HeroNavLink
             href={copy.shopBestSellersHref}
+            isolatePointer
             tabIndex={hidden ? -1 : undefined}
-            className="inline-flex min-h-10 items-center rounded-full bg-accent px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
+            className="relative z-20 inline-flex min-h-10 pointer-events-auto items-center rounded-full bg-accent px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
           >
             {copy.shopBestSellersLabel}
           </HeroNavLink>
@@ -331,8 +383,9 @@ function HeroCopyPanel({
         {copy.wholesaleInquiryLabel.trim() && copy.wholesaleInquiryHref.trim() ? (
           <HeroNavLink
             href={copy.wholesaleInquiryHref}
+            isolatePointer
             tabIndex={hidden ? -1 : undefined}
-            className="inline-flex min-h-10 items-center border border-zinc-300 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-zinc-800 backdrop-blur-sm transition-colors hover:border-accent hover:text-accent sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
+            className="relative z-20 inline-flex min-h-10 pointer-events-auto items-center border border-zinc-300 bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-zinc-800 backdrop-blur-sm transition-colors hover:border-accent hover:text-accent sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
           >
             {copy.wholesaleInquiryLabel}
           </HeroNavLink>
@@ -340,8 +393,9 @@ function HeroCopyPanel({
         {copy.orderGuideLabel.trim() && copy.orderGuideHref.trim() ? (
           <HeroNavLink
             href={copy.orderGuideHref}
+            isolatePointer
             tabIndex={hidden ? -1 : undefined}
-            className="inline-flex min-h-10 items-center border-2 border-accent bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-accent backdrop-blur-sm transition-colors hover:bg-accent hover:text-white sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
+            className="relative z-20 inline-flex min-h-10 pointer-events-auto items-center border-2 border-accent bg-white/90 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-accent backdrop-blur-sm transition-colors hover:bg-accent hover:text-white sm:min-h-11 sm:px-6 sm:py-3 sm:text-sm"
           >
             {copy.orderGuideLabel}
           </HeroNavLink>
@@ -372,29 +426,36 @@ function HeroSlideFrame({
 
   return (
     <div className="relative w-full min-h-[280px] bg-[#f4f2ef] sm:aspect-[1920/600]">
+      <HeroBannerImage
+        src={slide.src}
+        alt={imageAlt}
+        priority={priority}
+        preload={preload}
+        imageFocus={desktop.imageFocus}
+        objectFit={slide.imageFit}
+        width={slide.imageWidth}
+        height={slide.imageHeight}
+        className="pointer-events-none hidden sm:block"
+      />
+      <HeroBannerImage
+        src={mobileImageSrc}
+        alt={imageAlt}
+        priority={priority}
+        preload={preload}
+        imageFocus={slide.mobileSrc ? mobile.imageFocus : "center"}
+        objectFit={slide.imageFit}
+        width={slide.imageWidth}
+        height={slide.imageHeight}
+        className="pointer-events-none sm:hidden"
+      />
       <HeroNavLink
         href={slide.href}
         aria-label={slide.brandLabel}
         tabIndex={isActive ? undefined : -1}
-        className="absolute inset-0 z-0 block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="absolute inset-0 z-[1] block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         aria-hidden={!isActive || undefined}
       >
-        <HeroBannerImage
-          src={slide.src}
-          alt={imageAlt}
-          priority={priority}
-          preload={preload}
-          imageFocus={desktop.imageFocus}
-          className="hidden sm:block"
-        />
-        <HeroBannerImage
-          src={mobileImageSrc}
-          alt={imageAlt}
-          priority={priority}
-          preload={preload}
-          imageFocus={slide.mobileSrc ? mobile.imageFocus : "center"}
-          className="sm:hidden"
-        />
+        <span className="sr-only">{slide.brandLabel}</span>
       </HeroNavLink>
 
       <div className="hidden sm:block">
@@ -408,7 +469,7 @@ function HeroSlideFrame({
         aria-hidden
       />
       <div
-        className={`${styles.copyOverlay} pointer-events-none absolute inset-0 z-10 flex min-w-0 px-3 sm:px-6 lg:px-10 ${responsiveOverlayFlexClasses(mobile, desktop)}`}
+        className={`${styles.copyOverlay} pointer-events-none absolute inset-0 z-20 flex min-w-0 px-3 sm:px-6 lg:px-10 ${responsiveOverlayFlexClasses(mobile, desktop)}`}
         style={buildHeroCopyCssVars(mobile, desktop)}
         aria-hidden={!isActive || undefined}
       >
@@ -627,6 +688,10 @@ export function HeroBannerSlider({ slides, copy }: Props) {
           onPointerDown={
             showControls
               ? (event) => {
+                  if (isCarouselInteractiveTarget(event.target)) {
+                    return;
+                  }
+
                   pauseAutoplay();
                   const element = containerRef.current;
                   if (!element) {

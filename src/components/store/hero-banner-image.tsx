@@ -10,6 +10,9 @@ type Props = {
   priority?: boolean;
   preload?: boolean;
   imageFocus?: HeroImageFocus;
+  objectFit?: "contain" | "cover";
+  width?: number;
+  height?: number;
   className?: string;
 };
 
@@ -29,6 +32,9 @@ export function HeroBannerImage({
   priority = false,
   preload = false,
   imageFocus = "center",
+  objectFit = "contain",
+  width = 1920,
+  height = 600,
   className,
 }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
@@ -98,10 +104,10 @@ export function HeroBannerImage({
         ref={handleImgRef}
         src={src}
         alt={alt}
-        width={1920}
-        height={600}
+        width={width}
+        height={height}
         sizes="(max-width: 1280px) 100vw, 1280px"
-        className={`absolute inset-0 block h-full w-full object-contain ${focusClass[imageFocus]} ${loaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300 ${className ?? ""}`}
+        className={`absolute inset-0 block h-full w-full ${objectFit === "cover" ? "object-cover" : "object-contain"} ${focusClass[imageFocus]} ${loaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300 ${className ?? ""}`}
         fetchPriority={priority || preload ? "high" : "auto"}
         loading={priority || preload ? "eager" : "lazy"}
         decoding="async"

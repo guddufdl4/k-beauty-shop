@@ -30,12 +30,7 @@
 
 .copyBadge {
   color: #e11d73;
-}
-
-@media (min-width: 640px) {
-  .copyBadge {
-    color: #e11d73;
-  }
+  font-style: normal;
 }
 
 .copyTitle {

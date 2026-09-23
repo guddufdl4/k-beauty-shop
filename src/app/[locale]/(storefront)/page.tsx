@@ -12,7 +12,12 @@ import {
   normalizeHeroHref,
 } from "@/lib/store/storefront-href";
 import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettings } from "@/lib/site-settings";
-import { HOMEPAGE_LEAD_HERO_SLIDE_ID } from "@/lib/store/homepage-lead-hero";
+import {
+  HOMEPAGE_LEAD_HERO_COPY,
+  HOMEPAGE_LEAD_HERO_IMAGE_HEIGHT,
+  HOMEPAGE_LEAD_HERO_IMAGE_WIDTH,
+  HOMEPAGE_LEAD_HERO_SLIDE_ID,
+} from "@/lib/store/homepage-lead-hero";
 import type { HeroSlide } from "@/types/database";
 import {
   getPriorityBrandProducts,
@@ -53,12 +58,14 @@ function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRA
 function brandHeroCopyFallback(
   brand: (typeof HERO_BRAND_ORDER)[number],
   t: Awaited<ReturnType<typeof getTranslations>>,
+  brandProductsHref: string,
 ) {
   if (brand === "VT") {
     return {
       title: t("hero.brandVtTitle"),
       description: t("hero.brandVtDescription"),
       shopBestSellersLabel: t("hero.brandVtCta"),
+      shopBestSellersHref: brandProductsHref,
     };
   }
   if (brand === "skinfood") {
@@ -66,12 +73,14 @@ function brandHeroCopyFallback(
       title: t("hero.brandSkinfoodTitle"),
       description: t("hero.brandSkinfoodDescription"),
       shopBestSellersLabel: t("hero.brandSkinfoodCta"),
+      shopBestSellersHref: brandProductsHref,
     };
   }
   return {
     title: t("hero.brandTorridenTitle"),
     description: t("hero.brandTorridenDescription"),
     shopBestSellersLabel: t("hero.brandTorridenCta"),
+    shopBestSellersHref: brandProductsHref,
   };
 }
 
@@ -134,11 +143,11 @@ function mapStoredHeroSlideToBannerSlide(
     return null;
   }
 
+  const isLeadSlide = slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID;
   const brand = resolveHeroSlideBrand(slide.id, index);
   const brandProductsHref = buildProductsHref({ brand });
   const adminCopy = mapHeroSlideCopyToBannerCopy(slide.copy);
-  const isLeadSlide = slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID;
-  const brandCopy = isLeadSlide ? undefined : brandHeroCopyFallback(brand, t);
+  const brandCopy = isLeadSlide ? undefined : brandHeroCopyFallback(brand, t, brandProductsHref);
 
   const primaryHref = normalizeHeroHref(
     slide.copy?.button_link,
@@ -154,12 +163,43 @@ function mapStoredHeroSlideToBannerSlide(
     src,
     ...(mobileSrcRaw ? { mobileSrc: mobileSrcRaw } : {}),
     href: primaryHref,
-    brandLabel: resolveSlideBrandLabel(slide, brand, t),
+    ...(isLeadSlide
+      ? {
+          imageWidth: HOMEPAGE_LEAD_HERO_IMAGE_WIDTH,
+          imageHeight: HOMEPAGE_LEAD_HERO_IMAGE_HEIGHT,
+        }
+      : {}),
+    brandLabel: isLeadSlide
+      ? slide.copy?.title?.trim() || HOMEPAGE_LEAD_HERO_COPY.title
+      : resolveSlideBrandLabel(slide, brand, t),
     ...(slide.layout ? { layout: slide.layout } : {}),
-    copy: {
-      ...brandCopy,
-      ...adminCopy,
-    },
+    copy: isLeadSlide
+      ? {
+          badge: adminCopy?.badge?.trim() || HOMEPAGE_LEAD_HERO_COPY.badge,
+          title: adminCopy?.title?.trim() || HOMEPAGE_LEAD_HERO_COPY.title,
+          description: adminCopy?.description?.trim() || HOMEPAGE_LEAD_HERO_COPY.subtitle,
+          shopBestSellersLabel:
+            adminCopy?.shopBestSellersLabel?.trim() || HOMEPAGE_LEAD_HERO_COPY.button_text,
+          shopBestSellersHref:
+            adminCopy?.shopBestSellersHref?.trim() || DEFAULT_ORDER_GUIDE_HREF,
+          wholesaleInquiryLabel: "",
+          wholesaleInquiryHref: "",
+          orderGuideLabel: "",
+          orderGuideHref: "",
+        }
+      : {
+          ...brandCopy,
+          ...adminCopy,
+          shopBestSellersLabel:
+            adminCopy?.shopBestSellersLabel?.trim() || brandCopy.shopBestSellersLabel,
+          shopBestSellersHref: adminCopy?.shopBestSellersHref?.trim() || brandProductsHref,
+          wholesaleInquiryLabel:
+            adminCopy?.wholesaleInquiryLabel?.trim() || t("hero.wholesaleInquiry"),
+          wholesaleInquiryHref:
+            adminCopy?.wholesaleInquiryHref?.trim() || DEFAULT_WHOLESALE_INQUIRY_HREF,
+          orderGuideLabel: adminCopy?.orderGuideLabel?.trim() || t("hero.orderGuide"),
+          orderGuideHref: adminCopy?.orderGuideHref?.trim() || DEFAULT_ORDER_GUIDE_HREF,
+        },
   };
 }
 export default async function HomePage() {
