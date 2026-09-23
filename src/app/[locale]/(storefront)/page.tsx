@@ -191,7 +191,7 @@ function mapStoredHeroSlideToBannerSlide(
           ...brandCopy,
           ...adminCopy,
           shopBestSellersLabel:
-            adminCopy?.shopBestSellersLabel?.trim() || brandCopy.shopBestSellersLabel,
+            adminCopy?.shopBestSellersLabel?.trim() || brandCopy?.shopBestSellersLabel,
           shopBestSellersHref: adminCopy?.shopBestSellersHref?.trim() || brandProductsHref,
           wholesaleInquiryLabel:
             adminCopy?.wholesaleInquiryLabel?.trim() || t("hero.wholesaleInquiry"),
