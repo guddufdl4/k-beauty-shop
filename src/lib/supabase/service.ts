@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  getPublicSupabaseConfig,
   getSanitizedSupabaseConfig,
   isOpaqueSupabaseSecretKey,
   isSupabaseConfigured,
@@ -124,9 +125,6 @@ function createSupabaseFetch(
       cacheGets &&
       (!nextInit.method || nextInit.method === "GET" || nextInit.method === "HEAD")
     ) {
-      if (!nextInit.cache) {
-        nextInit.cache = "force-cache";
-      }
       if (!(nextInit as RequestInit & { next?: { revalidate?: number } }).next) {
         (nextInit as RequestInit & { next?: { revalidate?: number } }).next = {
           revalidate: 180,
@@ -180,7 +178,7 @@ export function createPublicClient(): SupabaseClient | null {
     return null;
   }
 
-  const config = getSanitizedSupabaseConfig();
+  const config = getPublicSupabaseConfig();
   if (!config) {
     return null;
   }
@@ -191,7 +189,7 @@ export function createPublicClient(): SupabaseClient | null {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       headers: { apikey: anonKey },
-      fetch: createSupabaseFetch(anonKey, false, true),
+      fetch: createSupabaseFetch(anonKey, false, false),
     },
   });
 }

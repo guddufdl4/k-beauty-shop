@@ -1,6 +1,6 @@
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getSanitizedSupabaseConfig, isSupabaseConfigured } from "./config";
+import { getPublicSupabaseConfig, isSupabaseConfigured } from "./config";
 import { createSsrSupabaseFetch } from "./service";
 
 export async function createClient() {
@@ -10,7 +10,7 @@ export async function createClient() {
     );
   }
 
-  const config = getSanitizedSupabaseConfig();
+  const config = getPublicSupabaseConfig();
   if (!config) {
     throw new Error(
       "Supabase env vars contain non-ASCII characters. Re-paste values from Supabase Dashboard."

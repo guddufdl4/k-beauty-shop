@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getSanitizedSupabaseConfig, isSupabaseConfigured } from "./config";
+import { getPublicSupabaseConfig, isSupabaseConfigured } from "./config";
 import { createSsrSupabaseFetch } from "./service";
 
 export async function createSafeClient() {
@@ -8,7 +8,7 @@ export async function createSafeClient() {
     return null;
   }
 
-  const config = getSanitizedSupabaseConfig();
+  const config = getPublicSupabaseConfig();
   if (!config) {
     return null;
   }

@@ -178,20 +178,33 @@ function requireHttpHeaderSafe(value: string | null): string | null {
 }
 
 /**
- * Single source of truth for Supabase env — url and keys are ASCII-only and safe for Headers.set().
+ * URL + anon key for storefront reads. Service role is not required.
  * fetchWithAuth in @supabase/supabase-js calls Headers.set(apikey) before our custom fetch runs;
- * non-Latin-1 characters (e.g. pasted "Settings →") throw there unless values are sanitized first.
+ * values must be ASCII-only.
  */
-export function getSanitizedSupabaseConfig(): SanitizedSupabaseConfig | null {
+export function getPublicSupabaseConfig(): Pick<
+  SanitizedSupabaseConfig,
+  "url" | "anonKey"
+> | null {
   const url = requireHttpHeaderSafe(getSupabaseProjectUrl());
   const anonKey = requireHttpHeaderSafe(getSupabaseAnonKey());
-  const serviceKey = requireHttpHeaderSafe(getSupabaseServiceRoleKey());
 
-  if (!url || !anonKey || !serviceKey) {
+  if (!url || !anonKey) {
     return null;
   }
 
-  return { url, anonKey, serviceKey };
+  return { url, anonKey };
+}
+
+export function getSanitizedSupabaseConfig(): SanitizedSupabaseConfig | null {
+  const publicConfig = getPublicSupabaseConfig();
+  const serviceKey = requireHttpHeaderSafe(getSupabaseServiceRoleKey());
+
+  if (!publicConfig || !serviceKey) {
+    return null;
+  }
+
+  return { ...publicConfig, serviceKey };
 }
 
 /** Safe prefix + length for diagnostics (never exposes full secrets). */

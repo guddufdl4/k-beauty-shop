@@ -188,7 +188,7 @@ export default async function HomePage() {
 
       <HomeTrustBar />
 
-      {!meta.configured || meta.source === "static" ? (
+      {!meta.configured ? (
         <div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6">
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {t("supabaseWarning")}
