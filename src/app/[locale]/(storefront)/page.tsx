@@ -21,7 +21,7 @@ import {
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import type { Metadata } from "next";
-export const revalidate = 60;
+export const revalidate = 300;
 
 /** Standard homepage hero brand set (VT, SKINFOOD, Torriden). */
 const HERO_BRAND_ORDER = ["VT", "skinfood", "Torriden"] as const;
@@ -162,7 +162,7 @@ export default async function HomePage() {
   const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }] = await Promise.all([
     getTranslations("home"),
     getTranslations("products"),
-    getPriorityBrandProducts({ limit: 200, audience }),
+    getPriorityBrandProducts({ limit: 48, audience }),
     getLocale(),
     getUsdKrwRate(),
     getStorefrontCategories(),

@@ -1,3 +1,27 @@
+export const MISSING_BARCODE_SKU = "none";
+
+export function isMissingBarcodeSku(sku: string | null | undefined): boolean {
+  const trimmed = String(sku ?? "").trim();
+  return /^none(?:\u200b)*$/i.test(trimmed);
+}
+
+export function displayProductSku(
+  barcode?: string | null,
+  sku?: string | null,
+): string {
+  if (!productHasUnitBarcode(barcode, sku) || isMissingBarcodeSku(sku)) {
+    return MISSING_BARCODE_SKU;
+  }
+  return String(sku ?? "").trim();
+}
+
+export function productHasUnitBarcode(
+  barcode?: string | null,
+  sku?: string | null,
+): boolean {
+  return Boolean(canonicalBarcode(barcode) ?? canonicalBarcode(sku));
+}
+
 export function barcodeVariants(value: string): string[] {
   const digits = value.replace(/\D/g, "");
   if (!digits) {
@@ -59,6 +83,10 @@ export function productDedupeKey(product: ProductDedupeFields): string {
     return `barcode:${barcode}`;
   }
 
+  if (isMissingBarcodeSku(product.sku)) {
+    return `sku:${MISSING_BARCODE_SKU}`;
+  }
+
   return `sku:${product.sku.trim().toLowerCase()}`;
 }
 
@@ -117,5 +145,5 @@ export function normalizeImportSku(
     return canonical;
   }
 
-  return sku.trim();
+  return MISSING_BARCODE_SKU;
 }

@@ -81,7 +81,17 @@ export function nameAlreadyIncludesBrand(name: string, brand?: string | null): b
   if (trimmedName === trimmedBrand || trimmedName.startsWith(`${trimmedBrand} `)) {
     return true;
   }
-  const nameFirst = trimmedName.split(/\s+/)[0];
+  const nameFirst = trimmedName.split(/\s+/)[0]?.replace(/[^a-z0-9가-힣]/g, "") ?? "";
+  const compactBrand = trimmedBrand.replace(/[^a-z0-9가-힣]/g, "");
+  if (nameFirst && compactBrand && nameFirst === compactBrand) {
+    return true;
+  }
+  if (
+    (nameFirst === "tfs" || nameFirst === "fmgt" || nameFirst === "thefaceshop") &&
+    compactBrand.includes("faceshop")
+  ) {
+    return true;
+  }
   const brandFirst = trimmedBrand.split(/\s+/)[0];
   return Boolean(nameFirst && brandFirst && brandFirst.length >= 3 && nameFirst === brandFirst);
 }

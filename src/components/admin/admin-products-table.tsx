@@ -12,6 +12,7 @@ import { resolveProductImageUrl } from "@/lib/product-images";
 import type { ProductWithRelations, Category } from "@/lib/supabase/products";
 import { ProductNameWithCopy } from "@/components/admin/product-name-with-copy";
 import { formatProductPrice } from "@/lib/utils";
+import { displayProductSku } from "@/lib/admin/product-dedupe";
 
 type Props = {
   products: ProductWithRelations[];
@@ -240,7 +241,9 @@ const ProductTableRow = memo(function ProductTableRow({
         </div>
       </td>
       <td className="px-3 py-2.5 align-top">
-        <p className="font-mono text-xs font-medium text-zinc-800">{product.sku}</p>
+        <p className="font-mono text-xs font-medium text-zinc-800">
+          {displayProductSku(product.barcode, product.sku)}
+        </p>
         {product.barcode ? (
           <p className="mt-0.5 font-mono text-[10px] text-zinc-400">
             {product.barcode}

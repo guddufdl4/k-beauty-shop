@@ -1,6 +1,9 @@
 import * as XLSX from "xlsx";
-import { slugify } from "@/lib/utils";
-import { resolveHanmiCategory } from "@/lib/admin/hanmi-category-map";
+import { resolveHanmiCategory, looksLikeSetBundleName } from "@/lib/admin/hanmi-category-map";
+import {
+  MISSING_BARCODE_SKU,
+  isMissingBarcodeSku,
+} from "@/lib/admin/product-dedupe";
 import { collapseRepeatedBrandPrefix } from "@/lib/store/product-copy";
 
 export type ImportField =
@@ -468,39 +471,39 @@ function getMsrpValue(
 function moqHeaderPriority(header: string): number {
   const normalized = normalizeHeader(header);
 
-  if (normalized === "inbox") {
-    return 0;
+  if (normalized === "inbox" || normalized.startsWith("inbox")) {
+    return normalized === "inbox" ? 1 : 0;
   }
-  if (normalized === "inner") {
-    return 1;
-  }
-  if (normalized.startsWith("outbox")) {
+  if (normalized === "inner" || normalized === "outinbox") {
     return 2;
   }
-  if (/qty.*box|box.*qty|qty\/1box/.test(normalized)) {
+  if (normalized.startsWith("outbox")) {
     return 3;
   }
-  if (normalized === "boxquantity") {
+  if (/qty.*box|box.*qty|qty\/1box/.test(normalized)) {
     return 4;
   }
-  if (normalized === "box" || normalized === "박스") {
+  if (normalized === "boxquantity") {
     return 5;
   }
-  if (normalized === "ta") {
+  if (normalized === "box" || normalized === "박스") {
     return 6;
   }
-  if (normalized === "carton" || normalized === "ctn") {
+  if (normalized === "ta") {
     return 7;
+  }
+  if (normalized === "carton" || normalized === "ctn") {
+    return 8;
   }
   if (
     normalized === "moq" ||
     normalized.includes("minimumorder") ||
     normalized.includes("최소")
   ) {
-    return 8;
+    return 9;
   }
 
-  return 9;
+  return 10;
 }
 
 function getMoqValue(
@@ -512,9 +515,9 @@ function getMoqValue(
   );
 
   for (const header of headers) {
-    const parsed = parseNumber(String(row[header] ?? "").trim());
-    if (parsed != null && parsed > 0) {
-      return Math.max(1, Math.round(parsed));
+    const parsed = parseMoqCell(row[header]);
+    if (parsed != null) {
+      return parsed;
     }
   }
 
@@ -557,6 +560,37 @@ function findHeaderRowIndex(rows: (string | number | null)[][]): number {
   return bestScore > 0 ? bestIndex : 0;
 }
 
+function parseMoqCell(input: unknown): number | null {
+  if (typeof input === "number" && Number.isFinite(input) && input > 0) {
+    if (input >= 5000) {
+      return null;
+    }
+    return Math.max(1, Math.round(input));
+  }
+
+  const text = String(input ?? "").trim();
+  if (!text) {
+    return null;
+  }
+  if (/(ml|㎖|mg|\bkg\b|oz|\bg\b|ℓ|\bl\b)\b/i.test(text) && !/^\d+$/.test(text)) {
+    return null;
+  }
+
+  const nested = text.match(/^(\d+)\s*\(\s*(\d+)\s*\)$/);
+  if (nested) {
+    const inner = Number(nested[2]);
+    if (Number.isFinite(inner) && inner > 0 && inner < 5000) {
+      return Math.max(1, Math.round(inner));
+    }
+  }
+
+  const parsed = parseNumber(text);
+  if (parsed == null || parsed <= 0 || parsed >= 5000) {
+    return null;
+  }
+  return Math.max(1, Math.round(parsed));
+}
+
 function isBoxMoqHeader(normalized: string): boolean {
   if (/^qty$|^quantity$|^stock$|^재고|^rate$|^moa$/.test(normalized)) {
     return false;
@@ -567,11 +601,13 @@ function isBoxMoqHeader(normalized: string): boolean {
 
   return (
     normalized === "inbox" ||
+    normalized.startsWith("inbox") ||
     normalized === "inner" ||
     normalized === "carton" ||
     normalized === "ctn" ||
     normalized === "outbox" ||
     normalized.startsWith("outbox") ||
+    normalized === "outinbox" ||
     normalized === "boxquantity" ||
     normalized === "unitsperbox" ||
     normalized === "qtyperbox" ||
@@ -957,10 +993,21 @@ function classifyNameHeader(
   totalMatches: number,
 ): NameColumnKind {
   const base = headerBaseForClassification(header);
+  const pairedGeneric =
+    base === "productname" ||
+    base === "name" ||
+    base === "product" ||
+    base === "제품명" ||
+    base === "상품명" ||
+    base === "description";
+
+  if (pairedGeneric && totalMatches >= 2) {
+    return indexAmongMatches === 0 ? "korean" : "english";
+  }
 
   const koreanHint =
     base === "kr" ||
-    /korean|kor\b|\(kor|국문|상품|제품|품목|namekr|productkr|productnamekr|상품명|제품명/.test(
+    /korean|kor\b|\(kor|국문|namekr|productkr|productnamekr|상품명|제품명/.test(
       base,
     ) ||
     (base.endsWith("kr") && !base.includes("eng"));
@@ -976,21 +1023,24 @@ function classifyNameHeader(
     return "korean";
   }
 
-  const generic =
-    base === "productname" ||
-    base === "name" ||
-    base === "description" ||
-    base === "product" ||
-    base.includes("productname");
-
-  if (generic && totalMatches >= 2) {
-    return indexAmongMatches === 0 ? "korean" : "english";
-  }
-
   return "neutral";
 }
 
-/** Prefer English product name columns; never use Korean as primary `name`. */
+function isUsableEnglishName(text: string): boolean {
+  const trimmed = String(text ?? "").trim();
+  if (!trimmed || trimmed === "0") {
+    return false;
+  }
+  if (!isLatinProductName(trimmed) || trimmed.endsWith("/")) {
+    return false;
+  }
+  if (!/\s/.test(trimmed)) {
+    return false;
+  }
+  return true;
+}
+
+/** Prefer English when the sheet has it; otherwise keep the original Korean name. */
 export function resolvePrimaryProductName(
   row: Record<string, unknown>,
   nameHeaders: string[],
@@ -1008,22 +1058,30 @@ export function resolvePrimaryProductName(
     };
   });
 
-  for (const { kind, composed, english } of classified) {
-    if (kind === "english" && composed && !composed.endsWith("/")) {
+  for (const { kind, composed, english, value } of classified) {
+    if (kind !== "english") {
+      continue;
+    }
+    if (composed && isUsableEnglishName(composed)) {
       return composed;
     }
-    if (kind === "english" && english && !english.endsWith("/")) {
+    if (english && isUsableEnglishName(english)) {
       return english;
+    }
+    if (value && isUsableEnglishName(value)) {
+      return value;
     }
   }
 
-  for (const { composed, english } of classified) {
-    if (composed && !composed.endsWith("/") && (composed.includes(" ") || containsHangul(composed))) {
-      return composed;
+  for (const { kind, value } of classified) {
+    if (kind === "korean" && value) {
+      return value;
     }
-    if (english && !english.endsWith("/")) {
-      return english;
-    }
+  }
+
+  const anyName = classified.find((entry) => entry.value)?.value ?? "";
+  if (anyName) {
+    return anyName;
   }
 
   const id = barcode?.trim();
@@ -1033,18 +1091,7 @@ export function resolvePrimaryProductName(
   if (brand) {
     return brand;
   }
-  if (id) {
-    return id;
-  }
-
-  const anyName = classified.find((entry) => entry.value)?.value ?? "";
-  if (anyName && !containsHangul(anyName)) {
-    return anyName;
-  }
-
-  return (
-    anyName.replace(/[\u3131-\u318E\uAC00-\uD7A3\s_]+/g, " ").trim() || "Product"
-  );
+  return id || "Product";
 }
 
 function isSubHeaderRow(row: (string | number | null)[]): boolean {
@@ -1088,13 +1135,12 @@ function inferBrand(sheetName: string, rowBrand: string): string {
   return sheetName.trim();
 }
 
-function buildSku(brand: string, name: string, barcode: string | null): string {
+function buildSku(_brand: string, _name: string, barcode: string | null): string {
   if (barcode) {
     return barcode;
   }
 
-  const slug = slugify(`${brand}-${name}`);
-  return slug || `hanmi-${slugify(name) || "product"}`;
+  return MISSING_BARCODE_SKU;
 }
 
 function buildDescription(
@@ -1286,6 +1332,7 @@ export function parseHanmiWorkbook(
   const workbook = XLSX.read(fileBuffer, { type: "array" });
   const sheetStats: ParseHanmiResult["sheetStats"] = [];
   const rowsBySku = new Map<string, ParsedHanmiRow>();
+  const missingBarcodeRows: ParsedHanmiRow[] = [];
 
   for (const sheetName of workbook.SheetNames) {
     const sheet = workbook.Sheets[sheetName];
@@ -1299,6 +1346,12 @@ export function parseHanmiWorkbook(
     for (const row of sheetRows) {
       const sku = row.sku.trim();
       if (!sku) {
+        continue;
+      }
+
+      if (isMissingBarcodeSku(sku)) {
+        missingBarcodeRows.push(row);
+        imported += 1;
         continue;
       }
 
@@ -1317,7 +1370,7 @@ export function parseHanmiWorkbook(
 
   return {
     headers: Object.keys(HEADER_ALIASES),
-    rows: Array.from(rowsBySku.values()),
+    rows: [...rowsBySku.values(), ...missingBarcodeRows],
     sheetStats,
   };
 }
@@ -1369,6 +1422,10 @@ const NAME_CATEGORY_HINTS: Array<{ pattern: RegExp; category: string }> = [
 ];
 
 function inferCategoryFromName(name: string): string | null {
+  if (looksLikeSetBundleName(name)) {
+    return "set";
+  }
+
   for (const hint of NAME_CATEGORY_HINTS) {
     if (hint.pattern.test(name)) {
       return hint.category;

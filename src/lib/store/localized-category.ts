@@ -16,7 +16,7 @@ export const CATEGORY_EN_NAMES: Record<string, string> = {
   "tools-accessories": "Tools & Accessories",
   "mask-pack": "Mask Pack",
   nail: "Nail",
-  set: "Sets",
+  set: "Set Menu",
   promotion: "Promotions",
   ...Object.fromEntries(
     Object.entries(flattenTaxonomyLabels()).map(([slug, labels]) => [slug, labels.en]),

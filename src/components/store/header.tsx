@@ -4,7 +4,7 @@ import Image from "next/image";
 
 import { Link } from "@/i18n/navigation";
 
-import { getCart } from "@/lib/cart";
+import { getCartItemCount } from "@/lib/cart";
 
 import { getStorefrontCategories } from "@/lib/supabase/products";
 import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
@@ -87,9 +87,9 @@ function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
 
 export async function StoreHeader({ storeName }: Props) {
 
-  const [cart, { user, profile }, tNav, locale, navBrandGroups] = await Promise.all([
+  const [cartCount, { user, profile }, tNav, locale, navBrandGroups] = await Promise.all([
 
-    getCart(),
+    getCartItemCount(),
 
     getSessionProfile(),
 
@@ -130,7 +130,7 @@ export async function StoreHeader({ storeName }: Props) {
 
 
       <MobileNavRoot
-        cartCount={cart.itemCount}
+        cartCount={cartCount}
         isLoggedIn={Boolean(user)}
         profileRole={profile?.role ?? null}
         profileFullName={profile?.full_name ?? null}
@@ -211,9 +211,9 @@ export async function StoreHeader({ storeName }: Props) {
                     <circle cx="18" cy="20" r="1.5" />
                     <path d="M6 6L5 3H2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  {cart.itemCount > 0 ? (
+                  {cartCount > 0 ? (
                     <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
-                      {cart.itemCount}
+                      {cartCount}
                     </span>
                   ) : null}
                 </span>

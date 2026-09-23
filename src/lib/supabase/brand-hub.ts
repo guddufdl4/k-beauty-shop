@@ -9,6 +9,7 @@ import {
 import { unstable_cache } from "next/cache";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createPublicClient } from "@/lib/supabase/service";
 import {
   buildBrandCatalogEntries,
   resolveBrandCatalogEntry,
@@ -318,12 +319,44 @@ async function discoverBrandCategoryTabs(
   return sortBrandCategoryTabs([...counts.values()].filter((tab) => tab.count > 0), tabContext.navCategories);
 }
 
+async function fetchNavBrandNameSample(): Promise<string[]> {
+  if (!isSupabaseConfigured()) {
+    return getStaticFallbackBrandNames();
+  }
+
+  const supabase = createPublicClient();
+  if (!supabase) {
+    return getStaticFallbackBrandNames();
+  }
+
+  const featuredNames = HOME_FEATURED_BRANDS.filter((item) => item.enabled).map(
+    (item) => item.displayName,
+  );
+  const { data, error } = await supabase
+    .from("products")
+    .select("brand")
+    .eq("status", "active")
+    .not("image_url", "is", null)
+    .order("brand", { ascending: true })
+    .limit(400);
+
+  if (error) {
+    return featuredNames;
+  }
+
+  const sampled = (data ?? [])
+    .map((row) => String(row.brand ?? "").trim())
+    .filter(Boolean);
+
+  return [...new Set([...featuredNames, ...sampled])];
+}
+
 async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
-  const [{ brands: productBrands, meta }, logoMap] = await Promise.all([
-    getProductBrands(),
+  const [productBrands, logoMap] = await Promise.all([
+    fetchNavBrandNameSample(),
     getBrandLogoMap(),
   ]);
-  const brands = resolveNavCatalogBrandNames(productBrands, meta);
+  const brands = productBrands.length > 0 ? productBrands : getStaticFallbackBrandNames();
   const { entries } = buildBrandCatalogEntries(brands);
 
   const entryByKey = new Map<string, BrandCatalogEntry>();

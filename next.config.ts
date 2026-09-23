@@ -25,11 +25,18 @@ function resolveSupabaseHostname(): string | null {
 
 const supabaseHostname = resolveSupabaseHostname();
 
+const imageSettings = {
+  formats: ["image/webp"] as const,
+  minimumCacheTTL: 2678400,
+  deviceSizes: [640, 750, 828, 1080, 1200],
+  imageSizes: [64, 96, 128, 256, 384],
+};
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ["sharp", "xlsx", "@imgly/background-removal-node", "onnxruntime-node"],
   images: supabaseHostname
     ? {
-        formats: ["image/avif", "image/webp"],
+        ...imageSettings,
         remotePatterns: [
           {
             protocol: "https",
@@ -38,9 +45,7 @@ const nextConfig: NextConfig = {
           },
         ],
       }
-    : {
-        formats: ["image/avif", "image/webp"],
-      },
+    : { ...imageSettings },
   experimental: {
     optimizePackageImports: ["next-intl"],
   },

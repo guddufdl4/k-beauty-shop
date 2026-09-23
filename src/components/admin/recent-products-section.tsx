@@ -5,6 +5,7 @@ import {
   type AdminProductsFilters,
 } from "@/lib/admin/admin-products-url";
 import { resolveProductImageUrl } from "@/lib/product-images";
+import { displayProductSku } from "@/lib/admin/product-dedupe";
 import type { ProductWithRelations } from "@/lib/supabase/products";
 
 type Props = {
@@ -143,7 +144,7 @@ export function RecentProductsSection({ products, filters, dense }: Props) {
                   </>
                 ) : null}
                 <span className="text-zinc-400">SKU </span>
-                {product.sku}
+                {displayProductSku(product.barcode, product.sku)}
               </p>
               <Link
                 href={buildAdminProductsHref({

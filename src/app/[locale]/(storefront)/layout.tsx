@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getLocale } from "next-intl/server";
 import { StoreFooter } from "@/components/store/footer";
 import { StoreHeader } from "@/components/store/header";
@@ -49,7 +50,9 @@ export default async function StorefrontLayout({
         />
         <div className="mx-auto flex min-h-screen w-full min-w-0 max-w-full flex-col overflow-x-hidden bg-white">
           <MaintenanceBanner settings={settings} />
-          <StoreHeader storeName={displayPublicStoreName(settings.store_name)} />
+          <Suspense fallback={<div className="h-[148px] border-b border-zinc-200 bg-white" />}>
+            <StoreHeader storeName={displayPublicStoreName(settings.store_name)} />
+          </Suspense>
           <div className="mx-auto min-w-0 w-full max-w-full flex-1 overflow-x-hidden">{children}</div>
           <StoreFooter {...publicContact} />
         </div>

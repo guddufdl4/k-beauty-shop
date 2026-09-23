@@ -17,8 +17,9 @@ function buildFetchInit(init: RequestInit | undefined, headers: Headers): Reques
     referrer: init?.referrer,
     referrerPolicy: init?.referrerPolicy,
     integrity: init?.integrity,
-    keepalive: init?.keepalive,
+      keepalive: init?.keepalive,
     mode: init?.mode,
+    next: (init as RequestInit & { next?: { revalidate?: number } })?.next,
     headers,
   };
 
@@ -99,7 +100,11 @@ function mergeSanitizedHeaders(
  * @supabase/supabase-js fetchWithAuth calls Headers.set(apikey, supabaseKey) before this runs;
  * createClient must receive ASCII-only keys from getSanitizedSupabaseConfig().
  */
-function createSupabaseFetch(apiKey: string, omitAuthorization: boolean): typeof fetch {
+function createSupabaseFetch(
+  apiKey: string,
+  omitAuthorization: boolean,
+  cacheGets = false,
+): typeof fetch {
   const safeApiKey = toHttpHeaderValue(apiKey);
 
   return async (input, init) => {
@@ -115,6 +120,19 @@ function createSupabaseFetch(apiKey: string, omitAuthorization: boolean): typeof
 
     const sanitizedInput = sanitizeFetchInput(input);
     const nextInit = buildFetchInit(init, headers);
+    if (
+      cacheGets &&
+      (!nextInit.method || nextInit.method === "GET" || nextInit.method === "HEAD")
+    ) {
+      if (!nextInit.cache) {
+        nextInit.cache = "force-cache";
+      }
+      if (!(nextInit as RequestInit & { next?: { revalidate?: number } }).next) {
+        (nextInit as RequestInit & { next?: { revalidate?: number } }).next = {
+          revalidate: 180,
+        };
+      }
+    }
     const url =
       typeof sanitizedInput === "string"
         ? sanitizedInput
@@ -122,7 +140,7 @@ function createSupabaseFetch(apiKey: string, omitAuthorization: boolean): typeof
           ? sanitizedInput.href
           : sanitizedInput.url;
 
-    const requestInit: RequestInit & { duplex?: "half" } = {
+    const requestInit: RequestInit & { duplex?: "half" | undefined; next?: { revalidate?: number } } = {
       method: nextInit.method ?? (input instanceof Request ? input.method : "GET"),
       headers,
       body: nextInit.body,
@@ -135,11 +153,16 @@ function createSupabaseFetch(apiKey: string, omitAuthorization: boolean): typeof
       integrity: nextInit.integrity,
       keepalive: nextInit.keepalive,
       mode: nextInit.mode,
+      next: (nextInit as RequestInit & { next?: { revalidate?: number } }).next,
     };
 
     const duplex = (nextInit as RequestInit & { duplex?: "half" }).duplex;
     if (duplex) {
       requestInit.duplex = duplex;
+    }
+
+    if (requestInit.next) {
+      return fetch(url, requestInit);
     }
 
     return fetch(new Request(url, requestInit));
@@ -148,7 +171,7 @@ function createSupabaseFetch(apiKey: string, omitAuthorization: boolean): typeof
 
 /** Sanitized fetch for cookie-based SSR clients (@supabase/ssr). */
 export function createSsrSupabaseFetch(apiKey: string): typeof fetch {
-  return createSupabaseFetch(apiKey, isOpaqueSupabaseSecretKey(apiKey));
+  return createSupabaseFetch(apiKey, isOpaqueSupabaseSecretKey(apiKey), false);
 }
 
 /** Anonymous read-only client for cached storefront queries (no cookies). */
@@ -168,7 +191,7 @@ export function createPublicClient(): SupabaseClient | null {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       headers: { apikey: anonKey },
-      fetch: createSupabaseFetch(anonKey, false),
+      fetch: createSupabaseFetch(anonKey, false, true),
     },
   });
 }

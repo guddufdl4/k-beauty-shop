@@ -48,7 +48,7 @@ export const formatUsd = formatKRW;
 
 const SUPABASE_PAGE_SIZE = 1000;
 export const STOREFRONT_PRODUCTS_PAGE_SIZE = 48;
-const CACHE_REVALIDATE_SECONDS = 300;
+const CACHE_REVALIDATE_SECONDS = 900;
 export const STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG = "storefront-priority-products";
 export const STOREFRONT_PRODUCTS_CACHE_TAG = "storefront-products";
 export const STOREFRONT_BRANDS_CACHE_TAG = "storefront-brands";
@@ -948,38 +948,44 @@ async function fetchCategoryProductCountsFromSource(): Promise<Record<string, nu
 
   await ensureSoftDeleteColumnProbed(supabase);
 
-  const { data, error } = await fetchAllPages<{ category_id: string | null }>(
-    async (from, to) => {
-      let query = supabase
-        .from("products")
-        .select("category_id")
-        .eq("status", "active")
-        .not("image_url", "is", null)
-        .not("category_id", "is", null)
-        .range(from, to);
+  const { data: categoryRows, error: categoryError } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("is_active", true);
 
-      query = applyDeletedAtFilter(query, "active") as typeof query;
-
-      const result = await query;
-
-      return {
-        data: (result.data ?? []) as { category_id: string | null }[],
-        error: result.error,
-      };
-    },
-  );
-
-  if (error) {
+  if (categoryError || !categoryRows?.length) {
     return computeStaticCategoryProductCounts();
   }
 
   const counts: Record<string, number> = {};
-  for (const row of data) {
-    if (!row.category_id) {
-      continue;
-    }
+  const chunkSize = 8;
+  for (let index = 0; index < categoryRows.length; index += chunkSize) {
+    const chunk = categoryRows.slice(index, index + chunkSize);
+    const chunkCounts = await Promise.all(
+      chunk.map(async (row) => {
+        const id = String(row.id);
+        let query = supabase
+          .from("products")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active")
+          .eq("category_id", id)
+          .not("image_url", "is", null);
 
-    counts[row.category_id] = (counts[row.category_id] ?? 0) + 1;
+        if (isSoftDeleteColumnAvailable()) {
+          query = query.is("deleted_at", null);
+        }
+
+        const { count, error } = await query;
+        if (error) {
+          return [id, 0] as const;
+        }
+        return [id, count ?? 0] as const;
+      }),
+    );
+
+    for (const [id, count] of chunkCounts) {
+      counts[id] = count;
+    }
   }
 
   return counts;
@@ -2060,9 +2066,11 @@ async function fetchPriorityBrandProductsFromSource(
     dbProducts = homepageResult.products;
   } else {
     const rowsById = new Map<string, Record<string, unknown>>();
+    const maxKeys = Math.min(priorityKeys.length, Math.max(240, limit * 5));
+    const keysToFetch = priorityKeys.slice(0, maxKeys);
 
-    for (let index = 0; index < priorityKeys.length; index += PRIORITY_SKU_QUERY_BATCH) {
-      const batch = priorityKeys.slice(index, index + PRIORITY_SKU_QUERY_BATCH);
+    for (let index = 0; index < keysToFetch.length; index += PRIORITY_SKU_QUERY_BATCH) {
+      const batch = keysToFetch.slice(index, index + PRIORITY_SKU_QUERY_BATCH);
       const batchRows = await fetchProductsByIdentifierBatch(
         supabase,
         batch,

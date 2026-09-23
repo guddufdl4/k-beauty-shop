@@ -22,7 +22,7 @@ export const CANONICAL_CATEGORY_NAMES: Record<string, string> = {
   "tools-accessories": "도구 및 액세서리",
   "mask-pack": "마스크팩",
   nail: "네일",
-  set: "세트",
+  set: "세트메뉴",
   promotion: "프로모션",
 };
 
@@ -170,6 +170,9 @@ export const HANMI_CATEGORY_ALIASES: Record<string, string> = {
   kit: "set",
   giftset: "set",
   세트: "set",
+  세트메뉴: "set",
+  setmenu: "set",
+  specialset: "set",
 
   gwp: "promotion",
   promo: "promotion",
@@ -177,6 +180,35 @@ export const HANMI_CATEGORY_ALIASES: Record<string, string> = {
   sample: "promotion",
   프로모션: "promotion",
 };
+
+/** Wholesale set/bundle names such as 2종세트, special set, 기획세트. */
+export function looksLikeSetBundleName(name: string): boolean {
+  const text = String(name ?? "").replace(/\s+/g, " ").trim();
+  if (!text) {
+    return false;
+  }
+  if (/\b(setting|reset|cassette)\b/i.test(text)) {
+    return false;
+  }
+  if (
+    /(sheet\s*mask|마스크).{0,24}(\d+\s*(pcs|sheets?|매))/i.test(text) &&
+    !/(세트|special\s+set|\d+\s*pcs\s*set)/i.test(text)
+  ) {
+    return false;
+  }
+
+  return (
+    /\d+\s*종\s*세트|\d+종\s*세트|\d+종세트/i.test(text) ||
+    /\d+\s*pcs\s*(special\s*)?set/i.test(text) ||
+    /\b(special|gift|duo|trial|value|planned|discovery|refill)\s+sets?\b/i.test(text) ||
+    /\bskin\s*care\s+\d*\s*sets?\b/i.test(text) ||
+    /\b\d+\s*sets?\b/i.test(text) ||
+    /기획\s*세트|기획세트|역매팩|사랑세트|왕후세트/i.test(text) ||
+    /(^|[^A-Za-z])세트(\s|$|[Ww(0-9]|기획)/.test(text) ||
+    (/\bset\b/i.test(text) && /(pcs|종|기획|special|gift|duo|kit|care)/i.test(text)) ||
+    (/\bkit\b/i.test(text) && /(세트|\d+\s*종|\bpcs\b)/i.test(text))
+  );
+}
 
 export type ResolvedHanmiCategory = {
   slug: string;

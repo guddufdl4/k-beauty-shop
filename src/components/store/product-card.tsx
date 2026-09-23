@@ -30,6 +30,7 @@ type Props = {
   moqBadge?: string;
   soldOutLabel?: string;
   signInToViewPriceLabel?: string;
+  priority?: boolean;
 };
 
 const SOLD_OUT_LABELS: Record<string, string> = {
@@ -49,6 +50,7 @@ export function ProductCard({
   moqBadge,
   soldOutLabel: soldOutLabelProp,
   signInToViewPriceLabel,
+  priority = false,
 }: Props) {
   const isTrending = variant === "trending";
   const showPrices = isPricedStorefrontProduct(product);
@@ -89,7 +91,9 @@ export function ProductCard({
               width={400}
               height={400}
               sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
-              loading="lazy"
+              quality={70}
+              priority={priority}
+              loading={priority ? "eager" : "lazy"}
               className={cn(
                 "absolute inset-0 h-full w-full object-contain",
                 isPlaceholder && "p-8",

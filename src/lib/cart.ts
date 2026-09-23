@@ -423,8 +423,37 @@ export async function getCart(): Promise<CartView> {
 }
 
 export async function getCartItemCount(): Promise<number> {
-  const cart = await getCart();
-  return cart.itemCount;
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    const raw = await readDemoCart();
+    return Object.values(raw).reduce((sum, quantity) => {
+      const qty = Number(quantity);
+      return Number.isFinite(qty) && qty > 0 ? sum + qty : sum;
+    }, 0);
+  }
+
+  if (!isSupabaseConfigured()) {
+    return 0;
+  }
+
+  const supabase = await createSafeClient();
+  if (!supabase) {
+    return 0;
+  }
+
+  const { data, error } = await supabase
+    .from("cart_items")
+    .select("quantity")
+    .eq("user_id", userId);
+
+  if (error || !data) {
+    return 0;
+  }
+
+  return data.reduce((sum, row) => {
+    const qty = Number(row.quantity);
+    return Number.isFinite(qty) && qty > 0 ? sum + qty : sum;
+  }, 0);
 }
 
 async function resolveProductForCart(

@@ -1,8 +1,18 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+
+function hasSupabaseAuthCookie(
+  cookieList: Array<{ name: string; value: string }>,
+): boolean {
+  return cookieList.some(
+    (cookie) =>
+      cookie.name.includes("-auth-token") && Boolean(cookie.value?.trim()),
+  );
+}
 
 /** Deduplicate supabase.auth.getUser() within a single RSC request. */
 export const getAuthUser = cache(async () => {
@@ -11,6 +21,11 @@ export const getAuthUser = cache(async () => {
   }
 
   try {
+    const cookieStore = await cookies();
+    if (!hasSupabaseAuthCookie(cookieStore.getAll())) {
+      return null;
+    }
+
     const supabase = await createClient();
     const {
       data: { user },

@@ -11,6 +11,7 @@ import {
 import {
   barcodeVariants,
   canonicalBarcode,
+  isMissingBarcodeSku,
   normalizeImportSku,
 } from "@/lib/admin/product-dedupe";
 import { fetchAllPages } from "@/lib/supabase/products";
@@ -54,9 +55,12 @@ type ProductRow = {
   sku: string;
   slug: string;
   barcode: string | null;
+  name?: string;
+  brand?: string;
 };
 
 type ProductPayload = {
+  id?: string;
   name: string;
   brand: string;
   sku: string;
@@ -131,8 +135,23 @@ function scorePayload(payload: ProductPayload): number {
   return score;
 }
 
+function brandNameKey(brand: string, name: string): string {
+  return `${brand.trim().toLowerCase()}\0${name.replace(/\s+/g, " ").trim().toLowerCase()}`;
+}
+
+function payloadIdentity(payload: ProductPayload): string {
+  if (payload.id) {
+    return `id:${payload.id}`;
+  }
+  const barcode = canonicalBarcode(payload.barcode) ?? canonicalBarcode(payload.sku);
+  if (barcode) {
+    return `barcode:${barcode}`;
+  }
+  return `none:${brandNameKey(payload.brand, payload.name)}`;
+}
+
 function dedupePayloadsBySku(payloads: ProductPayload[]): ProductPayload[] {
-  const bySku = new Map<string, ProductPayload>();
+  const byKey = new Map<string, ProductPayload>();
 
   for (const payload of payloads) {
     const sku = payload.sku.trim();
@@ -140,21 +159,28 @@ function dedupePayloadsBySku(payloads: ProductPayload[]): ProductPayload[] {
       continue;
     }
 
-    const existing = bySku.get(sku);
+    const key = payloadIdentity(payload);
+    const existing = byKey.get(key);
     if (!existing || scorePayload(payload) >= scorePayload(existing)) {
-      bySku.set(sku, payload);
+      byKey.set(key, payload);
     }
   }
 
-  return Array.from(bySku.values());
+  return Array.from(byKey.values());
 }
 
 function registerExistingProduct(
   product: ProductRow,
   productsBySku: Map<string, ProductRow>,
   productsByBarcode: Map<string, ProductRow>,
+  productsByBrandName: Map<string, ProductRow>,
 ) {
-  productsBySku.set(product.sku.trim(), product);
+  if (!isMissingBarcodeSku(product.sku)) {
+    productsBySku.set(product.sku.trim(), product);
+  }
+  if (product.brand && product.name) {
+    productsByBrandName.set(brandNameKey(product.brand, product.name), product);
+  }
 
   const barcode =
     canonicalBarcode(product.barcode) ?? canonicalBarcode(product.sku);
@@ -170,15 +196,12 @@ function registerExistingProduct(
 function lookupExistingProduct(
   sku: string,
   barcode: string | null,
+  brand: string,
+  name: string,
   productsBySku: Map<string, ProductRow>,
   productsByBarcode: Map<string, ProductRow>,
+  productsByBrandName: Map<string, ProductRow>,
 ): ProductRow | undefined {
-  const normalizedSku = normalizeImportSku(sku, barcode);
-  const directMatch = productsBySku.get(normalizedSku);
-  if (directMatch) {
-    return directMatch;
-  }
-
   const canonical =
     canonicalBarcode(barcode) ?? canonicalBarcode(sku);
   if (canonical) {
@@ -190,7 +213,15 @@ function lookupExistingProduct(
     }
   }
 
-  return productsBySku.get(sku.trim());
+  if (!isMissingBarcodeSku(sku)) {
+    const normalizedSku = normalizeImportSku(sku, barcode);
+    const directMatch = productsBySku.get(normalizedSku) ?? productsBySku.get(sku.trim());
+    if (directMatch) {
+      return directMatch;
+    }
+  }
+
+  return productsByBrandName.get(brandNameKey(brand, name));
 }
 
 export async function POST(request: Request) {
@@ -273,7 +304,7 @@ export async function POST(request: Request) {
     fetchAllPages<ProductRow>(async (from, to) => {
       const result = await supabase
         .from("products")
-        .select("id, sku, slug, barcode")
+        .select("id, sku, slug, barcode, name, brand")
         .range(from, to);
       return { data: (result.data ?? []) as ProductRow[], error: result.error };
     }),
@@ -292,9 +323,10 @@ export async function POST(request: Request) {
 
   const productsBySku = new Map<string, ProductRow>();
   const productsByBarcode = new Map<string, ProductRow>();
+  const productsByBrandName = new Map<string, ProductRow>();
   const reservedSlugs = new Set<string>();
   for (const product of existingProducts) {
-    registerExistingProduct(product, productsBySku, productsByBarcode);
+    registerExistingProduct(product, productsBySku, productsByBarcode, productsByBrandName);
     reservedSlugs.add(product.slug);
   }
 
@@ -435,8 +467,11 @@ export async function POST(request: Request) {
     const existing = lookupExistingProduct(
       sku,
       barcode,
+      brand,
+      name,
       productsBySku,
       productsByBarcode,
+      productsByBrandName,
     );
     const categoryId = lookupCategoryId(category);
     const resolvedSlug = buildUniqueSlug(
@@ -447,6 +482,7 @@ export async function POST(request: Request) {
     );
 
     payloads.push({
+      ...(existing?.id ? { id: existing.id } : {}),
       name,
       brand,
       sku: normalizedSku,
@@ -479,8 +515,15 @@ export async function POST(request: Request) {
         sku: normalizedSku,
         slug: resolvedSlug,
         barcode: normalizedBarcode,
+        name,
+        brand,
       };
-      registerExistingProduct(placeholder, productsBySku, productsByBarcode);
+      registerExistingProduct(
+        placeholder,
+        productsBySku,
+        productsByBarcode,
+        productsByBrandName,
+      );
     }
   }
 
@@ -494,40 +537,71 @@ export async function POST(request: Request) {
     UPSERT_BATCH_SIZE,
   ).entries()) {
     const uniqueBatch = dedupePayloadsBySku(payloadBatch);
-    const { data: upsertedRows, error: upsertError } = await supabase
-      .from("products")
-      .upsert(uniqueBatch, { onConflict: "sku" })
-      .select("id, sku, slug, name, image_url, barcode");
+    const updates = uniqueBatch.filter((payload) => payload.id);
+    const inserts = uniqueBatch.filter((payload) => !payload.id);
+    const upsertedRows: Array<{
+      id: string;
+      sku: string;
+      slug: string;
+      name: string;
+      brand?: string;
+      image_url: string | null;
+      barcode: string | null;
+    }> = [];
 
-    if (upsertError || !upsertedRows?.length) {
-      failedCount += uniqueBatch.length;
-      if (errors.length < 50) {
-        errors.push(
-          `\ubc30\uce58 ${batchIndex + 1} \uc5c5\uc11c\ud2b8 \uc2e4\ud328: ${upsertError?.message ?? "\uc54c \uc218 \uc5c6\ub294 \uc624\ub958"}`,
-        );
+    if (updates.length) {
+      const { data, error: updateError } = await supabase
+        .from("products")
+        .upsert(updates, { onConflict: "id" })
+        .select("id, sku, slug, name, brand, image_url, barcode");
+      if (updateError) {
+        failedCount += updates.length;
+        if (errors.length < 50) {
+          errors.push(
+            `\ubc30\uce58 ${batchIndex + 1} \uc5c5\ub370\uc774\ud2b8 \uc2e4\ud328: ${updateError.message}`,
+          );
+        }
+      } else {
+        upsertedRows.push(...((data ?? []) as typeof upsertedRows));
       }
+    }
+
+    if (inserts.length) {
+      const { data, error: insertError } = await supabase
+        .from("products")
+        .insert(inserts)
+        .select("id, sku, slug, name, brand, image_url, barcode");
+      if (insertError) {
+        failedCount += inserts.length;
+        if (errors.length < 50) {
+          errors.push(
+            `\ubc30\uce58 ${batchIndex + 1} \uc0bd\uc785 \uc2e4\ud328: ${insertError.message}`,
+          );
+        }
+      } else {
+        upsertedRows.push(...((data ?? []) as typeof upsertedRows));
+      }
+    }
+
+    if (!upsertedRows.length && uniqueBatch.length) {
       continue;
     }
 
     importedCount += upsertedRows.length;
 
-    for (const upserted of upsertedRows as Array<{
-      id: string;
-      sku: string;
-      slug: string;
-      name: string;
-      image_url: string | null;
-      barcode: string | null;
-    }>) {
+    for (const upserted of upsertedRows) {
       registerExistingProduct(
         {
           id: upserted.id,
           sku: upserted.sku,
           slug: upserted.slug,
           barcode: upserted.barcode,
+          name: upserted.name,
+          brand: upserted.brand,
         },
         productsBySku,
         productsByBarcode,
+        productsByBrandName,
       );
       reservedSlugs.add(upserted.slug);
 
