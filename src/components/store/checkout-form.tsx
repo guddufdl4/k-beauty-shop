@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/checkout";
 import { Link } from "@/i18n/navigation";
 import { formatLocalePrice } from "@/lib/utils";
+import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
 import type { CartView } from "@/types/cart";
 
 type Props = {
@@ -36,6 +37,7 @@ export function CheckoutForm({
   const [state, formAction, pending] = useActionState(submitQuoteRequest, initialState);
   const [tradeTerms, setTradeTerms] = useState("");
   const [shippingMethod, setShippingMethod] = useState("");
+  const meetsMinOrder = cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate);
 
   if (state.success) {
     return (
@@ -175,6 +177,9 @@ export function CheckoutForm({
           <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
         </div>
         <p className="mt-3 text-xs text-zinc-500">{t("referenceNote")}</p>
+        <p className={meetsMinOrder ? "mt-2 text-xs text-zinc-500" : "mt-2 text-xs font-medium text-rose-700"}>
+          {t("minOrderUsd", { amount: MIN_ORDER_USD })}
+        </p>
       </div>
 
       {state.error ? (
@@ -185,7 +190,7 @@ export function CheckoutForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !meetsMinOrder}
         className="w-full rounded-xl bg-rose-600 py-3 font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {pending ? t("processing") : t("submitQuote")}

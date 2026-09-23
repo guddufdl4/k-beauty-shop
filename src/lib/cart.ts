@@ -15,6 +15,7 @@ import {
 } from "@/lib/supabase/products";
 import { enrichProductImages } from "@/lib/product-images";
 import { getEffectiveProductPrice } from "@/lib/store/products-url";
+import { cartMeetsMinOrderUsd, getUsdKrwRate, MIN_ORDER_USD } from "@/lib/currency";
 
 export const DEMO_CART_COOKIE = "kb_demo_cart";
 export const DEMO_ORDERS_COOKIE = "kb_demo_orders";
@@ -111,6 +112,11 @@ export async function createQuoteOrderFromCart(
 ): Promise<{ orderNumber?: string }> {
   const service = createServiceClient();
   if (!service || cart.items.length === 0) {
+    return {};
+  }
+
+  const usdKrwRate = await getUsdKrwRate();
+  if (!cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
     return {};
   }
 
@@ -555,7 +561,8 @@ export type CartLibErrorCode =
   | "cart_empty"
   | "order_unavailable"
   | "order_create_failed"
-  | "auth_required";
+  | "auth_required"
+  | "min_order_not_met";
 
 export type CartLibResult = {
   error?: string;
@@ -775,6 +782,11 @@ export async function createOrder(
   const cart = await getCart();
   if (cart.items.length === 0) {
     return { errorCode: "cart_empty" };
+  }
+
+  const usdKrwRate = await getUsdKrwRate();
+  if (!cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
+    return { errorCode: "min_order_not_met", errorParams: { amount: MIN_ORDER_USD } };
   }
 
   for (const item of cart.items) {

@@ -423,6 +423,7 @@
     "subtotal": "参考小計",
     "quoteHint": "希望する商品と数量を入れたあと、見積依頼を送信してください。カード決済はありません。",
     "quoteNote": "最終価格・在庫・配送はメールで確定します。確認後の支払いは銀行振込です。",
+    "minOrderUsd": "最低注文金額は USD {amount} です。",
     "checkout": "見積を依頼",
     "loginRequired": "カートを利用するにはログインしてください。",
     "loginAction": "ログイン",
@@ -447,13 +448,15 @@
       "cartEmpty": "カートは空です。",
       "orderUnavailable": "注文を作成できません。",
       "orderCreateFailed": "注文の作成に失敗しました。",
-      "authRequired": "続行するにはログインしてください。"
+      "authRequired": "続行するにはログインしてください。",
+      "minOrderNotMet": "最低注文金額は USD {amount} です。"
     }
   },
   "checkout": {
     "title": "見積依頼",
     "titleWithOrder": "見積を送信",
     "emptyCart": "カートが空です。先に商品と数量を入れてください。",
+    "minOrderUsd": "最低注文金額は USD {amount} です。",
     "backToCart": "← カートに戻る",
     "quoteHint": "カートの商品と数量を送信してください。担当者よりメールでご連絡します。オンライン決済ではありません。",
     "buyerTitle": "バイヤー情報",

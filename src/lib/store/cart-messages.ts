@@ -16,6 +16,7 @@ const ERROR_KEY_BY_CODE: Record<CartLibErrorCode, string> = {
   order_unavailable: "errors.orderUnavailable",
   order_create_failed: "errors.orderCreateFailed",
   auth_required: "errors.authRequired",
+  min_order_not_met: "errors.minOrderNotMet",
 };
 
 export function formatCartLibError(

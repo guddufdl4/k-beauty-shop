@@ -5,6 +5,7 @@ import { CheckoutForm } from "@/components/store/checkout-form";
 import { getUsdKrwRate } from "@/lib/currency";
 import { formatLocalePrice } from "@/lib/utils";
 import { getCart } from "@/lib/cart";
+import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 
@@ -38,6 +39,9 @@ export default async function CartPage() {
       {cart.items.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center sm:p-10">
           <p className="text-zinc-600">{t("empty")}</p>
+          <p className="mt-2 text-xs font-medium text-zinc-600">
+            {t("minOrderUsd", { amount: MIN_ORDER_USD })}
+          </p>
           <Link
             href="/products"
             className="mt-4 inline-block rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-700"
@@ -56,6 +60,15 @@ export default async function CartPage() {
                 <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
               </div>
               <p className="mt-3 text-xs text-zinc-500">{t("quoteNote")}</p>
+              <p
+                className={
+                  cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)
+                    ? "mt-2 text-xs text-zinc-500"
+                    : "mt-2 text-xs font-medium text-rose-700"
+                }
+              >
+                {t("minOrderUsd", { amount: MIN_ORDER_USD })}
+              </p>
             </aside>
           </div>
           <CheckoutForm

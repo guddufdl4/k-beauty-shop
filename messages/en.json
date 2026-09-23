@@ -394,6 +394,7 @@
     "title": "Quote request",
     "titleWithOrder": "Send quote request",
     "emptyCart": "Your cart is empty. Add products and quantities first.",
+    "minOrderUsd": "The minimum order amount is USD {amount}.",
     "backToCart": "← Back to cart",
     "quoteHint": "Submit the products and quantities in your cart. Our team will email you — this is not an online payment.",
     "buyerTitle": "Buyer information",
@@ -478,6 +479,7 @@
     "subtotal": "Reference subtotal",
     "quoteHint": "Add products and quantities, then send a quote request. We do not take card payments on this site.",
     "quoteNote": "Final price, stock, and shipping are confirmed by email. Payment is by bank transfer after confirmation.",
+    "minOrderUsd": "The minimum order amount is USD {amount}.",
     "checkout": "Request quote",
     "loginRequired": "Please log in to use your cart.",
     "loginAction": "Log in",
@@ -502,7 +504,8 @@
       "cartEmpty": "Your cart is empty.",
       "orderUnavailable": "Unable to create an order.",
       "orderCreateFailed": "Failed to create the order.",
-      "authRequired": "Please log in to continue."
+      "authRequired": "Please log in to continue.",
+      "minOrderNotMet": "The minimum order amount is USD {amount}."
     }
   },
   "auth": {

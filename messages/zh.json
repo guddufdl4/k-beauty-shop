@@ -423,6 +423,7 @@
     "subtotal": "参考小计",
     "quoteHint": "加入所需商品和数量后提交询价。本站不支持刷卡支付。",
     "quoteNote": "最终价格、库存和运费以邮件确认为准。确认后通过银行转账付款。",
+    "minOrderUsd": "最低订购金额为 USD {amount}。",
     "checkout": "提交询价",
     "loginRequired": "请登录后使用购物车。",
     "loginAction": "登录",
@@ -447,13 +448,15 @@
       "cartEmpty": "购物车为空。",
       "orderUnavailable": "无法创建订单。",
       "orderCreateFailed": "创建订单失败。",
-      "authRequired": "请登录后继续。"
+      "authRequired": "请登录后继续。",
+      "minOrderNotMet": "最低订购金额为 USD {amount}。"
     }
   },
   "checkout": {
     "title": "询价",
     "titleWithOrder": "发送询价",
     "emptyCart": "购物车为空，请先添加商品和数量。",
+    "minOrderUsd": "最低订购金额为 USD {amount}。",
     "backToCart": "← 返回购物车",
     "quoteHint": "请提交购物车中的商品和数量。我们的团队会通过邮件回复，这不是在线支付。",
     "buyerTitle": "买家信息",
