@@ -5,7 +5,13 @@ import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
+import { isRedundantProductDescription } from "@/lib/store/product-copy";
 import {
+  getLocalizedProductDescription,
+  getLocalizedProductName,
+} from "@/lib/store/localized-product-name";
+import {
+  getDisplayBrandName,
   getProductPriceColumns,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
@@ -252,6 +258,14 @@ export function ProductAdminDetailPanel({
   const localizedCategory = product.category
     ? getLocalizedCategoryName(product.category, locale)
     : null;
+  const displayName = getLocalizedProductName(initialProduct, locale);
+  const localizedDescription = getLocalizedProductDescription(initialProduct, locale);
+  const descriptionText =
+    !localizedDescription ||
+    isRedundantProductDescription(localizedDescription, displayName, initialProduct.brand) ||
+    isRedundantProductDescription(localizedDescription, initialProduct.name, initialProduct.brand)
+      ? t("descriptionFallback")
+      : localizedDescription;
 
   return (
     <>
@@ -366,10 +380,10 @@ export function ProductAdminDetailPanel({
         ) : (
           <>
             <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">
-              {product.brand}
+              {getDisplayBrandName(product.brand)}
             </p>
             <h1 className="mt-2 text-balance break-words text-3xl font-bold tracking-tight text-zinc-900">
-              {product.name}
+              {displayName}
             </h1>
             {product.short_description ? (
               <p className="mt-3 break-words text-lg text-zinc-600">{product.short_description}</p>
@@ -579,14 +593,14 @@ export function ProductAdminDetailPanel({
               className="mt-3 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm leading-relaxed"
             />
           </section>
-        ) : product.description ? (
+        ) : (
           <section className="mt-10 min-w-0">
             <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
             <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">
-              {product.description}
+              {descriptionText}
             </p>
           </section>
-        ) : null}
+        )}
 
         {!isEditing && initialProduct.ingredients ? (
           <section className="mt-8 min-w-0">
