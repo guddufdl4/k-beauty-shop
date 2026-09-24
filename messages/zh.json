@@ -298,6 +298,7 @@
     "inStock": "{count} 件",
     "outOfStock": "缺货",
     "sku": "SKU",
+    "barcode": "条形码",
     "volume": "容量",
     "origin": "原产地",
     "description": "商品说明",

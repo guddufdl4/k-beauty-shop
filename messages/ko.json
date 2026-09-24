@@ -298,6 +298,7 @@
     "inStock": "{count}개",
     "outOfStock": "품절",
     "sku": "SKU",
+    "barcode": "바코드",
     "volume": "용량",
     "origin": "원산지",
     "description": "상품 설명",

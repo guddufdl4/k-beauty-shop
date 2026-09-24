@@ -298,6 +298,7 @@
     "inStock": "{count} units",
     "outOfStock": "Out of stock",
     "sku": "SKU",
+    "barcode": "Barcode",
     "volume": "Volume",
     "origin": "Origin",
     "description": "Description",

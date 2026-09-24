@@ -18,6 +18,7 @@ import {
 } from "@/lib/store/products-url";
 import { productImageAlt } from "@/lib/seo/catalog-copy";
 import { getLocalizedProductName, extractProductVolume, storefrontTextForLocale } from "@/lib/store/localized-product-name";
+import { getStorefrontBarcode } from "@/lib/store/hangul-product-english";
 import type { StorefrontProduct } from "@/lib/supabase/products";
 
 type ProductCardBadge = {
@@ -69,6 +70,7 @@ export function ProductCard({
   const soldOutLabel = soldOutLabelProp ?? SOLD_OUT_LABELS[activeLocale] ?? SOLD_OUT_LABELS.en;
   const displayName = getLocalizedProductName(product, activeLocale);
   const volume = extractProductVolume(product);
+  const barcode = getStorefrontBarcode(product);
   const quantityBadge =
     moqBadge ??
     (usesBoxQuantityField(product) ? `${product.moq}/box` : `MOQ ${product.moq}`);
@@ -161,6 +163,9 @@ export function ProductCard({
         </h3>
         {volume ? (
           <p className="text-xs text-zinc-500">{volume}</p>
+        ) : null}
+        {barcode ? (
+          <p className="font-mono text-[11px] tracking-wide text-zinc-400">{barcode}</p>
         ) : null}
         <div className={cn("mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-2")}>
           <div className="min-w-0 flex-1">

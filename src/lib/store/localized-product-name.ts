@@ -1,4 +1,5 @@
 import { collapseRepeatedBrandPrefix } from "@/lib/store/product-copy";
+import { hangulProductNameToEnglish } from "@/lib/store/hangul-product-english";
 
 type NamedProduct = {
   name: string;
@@ -164,22 +165,22 @@ function latinNameFallback(product: NamedProduct): string {
     return stored;
   }
 
-  if (stored) {
-    const stripped = cleanName(stored.replace(/[\u3131-\u318e\uac00-\ud7a3]+/g, " "), brand);
-    if (stripped && isLatinName(stripped)) {
-      return stripped;
+  const source = stored || product.name;
+  if (source && containsHangul(source)) {
+    const translated = hangulProductNameToEnglish(source, brand);
+    if (translated && isLatinName(translated)) {
+      return cleanName(translated, brand);
+    }
+    if (translated) {
+      const stripped = cleanName(translated.replace(/[\u3131-\u318e\uac00-\ud7a3]+/g, " "), brand);
+      if (stripped && isLatinName(stripped)) {
+        return stripped;
+      }
     }
   }
 
-  const sku = product.sku?.trim() || "";
-  if (brand && !containsHangul(brand) && sku && !containsHangul(sku)) {
-    return `${brand} ${sku}`;
-  }
   if (brand && !containsHangul(brand)) {
     return brand;
-  }
-  if (sku && !containsHangul(sku)) {
-    return sku;
   }
   return "K-Beauty product";
 }

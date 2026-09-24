@@ -104,6 +104,7 @@ const GUEST_LIST_PRODUCT_COLUMNS = [
   "short_description",
   "brand",
   "sku",
+  "barcode",
   "moq",
   "sold_out",
   "is_featured",

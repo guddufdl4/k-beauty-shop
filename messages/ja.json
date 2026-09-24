@@ -298,6 +298,7 @@
     "inStock": "{count}個",
     "outOfStock": "在庫切れ",
     "sku": "SKU",
+    "barcode": "バーコード",
     "volume": "容量",
     "origin": "原産国",
     "description": "商品説明",

@@ -11,6 +11,7 @@ import {
   storefrontTextForLocale,
   localizeStorefrontProducts,
 } from "@/lib/store/localized-product-name";
+import { getStorefrontBarcode } from "@/lib/store/hangul-product-english";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { JsonLd } from "@/components/store/json-ld";
 import { ProductAdminDetailPanel } from "@/components/store/product-admin-detail-panel";
@@ -132,6 +133,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const categoryName = product.category ? getLocalizedCategoryName(product.category, locale) : null;
   const volume =
     extractProductVolume(product) ?? storefrontTextForLocale(product.short_description, locale);
+  const barcode = getStorefrontBarcode(product);
+  const sku = product.sku?.trim() || null;
+  const showSku = Boolean(sku && sku !== barcode);
   const catalogDescription =
     !localizedDescription ||
     isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
@@ -367,10 +371,18 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                       )}
                     </dd>
                   </div>
-                  <div className="min-w-0">
-                    <dt className="text-zinc-500">{t("sku")}</dt>
-                    <dd className="break-all font-mono text-zinc-800">{product.sku}</dd>
-                  </div>
+                  {showSku ? (
+                    <div className="min-w-0">
+                      <dt className="text-zinc-500">{t("sku")}</dt>
+                      <dd className="break-all font-mono text-zinc-800">{sku}</dd>
+                    </div>
+                  ) : null}
+                  {barcode ? (
+                    <div className="min-w-0">
+                      <dt className="text-zinc-500">{t("barcode")}</dt>
+                      <dd className="break-all font-mono text-zinc-800">{barcode}</dd>
+                    </div>
+                  ) : null}
                   {product.short_description ? (
                     <div className="min-w-0">
                       <dt className="text-zinc-500">{t("volume")}</dt>
