@@ -244,7 +244,10 @@ export default async function HomePage() {
   const homeSeo = getHomeSeo(locale as AppLocale);
   const homeSeoParagraphs =
     locale === "en"
-      ? ["Korean Cosmetics Wholesale for Global Buyers", homeSeo.intro ?? ""]
+      ? [
+          homeSeo.intro ?? "",
+          "HMT KOREA also works as a wholesale distributor for mixed-brand export orders.",
+        ]
       : [homeSeo.intro ?? ""];
 
   return (
@@ -300,6 +303,7 @@ export default async function HomePage() {
           { href: "/products", label: t("viewProducts") },
           { href: "/brands", label: tProducts("chooseBrandFirst") },
           { href: "/categories", label: t("viewCategories") },
+          { href: DEFAULT_WHOLESALE_INQUIRY_HREF, label: t("hero.wholesaleInquiry") },
           ...STOREFRONT_NAV_SLUGS.map((slug) => {
             const category = categories.find((item) => item.slug === slug);
             return {

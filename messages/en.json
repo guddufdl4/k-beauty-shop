@@ -107,7 +107,7 @@
       },
       "flexibleMoq": {
         "title": "Flexible MOQ",
-        "description": "Low minimum order quantity"
+        "description": "MOQ varies by product"
       },
       "globalShipping": {
         "title": "Global Shipping",
@@ -266,6 +266,9 @@
     "catalog": "Catalog",
     "allProducts": "All products",
     "chooseBrandFirst": "Choose a brand first",
+    "brandsInCategory": "Brands in this category",
+    "needCategoryQuote": "Need a wholesale quote for {category}?",
+    "requestQuote": "Request a Wholesale Quote",
     "sortSale": "Sale",
     "sortTrending": "Trending",
     "sortLatest": "Latest",

@@ -8,6 +8,7 @@ import { ProductCatalogSidebar } from "@/components/store/products-sidebar-searc
 import { ProductsPagination } from "@/components/store/products-pagination";
 import { RelatedSearchTerms } from "@/components/store/related-search-terms";
 import { CatalogSeoCopy } from "@/components/store/catalog-seo-copy";
+import { CategoryLandingSeo } from "@/components/store/category-landing-seo";
 import { JsonLd } from "@/components/store/json-ld";
 import { getDisplayBrandName } from "@/lib/store/products-url";
 import { getMoqBadgeKey, parseProductListSort } from "@/lib/store/products-url";
@@ -206,6 +207,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           label: getDisplayBrandName(brand),
         }))
     : [];
+  const categoryBodyParagraphs = categorySeo
+    ? categorySeo.body.split("\n\n").map((paragraph) => paragraph.trim()).filter(Boolean)
+    : [];
+  const categoryIntro = categoryBodyParagraphs[0] ?? "";
+  const categoryFollowUpParagraphs = categoryBodyParagraphs.slice(1);
+  const showCategoryLandingSeo = Boolean(categorySeo && safePage === 1);
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
@@ -278,6 +285,16 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <RelatedSearchTerms query={searchTerm} />
           ) : null}
 
+          {showCategoryLandingSeo && categorySeo ? (
+            <CategoryLandingSeo
+              intro={categoryIntro}
+              brandsLabel={t("brandsInCategory")}
+              brands={relatedBrandLinks}
+              needQuoteLabel={t("needCategoryQuote", { category: categorySeo.h1 })}
+              requestQuoteLabel={t("requestQuote")}
+            />
+          ) : null}
+
           {products.length === 0 ? (
             <EmptyState
               title={t("emptyTitle")}
@@ -324,13 +341,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </>
           )}
 
-          {categorySeo && safePage === 1 ? (
+          {showCategoryLandingSeo && categoryFollowUpParagraphs.length > 0 ? (
             <CatalogSeoCopy
-              paragraphs={categorySeo.body.split("\n\n")}
+              paragraphs={categoryFollowUpParagraphs}
               links={[
                 { href: "/brands", label: t("chooseBrandFirst") },
                 { href: "/products", label: t("allProducts") },
-                ...relatedBrandLinks,
               ]}
             />
           ) : null}

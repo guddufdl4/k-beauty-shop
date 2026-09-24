@@ -107,7 +107,7 @@
       },
       "flexibleMoq": {
         "title": "Flexible MOQ",
-        "description": "Low minimum order quantity"
+        "description": "MOQ因产品而异"
       },
       "globalShipping": {
         "title": "Global Shipping",
@@ -266,6 +266,9 @@
     "catalog": "Catalog",
     "allProducts": "全部商品",
     "chooseBrandFirst": "先选择品牌",
+    "brandsInCategory": "本分类中的品牌",
+    "needCategoryQuote": "需要 {category} 批发报价吗？",
+    "requestQuote": "申请批发报价",
     "sortSale": "促销",
     "sortTrending": "热门",
     "sortLatest": "最新",

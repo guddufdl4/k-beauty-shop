@@ -107,7 +107,7 @@
       },
       "flexibleMoq": {
         "title": "Flexible MOQ",
-        "description": "Low minimum order quantity"
+        "description": "MOQ는 제품마다 다릅니다"
       },
       "globalShipping": {
         "title": "Global Shipping",
@@ -266,6 +266,9 @@
     "catalog": "Catalog",
     "allProducts": "전체 상품",
     "chooseBrandFirst": "브랜드 먼저 선택하기",
+    "brandsInCategory": "이 카테고리의 브랜드",
+    "needCategoryQuote": "{category} 도매 견적이 필요하신가요?",
+    "requestQuote": "도매 견적 요청",
     "sortSale": "세일",
     "sortTrending": "트렌딩",
     "sortLatest": "최신",

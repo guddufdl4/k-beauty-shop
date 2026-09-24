@@ -107,7 +107,7 @@
       },
       "flexibleMoq": {
         "title": "Flexible MOQ",
-        "description": "Low minimum order quantity"
+        "description": "MOQは商品により異なります"
       },
       "globalShipping": {
         "title": "Global Shipping",
@@ -266,6 +266,9 @@
     "catalog": "Catalog",
     "allProducts": "全商品",
     "chooseBrandFirst": "先にブランドを選ぶ",
+    "brandsInCategory": "このカテゴリーのブランド",
+    "needCategoryQuote": "{category}の卸売見積が必要ですか？",
+    "requestQuote": "卸売見積を依頼",
     "sortSale": "セール",
     "sortTrending": "トレンド",
     "sortLatest": "新着",
