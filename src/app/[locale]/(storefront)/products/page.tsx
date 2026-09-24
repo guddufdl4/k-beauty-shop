@@ -15,6 +15,7 @@ import { getMoqBadgeKey, parseProductListSort } from "@/lib/store/products-url";
 import { interleaveByBrand } from "@/lib/store/brand-diversity";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
+import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
 import { getUsdKrwRate } from "@/lib/currency";
 import {
   getStorefrontCategories,
@@ -150,10 +151,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     getStorefrontCategories(),
   ]);
 
-  const products =
+  const products = localizeStorefrontProducts(
     isDefaultBrowse && currentPage === 1
       ? interleaveByBrand(fetchedProducts, 2).slice(0, STOREFRONT_PRODUCTS_PAGE_SIZE)
-      : fetchedProducts;
+      : fetchedProducts,
+    locale,
+  );
 
   const countAvailable = meta.countAvailable !== false;
   const totalPages = countAvailable

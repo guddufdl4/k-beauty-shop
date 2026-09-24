@@ -17,7 +17,7 @@ import {
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
 import { productImageAlt } from "@/lib/seo/catalog-copy";
-import { getLocalizedProductName, extractProductVolume } from "@/lib/store/localized-product-name";
+import { getLocalizedProductName, extractProductVolume, storefrontTextForLocale } from "@/lib/store/localized-product-name";
 import type { StorefrontProduct } from "@/lib/supabase/products";
 
 type ProductCardBadge = {
@@ -96,7 +96,10 @@ export function ProductCard({
           >
             <Image
               src={displayImageUrl}
-              alt={primaryImage.alt_text?.trim() || productImageAlt(getDisplayBrandName(product.brand), displayName)}
+              alt={
+                storefrontTextForLocale(primaryImage.alt_text, activeLocale) ||
+                productImageAlt(getDisplayBrandName(product.brand), displayName)
+              }
               width={400}
               height={400}
               sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"

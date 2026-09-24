@@ -26,7 +26,19 @@ export const CATEGORY_EN_NAMES: Record<string, string> = {
 const TAXONOMY_LABELS = flattenTaxonomyLabels();
 
 export function getEnglishCategoryName(category: Pick<Category, "name" | "slug">): string {
-  return CATEGORY_EN_NAMES[category.slug] ?? category.name;
+  const mapped = CATEGORY_EN_NAMES[category.slug];
+  if (mapped) {
+    return mapped;
+  }
+  const name = category.name.trim();
+  if (name && !/[\u3131-\u318e\uac00-\ud7a3]/i.test(name)) {
+    return name;
+  }
+  return category.slug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export function getLocalizedCategoryName(
@@ -48,10 +60,17 @@ export function getLocalizedCategoryName(
 }
 
 export function localizeCategories(categories: Category[], locale: string): Category[] {
-  return categories.map((category) => ({
-    ...category,
-    name: getLocalizedCategoryName(category, locale),
-  }));
+  const keepKoreanCopy = locale === "ko" || locale.startsWith("ko-");
+  return categories.map((category) => {
+    const description = category.description?.trim() || "";
+    const hideHangulDescription =
+      !keepKoreanCopy && /[\u3131-\u318e\uac00-\ud7a3]/i.test(description);
+    return {
+      ...category,
+      name: getLocalizedCategoryName(category, locale),
+      description: hideHangulDescription ? "" : category.description,
+    };
+  });
 }
 
 export function getCategorySortLocale(locale: string): string {

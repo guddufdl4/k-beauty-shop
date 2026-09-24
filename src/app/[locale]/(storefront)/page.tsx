@@ -21,6 +21,7 @@ import {
   HOMEPAGE_LEAD_HERO_SLIDE_ID,
 } from "@/lib/store/homepage-lead-hero";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
+import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
 import type { HeroSlide } from "@/types/database";
 import {
   getPriorityBrandProducts,
@@ -235,10 +236,10 @@ export default async function HomePage() {
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
   const trendingProducts = {
-    all: selectTrendingCategoryProducts(products, null, categories),
-    skincare: selectTrendingCategoryProducts(products, "skincare", categories),
-    makeup: selectTrendingCategoryProducts(products, "makeup", categories),
-    haircare: selectTrendingCategoryProducts(products, "haircare", categories),
+    all: localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories), locale),
+    skincare: localizeStorefrontProducts(selectTrendingCategoryProducts(products, "skincare", categories), locale),
+    makeup: localizeStorefrontProducts(selectTrendingCategoryProducts(products, "makeup", categories), locale),
+    haircare: localizeStorefrontProducts(selectTrendingCategoryProducts(products, "haircare", categories), locale),
   } as const;
 
   const homeSeo = getHomeSeo(locale as AppLocale);

@@ -12,7 +12,7 @@ import {
   getDisplayBrandName,
 } from "@/lib/store/products-url";
 import { STATIC_PRODUCTS, type ProductWithRelations } from "./products";
-import { getLocalizedProductName, withLocalizedNameFields } from "@/lib/store/localized-product-name";
+import { getLocalizedProductName, withLocalizedNameFields, containsHangul, isKoreanLocale } from "@/lib/store/localized-product-name";
 
 export type SearchSuggestionProduct = {
   id: string;
@@ -152,7 +152,7 @@ function buildSuggestionsFromProducts(
 
   return {
     products: rankedProducts.map(({ product }) => mapSuggestionProduct(product, locale)),
-    brands,
+    brands: termsForLocale(brands, locale),
   };
 }
 
@@ -175,7 +175,7 @@ async function fetchSuggestionsFromDatabase(
   const escaped = escapeIlikePattern(query);
   let productQuery = supabase
     .from("products")
-    .select("id, name, brand, slug, sku, barcode, status, image_url, source_row")
+    .select("id, name, name_en, name_ko, brand, slug, sku, barcode, status, image_url, source_row")
     .eq("status", "active")
     .eq("needs_image", false)
     .or(
@@ -197,6 +197,8 @@ async function fetchSuggestionsFromDatabase(
     withLocalizedNameFields({
       id: String(row.id),
       name: String(row.name),
+      name_en: row.name_en ? String(row.name_en) : null,
+      name_ko: row.name_ko ? String(row.name_ko) : null,
       brand: String(row.brand),
       slug: String(row.slug),
       sku: String(row.sku),
@@ -305,6 +307,7 @@ function relatedTermsFromProducts(
   products: ProductWithRelations[],
   query: string,
   limit: number,
+  locale: string,
 ): string[] {
   const normalizedQuery = normalizeQuery(query);
   const terms = new Set<string>();
@@ -320,9 +323,13 @@ function relatedTermsFromProducts(
       terms.add(filterBrand);
     }
 
-    const nameScore = scoreFieldMatch(product.name, query);
-    if (nameScore >= 35 && normalizeQuery(product.name) !== normalizedQuery) {
-      terms.add(product.name);
+    const displayName = getLocalizedProductName(product, locale);
+    const nameScore = Math.max(
+      scoreFieldMatch(product.name, query),
+      scoreFieldMatch(displayName, query),
+    );
+    if (nameScore >= 35 && normalizeQuery(displayName) !== normalizedQuery) {
+      terms.add(displayName);
     }
 
     if (terms.size >= limit) {
@@ -345,16 +352,24 @@ function relatedTermsFromProducts(
     }
   }
 
-  return [...terms].slice(0, limit);
+  return termsForLocale([...terms], locale).slice(0, limit);
 }
 
-function staticRelatedTerms(query: string, limit: number): RelatedSearchResult {
-  return { terms: relatedTermsFromProducts(STATIC_PRODUCTS, query, limit) };
+function termsForLocale(terms: string[], locale: string): string[] {
+  if (isKoreanLocale(locale)) {
+    return terms;
+  }
+  return terms.filter((term) => !containsHangul(term));
+}
+
+function staticRelatedTerms(query: string, limit: number, locale: string): RelatedSearchResult {
+  return { terms: relatedTermsFromProducts(STATIC_PRODUCTS, query, limit, locale) };
 }
 
 export async function getRelatedSearchTerms(
   query: string,
   limit = DEFAULT_RELATED_LIMIT,
+  locale = "en",
 ): Promise<RelatedSearchResult> {
   const trimmed = query.trim();
   if (trimmed.length < MIN_QUERY_LENGTH) {
@@ -362,12 +377,12 @@ export async function getRelatedSearchTerms(
   }
 
   if (!isSupabaseConfigured()) {
-    return staticRelatedTerms(trimmed, limit);
+    return staticRelatedTerms(trimmed, limit, locale);
   }
 
   const supabase = createPublicClient() ?? (await createSafeClient());
   if (!supabase) {
-    return staticRelatedTerms(trimmed, limit);
+    return staticRelatedTerms(trimmed, limit, locale);
   }
 
   await ensureSoftDeleteColumnProbed(supabase);
@@ -378,7 +393,7 @@ export async function getRelatedSearchTerms(
 
   let productQuery = supabase
     .from("products")
-    .select("name, brand, status")
+    .select("name, name_en, name_ko, brand, sku, source_row, status")
     .eq("status", "active")
     .or(
       `name.ilike.%${escaped}%,brand.ilike.%${escaped}%,name.ilike.%${escapedPrefix}%,brand.ilike.%${escapedPrefix}%`,
@@ -398,9 +413,11 @@ export async function getRelatedSearchTerms(
   const productTerms = (data ?? [])
     .map((row) => ({
       name: String(row.name ?? ""),
+      name_en: row.name_en ? String(row.name_en) : null,
+      name_ko: row.name_ko ? String(row.name_ko) : null,
       brand: String(row.brand ?? ""),
       status: "active" as const,
-      sku: "",
+      sku: row.sku ? String(row.sku) : "",
       slug: "",
       id: "",
       barcode: null,
@@ -419,7 +436,10 @@ export async function getRelatedSearchTerms(
       country_of_origin: null,
       import_batch_id: null,
       external_sku: null,
-      source_row: null,
+      source_row:
+        row.source_row && typeof row.source_row === "object"
+          ? (row.source_row as Record<string, unknown>)
+          : null,
       image_url: null,
       content_status: "complete" as const,
       needs_image: false,
@@ -436,9 +456,9 @@ export async function getRelatedSearchTerms(
     .filter((product) => product.name || product.brand);
 
   const terms = new Set<string>([
-    ...relatedTermsFromProducts(productTerms, trimmed, limit),
+    ...relatedTermsFromProducts(productTerms, trimmed, limit, locale),
     ...brands.filter((brand) => normalizeQuery(brand) !== normalizeQuery(trimmed)),
   ]);
 
-  return { terms: [...terms].slice(0, limit) };
+  return { terms: termsForLocale([...terms], locale).slice(0, limit) };
 }

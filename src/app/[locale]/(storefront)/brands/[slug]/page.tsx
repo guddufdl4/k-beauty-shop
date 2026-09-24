@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/store/empty-state";
 import { ProductCard } from "@/components/store/product-card";
 import { getUsdKrwRate } from "@/lib/currency";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
+import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
 import { buildProductsHref, getMoqBadgeKey } from "@/lib/store/products-url";
 import { isStorefrontNavSlug } from "@/lib/store/category-taxonomy";
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
@@ -127,7 +128,7 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
     audience,
   };
 
-  const [{ products, totalCount, meta }, allProductsCountResult, relatedBrands] = await Promise.all([
+  const [{ products: fetchedProducts, totalCount, meta }, allProductsCountResult, relatedBrands] = await Promise.all([
     getProducts(listQuery),
     categoryFilter
       ? getProducts({
@@ -144,6 +145,7 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
       tabs.map((tab) => tab.slug),
     ),
   ]);
+  const products = localizeStorefrontProducts(fetchedProducts, locale);
 
   const overflowTarget = resolveBrandHubPageOverflowTarget(
     pageParam.page,

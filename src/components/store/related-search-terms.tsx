@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buildProductsHref } from "@/lib/store/products-url";
 import { getRelatedSearchTerms } from "@/lib/supabase/product-search";
@@ -13,10 +13,8 @@ export async function RelatedSearchTerms({ query }: Props) {
     return null;
   }
 
-  const [t, { terms }] = await Promise.all([
-    getTranslations("products"),
-    getRelatedSearchTerms(trimmed),
-  ]);
+  const [t, locale] = await Promise.all([getTranslations("products"), getLocale()]);
+  const { terms } = await getRelatedSearchTerms(trimmed, undefined, locale);
 
   if (terms.length === 0) {
     return null;

@@ -8,6 +8,8 @@ import {
   getLocalizedProductDescription,
   getLocalizedProductName,
   extractProductVolume,
+  storefrontTextForLocale,
+  localizeStorefrontProducts,
 } from "@/lib/store/localized-product-name";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { JsonLd } from "@/components/store/json-ld";
@@ -66,12 +68,14 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
     name: displayName,
     brand: brandName,
     categoryName: product.category ? getLocalizedCategoryName(product.category, locale) : null,
-    volume: extractProductVolume(product) ?? product.short_description,
+    volume:
+      extractProductVolume(product) ??
+      storefrontTextForLocale(product.short_description, locale),
     sku: product.sku,
     moq: product.moq,
-    origin: product.country_of_origin,
-    metaTitle: product.meta_title,
-    metaDescription: product.meta_description,
+    origin: storefrontTextForLocale(product.country_of_origin, locale),
+    metaTitle: storefrontTextForLocale(product.meta_title, locale),
+    metaDescription: storefrontTextForLocale(product.meta_description, locale),
     catalogDescription,
   });
 
@@ -119,10 +123,15 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     : t("moqUnit", { count: product.moq });
   const displayName = getLocalizedProductName(product, locale);
   const localizedDescription = getLocalizedProductDescription(product, locale);
+  const origin = storefrontTextForLocale(product.country_of_origin, locale);
+  const ingredients = storefrontTextForLocale(product.ingredients, locale);
+  const howToUse = storefrontTextForLocale(product.how_to_use, locale);
+  const minOrderNote = storefrontTextForLocale(siteSettings.min_order_note, locale);
   const brandName = getDisplayBrandName(product.brand);
   const brandHref = buildBrandHref(brandNameToSlug(product.brand));
   const categoryName = product.category ? getLocalizedCategoryName(product.category, locale) : null;
-  const volume = extractProductVolume(product) ?? product.short_description;
+  const volume =
+    extractProductVolume(product) ?? storefrontTextForLocale(product.short_description, locale);
   const catalogDescription =
     !localizedDescription ||
     isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
@@ -136,9 +145,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     volume,
     sku: product.sku,
     moq: product.moq,
-    origin: product.country_of_origin,
-    metaTitle: product.meta_title,
-    metaDescription: product.meta_description,
+    origin,
+    metaTitle: storefrontTextForLocale(product.meta_title, locale),
+    metaDescription: storefrontTextForLocale(product.meta_description, locale),
     catalogDescription,
   });
   const relatedResult = product.brand
@@ -150,9 +159,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         audience,
       })
     : { products: [] };
-  const relatedProducts = relatedResult.products
-    .filter((item) => item.slug !== product.slug)
-    .slice(0, 4);
+  const relatedProducts = localizeStorefrontProducts(
+    relatedResult.products.filter((item) => item.slug !== product.slug).slice(0, 4),
+    locale,
+  );
   const breadcrumbHome = locale === "ko" ? "홈" : locale === "ja" ? "ホーム" : locale === "zh" ? "首页" : "Home";
 
   return (
@@ -167,7 +177,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           sku: product.sku,
           image: isPlaceholder ? null : displayImageUrl,
           categoryName,
-          origin: product.country_of_origin,
+          origin,
           volume,
           moq: product.moq,
         })}
@@ -235,7 +245,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={displayImageUrl}
-                alt={primaryImage.alt_text?.trim() || productImageAlt(brandName, displayName)}
+                alt={
+                  storefrontTextForLocale(primaryImage.alt_text, locale) ||
+                  productImageAlt(brandName, displayName)
+                }
                 width={800}
                 height={800}
                 className={`absolute inset-0 h-full w-full object-contain${isPlaceholder ? " p-10" : ""}`}
@@ -258,7 +271,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={img.url}
-                    alt={img.alt_text?.trim() || productImageAlt(brandName, displayName, index)}
+                    alt={
+                      storefrontTextForLocale(img.alt_text, locale) ||
+                      productImageAlt(brandName, displayName, index)
+                    }
                     className="absolute inset-0 h-full w-full object-contain"
                   />
                 </div>
@@ -361,10 +377,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                       <dd className="break-words font-semibold text-zinc-900">{product.short_description}</dd>
                     </div>
                   ) : null}
-                  {product.country_of_origin ? (
+                  {origin ? (
                     <div className="min-w-0">
                       <dt className="text-zinc-500">{t("origin")}</dt>
-                      <dd className="break-words font-semibold text-zinc-900">{product.country_of_origin}</dd>
+                      <dd className="break-words font-semibold text-zinc-900">{origin}</dd>
                     </div>
                   ) : null}
                 </dl>
@@ -379,9 +395,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 />
               ) : null}
 
-              {siteSettings.min_order_note ? (
+              {minOrderNote ? (
                 <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm text-zinc-600">
-                  {siteSettings.min_order_note}
+                  {minOrderNote}
                 </p>
               ) : null}
 
@@ -396,17 +412,17 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 </p>
               </section>
 
-              {product.ingredients ? (
+              {ingredients ? (
                 <section className="mt-8 min-w-0">
                   <h2 className="text-lg font-semibold text-zinc-900">{t("ingredients")}</h2>
-                  <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{product.ingredients}</p>
+                  <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{ingredients}</p>
                 </section>
               ) : null}
 
-              {product.how_to_use ? (
+              {howToUse ? (
                 <section className="mt-8 min-w-0">
                   <h2 className="text-lg font-semibold text-zinc-900">{t("howToUse")}</h2>
-                  <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{product.how_to_use}</p>
+                  <p className="mt-3 break-words text-sm leading-relaxed text-zinc-600">{howToUse}</p>
                 </section>
               ) : null}
             </>

@@ -3,6 +3,7 @@ import { collapseRepeatedBrandPrefix } from "@/lib/store/product-copy";
 type NamedProduct = {
   name: string;
   brand?: string | null;
+  sku?: string | null;
   description?: string | null;
   short_description?: string | null;
   name_en?: string | null;
@@ -12,7 +13,7 @@ type NamedProduct = {
 
 const HANGUL = /[\u3131-\u318e\uac00-\ud7a3]/i;
 
-function containsHangul(text: string): boolean {
+export function containsHangul(text: string): boolean {
   return HANGUL.test(text);
 }
 
@@ -137,12 +138,58 @@ export function resolveProductNamePair(product: NamedProduct): { en: string | nu
   };
 }
 
+export function isKoreanLocale(locale: string): boolean {
+  return locale === "ko" || locale.startsWith("ko-");
+}
+
+/** Hide Hangul catalog copy on non-Korean storefront locales. */
+export function storefrontTextForLocale(
+  text: string | null | undefined,
+  locale: string,
+): string | null {
+  const value = text?.replace(/\s+/g, " ").trim() || null;
+  if (!value) {
+    return null;
+  }
+  if (isKoreanLocale(locale) || !containsHangul(value)) {
+    return value;
+  }
+  return null;
+}
+
+function latinNameFallback(product: NamedProduct): string {
+  const brand = product.brand?.trim() || "";
+  const stored = cleanName(product.name, brand);
+  if (stored && !containsHangul(stored)) {
+    return stored;
+  }
+
+  if (stored) {
+    const stripped = cleanName(stored.replace(/[\u3131-\u318e\uac00-\ud7a3]+/g, " "), brand);
+    if (stripped && isLatinName(stripped)) {
+      return stripped;
+    }
+  }
+
+  const sku = product.sku?.trim() || "";
+  if (brand && !containsHangul(brand) && sku && !containsHangul(sku)) {
+    return `${brand} ${sku}`;
+  }
+  if (brand && !containsHangul(brand)) {
+    return brand;
+  }
+  if (sku && !containsHangul(sku)) {
+    return sku;
+  }
+  return "K-Beauty product";
+}
+
 export function getLocalizedProductName(product: NamedProduct, locale: string): string {
   const { en, ko } = resolveProductNamePair(product);
-  if (locale === "ko" || locale.startsWith("ko-")) {
+  if (isKoreanLocale(locale)) {
     return ko || product.name;
   }
-  return en || product.name;
+  return en || latinNameFallback(product);
 }
 
 function isVolumeHeader(normalized: string): boolean {
@@ -238,11 +285,7 @@ export function extractProductVolume(product: NamedProduct): string | null {
 }
 
 export function getLocalizedProductDescription(product: NamedProduct, locale: string): string | null {
-  const text = product.description?.trim() || null;
-  if (!text) return null;
-  if (locale === "ko" || locale.startsWith("ko-")) return text;
-  if (!containsHangul(text)) return text;
-  return null;
+  return storefrontTextForLocale(product.description, locale);
 }
 
 export function withLocalizedNameFields<T extends NamedProduct>(
@@ -255,6 +298,48 @@ export function withLocalizedNameFields<T extends NamedProduct>(
     name_ko: ko,
     short_description: extractProductVolume(product),
   };
+}
+
+export function localizeStorefrontProduct<T extends NamedProduct>(product: T, locale: string): T {
+  const images = (product as T & { images?: Array<{ alt_text?: string | null }> }).images;
+  return {
+    ...product,
+    name: getLocalizedProductName(product, locale),
+    name_ko: isKoreanLocale(locale) ? product.name_ko ?? null : null,
+    description: getLocalizedProductDescription(product, locale),
+    ingredients: storefrontTextForLocale(
+      (product as T & { ingredients?: string | null }).ingredients,
+      locale,
+    ),
+    how_to_use: storefrontTextForLocale(
+      (product as T & { how_to_use?: string | null }).how_to_use,
+      locale,
+    ),
+    country_of_origin: storefrontTextForLocale(
+      (product as T & { country_of_origin?: string | null }).country_of_origin,
+      locale,
+    ),
+    meta_title: storefrontTextForLocale(
+      (product as T & { meta_title?: string | null }).meta_title,
+      locale,
+    ),
+    meta_description: storefrontTextForLocale(
+      (product as T & { meta_description?: string | null }).meta_description,
+      locale,
+    ),
+    ...(images
+      ? {
+          images: images.map((image) => ({
+            ...image,
+            alt_text: storefrontTextForLocale(image.alt_text, locale),
+          })),
+        }
+      : {}),
+  };
+}
+
+export function localizeStorefrontProducts<T extends NamedProduct>(products: T[], locale: string): T[] {
+  return products.map((product) => localizeStorefrontProduct(product, locale));
 }
 
 export function omitProductSourceRow<T extends { source_row?: Record<string, unknown> | null }>(
