@@ -8,8 +8,22 @@ import { getCart } from "@/lib/cart";
 import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: "cart" });
+  return buildStorefrontMetadata({
+    locale,
+    path: "/cart",
+    title: t("title"),
+    robots: NOINDEX_FOLLOW,
+  });
+}
 
 export default async function CartPage() {
   const [t, session, cart, locale, usdKrwRate] = await Promise.all([

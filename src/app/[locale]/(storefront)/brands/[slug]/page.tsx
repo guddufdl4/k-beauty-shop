@@ -17,6 +17,10 @@ import {
   parseBrandHubPageParam,
   resolveBrandHubPageOverflowTarget,
 } from "@/lib/store/brand-url";
+import { JsonLd } from "@/components/store/json-ld";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { getBrandSeo } from "@/lib/seo/catalog-copy";
+import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
 import {
   getBrandHubCategoryTabs,
   getBrandHubLogoUrl,
@@ -38,22 +42,33 @@ type BrandHubPageProps = {
   searchParams: Promise<{ category?: string; page?: string | string[] }>;
 };
 
-export async function generateMetadata({ params }: BrandHubPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: BrandHubPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const { category: categorySlug, page: pageQuery } = await searchParams;
   const entry = await resolveBrandHubEntry(slug);
   if (!entry) {
     return {};
   }
 
   const locale = (await getLocale()) as AppLocale;
-  const t = await getTranslations({ locale, namespace: "brands" });
-  const path = buildBrandHref(entry.slug);
+  const seo = getBrandSeo(entry.displayName, locale);
+  const pageParam = parseBrandHubPageParam(pageQuery);
+  const categoryFilter = categorySlug?.trim();
+  const canonicalPath = categoryFilter
+    ? buildBrandHref(entry.slug)
+    : buildBrandHubHref(entry.slug, {
+        page: pageParam.page > 1 ? pageParam.page : undefined,
+      });
 
   return buildStorefrontMetadata({
     locale,
-    path,
-    title: t("metaTitle", { brand: entry.displayName }),
-    description: t("metaDescription", { brand: entry.displayName }),
+    path: canonicalPath,
+    title: seo.title,
+    description: seo.description,
+    ...(categoryFilter ? { robots: NOINDEX_FOLLOW } : {}),
   });
 }
 
@@ -155,9 +170,17 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
       count: tab.count,
     };
   });
+  const brandSeo = getBrandSeo(entry.displayName, locale as AppLocale);
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+      <JsonLd
+        data={breadcrumbJsonLd(locale, [
+          { name: t("breadcrumbHome"), path: "/" },
+          { name: t("breadcrumbBrands"), path: "/brands" },
+          { name: entry.displayName, path: buildBrandHref(entry.slug) },
+        ])}
+      />
       <nav aria-label={t("breadcrumb")} className="mb-6 text-sm text-zinc-500">
         <ol className="flex flex-wrap items-center gap-2">
           <li>
@@ -202,11 +225,9 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
               {t("viewBrand")}
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-              {entry.displayName}
+              {brandSeo.h1}
             </h1>
-            <p className="mt-3 max-w-2xl text-zinc-600">
-              {t("exploreProducts", { brand: entry.displayName })}
-            </p>
+            <p className="mt-3 max-w-2xl text-zinc-600">{brandSeo.intro}</p>
             {countAvailable ? (
               <p className="mt-4 text-sm font-medium text-zinc-600">
                 {t("productCount", { count: totalCount })}

@@ -119,6 +119,8 @@ export type Product = {
   name_en?: string | null;
   /** Excel Korean name, when the sheet had one. */
   name_ko?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
 };
 
 export type ProductImportBatchSummary = Pick<ProductImportBatch, "id" | "filename">;
@@ -2468,12 +2470,51 @@ export async function getProductBrands(): Promise<{
 
 export type PublicProductSitemapRow = {
   slug: string;
-  updated_at: string;
+  updated_at: string | null;
 };
 
-const SITEMAP_PRODUCT_LIMIT = 8000;
+export const SITEMAP_PRODUCTS_PER_FILE = 4000;
 
-export async function getPublicProductSitemapRows(): Promise<PublicProductSitemapRow[]> {
+export async function getPublicProductSitemapCount(): Promise<number> {
+  return unstable_cache(
+    async () => {
+      if (!isSupabaseConfigured()) {
+        return 0;
+      }
+
+      const supabase = createPublicClient();
+      if (!supabase) {
+        return 0;
+      }
+
+      await ensureSoftDeleteColumnProbed(supabase);
+      const { count } = await fetchExactCount(supabase, "products", (query) => {
+        let next = query
+          .eq("status", "active")
+          .not("image_url", "is", null)
+          .not("image_url", "like", "/images/categories/%");
+        if (isSoftDeleteColumnAvailable()) {
+          next = next.is("deleted_at", null);
+        }
+        return next;
+      });
+      return count;
+    },
+    ["storefront-product-sitemap-count"],
+    {
+      revalidate: CACHE_REVALIDATE_SECONDS,
+      tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
+    },
+  )();
+}
+
+export async function getPublicProductSitemapRows(options?: {
+  offset?: number;
+  limit?: number;
+}): Promise<PublicProductSitemapRow[]> {
+  const offset = Math.max(0, options?.offset ?? 0);
+  const limit = Math.max(1, options?.limit ?? SITEMAP_PRODUCTS_PER_FILE);
+
   return unstable_cache(
     async () => {
       if (!isSupabaseConfigured()) {
@@ -2487,42 +2528,47 @@ export async function getPublicProductSitemapRows(): Promise<PublicProductSitema
 
       await ensureSoftDeleteColumnProbed(supabase);
 
-      const { data, error } = await fetchAllPages<{ slug: string; updated_at: string }>(
-        async (from, to) => {
-          let query = supabase
-            .from("products")
-            .select("slug, updated_at")
-            .eq("status", "active")
-            .not("image_url", "is", null)
-            .not("image_url", "like", "/images/categories/%")
-            .order("updated_at", { ascending: false })
-            .range(from, to);
+      const rows: PublicProductSitemapRow[] = [];
+      let from = offset;
+      const target = offset + limit;
 
-          if (isSoftDeleteColumnAvailable()) {
-            query = query.is("deleted_at", null);
-          }
+      while (from < target) {
+        const to = Math.min(from + SUPABASE_PAGE_SIZE - 1, target - 1);
+        let query = supabase
+          .from("products")
+          .select("slug, updated_at")
+          .eq("status", "active")
+          .not("image_url", "is", null)
+          .not("image_url", "like", "/images/categories/%")
+          .order("slug", { ascending: true })
+          .range(from, to);
 
-          const result = await query;
-          return {
-            data: (result.data ?? []) as { slug: string; updated_at: string }[],
-            error: result.error,
-          };
-        },
-      );
+        if (isSoftDeleteColumnAvailable()) {
+          query = query.is("deleted_at", null);
+        }
 
-      if (error) {
-        return [];
+        const result = await query;
+        if (result.error) {
+          break;
+        }
+
+        const page = ((result.data ?? []) as { slug: string; updated_at: string | null }[])
+          .filter((row) => row.slug?.trim())
+          .map((row) => ({
+            slug: row.slug.trim(),
+            updated_at: row.updated_at,
+          }));
+
+        rows.push(...page);
+        if (page.length < to - from + 1) {
+          break;
+        }
+        from = to + 1;
       }
 
-      return data
-        .filter((row) => row.slug?.trim())
-        .slice(0, SITEMAP_PRODUCT_LIMIT)
-        .map((row) => ({
-          slug: row.slug.trim(),
-          updated_at: row.updated_at,
-        }));
+      return rows;
     },
-    ["storefront-product-sitemap-rows"],
+    ["storefront-product-sitemap-rows", String(offset), String(limit), "v2-slug"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRODUCTS_CACHE_TAG],

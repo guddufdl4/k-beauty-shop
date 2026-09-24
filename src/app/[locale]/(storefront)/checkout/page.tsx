@@ -5,8 +5,22 @@ import { getCart } from "@/lib/cart";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: "checkout" });
+  return buildStorefrontMetadata({
+    locale,
+    path: "/checkout",
+    title: t("title"),
+    robots: NOINDEX_FOLLOW,
+  });
+}
 
 export default async function CheckoutPage() {
   const [cart, session, t, locale, usdKrwRate] = await Promise.all([

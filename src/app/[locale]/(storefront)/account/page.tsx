@@ -3,9 +3,23 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ProfileForm } from "@/components/store/profile-form";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: "account" });
+  return buildStorefrontMetadata({
+    locale,
+    path: "/account",
+    title: t("title"),
+    robots: NOINDEX_FOLLOW,
+  });
+}
 
 export default async function AccountPage({
   searchParams,

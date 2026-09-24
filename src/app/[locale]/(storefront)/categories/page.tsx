@@ -1,17 +1,27 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { CategoryCard } from "@/components/store/category-card";
 import { EmptyState } from "@/components/store/empty-state";
+import { JsonLd } from "@/components/store/json-ld";
 import { getStorefrontCategories } from "@/lib/supabase/products";
 import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import { Link } from "@/i18n/navigation";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { getCategoriesIndexSeo } from "@/lib/seo/catalog-copy";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import type { AppLocale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale();
-  return buildStorefrontMetadata({ locale, path: "/categories" });
+  const locale = (await getLocale()) as AppLocale;
+  const seo = getCategoriesIndexSeo(locale);
+  return buildStorefrontMetadata({
+    locale,
+    path: "/categories",
+    title: seo.title,
+    description: seo.description,
+  });
 }
 
 export default async function CategoriesPage() {
@@ -25,15 +35,22 @@ export default async function CategoriesPage() {
     pickStorefrontNavCategories(categories),
     locale,
   );
+  const seo = getCategoriesIndexSeo(locale as AppLocale);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
+      <JsonLd
+        data={breadcrumbJsonLd(locale, [
+          { name: "Home", path: "/" },
+          { name: seo.h1, path: "/categories" },
+        ])}
+      />
       <div className="mb-10">
         <p className="text-sm font-medium uppercase tracking-widest text-rose-500">
           {t("browse")}
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">
-          {t("title")}
+          {seo.h1}
         </h1>
         <p className="mt-3 max-w-2xl text-zinc-600">{t("description")}</p>
         {!meta.configured ? (

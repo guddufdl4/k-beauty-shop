@@ -16,6 +16,7 @@ import {
   isProductSoldOut,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
+import { productImageAlt } from "@/lib/seo/catalog-copy";
 import { getLocalizedProductName, extractProductVolume } from "@/lib/store/localized-product-name";
 import type { StorefrontProduct } from "@/lib/supabase/products";
 
@@ -95,7 +96,7 @@ export function ProductCard({
           >
             <Image
               src={displayImageUrl}
-              alt={primaryImage.alt_text ?? displayName}
+              alt={primaryImage.alt_text?.trim() || productImageAlt(getDisplayBrandName(product.brand), displayName)}
               width={400}
               height={400}
               sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"

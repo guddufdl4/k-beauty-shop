@@ -1,6 +1,6 @@
 import { routing } from "@/i18n/routing";
 
-const FALLBACK_SITE_URL = "https://hmtkorea.com";
+const FALLBACK_SITE_URL = "https://www.hmtkorea.com";
 
 export const PUBLIC_STORE_NAME = "HMT Korea";
 
@@ -25,13 +25,29 @@ export function displayPublicStoreName(raw?: string | null): string {
   return trimmed;
 }
 
+function normalizePublicSiteUrl(value: string): string {
+  const trimmed = value.trim().replace(/\/$/, "");
+  if (!trimmed || /localhost|127\.0\.0\.1/i.test(trimmed)) {
+    return FALLBACK_SITE_URL;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname === "hmtkorea.com" || url.hostname === "www.hmtkorea.com") {
+      url.protocol = "https:";
+      url.hostname = "www.hmtkorea.com";
+      return url.origin;
+    }
+    return `${url.protocol}//${url.host}`.replace(/\/$/, "");
+  } catch {
+    return FALLBACK_SITE_URL;
+  }
+}
+
 export function resolveSiteUrl(): string {
   const configured =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, "");
-  }
-  return FALLBACK_SITE_URL;
+  return normalizePublicSiteUrl(configured || FALLBACK_SITE_URL);
 }
 
 /** Confirmation emails must never point at localhost (phones cannot open it). */
@@ -41,11 +57,7 @@ export function resolveAuthEmailBaseUrl(): string {
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     FALLBACK_SITE_URL;
-  const normalized = configured.replace(/\/$/, "");
-  if (/localhost|127\.0\.0\.1/i.test(normalized)) {
-    return FALLBACK_SITE_URL;
-  }
-  return normalized;
+  return normalizePublicSiteUrl(configured || FALLBACK_SITE_URL);
 }
 
 export function localePath(locale: string, path = ""): string {

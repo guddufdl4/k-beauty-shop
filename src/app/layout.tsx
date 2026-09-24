@@ -32,10 +32,15 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
+const googleVerification =
+  process.env.GOOGLE_SITE_VERIFICATION?.trim() ||
+  process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
+
 export const metadata: Metadata = {
   title: PUBLIC_STORE_NAME,
   description:
-    "Authentic K-Beauty wholesale, supplied directly from Korea. Discover a wide range of Korean beauty brands at competitive price",
+    "HMT KOREA supplies authentic Korean cosmetics and K-Beauty products to wholesale buyers worldwide.",
+  ...(googleVerification ? { verification: { google: googleVerification } } : {}),
 };
 
 export const viewport = {

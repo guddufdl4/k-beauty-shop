@@ -1,10 +1,25 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { OrderBrandCard } from "@/components/store/order-brand-card";
 import { BrandsDirectory } from "@/components/store/products-sidebar-search";
 import { getBrandDirectoryItems, getOrderBrandGroups } from "@/lib/supabase/brand-hub";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { getBrandsIndexSeo } from "@/lib/seo/catalog-copy";
+import type { AppLocale } from "@/i18n/routing";
+import type { Metadata } from "next";
 
 export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = (await getLocale()) as AppLocale;
+  const seo = getBrandsIndexSeo(locale);
+  return buildStorefrontMetadata({
+    locale,
+    path: "/brands",
+    title: seo.title,
+    description: seo.description,
+  });
+}
 
 export default async function BrandsPage() {
   const [t, directory] = await Promise.all([

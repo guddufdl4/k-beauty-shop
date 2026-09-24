@@ -20,10 +20,12 @@ export default async function HtmlSitemapPage() {
     getTranslations("supportPages"),
     getTranslations("footer"),
   ]);
+  const tNav = await getTranslations("nav");
 
   const links = [
     { href: "/", label: PUBLIC_STORE_NAME },
     { href: "/products", label: tFooter("catalog") },
+    { href: "/brands", label: tNav("brands") },
     { href: "/categories", label: tFooter("categories") },
     { href: "/about", label: tFooter("about") },
     { href: "/contact", label: tFooter("contact") },

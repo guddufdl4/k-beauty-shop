@@ -422,7 +422,7 @@ function HeroSlideFrame({
   const copy = mergeSlideCopy(defaultCopy, slide);
   const { desktop, mobile } = resolveHeroSlideLayout(slide.layout);
   const mobileImageSrc = slide.mobileSrc ?? slide.src;
-  const imageAlt = `${slide.brandLabel} K-Beauty wholesale banner`;
+  const imageAlt = slide.brandLabel.trim() || "HMT KOREA";
 
   return (
     <div className="relative w-full min-h-[280px] bg-[#f4f2ef] sm:aspect-[1920/600]">
@@ -475,7 +475,7 @@ function HeroSlideFrame({
       >
         <HeroCopyPanel
           copy={copy}
-          isPrimaryHeading={isActive}
+          isPrimaryHeading={false}
           hidden={!isActive}
         />
       </div>
@@ -655,7 +655,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
             className="relative aspect-[1920/600] w-full bg-gradient-to-br from-slate-50 via-white to-rose-50/30"
             style={buildDesktopOnlyCopyCssVars(desktop)}
           >
-            <HeroCopyPanel copy={copy} isPrimaryHeading />
+            <HeroCopyPanel copy={copy} isPrimaryHeading={false} />
           </div>
         </div>
       </section>

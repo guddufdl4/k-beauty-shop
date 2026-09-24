@@ -1,5 +1,18 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: "supportPages" });
+  return buildStorefrontMetadata({
+    locale,
+    path: "/faq",
+    title: t("faqTitle"),
+    description: t("faqMoqAnswer"),
+  });
+}
 
 export default async function FaqPage() {
   const t = await getTranslations("supportPages");

@@ -7,9 +7,12 @@ import { isRedundantProductDescription } from "@/lib/store/product-copy";
 import {
   getLocalizedProductDescription,
   getLocalizedProductName,
+  extractProductVolume,
 } from "@/lib/store/localized-product-name";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
+import { JsonLd } from "@/components/store/json-ld";
 import { ProductAdminDetailPanel } from "@/components/store/product-admin-detail-panel";
+import { ProductCard } from "@/components/store/product-card";
 import { ProductImagePlaceholder } from "@/components/store/product-image-placeholder";
 import {
   isCategoryPlaceholderUrl,
@@ -17,20 +20,25 @@ import {
 } from "@/lib/product-images";
 import {
   getProductPriceColumns,
+  getMoqBadgeKey,
   usesBoxQuantityField,
 } from "@/lib/store/products-url";
 import { getDisplayBrandName } from "@/lib/store/products-url";
+import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
 import { formatLocaleProductPrice } from "@/lib/utils";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
-import { getCategories, getProductBySlug } from "@/lib/supabase/products";
+import { getCategories, getProductBySlug, getProducts } from "@/lib/supabase/products";
 import {
   canViewProductPrices,
   isPricedStorefrontProduct,
   resolveStorefrontAudience,
 } from "@/lib/store/product-visibility";
+import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo/json-ld";
+import { getProductSeo, productImageAlt } from "@/lib/seo/catalog-copy";
+import { buildProductsHref } from "@/lib/store/products-url";
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -46,19 +54,32 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 
   const imageUrl = resolveProductImageUrl(product);
   const displayName = getLocalizedProductName(product, locale);
+  const brandName = getDisplayBrandName(product.brand);
   const localizedDescription = getLocalizedProductDescription(product, locale);
-  const description =
+  const catalogDescription =
     !localizedDescription ||
     isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
     isRedundantProductDescription(localizedDescription, product.name, product.brand)
-      ? undefined
+      ? null
       : localizedDescription;
+  const seo = getProductSeo({
+    name: displayName,
+    brand: brandName,
+    categoryName: product.category ? getLocalizedCategoryName(product.category, locale) : null,
+    volume: extractProductVolume(product) ?? product.short_description,
+    sku: product.sku,
+    moq: product.moq,
+    origin: product.country_of_origin,
+    metaTitle: product.meta_title,
+    metaDescription: product.meta_description,
+    catalogDescription,
+  });
 
   return buildStorefrontMetadata({
     locale,
     path: `/products/${product.slug}`,
-    title: displayName,
-    description,
+    title: seo.title,
+    description: seo.description,
     ogImage: isCategoryPlaceholderUrl(imageUrl) ? null : imageUrl,
   });
 }
@@ -98,9 +119,76 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     : t("moqUnit", { count: product.moq });
   const displayName = getLocalizedProductName(product, locale);
   const localizedDescription = getLocalizedProductDescription(product, locale);
+  const brandName = getDisplayBrandName(product.brand);
+  const brandHref = buildBrandHref(brandNameToSlug(product.brand));
+  const categoryName = product.category ? getLocalizedCategoryName(product.category, locale) : null;
+  const volume = extractProductVolume(product) ?? product.short_description;
+  const catalogDescription =
+    !localizedDescription ||
+    isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
+    isRedundantProductDescription(localizedDescription, product.name, product.brand)
+      ? null
+      : localizedDescription;
+  const productSeo = getProductSeo({
+    name: displayName,
+    brand: brandName,
+    categoryName,
+    volume,
+    sku: product.sku,
+    moq: product.moq,
+    origin: product.country_of_origin,
+    metaTitle: product.meta_title,
+    metaDescription: product.meta_description,
+    catalogDescription,
+  });
+  const relatedResult = product.brand
+    ? await getProducts({
+        brand: product.brand,
+        brandExact: true,
+        limit: 8,
+        requireRealImage: true,
+        audience,
+      })
+    : { products: [] };
+  const relatedProducts = relatedResult.products
+    .filter((item) => item.slug !== product.slug)
+    .slice(0, 4);
+  const breadcrumbHome = locale === "ko" ? "홈" : locale === "ja" ? "ホーム" : locale === "zh" ? "首页" : "Home";
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 overflow-x-hidden px-4 py-10">
+      <JsonLd
+        data={productJsonLd({
+          locale,
+          name: displayName,
+          brand: brandName,
+          description: productSeo.description,
+          slug: product.slug,
+          sku: product.sku,
+          image: isPlaceholder ? null : displayImageUrl,
+          categoryName,
+          origin: product.country_of_origin,
+          volume,
+          moq: product.moq,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd(locale, [
+          { name: breadcrumbHome, path: "/" },
+          ...(product.category
+            ? [
+                {
+                  name: getLocalizedCategoryName(product.category, locale),
+                  path: buildProductsHref({ category: product.category.slug }),
+                },
+              ]
+            : []),
+          ...(product.brand
+            ? [{ name: brandName, path: brandHref }]
+            : []),
+          { name: displayName, path: `/products/${product.slug}` },
+        ])}
+      />
       {!meta.configured ? (
         <p className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {t("supabaseWarning")}
@@ -108,14 +196,29 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       ) : null}
 
       <nav className="mb-8 min-w-0 break-words text-sm text-zinc-500">
-        <Link href="/products" className="hover:text-rose-600">
-          {t("breadcrumbProducts")}
+        <Link href="/" className="hover:text-rose-600">
+          {breadcrumbHome}
         </Link>
         {product.category ? (
           <>
             <span className="mx-2">/</span>
-            <Link href={`/products?category=${product.category.slug}`} className="hover:text-rose-600">
+            <Link href={buildProductsHref({ category: product.category.slug })} className="hover:text-rose-600">
               {getLocalizedCategoryName(product.category, locale)}
+            </Link>
+          </>
+        ) : (
+          <>
+            <span className="mx-2">/</span>
+            <Link href="/products" className="hover:text-rose-600">
+              {t("breadcrumbProducts")}
+            </Link>
+          </>
+        )}
+        {product.brand ? (
+          <>
+            <span className="mx-2">/</span>
+            <Link href={brandHref} className="hover:text-rose-600">
+              {brandName}
             </Link>
           </>
         ) : null}
@@ -132,7 +235,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={displayImageUrl}
-                alt={primaryImage.alt_text ?? displayName}
+                alt={primaryImage.alt_text?.trim() || productImageAlt(brandName, displayName)}
+                width={800}
+                height={800}
                 className={`absolute inset-0 h-full w-full object-contain${isPlaceholder ? " p-10" : ""}`}
               />
             </div>
@@ -145,7 +250,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           )}
           {product.images.length > 1 && !isPlaceholder ? (
             <div className="mt-4 grid min-w-0 max-w-full grid-cols-4 gap-3">
-              {product.images.map((img) => (
+              {product.images.map((img, index) => (
                 <div
                   key={img.id}
                   className="relative aspect-square w-full min-w-0 max-w-full rounded-lg bg-zinc-50 ring-1 ring-rose-100"
@@ -153,7 +258,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={img.url}
-                    alt={img.alt_text ?? displayName}
+                    alt={img.alt_text?.trim() || productImageAlt(brandName, displayName, index)}
                     className="absolute inset-0 h-full w-full object-contain"
                   />
                 </div>
@@ -176,7 +281,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           ) : (
             <>
               <p className="text-sm font-semibold uppercase tracking-widest text-rose-500">
-                {getDisplayBrandName(product.brand)}
+                <Link href={brandHref} className="hover:underline">
+                  {brandName}
+                </Link>
               </p>
               <h1 className="mt-2 text-balance break-words text-3xl font-bold tracking-tight text-zinc-900">
                 {displayName}
@@ -306,6 +413,29 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           )}
         </div>
       </div>
+
+      {relatedProducts.length > 0 ? (
+        <section className="mt-14 border-t border-zinc-100 pt-10">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-lg font-semibold text-zinc-900">{brandName}</h2>
+            <Link href={brandHref} className="text-sm font-medium text-accent hover:underline">
+              {brandName}
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+            {relatedProducts.map((item) => (
+              <ProductCard
+                key={item.id}
+                product={item}
+                locale={locale}
+                usdKrwRate={usdKrwRate}
+                moqBadge={t(getMoqBadgeKey(item), { count: item.moq })}
+                signInToViewPriceLabel={t("signInToViewPrice")}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

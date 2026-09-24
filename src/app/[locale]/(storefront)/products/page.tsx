@@ -7,9 +7,12 @@ import { EmptyState } from "@/components/store/empty-state";
 import { ProductCatalogSidebar } from "@/components/store/products-sidebar-search";
 import { ProductsPagination } from "@/components/store/products-pagination";
 import { RelatedSearchTerms } from "@/components/store/related-search-terms";
+import { CatalogSeoCopy } from "@/components/store/catalog-seo-copy";
+import { JsonLd } from "@/components/store/json-ld";
 import { getDisplayBrandName } from "@/lib/store/products-url";
 import { getMoqBadgeKey, parseProductListSort } from "@/lib/store/products-url";
 import { interleaveByBrand } from "@/lib/store/brand-diversity";
+import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
 import {
@@ -18,6 +21,14 @@ import {
   STOREFRONT_PRODUCTS_PAGE_SIZE,
 } from "@/lib/supabase/products";
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import {
+  getCategorySeo,
+  getProductsIndexSeo,
+} from "@/lib/seo/catalog-copy";
+import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
+import { buildProductsHref } from "@/lib/store/products-url";
+import type { AppLocale } from "@/i18n/routing";
 
 export const revalidate = 60;
 
@@ -31,13 +42,75 @@ type ProductsPageProps = {
   }>;
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale();
-  const t = await getTranslations({ locale, namespace: "products" });
+export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
+  const locale = (await getLocale()) as AppLocale;
+  const { category, brand, q, page, sort } = await searchParams;
+  const searchTerm = q?.trim();
+  const brandFilter = brand?.trim();
+  const categorySlug = category?.trim();
+  const sortKey = parseProductListSort(sort);
+  const currentPage = Math.max(1, Number.parseInt(page ?? "1", 10) || 1);
+  const indexSeo = getProductsIndexSeo(locale);
+
+  if (searchTerm) {
+    return buildStorefrontMetadata({
+      locale,
+      path: "/products",
+      title: indexSeo.title,
+      description: indexSeo.description,
+      robots: NOINDEX_FOLLOW,
+    });
+  }
+
+  if (brandFilter) {
+    const brandSlug = brandNameToSlug(brandFilter);
+    return buildStorefrontMetadata({
+      locale,
+      path: "/products",
+      canonicalPath: brandSlug ? buildBrandHref(brandSlug) : "/products",
+      title: `${getDisplayBrandName(brandFilter)} Wholesale`,
+      description: indexSeo.description,
+      robots: NOINDEX_FOLLOW,
+    });
+  }
+
+  if (sortKey && !categorySlug) {
+    return buildStorefrontMetadata({
+      locale,
+      path: "/products",
+      title: indexSeo.title,
+      description: indexSeo.description,
+      robots: NOINDEX_FOLLOW,
+    });
+  }
+
+  if (categorySlug) {
+    const { categories } = await getStorefrontCategories();
+    const activeCategory = categories.find((item) => item.slug === categorySlug);
+    const fallbackName = activeCategory
+      ? getLocalizedCategoryName(activeCategory, locale)
+      : categorySlug;
+    const categorySeo = getCategorySeo(categorySlug, locale, fallbackName);
+    const canonicalPath = buildProductsHref({
+      category: categorySlug,
+      page: currentPage > 1 ? currentPage : undefined,
+    });
+    return buildStorefrontMetadata({
+      locale,
+      path: canonicalPath,
+      title: categorySeo.title,
+      description: categorySeo.description,
+    });
+  }
+
+  const canonicalPath = buildProductsHref({
+    page: currentPage > 1 ? currentPage : undefined,
+  });
   return buildStorefrontMetadata({
     locale,
-    path: "/products",
-    title: t("allProducts"),
+    path: canonicalPath,
+    title: indexSeo.title,
+    description: indexSeo.description,
   });
 }
 
@@ -99,25 +172,51 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   const listHrefOptions = { category: categorySlug, brand: brandFilter, q: searchTerm, sort };
 
+  const categorySeo =
+    !brandFilter && !searchTerm && categorySlug
+      ? getCategorySeo(
+          categorySlug,
+          locale as AppLocale,
+          activeCategory ? getLocalizedCategoryName(activeCategory, locale) : categorySlug,
+        )
+      : null;
+  const indexSeo = getProductsIndexSeo(locale as AppLocale);
+
   const pageTitle = brandFilter
     ? getDisplayBrandName(brandFilter)
     : searchTerm
       ? `"${searchTerm}"`
-      : activeCategory
-        ? getLocalizedCategoryName(activeCategory, locale)
+      : categorySeo
+        ? categorySeo.h1
         : sort === "sale"
           ? t("sortSale")
           : sort === "trending"
             ? t("sortTrending")
             : sort === "latest"
               ? t("sortLatest")
-              : t("allProducts");
+              : indexSeo.h1;
 
   const localizedCategories = localizeCategories(categories, locale);
   const showSidebar = !brandFilter;
+  const relatedBrandLinks = categorySeo
+    ? [...new Set(products.map((product) => product.brand).filter(Boolean))]
+        .slice(0, 8)
+        .map((brand) => ({
+          href: buildBrandHref(brandNameToSlug(brand)),
+          label: getDisplayBrandName(brand),
+        }))
+    : [];
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+      {categorySeo && categorySlug ? (
+        <JsonLd
+          data={breadcrumbJsonLd(locale, [
+            { name: "Home", path: "/" },
+            { name: categorySeo.h1, path: buildProductsHref({ category: categorySlug }) },
+          ])}
+        />
+      ) : null}
       <div className={`flex flex-col gap-8 ${showSidebar ? "lg:flex-row lg:gap-10" : ""}`}>
         {showSidebar ? (
           <ProductCatalogSidebar
@@ -145,7 +244,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
                   {pageTitle}
                 </h1>
-                {!brandFilter && !searchTerm ? (
+                {!searchTerm ? (
                   <Link
                     href="/brands"
                     className="mt-2 inline-flex text-sm font-medium text-accent hover:underline"
@@ -224,6 +323,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               ) : null}
             </>
           )}
+
+          {categorySeo && safePage === 1 ? (
+            <CatalogSeoCopy
+              paragraphs={categorySeo.body.split("\n\n")}
+              links={[
+                { href: "/brands", label: t("chooseBrandFirst") },
+                { href: "/products", label: t("allProducts") },
+                ...relatedBrandLinks,
+              ]}
+            />
+          ) : null}
         </div>
       </div>
     </main>

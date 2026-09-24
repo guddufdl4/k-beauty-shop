@@ -4,6 +4,7 @@ import { signUp } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
 import { SignupForm } from "@/components/store/signup-form";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -13,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/signup",
     title: t("signupTitle"),
     description: t("signupSubtitle"),
+    robots: NOINDEX_FOLLOW,
   });
 }
 

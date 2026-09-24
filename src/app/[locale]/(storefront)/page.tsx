@@ -14,10 +14,12 @@ import {
 import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettings } from "@/lib/site-settings";
 import {
   HOMEPAGE_LEAD_HERO_COPY,
+  HOMEPAGE_LEAD_HERO_IMAGE,
   HOMEPAGE_LEAD_HERO_IMAGE_HEIGHT,
   HOMEPAGE_LEAD_HERO_IMAGE_WIDTH,
   HOMEPAGE_LEAD_HERO_SLIDE_ID,
 } from "@/lib/store/homepage-lead-hero";
+import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import type { HeroSlide } from "@/types/database";
 import {
   getPriorityBrandProducts,
@@ -25,7 +27,11 @@ import {
   selectTrendingCategoryProducts,
 } from "@/lib/supabase/products";
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
+import { CatalogSeoCopy } from "@/components/store/catalog-seo-copy";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { getHomeSeo } from "@/lib/seo/catalog-copy";
+import { STOREFRONT_NAV_SLUGS } from "@/lib/store/category-taxonomy";
+import type { AppLocale } from "@/i18n/routing";
 import type { Metadata } from "next";
 export const revalidate = 300;
 
@@ -33,8 +39,15 @@ export const revalidate = 300;
 const HERO_BRAND_ORDER = ["VT", "skinfood", "Torriden"] as const;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale();
-  return buildStorefrontMetadata({ locale, path: "" });
+  const locale = (await getLocale()) as AppLocale;
+  const seo = getHomeSeo(locale);
+  return buildStorefrontMetadata({
+    locale,
+    path: "",
+    title: seo.title,
+    description: seo.description,
+    ogImage: HOMEPAGE_LEAD_HERO_IMAGE,
+  });
 }
 
 function resolveHeroSlideBrand(slideId: string, order: number): (typeof HERO_BRAND_ORDER)[number] {
@@ -227,6 +240,12 @@ export default async function HomePage() {
     haircare: selectTrendingCategoryProducts(products, "haircare", categories),
   } as const;
 
+  const homeSeo = getHomeSeo(locale as AppLocale);
+  const homeSeoParagraphs =
+    locale === "en"
+      ? ["Korean Cosmetics Wholesale for Global Buyers", homeSeo.intro ?? ""]
+      : [homeSeo.intro ?? ""];
+
   return (
     <main>
       <HeroBannerSlider slides={heroSlides} copy={heroCopy} />
@@ -271,6 +290,24 @@ export default async function HomePage() {
       </section>
 
       <HomeFeaturedBrandsSection products={products} />
+
+      <CatalogSeoCopy
+        heading={homeSeo.h1}
+        headingLevel="h1"
+        paragraphs={homeSeoParagraphs}
+        links={[
+          { href: "/products", label: t("viewProducts") },
+          { href: "/brands", label: tProducts("chooseBrandFirst") },
+          { href: "/categories", label: t("viewCategories") },
+          ...STOREFRONT_NAV_SLUGS.map((slug) => {
+            const category = categories.find((item) => item.slug === slug);
+            return {
+              href: buildProductsHref({ category: slug }),
+              label: category ? getLocalizedCategoryName(category, locale) : slug,
+            };
+          }),
+        ]}
+      />
     </main>
   );
 }

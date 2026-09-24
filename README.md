@@ -42,6 +42,12 @@ Supabase용 DDL: [`supabase/schema.sql`](./supabase/schema.sql)
 - **Styling:** Tailwind CSS 4
 - **Database:** Supabase PostgreSQL (Phase 2 연동 예정)
 
+## Google Search Console
+
+1. Set `NEXT_PUBLIC_SITE_URL` to the live origin (`https://www.hmtkorea.com`, no trailing slash) so canonical, hreflang, sitemap, and robots URLs match production.
+2. Add the Search Console HTML-tag verification code as `GOOGLE_SITE_VERIFICATION=` in the server environment. Leave it empty until Google gives you a code — do not invent one.
+3. After deploy, submit `https://www.hmtkorea.com/sitemap-index.xml` in Search Console and inspect `/en`, brand, category, and product URLs.
+
 ## 다음 단계
 
 Phase 1 검토 후 **"Phase 2 진행"** 으로 회신해 주시면 Supabase Auth·RLS·UI 구현을 시작합니다.

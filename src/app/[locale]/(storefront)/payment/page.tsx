@@ -1,5 +1,18 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: "payment" });
+  return buildStorefrontMetadata({
+    locale,
+    path: "/payment",
+    title: t("title"),
+    description: t("body"),
+  });
+}
 
 export default async function PaymentPage() {
   const t = await getTranslations("payment");
