@@ -1,7 +1,7 @@
 import {
   applyDeletedAtFilter,
   getProductBrands,
-  getStorefrontCategories,
+  getCategories,
   STATIC_PRODUCTS,
   STOREFRONT_BRANDS_CACHE_TAG,
   type Category,
@@ -595,7 +595,7 @@ async function fetchRelatedBrandHubEntriesFromSource(
 ): Promise<RelatedBrandHubItem[]> {
   const [{ brands }, { categories }] = await Promise.all([
     getProductBrands(),
-    getStorefrontCategories(),
+    getCategories(),
   ]);
   const { entries } = buildBrandCatalogEntries(brands);
   const currentEntry = entries.find((entry) => entry.slug === currentSlug);

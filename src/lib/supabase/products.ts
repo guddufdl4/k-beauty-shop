@@ -562,6 +562,82 @@ export async function fetchAllPages<T>(
   return { data: all, error: null };
 }
 
+const FETCH_PAGE_CONCURRENCY = 5;
+
+async function fetchAllPagesConcurrent<T>(
+  fetchPage: (from: number, to: number) => Promise<PageResult<T>>,
+  totalCount: number,
+  pageSize = SUPABASE_PAGE_SIZE,
+  concurrency = FETCH_PAGE_CONCURRENCY,
+): Promise<{ data: T[]; error: string | null }> {
+  if (totalCount <= 0) {
+    return { data: [], error: null };
+  }
+
+  const plannedPages = Math.ceil(totalCount / pageSize);
+  const workerCount = Math.min(Math.max(1, concurrency), plannedPages);
+  const pages: T[][] = Array.from({ length: plannedPages }, () => []);
+  let nextPage = 0;
+  let firstError: string | null = null;
+
+  async function worker() {
+    while (firstError == null) {
+      const index = nextPage;
+      nextPage += 1;
+      if (index >= plannedPages) {
+        return;
+      }
+
+      const from = index * pageSize;
+      const { data, error } = await fetchPage(from, from + pageSize - 1);
+      if (error) {
+        firstError = error.message;
+        return;
+      }
+
+      pages[index] = data ?? [];
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+  if (firstError) {
+    return { data: [], error: firstError };
+  }
+
+  const all: T[] = [];
+  for (const page of pages) {
+    all.push(...page);
+  }
+
+  const lastPlanned = pages[plannedPages - 1] ?? [];
+  if (lastPlanned.length < pageSize) {
+    return { data: all, error: null };
+  }
+
+  let from = plannedPages * pageSize;
+  while (true) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) {
+      return { data: all, error: error.message };
+    }
+
+    const page = data ?? [];
+    if (page.length === 0) {
+      break;
+    }
+
+    all.push(...page);
+    if (page.length < pageSize) {
+      break;
+    }
+
+    from += pageSize;
+  }
+
+  return { data: all, error: null };
+}
+
 type HeadCountQuery = ReturnType<
   ReturnType<SupabaseClient["from"]>["select"]
 >;
@@ -2394,27 +2470,41 @@ async function fetchProductBrandsFromSource(): Promise<{
 
   await ensureSoftDeleteColumnProbed(supabase);
 
-  const { data, error } = await fetchAllPages<{ brand: string }>(
-    async (from, to) => {
-      let query = supabase
-        .from("products")
-        .select("brand")
-        .eq("status", "active")
-        .order("brand", { ascending: true })
-        .range(from, to);
+  const fetchBrandPage = async (from: number, to: number) => {
+    let query = supabase
+      .from("products")
+      .select("brand")
+      .eq("status", "active")
+      .order("brand", { ascending: true })
+      .range(from, to);
 
+    if (isSoftDeleteColumnAvailable()) {
+      query = query.is("deleted_at", null);
+    }
+
+    const result = await query;
+
+    return {
+      data: (result.data ?? []) as { brand: string }[],
+      error: result.error,
+    };
+  };
+
+  const { count, error: countError } = await fetchExactCount(
+    supabase,
+    "products",
+    (query) => {
+      let next = query.eq("status", "active");
       if (isSoftDeleteColumnAvailable()) {
-        query = query.is("deleted_at", null);
+        next = next.is("deleted_at", null);
       }
-
-      const result = await query;
-
-      return {
-        data: (result.data ?? []) as { brand: string }[],
-        error: result.error,
-      };
+      return next;
     },
   );
+
+  const { data, error } = countError
+    ? await fetchAllPages<{ brand: string }>(fetchBrandPage)
+    : await fetchAllPagesConcurrent<{ brand: string }>(fetchBrandPage, count);
 
   if (error) {
     if (isMissingDeletedAtColumnError(error)) {

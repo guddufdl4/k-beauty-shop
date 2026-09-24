@@ -35,8 +35,8 @@ import {
   resolveBrandHubEntry,
 } from "@/lib/supabase/brand-hub";
 import {
+  getCategories,
   getProducts,
-  getStorefrontCategories,
   STOREFRONT_PRODUCTS_PAGE_SIZE,
 } from "@/lib/supabase/products";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
@@ -96,21 +96,22 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
     getUsdKrwRate(),
   ]);
 
-  const entry = await resolveBrandHubEntry(slug);
+  const categoryFilter = categorySlug?.trim() || undefined;
+  const pageParam = parseBrandHubPageParam(pageQuery);
+
+  const [entry, audience, { categories }] = await Promise.all([
+    resolveBrandHubEntry(slug),
+    resolveStorefrontAudience(),
+    getCategories(),
+  ]);
   if (!entry) {
     notFound();
   }
 
-  const audience = await resolveStorefrontAudience();
-  const categoryFilter = categorySlug?.trim() || undefined;
-  const pageParam = parseBrandHubPageParam(pageQuery);
-
-  const [{ categories }, logoUrl] = await Promise.all([
-    getStorefrontCategories(),
+  const [logoUrl, { tabs }] = await Promise.all([
     getBrandHubLogoUrl(entry.filterBrand, entry.displayName, entry.slug),
+    getBrandHubCategoryTabs(entry.filterBrand, categories),
   ]);
-
-  const { tabs } = await getBrandHubCategoryTabs(entry.filterBrand, categories);
 
   if (categoryFilter && !isValidBrandCategorySlug(categoryFilter, tabs)) {
     notFound();
