@@ -1,5 +1,7 @@
 import {
   applyDeletedAtFilter,
+  getProductBrands,
+  getStorefrontCategories,
   STATIC_PRODUCTS,
   STOREFRONT_BRANDS_CACHE_TAG,
   type Category,
@@ -16,6 +18,7 @@ import {
   type BrandCatalogEntry,
 } from "@/lib/store/brand-url";
 import {
+  applyExactBrandColumnFilter,
   buildBrandCatalog,
   HOME_FEATURED_BRANDS,
   matchesBrandFilter,
@@ -29,7 +32,6 @@ import {
 } from "@/lib/store/localized-category";
 import { resolveBrandLogo } from "@/lib/store/brand-logos";
 import { getBrandLogoMap } from "@/lib/store/partner-brands";
-import { getProductBrands } from "@/lib/supabase/products";
 
 const BRAND_HUB_CATEGORY_SELECT = "category_id";
 const BRAND_HUB_PAGE_SIZE = 1000;
@@ -273,7 +275,6 @@ async function discoverBrandCategoryTabs(
     return [];
   }
 
-  const aliases = resolveBrandFilterValues(filterBrand);
   const counts = new Map<string, BrandCategoryTab>();
   let from = 0;
 
@@ -288,12 +289,7 @@ async function discoverBrandCategoryTabs(
       .range(from, from + BRAND_HUB_PAGE_SIZE - 1);
 
     query = applyDeletedAtFilter(query, "active") as typeof query;
-
-    if (aliases.length > 1) {
-      query = query.in("brand", aliases);
-    } else {
-      query = query.eq("brand", filterBrand);
-    }
+    query = applyExactBrandColumnFilter(query, filterBrand) as typeof query;
 
     const { data, error } = await query;
     if (error) {
@@ -559,4 +555,182 @@ export function isValidBrandCategorySlug(
   }
 
   return tabs.some((tab) => tab.slug === categorySlug);
+}
+
+export type RelatedBrandHubItem = {
+  slug: string;
+  displayName: string;
+};
+
+const MIN_RELATED_BRANDS = 1;
+const MAX_RELATED_BRANDS = 8;
+const RELATED_BRAND_SAMPLE_LIMIT = 2000;
+
+function collectCategoryIdsForTabSlugs(
+  tabSlugs: string[],
+  categories: Category[],
+): string[] {
+  if (tabSlugs.length === 0) {
+    return [];
+  }
+
+  const tabContext = buildBrandHubTabContext(categories);
+  const slugSet = new Set(tabSlugs);
+  const ids: string[] = [];
+
+  for (const category of tabContext.categoriesById.values()) {
+    const tabSlug = resolveBrandHubTabSlug(category.id, tabContext);
+    if (tabSlug && slugSet.has(tabSlug)) {
+      ids.push(category.id);
+    }
+  }
+
+  return ids;
+}
+
+async function fetchRelatedBrandHubEntriesFromSource(
+  currentSlug: string,
+  currentFilterBrand: string,
+  tabSlugs: string[],
+): Promise<RelatedBrandHubItem[]> {
+  const [{ brands }, { categories }] = await Promise.all([
+    getProductBrands(),
+    getStorefrontCategories(),
+  ]);
+  const { entries } = buildBrandCatalogEntries(brands);
+  const currentEntry = entries.find((entry) => entry.slug === currentSlug);
+  if (!currentEntry) {
+    return [];
+  }
+
+  const categoryIds = collectCategoryIdsForTabSlugs(tabSlugs, categories);
+  if (categoryIds.length === 0) {
+    return [];
+  }
+
+  const excludedKeys = new Set(
+    [currentFilterBrand, ...resolveBrandFilterValues(currentFilterBrand)].map((value) =>
+      normalizeBrandKey(value),
+    ),
+  );
+  excludedKeys.add(normalizeBrandKey(currentEntry.displayName));
+  excludedKeys.add(normalizeBrandKey(currentEntry.filterBrand));
+
+  const overlapCounts = new Map<string, number>();
+
+  if (!isSupabaseConfigured()) {
+    for (const product of STATIC_PRODUCTS) {
+      if (product.status !== "active" || !product.category_id) {
+        continue;
+      }
+      if (!categoryIds.includes(product.category_id)) {
+        continue;
+      }
+      const key = normalizeBrandKey(product.brand);
+      if (!key || excludedKeys.has(key)) {
+        continue;
+      }
+      overlapCounts.set(key, (overlapCounts.get(key) ?? 0) + 1);
+    }
+  } else {
+    const supabase = createPublicClient() ?? (await createSafeClient());
+    if (!supabase) {
+      return [];
+    }
+
+    let query = supabase
+      .from("products")
+      .select("brand")
+      .eq("status", "active")
+      .not("image_url", "is", null)
+      .in("category_id", categoryIds)
+      .limit(RELATED_BRAND_SAMPLE_LIMIT);
+
+    query = applyDeletedAtFilter(query, "active") as typeof query;
+
+    const { data, error } = await query;
+    if (error || !data) {
+      return [];
+    }
+
+    for (const row of data) {
+      const brand = typeof row.brand === "string" ? row.brand.trim() : "";
+      if (!brand) {
+        continue;
+      }
+      const key = normalizeBrandKey(brand);
+      if (!key || excludedKeys.has(key)) {
+        continue;
+      }
+      overlapCounts.set(key, (overlapCounts.get(key) ?? 0) + 1);
+    }
+  }
+
+  if (overlapCounts.size === 0) {
+    return [];
+  }
+
+  const entryByKey = new Map<string, BrandCatalogEntry>();
+  for (const entry of entries) {
+    if (entry.slug === currentSlug) {
+      continue;
+    }
+    entryByKey.set(normalizeBrandKey(entry.displayName), entry);
+    entryByKey.set(normalizeBrandKey(entry.filterBrand), entry);
+    for (const alias of resolveBrandFilterValues(entry.filterBrand)) {
+      entryByKey.set(normalizeBrandKey(alias), entry);
+    }
+  }
+
+  const scored = [...overlapCounts.entries()]
+    .map(([key, count]) => {
+      const entry = entryByKey.get(key);
+      if (!entry) {
+        return null;
+      }
+      return { entry, count };
+    })
+    .filter((item): item is { entry: BrandCatalogEntry; count: number } => item != null);
+
+  const unique = new Map<string, { entry: BrandCatalogEntry; count: number }>();
+  for (const item of scored) {
+    const existing = unique.get(item.entry.slug);
+    if (!existing || item.count > existing.count) {
+      unique.set(item.entry.slug, item);
+    }
+  }
+
+  const ranked = [...unique.values()].sort((a, b) => {
+    if (b.count !== a.count) {
+      return b.count - a.count;
+    }
+    return a.entry.displayName.localeCompare(b.entry.displayName, "en", {
+      sensitivity: "base",
+    });
+  });
+
+  if (ranked.length < MIN_RELATED_BRANDS) {
+    return [];
+  }
+
+  return ranked.slice(0, MAX_RELATED_BRANDS).map((item) => ({
+    slug: item.entry.slug,
+    displayName: item.entry.displayName,
+  }));
+}
+
+export async function getRelatedBrandHubEntries(
+  current: BrandCatalogEntry,
+  tabSlugs: string[],
+): Promise<RelatedBrandHubItem[]> {
+  const slugsKey = [...new Set(tabSlugs)].sort().join(",");
+  return unstable_cache(
+    () =>
+      fetchRelatedBrandHubEntriesFromSource(current.slug, current.filterBrand, tabSlugs),
+    ["brand-hub-related", current.slug, slugsKey],
+    {
+      revalidate: 300,
+      tags: [STOREFRONT_BRANDS_CACHE_TAG],
+    },
+  )();
 }

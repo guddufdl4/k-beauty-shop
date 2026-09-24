@@ -21,6 +21,7 @@ import { BrandsMegaMenu } from "./brands-mega-menu";
 import { CategoryIcon } from "@/lib/store/category-icons";
 import { resolveHomeCategoryImageUrls } from "@/lib/product-images";
 import { resolveFeaturedBrands, type FeaturedBrand } from "@/lib/store/partner-brands";
+import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getNavBrandGroups } from "@/lib/supabase/brand-hub";
 import {
   buildProductsHref,
@@ -468,7 +469,7 @@ type HomeFeaturedBrandsSectionProps = {
 function FeaturedBrandCard({ brand }: { brand: FeaturedBrand }) {
   return (
     <Link
-      href={buildProductsHref({ brand: brand.filterBrand })}
+      href={buildBrandHref(brandNameToSlug(brand.displayName))}
       className="group flex min-h-[88px] min-w-[140px] shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-6 transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:min-h-[96px] lg:min-w-0"
     >
       {brand.logoUrl ? (

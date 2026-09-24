@@ -5,6 +5,7 @@ import { HomeTrustBar, HomeCategorySection, HomeFeaturedBrandsSection } from "@/
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
 import { buildProductsHref } from "@/lib/store/products-url";
+import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import {
   DEFAULT_WHOLESALE_INQUIRY_HREF,
   DEFAULT_ORDER_GUIDE_HREF,
@@ -158,13 +159,13 @@ function mapStoredHeroSlideToBannerSlide(
 
   const isLeadSlide = slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID;
   const brand = resolveHeroSlideBrand(slide.id, index);
-  const brandProductsHref = buildProductsHref({ brand });
+  const brandHubHref = buildBrandHref(brandNameToSlug(brand));
   const adminCopy = mapHeroSlideCopyToBannerCopy(slide.copy);
-  const brandCopy = isLeadSlide ? undefined : brandHeroCopyFallback(brand, t, brandProductsHref);
+  const brandCopy = isLeadSlide ? undefined : brandHeroCopyFallback(brand, t, brandHubHref);
 
   const primaryHref = normalizeHeroHref(
     slide.copy?.button_link,
-    isLeadSlide ? DEFAULT_ORDER_GUIDE_HREF : brandProductsHref,
+    isLeadSlide ? DEFAULT_ORDER_GUIDE_HREF : brandHubHref,
   );
 
   const mobileSrcRaw = slide.mobile_image_url?.trim()
@@ -205,7 +206,7 @@ function mapStoredHeroSlideToBannerSlide(
           ...adminCopy,
           shopBestSellersLabel:
             adminCopy?.shopBestSellersLabel?.trim() || brandCopy?.shopBestSellersLabel,
-          shopBestSellersHref: adminCopy?.shopBestSellersHref?.trim() || brandProductsHref,
+          shopBestSellersHref: adminCopy?.shopBestSellersHref?.trim() || brandHubHref,
           wholesaleInquiryLabel:
             adminCopy?.wholesaleInquiryLabel?.trim() || t("hero.wholesaleInquiry"),
           wholesaleInquiryHref:

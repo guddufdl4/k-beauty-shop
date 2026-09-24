@@ -5,11 +5,17 @@ import { notFound } from "next/navigation";
 import { Link, redirect } from "@/i18n/navigation";
 import { BrandHubCategoryTabs } from "@/components/store/brand-hub-category-tabs";
 import { BrandHubPagination } from "@/components/store/brand-hub-pagination";
+import {
+  BrandHubAvailableCategories,
+  BrandHubRelatedBrands,
+  BrandHubWholesaleCta,
+} from "@/components/store/brand-hub-seo-sections";
 import { EmptyState } from "@/components/store/empty-state";
 import { ProductCard } from "@/components/store/product-card";
 import { getUsdKrwRate } from "@/lib/currency";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
-import { getMoqBadgeKey } from "@/lib/store/products-url";
+import { buildProductsHref, getMoqBadgeKey } from "@/lib/store/products-url";
+import { isStorefrontNavSlug } from "@/lib/store/category-taxonomy";
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
 import {
   buildBrandHref,
@@ -24,6 +30,7 @@ import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
 import {
   getBrandHubCategoryTabs,
   getBrandHubLogoUrl,
+  getRelatedBrandHubEntries,
   isValidBrandCategorySlug,
   resolveBrandHubEntry,
 } from "@/lib/supabase/brand-hub";
@@ -119,7 +126,7 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
     audience,
   };
 
-  const [{ products, totalCount, meta }, allProductsCountResult] = await Promise.all([
+  const [{ products, totalCount, meta }, allProductsCountResult, relatedBrands] = await Promise.all([
     getProducts(listQuery),
     categoryFilter
       ? getProducts({
@@ -131,6 +138,10 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
           audience,
         })
       : Promise.resolve(null),
+    getRelatedBrandHubEntries(
+      entry,
+      tabs.map((tab) => tab.slug),
+    ),
   ]);
 
   const overflowTarget = resolveBrandHubPageOverflowTarget(
@@ -171,6 +182,12 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
     };
   });
   const brandSeo = getBrandSeo(entry.displayName, locale as AppLocale);
+  const availableCategoryLinks = categoryTabs
+    .filter((tab) => isStorefrontNavSlug(tab.slug))
+    .map((tab) => ({
+      href: buildProductsHref({ category: tab.slug }),
+      label: tab.label,
+    }));
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
@@ -249,6 +266,11 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
         </p>
       ) : null}
 
+      <BrandHubAvailableCategories
+        label={t("availableCategories")}
+        links={availableCategoryLinks}
+      />
+
       {allProductCount > 0 || categoryTabs.length > 0 ? (
         <BrandHubCategoryTabs
           brandSlug={entry.slug}
@@ -291,6 +313,12 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
           </>
         )}
       </section>
+
+      <BrandHubWholesaleCta
+        needQuoteLabel={t("needQuote", { brand: entry.displayName })}
+        requestQuoteLabel={t("requestQuote")}
+      />
+      <BrandHubRelatedBrands label={t("relatedBrands")} brands={relatedBrands} />
     </main>
   );
 }

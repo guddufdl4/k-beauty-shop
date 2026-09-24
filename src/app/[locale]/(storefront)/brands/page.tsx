@@ -22,12 +22,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BrandsPage() {
-  const [t, directory] = await Promise.all([
+  const [t, locale, directory] = await Promise.all([
     getTranslations("brands"),
+    getLocale(),
     getBrandDirectoryItems(),
   ]);
   const { items, meta } = directory;
   const { top, newest } = await getOrderBrandGroups(items);
+  const indexSeo = getBrandsIndexSeo(locale as AppLocale);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
@@ -37,7 +39,7 @@ export default async function BrandsPage() {
             {t("orderNowEyebrow")}
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">
-            {t("orderNowTitle")}
+            {indexSeo.h1}
           </h1>
           <p className="mt-3 max-w-2xl text-zinc-600">{t("orderNowDescription")}</p>
         </div>

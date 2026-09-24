@@ -276,6 +276,29 @@ export function getBrandFilterValue(rawBrand: string): string {
   return stripped || rawBrand.trim();
 }
 
+/** Quote a PostgREST `or()` value so aliases like `Medicube(X)` stay literals. */
+export function quotePostgrestOrValue(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+export function applyExactBrandColumnFilter(
+  query: {
+    eq: (column: string, value: string) => unknown;
+    or: (filters: string) => unknown;
+  },
+  brandFilter: string,
+) {
+  const aliases = resolveBrandFilterValues(brandFilter);
+  if (aliases.length <= 1) {
+    return query.eq("brand", brandFilter);
+  }
+
+  const orClause = aliases
+    .map((alias) => `brand.eq.${quotePostgrestOrValue(alias)}`)
+    .join(",");
+  return query.or(orClause);
+}
+
 export function resolveBrandFilterValues(filterBrand: string): string[] {
   const trimmed = filterBrand.trim();
   if (!trimmed) {

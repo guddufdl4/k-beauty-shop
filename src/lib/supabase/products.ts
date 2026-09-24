@@ -27,10 +27,10 @@ import { withLocalizedNameFields } from "@/lib/store/localized-product-name";
 import { filterStorefrontCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
 import { interleaveByBrand } from "@/lib/store/brand-diversity";
 import {
+  applyExactBrandColumnFilter,
   buildBrandCatalog,
   isProductOnSale,
   matchesBrandFilter,
-  resolveBrandFilterValues,
 } from "@/lib/store/products-url";
 import {
   filterCategoriesWithProducts,
@@ -1367,12 +1367,7 @@ export async function getProducts(
 
     if (brandFilter) {
       if (brandExact) {
-        const aliases = resolveBrandFilterValues(brandFilter);
-        if (aliases.length > 1) {
-          filtered = filtered.in("brand", aliases);
-        } else {
-          filtered = filtered.eq("brand", brandFilter);
-        }
+        filtered = applyExactBrandColumnFilter(filtered, brandFilter) as typeof filtered;
       } else {
         const escaped = escapeIlikePattern(brandFilter);
         filtered = filtered.or(`brand.ilike.%${escaped}%`);
@@ -1391,7 +1386,7 @@ export async function getProducts(
           ) => typeof filtered;
         };
         filtered = guestImageFilter.not("image_url", "is", null) as typeof filtered;
-        filtered = guestImageFilter.not(
+        filtered = (filtered as typeof guestImageFilter).not(
           "image_url",
           "like",
           "/images/categories/%",
@@ -1427,30 +1422,11 @@ export async function getProducts(
   let countErrorMessage: string | undefined;
 
   if (listLimit != null) {
-    const { count, error: countError } = await fetchExactCount(
-      supabase,
-      "products",
-      (query) => applyProductFilters(query, false),
-    );
-
-    if (countError) {
-      if (isMissingDeletedAtColumnError(countError)) {
-        markSoftDeleteColumnMissing();
-        return getProducts(categoryOrOptions);
-      }
-
-      countAvailable = false;
-      countErrorMessage = countError;
-      console.error("[getProducts] product count unavailable:", countError);
-    } else {
-      totalCount = count;
-    }
-
-    let query = supabase.from("products").select(productSelect);
+    let query = supabase.from("products").select(productSelect, { count: "exact" });
     query = applyProductFilters(query, true) as typeof query;
 
     const from = (listPage - 1) * listLimit;
-    const { data, error } = await query.range(from, from + listLimit - 1);
+    const { data, error, count } = await query.range(from, from + listLimit - 1);
 
     if (error) {
       if (isMissingDeletedAtColumnError(error.message)) {
@@ -1462,6 +1438,14 @@ export async function getProducts(
         ...staticProductsResult(),
         meta: { source: "static", configured: true, error: error.message },
       };
+    }
+
+    if (count == null) {
+      countAvailable = false;
+      countErrorMessage = "missing count";
+      console.error("[getProducts] product count unavailable: missing count");
+    } else {
+      totalCount = count;
     }
 
     let products = (data ?? []).map((row) =>
