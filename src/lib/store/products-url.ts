@@ -26,13 +26,8 @@ export function getEffectiveProductPrice(product: ProductPriceFields): number {
   return usableShopPrice(product.wholesale_price) ?? usableShopPrice(product.price) ?? 0;
 }
 
-export function isProductOnSale(product: ProductPriceFields): boolean {
-  if (product.price == null && product.wholesale_price == null) {
-    return false;
-  }
-
-  const effectivePrice = getEffectiveProductPrice(product);
-  return product.compare_at_price != null && product.compare_at_price > effectivePrice;
+export function isProductOnSale(_product: ProductPriceFields): boolean {
+  return false;
 }
 
 export function hasDualPricing(product: {
@@ -66,21 +61,10 @@ export function getProductPriceColumns(product: ProductPriceFields): {
   secondary: PriceColumn | null;
   compareAt: number | null;
 } {
-  const compareAt = null;
-  const effectivePrice = getEffectiveProductPrice(product);
-
-  if (hasDualPricing(product)) {
-    return {
-      primary: { amount: effectivePrice, labelKey: "wholesalePrice" },
-      secondary: { amount: usableShopPrice(product.price) ?? effectivePrice, labelKey: "retailPrice" },
-      compareAt,
-    };
-  }
-
   return {
-    primary: { amount: effectivePrice, labelKey: "wholesalePrice" },
+    primary: { amount: getEffectiveProductPrice(product), labelKey: "wholesalePrice" },
     secondary: null,
-    compareAt,
+    compareAt: null,
   };
 }
 

@@ -155,8 +155,8 @@ export function ProductAdminDetailPanel({
           name: name.trim(),
           brand: brand.trim(),
           category_id: categoryId.trim() || null,
-          price: price.trim(),
-          wholesale_price: wholesalePrice.trim(),
+          price: (wholesalePrice.trim() || price.trim()),
+          wholesale_price: (wholesalePrice.trim() || price.trim()),
           moq: moq.trim(),
           stock: Number(stock),
           sold_out: soldOut,
@@ -403,20 +403,6 @@ export function ProductAdminDetailPanel({
         >
           {isEditing ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="admin-edit-price" className="block text-xs font-medium text-zinc-500">
-                  {t("retailPrice")}
-                </label>
-                <input
-                  id="admin-edit-price"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={price}
-                  onChange={(event) => setPrice(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                />
-              </div>
               <div>
                 <label
                   htmlFor="admin-edit-wholesale"
