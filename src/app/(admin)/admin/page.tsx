@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminStatCard } from "@/components/admin/stat-card";
 import { getAdminOrderStats } from "@/lib/admin/orders";
+import { getStorefrontVisitStats } from "@/lib/admin/visits";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
 import { getTossStatusMessage, isTossConfigured } from "@/lib/toss";
@@ -9,7 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const { configured, user, profile, profileError } = await getSessionProfile();
-  const stats = await getAdminOrderStats();
+  const [stats, visitStats] = await Promise.all([
+    getAdminOrderStats(),
+    getStorefrontVisitStats(),
+  ]);
 
   if (configured && (!user || profile?.role !== "admin")) {
     const accessMessage = !user
@@ -55,10 +59,54 @@ export default async function AdminDashboardPage() {
         <AdminStatCard label="결제 완료" value={String(stats.paid)} />
       </div>
 
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-zinc-900">오늘 접속</h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          관리자 계정으로 스토어를 보면 집계되지 않습니다. 다른 사람 방문만 표시합니다.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <AdminStatCard
+            label="오늘 방문자"
+            value={visitStats.available ? String(visitStats.todayVisitors) : "—"}
+          />
+          <AdminStatCard
+            label="오늘 페이지뷰"
+            value={visitStats.available ? String(visitStats.todayViews) : "—"}
+          />
+          <AdminStatCard
+            label="어제 방문자"
+            value={visitStats.available ? String(visitStats.yesterdayVisitors) : "—"}
+          />
+        </div>
+        {visitStats.available && visitStats.last7Days.length > 0 ? (
+          <ul className="mt-4 grid gap-1 text-sm text-zinc-600 sm:grid-cols-2">
+            {visitStats.last7Days.map((day) => (
+              <li key={day.date} className="flex justify-between rounded-lg bg-white px-3 py-2 ring-1 ring-zinc-200">
+                <span>{day.date}</span>
+                <span>
+                  방문자 {day.visitors} · 페이지뷰 {day.views}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {!visitStats.available ? (
+          <p className="mt-3 text-sm text-amber-700">
+            방문 집계 테이블이 아직 없습니다. supabase/migrations/018_storefront_visits.sql 을 적용하면 표시됩니다.
+          </p>
+        ) : null}
+      </section>
+
       <nav className="mt-10 flex flex-wrap gap-3">
         <Link
-          href="/admin/orders"
+          href="/admin/members"
           className="rounded-xl border border-rose-200 bg-white px-5 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+        >
+          회원
+        </Link>
+        <Link
+          href="/admin/orders"
+          className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
         >
           주문 관리
         </Link>

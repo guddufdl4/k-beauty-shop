@@ -10,6 +10,7 @@ import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/json-ld";
 import { getHomeSeo } from "@/lib/seo/catalog-copy";
 import { displayPublicStoreName } from "@/lib/site-url";
 import { getSiteSettings, getPublicSiteContact } from "@/lib/site-settings";
+import { StorefrontVisitTracker } from "@/components/store/storefront-visit-tracker";
 
 export default async function StorefrontLayout({
   children,
@@ -23,6 +24,7 @@ export default async function StorefrontLayout({
 
   return (
     <ViewModeProvider>
+      <StorefrontVisitTracker />
       <StorefrontViewShell>
         <JsonLd data={organizationJsonLd(publicContact, description)} />
         <JsonLd data={websiteJsonLd(description)} />

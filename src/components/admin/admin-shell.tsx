@@ -3,6 +3,7 @@ import { storefrontHref } from "@/lib/store/storefront-href";
 
 const navLinks = [
   { href: "/admin", label: "\ub300\uc2dc\ubcf4\ub4dc" },
+  { href: "/admin/members", label: "\ud68c\uc6d0" },
   { href: "/admin/orders", label: "\uc8fc\ubb38 \uad00\ub9ac" },
   { href: "/admin/products", label: "\uc0c1\ud488 \uad00\ub9ac" },
   { href: "/admin/settings", label: "\uc0ac\uc774\ud2b8 \uc124\uc815" },
