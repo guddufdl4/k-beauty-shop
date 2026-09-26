@@ -34,6 +34,14 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Android app local build
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
+android-app/.idea/
+*.iml
+
 # vercel
 .vercel
 

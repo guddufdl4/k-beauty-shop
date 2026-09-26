@@ -1,0 +1,6 @@
+<resources>
+    <color name="brand">#E11D48</color>
+    <color name="brand_dark">#9F1239</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="ink">#18181B</color>
+</resources>

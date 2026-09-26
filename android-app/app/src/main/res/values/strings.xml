@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HMT Korea</string>
+    <string name="store_url">https://www.hmtkorea.com</string>
+    <string name="offline_title">Internet connection required</string>
+    <string name="offline_body">Connect to the network and try again to open the HMT Korea store.</string>
+    <string name="retry">Retry</string>
+</resources>
