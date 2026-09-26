@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminStatCard } from "@/components/admin/stat-card";
+import { VisitTrendChart } from "@/components/admin/visit-trend-chart";
 import { getAdminOrderStats } from "@/lib/admin/orders";
 import { getStorefrontVisitStats } from "@/lib/admin/visits";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
@@ -78,17 +79,11 @@ export default async function AdminDashboardPage() {
             value={visitStats.available ? String(visitStats.yesterdayVisitors) : "—"}
           />
         </div>
-        {visitStats.available && visitStats.last7Days.length > 0 ? (
-          <ul className="mt-4 grid gap-1 text-sm text-zinc-600 sm:grid-cols-2">
-            {visitStats.last7Days.map((day) => (
-              <li key={day.date} className="flex justify-between rounded-lg bg-white px-3 py-2 ring-1 ring-zinc-200">
-                <span>{day.date}</span>
-                <span>
-                  방문자 {day.visitors} · 페이지뷰 {day.views}
-                </span>
-              </li>
-            ))}
-          </ul>
+        {visitStats.available ? (
+          <VisitTrendChart
+            last24Hours={visitStats.last24Hours}
+            last7Days={visitStats.last7DaysChart}
+          />
         ) : null}
         {!visitStats.available ? (
           <p className="mt-3 text-sm text-amber-700">
