@@ -1,7 +1,26 @@
-import { readDemoOrders } from "@/lib/cart";
+import { readDemoOrders, writeDemoOrders } from "@/lib/cart";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 import { createServiceClient } from "@/lib/supabase/service";
+
+export const ADMIN_ORDERS_PAGE_SIZE = 10;
+
+export function parseAdminOrdersPage(raw: string | string[] | undefined): number {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const parsed = Number.parseInt(String(value ?? "1"), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return 1;
+  }
+  return parsed;
+}
+
+export function buildAdminOrdersHref(page: number): string {
+  return page > 1 ? `/admin/orders?page=${page}` : "/admin/orders";
+}
+
+function isOrderNumber(value: string): boolean {
+  return /^[A-Za-z0-9-]{4,64}$/.test(value);
+}
 
 export type AdminOrderRow = {
   order_number: string;
@@ -37,7 +56,17 @@ function snapshotField(
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-export async function listAdminOrders(): Promise<{
+export type AdminOrderList = {
+  configured: boolean;
+  orders: AdminOrderRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  demoNote?: string;
+};
+
+async function fetchAdminOrderRows(): Promise<{
   configured: boolean;
   orders: AdminOrderRow[];
   demoNote?: string;
@@ -51,7 +80,7 @@ export async function listAdminOrders(): Promise<{
           "order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes",
         )
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(500);
 
       if (!error && data) {
         return {
@@ -117,8 +146,53 @@ export async function listAdminOrders(): Promise<{
   };
 }
 
+export async function listAdminOrders(page = 1): Promise<AdminOrderList> {
+  const loaded = await fetchAdminOrderRows();
+  const total = loaded.orders.length;
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_ORDERS_PAGE_SIZE) || 1);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * ADMIN_ORDERS_PAGE_SIZE;
+
+  return {
+    ...loaded,
+    orders: loaded.orders.slice(start, start + ADMIN_ORDERS_PAGE_SIZE),
+    total,
+    page: safePage,
+    pageSize: ADMIN_ORDERS_PAGE_SIZE,
+    totalPages,
+  };
+}
+
+export async function deleteAdminOrder(orderNumber: string): Promise<{ ok: boolean; error?: string }> {
+  const normalized = orderNumber.trim();
+  if (!isOrderNumber(normalized)) {
+    return { ok: false, error: "주문 번호가 올바르지 않습니다." };
+  }
+
+  if (isSupabaseConfigured()) {
+    const supabase = createServiceClient();
+    if (!supabase) {
+      return { ok: false, error: "주문 저장소에 연결하지 못했습니다." };
+    }
+
+    const { error } = await supabase.from("orders").delete().eq("order_number", normalized);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    return { ok: true };
+  }
+
+  const demoOrders = await readDemoOrders();
+  const next = demoOrders.filter((order) => order.order_number !== normalized);
+  if (next.length === demoOrders.length) {
+    return { ok: false, error: "해당 주문을 찾지 못했습니다." };
+  }
+  await writeDemoOrders(next);
+  return { ok: true };
+}
+
 export async function getAdminOrderStats(): Promise<AdminOrderStats> {
-  const { orders } = await listAdminOrders();
+  const { orders } = await fetchAdminOrderRows();
 
   return {
     total: orders.length,

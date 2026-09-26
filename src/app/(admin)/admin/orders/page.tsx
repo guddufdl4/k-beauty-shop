@@ -1,12 +1,19 @@
 import Link from "next/link";
-import { listAdminOrders } from "@/lib/admin/orders";
+import { AdminOrderDeleteButton } from "@/components/admin/admin-order-delete-button";
+import {
+  ADMIN_ORDERS_PAGE_SIZE,
+  buildAdminOrdersHref,
+  listAdminOrders,
+  parseAdminOrdersPage,
+  type AdminOrderRow,
+} from "@/lib/admin/orders";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
 import { formatKRW } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-function paymentLabel(order: Awaited<ReturnType<typeof listAdminOrders>>["orders"][number]) {
+function paymentLabel(order: AdminOrderRow) {
   if (order.payment_provider === "quote") {
     return "견적 메일";
   }
@@ -42,9 +49,17 @@ function statusBadge(status: string, paymentProvider: string | null) {
   );
 }
 
-export default async function AdminOrdersPage() {
+type AdminOrdersPageProps = {
+  searchParams: Promise<{ page?: string | string[] }>;
+};
+
+export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
   const { configured, user, profile } = await getSessionProfile();
-  const { orders, demoNote } = await listAdminOrders();
+  const params = await searchParams;
+  const requestedPage = parseAdminOrdersPage(params.page);
+  const { orders, demoNote, total, page, totalPages } = await listAdminOrders(requestedPage);
+  const from = total === 0 ? 0 : (page - 1) * ADMIN_ORDERS_PAGE_SIZE + 1;
+  const to = Math.min(page * ADMIN_ORDERS_PAGE_SIZE, total);
 
   if (!configured) {
     return (
@@ -56,6 +71,7 @@ export default async function AdminOrdersPage() {
           </p>
         ) : null}
         <OrdersTable orders={orders} />
+        <OrdersPagination page={page} totalPages={totalPages} />
         <Link href="/admin" className="mt-8 inline-block text-sm text-rose-600 hover:underline">
           ← 대시보드
         </Link>
@@ -99,14 +115,67 @@ export default async function AdminOrdersPage() {
         </Link>
       </div>
       <p className="mt-2 text-sm text-zinc-500">
-        총 {orders.length}건 · 장바구니 견적과 주문이 함께 표시됩니다
+        {total === 0
+          ? "장바구니 견적과 주문이 함께 표시됩니다"
+          : `총 ${total}건 · ${from}–${to}번째 · ${page}/${totalPages}페이지`}
       </p>
       <OrdersTable orders={orders} />
+      <OrdersPagination page={page} totalPages={totalPages} />
     </main>
   );
 }
 
-function OrdersTable({ orders }: { orders: Awaited<ReturnType<typeof listAdminOrders>>["orders"] }) {
+function OrdersPagination({ page, totalPages }: { page: number; totalPages: number }) {
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  return (
+    <nav className="mt-6 flex flex-wrap items-center justify-center gap-2" aria-label="주문 목록 페이지">
+      {page > 1 ? (
+        <Link
+          href={buildAdminOrdersHref(page - 1)}
+          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
+        >
+          ← 이전
+        </Link>
+      ) : (
+        <span className="rounded-lg border border-transparent px-3 py-2 text-sm text-zinc-300">← 이전</span>
+      )}
+      {Array.from({ length: totalPages }, (_, index) => index + 1).map((item) =>
+        item === page ? (
+          <span
+            key={item}
+            aria-current="page"
+            className="min-w-9 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-center text-sm font-semibold text-rose-700"
+          >
+            {item}
+          </span>
+        ) : (
+          <Link
+            key={item}
+            href={buildAdminOrdersHref(item)}
+            className="min-w-9 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-center text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
+          >
+            {item}
+          </Link>
+        ),
+      )}
+      {page < totalPages ? (
+        <Link
+          href={buildAdminOrdersHref(page + 1)}
+          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
+        >
+          다음 →
+        </Link>
+      ) : (
+        <span className="rounded-lg border border-transparent px-3 py-2 text-sm text-zinc-300">다음 →</span>
+      )}
+    </nav>
+  );
+}
+
+function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
   if (orders.length === 0) {
     return (
       <p className="mt-8 rounded-xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
@@ -129,6 +198,7 @@ function OrdersTable({ orders }: { orders: Awaited<ReturnType<typeof listAdminOr
             <th className="px-4 py-3">유형</th>
             <th className="px-4 py-3">합계</th>
             <th className="px-4 py-3">일시</th>
+            <th className="px-4 py-3">관리</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100">
@@ -159,6 +229,9 @@ function OrdersTable({ orders }: { orders: Awaited<ReturnType<typeof listAdminOr
               <td className="px-4 py-3 font-medium">{formatKRW(order.total)}</td>
               <td className="px-4 py-3 text-zinc-600">
                 {new Date(order.created_at).toLocaleString("ko-KR")}
+              </td>
+              <td className="px-4 py-3">
+                <AdminOrderDeleteButton orderNumber={order.order_number} />
               </td>
             </tr>
           ))}
