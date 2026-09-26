@@ -1,8 +1,11 @@
 import Link from "next/link";
 import {
+  ADMIN_MEMBERS_PAGE_SIZE,
+  buildAdminMembersHref,
   formatMemberJoinedAt,
   listAdminMembers,
   memberRoleLabel,
+  parseAdminMembersPage,
 } from "@/lib/admin/members";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
@@ -10,14 +13,20 @@ import { storefrontHref } from "@/lib/store/storefront-href";
 export const dynamic = "force-dynamic";
 
 type AdminMembersPageProps = {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string | string[] }>;
 };
 
 export default async function AdminMembersPage({ searchParams }: AdminMembersPageProps) {
   const { configured, user, profile } = await getSessionProfile();
-  const { q } = await searchParams;
-  const query = String(q ?? "").trim();
-  const { members, total, available, error } = await listAdminMembers(query);
+  const params = await searchParams;
+  const query = String(params.q ?? "").trim();
+  const requestedPage = parseAdminMembersPage(params.page);
+  const { members, total, page, totalPages, available, error } = await listAdminMembers(
+    query,
+    requestedPage,
+  );
+  const from = total === 0 ? 0 : (page - 1) * ADMIN_MEMBERS_PAGE_SIZE + 1;
+  const to = Math.min(page * ADMIN_MEMBERS_PAGE_SIZE, total);
 
   if (configured && (!user || profile?.role !== "admin")) {
     return (
@@ -65,7 +74,11 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
       </form>
 
       <p className="mt-4 text-sm text-zinc-500">
-        {available ? `총 ${total}명` : (error ?? "회원 목록을 불러오지 못했습니다.")}
+        {available
+          ? total === 0
+            ? "총 0명"
+            : `총 ${total}명 · ${from}–${to}번째 · ${page}/${totalPages}페이지`
+          : (error ?? "회원 목록을 불러오지 못했습니다.")}
       </p>
 
       <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
@@ -104,6 +117,50 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           </tbody>
         </table>
       </div>
+
+      {available && totalPages > 1 ? (
+        <nav className="mt-6 flex flex-wrap items-center justify-center gap-2" aria-label="회원 목록 페이지">
+          {page > 1 ? (
+            <Link
+              href={buildAdminMembersHref(query, page - 1)}
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
+            >
+              ← 이전
+            </Link>
+          ) : (
+            <span className="rounded-lg border border-transparent px-3 py-2 text-sm text-zinc-300">← 이전</span>
+          )}
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((item) =>
+            item === page ? (
+              <span
+                key={item}
+                aria-current="page"
+                className="min-w-9 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-center text-sm font-semibold text-rose-700"
+              >
+                {item}
+              </span>
+            ) : (
+              <Link
+                key={item}
+                href={buildAdminMembersHref(query, item)}
+                className="min-w-9 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-center text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
+              >
+                {item}
+              </Link>
+            ),
+          )}
+          {page < totalPages ? (
+            <Link
+              href={buildAdminMembersHref(query, page + 1)}
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
+            >
+              다음 →
+            </Link>
+          ) : (
+            <span className="rounded-lg border border-transparent px-3 py-2 text-sm text-zinc-300">다음 →</span>
+          )}
+        </nav>
+      ) : null}
     </main>
   );
 }

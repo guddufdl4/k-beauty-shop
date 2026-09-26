@@ -12,22 +12,64 @@ export type AdminMemberRow = {
   createdAt: string | null;
 };
 
+export const ADMIN_MEMBERS_PAGE_SIZE = 20;
+
 export type AdminMemberList = {
   members: AdminMemberRow[];
   total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
   available: boolean;
   error: string | null;
 };
+
+export function parseAdminMembersPage(raw: string | string[] | undefined): number {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const parsed = Number.parseInt(String(value ?? "1"), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return 1;
+  }
+  return parsed;
+}
+
+export function buildAdminMembersHref(query: string, page: number): string {
+  const params = new URLSearchParams();
+  const trimmed = query.trim();
+  if (trimmed) {
+    params.set("q", trimmed);
+  }
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+  const qs = params.toString();
+  return qs ? `/admin/members?${qs}` : "/admin/members";
+}
 
 function textOrNull(value: unknown): string | null {
   const text = String(value ?? "").trim();
   return text ? text : null;
 }
 
-export async function listAdminMembers(query = ""): Promise<AdminMemberList> {
+function emptyList(available: boolean, error: string | null): AdminMemberList {
+  return {
+    members: [],
+    total: 0,
+    page: 1,
+    pageSize: ADMIN_MEMBERS_PAGE_SIZE,
+    totalPages: 1,
+    available,
+    error,
+  };
+}
+
+export async function listAdminMembers(
+  query = "",
+  page = 1,
+): Promise<AdminMemberList> {
   const supabase = createServiceClient();
   if (!supabase) {
-    return { members: [], total: 0, available: false, error: "Supabase not configured" };
+    return emptyList(false, "Supabase not configured");
   }
 
   const q = query.trim().toLowerCase();
@@ -37,10 +79,10 @@ export async function listAdminMembers(query = ""): Promise<AdminMemberList> {
       "id, email, username, full_name, company_name, country_code, role, preferred_currency, created_at",
     )
     .order("created_at", { ascending: false })
-    .limit(500);
+    .limit(2000);
 
   if (error) {
-    return { members: [], total: 0, available: false, error: error.message };
+    return emptyList(false, error.message);
   }
 
   const members: AdminMemberRow[] = (data ?? []).map((row) => ({
@@ -63,7 +105,21 @@ export async function listAdminMembers(query = ""): Promise<AdminMemberList> {
       )
     : members;
 
-  return { members: filtered, total: filtered.length, available: true, error: null };
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_MEMBERS_PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * ADMIN_MEMBERS_PAGE_SIZE;
+  const paged = filtered.slice(start, start + ADMIN_MEMBERS_PAGE_SIZE);
+
+  return {
+    members: paged,
+    total,
+    page: safePage,
+    pageSize: ADMIN_MEMBERS_PAGE_SIZE,
+    totalPages,
+    available: true,
+    error: null,
+  };
 }
 
 export function formatMemberJoinedAt(iso: string | null): string {
