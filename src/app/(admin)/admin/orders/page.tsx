@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { AdminOrderDeleteButton } from "@/components/admin/admin-order-delete-button";
+import { AdminOrderRestoreButton } from "@/components/admin/admin-order-restore-button";
 import {
   ADMIN_ORDERS_PAGE_SIZE,
   buildAdminOrdersHref,
   listAdminOrders,
   parseAdminOrdersPage,
+  parseAdminOrdersView,
   type AdminOrderRow,
 } from "@/lib/admin/orders";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
@@ -50,14 +52,24 @@ function statusBadge(status: string, paymentProvider: string | null) {
 }
 
 type AdminOrdersPageProps = {
-  searchParams: Promise<{ page?: string | string[] }>;
+  searchParams: Promise<{ page?: string | string[]; view?: string | string[] }>;
 };
 
 export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
   const { configured, user, profile } = await getSessionProfile();
   const params = await searchParams;
+  const view = parseAdminOrdersView(params.view);
   const requestedPage = parseAdminOrdersPage(params.page);
-  const { orders, demoNote, total, page, totalPages } = await listAdminOrders(requestedPage);
+  const {
+    orders,
+    demoNote,
+    total,
+    page,
+    totalPages,
+    amountTotal,
+    pageAmountTotal,
+    deletedCount,
+  } = await listAdminOrders(requestedPage, view);
   const from = total === 0 ? 0 : (page - 1) * ADMIN_ORDERS_PAGE_SIZE + 1;
   const to = Math.min(page * ADMIN_ORDERS_PAGE_SIZE, total);
 
@@ -70,8 +82,14 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
             {demoNote}
           </p>
         ) : null}
-        <OrdersTable orders={orders} />
-        <OrdersPagination page={page} totalPages={totalPages} />
+        <OrdersTable
+          orders={orders}
+          view={view}
+          amountTotal={amountTotal}
+          pageAmountTotal={pageAmountTotal}
+          total={total}
+        />
+        <OrdersPagination page={page} totalPages={totalPages} view={view} />
         <Link href="/admin" className="mt-8 inline-block text-sm text-rose-600 hover:underline">
           ← 대시보드
         </Link>
@@ -114,18 +132,56 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
           대시보드
         </Link>
       </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          href={buildAdminOrdersHref(1, "active")}
+          className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+            view === "active"
+              ? "bg-zinc-900 text-white"
+              : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+          }`}
+        >
+          주문 목록
+        </Link>
+        <Link
+          href={buildAdminOrdersHref(1, "deleted")}
+          className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+            view === "deleted"
+              ? "bg-zinc-900 text-white"
+              : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+          }`}
+        >
+          삭제됨{deletedCount > 0 ? ` (${deletedCount})` : ""}
+        </Link>
+      </div>
       <p className="mt-2 text-sm text-zinc-500">
         {total === 0
-          ? "장바구니 견적과 주문이 함께 표시됩니다"
+          ? view === "deleted"
+            ? "삭제한 주문이 없습니다."
+            : "장바구니 견적과 주문이 함께 표시됩니다"
           : `총 ${total}건 · ${from}–${to}번째 · ${page}/${totalPages}페이지`}
       </p>
-      <OrdersTable orders={orders} />
-      <OrdersPagination page={page} totalPages={totalPages} />
+      <OrdersTable
+        orders={orders}
+        view={view}
+        amountTotal={amountTotal}
+        pageAmountTotal={pageAmountTotal}
+        total={total}
+      />
+      <OrdersPagination page={page} totalPages={totalPages} view={view} />
     </main>
   );
 }
 
-function OrdersPagination({ page, totalPages }: { page: number; totalPages: number }) {
+function OrdersPagination({
+  page,
+  totalPages,
+  view,
+}: {
+  page: number;
+  totalPages: number;
+  view: "active" | "deleted";
+}) {
   if (totalPages <= 1) {
     return null;
   }
@@ -134,7 +190,7 @@ function OrdersPagination({ page, totalPages }: { page: number; totalPages: numb
     <nav className="mt-6 flex flex-wrap items-center justify-center gap-2" aria-label="주문 목록 페이지">
       {page > 1 ? (
         <Link
-          href={buildAdminOrdersHref(page - 1)}
+          href={buildAdminOrdersHref(page - 1, view)}
           className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
         >
           ← 이전
@@ -154,7 +210,7 @@ function OrdersPagination({ page, totalPages }: { page: number; totalPages: numb
         ) : (
           <Link
             key={item}
-            href={buildAdminOrdersHref(item)}
+            href={buildAdminOrdersHref(item, view)}
             className="min-w-9 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-center text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
           >
             {item}
@@ -163,7 +219,7 @@ function OrdersPagination({ page, totalPages }: { page: number; totalPages: numb
       )}
       {page < totalPages ? (
         <Link
-          href={buildAdminOrdersHref(page + 1)}
+          href={buildAdminOrdersHref(page + 1, view)}
           className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
         >
           다음 →
@@ -175,11 +231,25 @@ function OrdersPagination({ page, totalPages }: { page: number; totalPages: numb
   );
 }
 
-function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
+function OrdersTable({
+  orders,
+  view,
+  amountTotal,
+  pageAmountTotal,
+  total,
+}: {
+  orders: AdminOrderRow[];
+  view: "active" | "deleted";
+  amountTotal: number;
+  pageAmountTotal: number;
+  total: number;
+}) {
   if (orders.length === 0) {
     return (
       <p className="mt-8 rounded-xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
-        아직 견적·주문이 없습니다. 스토어에서 견적 요청을 보내면 이메일과 함께 여기에 쌓입니다.
+        {view === "deleted"
+          ? "삭제한 주문이 없습니다."
+          : "아직 견적·주문이 없습니다. 스토어에서 견적 요청을 보내면 이메일과 함께 여기에 쌓입니다."}
       </p>
     );
   }
@@ -231,11 +301,31 @@ function OrdersTable({ orders }: { orders: AdminOrderRow[] }) {
                 {new Date(order.created_at).toLocaleString("ko-KR")}
               </td>
               <td className="px-4 py-3">
-                <AdminOrderDeleteButton orderNumber={order.order_number} />
+                {view === "deleted" ? (
+                  <AdminOrderRestoreButton orderNumber={order.order_number} />
+                ) : (
+                  <AdminOrderDeleteButton orderNumber={order.order_number} />
+                )}
               </td>
             </tr>
           ))}
         </tbody>
+        <tfoot>
+          <tr className="border-t-2 border-zinc-200 bg-zinc-50">
+            <td className="px-4 py-3 text-sm font-semibold text-zinc-700" colSpan={7}>
+              이 페이지 합계
+            </td>
+            <td className="px-4 py-3 text-sm font-semibold text-zinc-900">{formatKRW(pageAmountTotal)}</td>
+            <td colSpan={2} />
+          </tr>
+          <tr className="bg-zinc-100">
+            <td className="px-4 py-3 text-sm font-bold text-zinc-800" colSpan={7}>
+              {view === "deleted" ? "삭제된 주문 총합계" : "전체 총합계"} ({total}건)
+            </td>
+            <td className="px-4 py-3 text-base font-bold text-zinc-900">{formatKRW(amountTotal)}</td>
+            <td colSpan={2} />
+          </tr>
+        </tfoot>
       </table>
     </div>
   );

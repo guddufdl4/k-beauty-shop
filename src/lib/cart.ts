@@ -914,7 +914,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
       ? createServiceClient() ?? (await createSafeClient())
       : await createSafeClient();
     if (supabase) {
-      const { data } = await supabase
+      let orderQuery = supabase
         .from("orders")
         .select(
           `
@@ -936,8 +936,11 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
           )
         `,
         )
-        .eq("order_number", orderNumber)
-        .maybeSingle();
+        .eq("order_number", orderNumber);
+      if (!isAdmin) {
+        orderQuery = orderQuery.is("deleted_at", null);
+      }
+      const { data } = await orderQuery.maybeSingle();
 
       if (data) {
         const record = data as Record<string, unknown>;

@@ -7,7 +7,7 @@ export function AdminOrderDeleteButton({ orderNumber }: { orderNumber: string })
     <form
       action={deleteAdminOrderAction}
       onSubmit={(event) => {
-        if (!window.confirm(`주문 ${orderNumber}을(를) 삭제할까요?`)) {
+        if (!window.confirm(`주문 ${orderNumber}을(를) 삭제할까요? 나중에 복구할 수 있습니다.`)) {
           event.preventDefault();
         }
       }}

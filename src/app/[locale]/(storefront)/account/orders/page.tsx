@@ -34,6 +34,7 @@ export default async function AccountOrdersPage() {
       .from("orders")
       .select("order_number, status, total, currency, created_at")
       .eq("user_id", user.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {
