@@ -1,3 +1,4 @@
+import { formatVisitDayLabel, seoulYmd, shiftSeoulYmd } from "@/lib/admin/visits";
 import { readDemoOrders, writeDemoOrders } from "@/lib/cart";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSafeClient } from "@/lib/supabase/safe-server";
@@ -70,6 +71,23 @@ function snapshotField(
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+export type AdminOrderPeriodBucket = {
+  key: string;
+  label: string;
+  amount: number;
+  count: number;
+  current: boolean;
+};
+
+export type AdminOrderPeriodTotals = {
+  today: { amount: number; count: number };
+  thisWeek: { amount: number; count: number };
+  thisMonth: { amount: number; count: number };
+  daily: AdminOrderPeriodBucket[];
+  weekly: AdminOrderPeriodBucket[];
+  monthly: AdminOrderPeriodBucket[];
+};
+
 export type AdminOrderList = {
   configured: boolean;
   orders: AdminOrderRow[];
@@ -79,10 +97,159 @@ export type AdminOrderList = {
   totalPages: number;
   amountTotal: number;
   pageAmountTotal: number;
+  periodTotals: AdminOrderPeriodTotals;
   view: "active" | "deleted";
   deletedCount: number;
   demoNote?: string;
 };
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function orderAmount(total: number): number {
+  return Number.isFinite(total) ? total : 0;
+}
+
+function seoulOrderYmd(createdAt: string): string | null {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return seoulYmd(date);
+}
+
+/** Monday of the Seoul calendar week that contains `ymd` (YYYY-MM-DD). */
+export function seoulWeekStartYmd(ymd: string): string {
+  const [year, month, day] = ymd.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  const daysFromMonday = weekday === 0 ? 6 : weekday - 1;
+  return shiftSeoulYmd(ymd, -daysFromMonday);
+}
+
+export function seoulMonthStartYmd(ymd: string): string {
+  return `${ymd.slice(0, 7)}-01`;
+}
+
+export function shiftSeoulYm(ym: string, months: number): string {
+  const [year, month] = ym.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1 + months, 1));
+  return `${shifted.getUTCFullYear()}-${pad2(shifted.getUTCMonth() + 1)}`;
+}
+
+function formatWeekRangeLabel(weekStart: string, currentWeekStart: string): string {
+  const weekEnd = shiftSeoulYmd(weekStart, 6);
+  const [, startMonth, startDay] = weekStart.split("-");
+  const [, endMonth, endDay] = weekEnd.split("-");
+  const range = `${Number(startMonth)}.${Number(startDay)}.–${Number(endMonth)}.${Number(endDay)}.`;
+  return weekStart === currentWeekStart ? `이번 주 · ${range}` : range;
+}
+
+function formatMonthLabel(ym: string, currentYm: string): string {
+  const [year, month] = ym.split("-");
+  const label = `${year}년 ${Number(month)}월`;
+  return ym === currentYm ? `이번 달 · ${label}` : label;
+}
+
+function emptyPeriodTotals(): AdminOrderPeriodTotals {
+  return {
+    today: { amount: 0, count: 0 },
+    thisWeek: { amount: 0, count: 0 },
+    thisMonth: { amount: 0, count: 0 },
+    daily: [],
+    weekly: [],
+    monthly: [],
+  };
+}
+
+export function buildAdminOrderPeriodTotals(
+  orders: Array<Pick<AdminOrderRow, "total" | "created_at">>,
+  now = new Date(),
+): AdminOrderPeriodTotals {
+  const today = seoulYmd(now);
+  const weekStart = seoulWeekStartYmd(today);
+  const monthStart = seoulMonthStartYmd(today);
+  const currentYm = today.slice(0, 7);
+  const totals = emptyPeriodTotals();
+
+  const dailyMap = new Map<string, { amount: number; count: number }>();
+  for (let offset = 0; offset < 7; offset += 1) {
+    dailyMap.set(shiftSeoulYmd(today, -offset), { amount: 0, count: 0 });
+  }
+
+  const weeklyMap = new Map<string, { amount: number; count: number }>();
+  for (let offset = 0; offset < 4; offset += 1) {
+    weeklyMap.set(shiftSeoulYmd(weekStart, -offset * 7), { amount: 0, count: 0 });
+  }
+
+  const monthlyMap = new Map<string, { amount: number; count: number }>();
+  for (let offset = 0; offset < 6; offset += 1) {
+    monthlyMap.set(shiftSeoulYm(currentYm, -offset), { amount: 0, count: 0 });
+  }
+
+  for (const order of orders) {
+    const ymd = seoulOrderYmd(order.created_at);
+    if (!ymd) {
+      continue;
+    }
+    const amount = orderAmount(order.total);
+
+    if (ymd === today) {
+      totals.today.amount += amount;
+      totals.today.count += 1;
+    }
+    if (ymd >= weekStart && ymd <= today) {
+      totals.thisWeek.amount += amount;
+      totals.thisWeek.count += 1;
+    }
+    if (ymd >= monthStart && ymd <= today) {
+      totals.thisMonth.amount += amount;
+      totals.thisMonth.count += 1;
+    }
+
+    const day = dailyMap.get(ymd);
+    if (day) {
+      day.amount += amount;
+      day.count += 1;
+    }
+
+    const week = weeklyMap.get(seoulWeekStartYmd(ymd));
+    if (week) {
+      week.amount += amount;
+      week.count += 1;
+    }
+
+    const month = monthlyMap.get(ymd.slice(0, 7));
+    if (month) {
+      month.amount += amount;
+      month.count += 1;
+    }
+  }
+
+  totals.daily = [...dailyMap.entries()].map(([key, bucket]) => ({
+    key,
+    label: formatVisitDayLabel(key, today),
+    amount: bucket.amount,
+    count: bucket.count,
+    current: key === today,
+  }));
+  totals.weekly = [...weeklyMap.entries()].map(([key, bucket]) => ({
+    key,
+    label: formatWeekRangeLabel(key, weekStart),
+    amount: bucket.amount,
+    count: bucket.count,
+    current: key === weekStart,
+  }));
+  totals.monthly = [...monthlyMap.entries()].map(([key, bucket]) => ({
+    key,
+    label: formatMonthLabel(key, currentYm),
+    amount: bucket.amount,
+    count: bucket.count,
+    current: key === currentYm,
+  }));
+
+  return totals;
+}
 
 function mapOrderRow(row: {
   order_number?: unknown;
@@ -207,8 +374,9 @@ export async function listAdminOrders(
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = (safePage - 1) * ADMIN_ORDERS_PAGE_SIZE;
   const orders = loaded.orders.slice(start, start + ADMIN_ORDERS_PAGE_SIZE);
-  const amountTotal = loaded.orders.reduce((sum, order) => sum + (Number.isFinite(order.total) ? order.total : 0), 0);
-  const pageAmountTotal = orders.reduce((sum, order) => sum + (Number.isFinite(order.total) ? order.total : 0), 0);
+  const amountTotal = loaded.orders.reduce((sum, order) => sum + orderAmount(order.total), 0);
+  const pageAmountTotal = orders.reduce((sum, order) => sum + orderAmount(order.total), 0);
+  const periodTotals = buildAdminOrderPeriodTotals(loaded.orders);
 
   return {
     ...loaded,
@@ -219,6 +387,7 @@ export async function listAdminOrders(
     totalPages,
     amountTotal,
     pageAmountTotal,
+    periodTotals,
     view,
   };
 }

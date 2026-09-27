@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminOrderDeleteButton } from "@/components/admin/admin-order-delete-button";
+import { AdminOrderPeriodTotals } from "@/components/admin/order-period-totals";
 import { AdminOrderRestoreButton } from "@/components/admin/admin-order-restore-button";
 import {
   ADMIN_ORDERS_PAGE_SIZE,
@@ -68,6 +69,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
     totalPages,
     amountTotal,
     pageAmountTotal,
+    periodTotals,
     deletedCount,
   } = await listAdminOrders(requestedPage, view);
   const from = total === 0 ? 0 : (page - 1) * ADMIN_ORDERS_PAGE_SIZE + 1;
@@ -82,6 +84,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
             {demoNote}
           </p>
         ) : null}
+        <AdminOrderPeriodTotals totals={periodTotals} view={view} />
         <OrdersTable
           orders={orders}
           view={view}
@@ -161,6 +164,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
             : "장바구니 견적과 주문이 함께 표시됩니다"
           : `총 ${total}건 · ${from}–${to}번째 · ${page}/${totalPages}페이지`}
       </p>
+      <AdminOrderPeriodTotals totals={periodTotals} view={view} />
       <OrdersTable
         orders={orders}
         view={view}
