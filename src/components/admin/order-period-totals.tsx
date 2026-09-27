@@ -50,9 +50,11 @@ export function AdminOrderPeriodTotals({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <PeriodHighlightCard label="오늘" amount={totals.today.amount} count={totals.today.count} />
+        <PeriodHighlightCard label="어제" amount={totals.yesterday.amount} count={totals.yesterday.count} />
         <PeriodHighlightCard label="이번 주" amount={totals.thisWeek.amount} count={totals.thisWeek.count} />
+        <PeriodHighlightCard label="저번 주" amount={totals.lastWeek.amount} count={totals.lastWeek.count} />
         <PeriodHighlightCard label="이번 달" amount={totals.thisMonth.amount} count={totals.thisMonth.count} />
       </div>
 

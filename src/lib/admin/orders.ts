@@ -81,7 +81,9 @@ export type AdminOrderPeriodBucket = {
 
 export type AdminOrderPeriodTotals = {
   today: { amount: number; count: number };
+  yesterday: { amount: number; count: number };
   thisWeek: { amount: number; count: number };
+  lastWeek: { amount: number; count: number };
   thisMonth: { amount: number; count: number };
   daily: AdminOrderPeriodBucket[];
   weekly: AdminOrderPeriodBucket[];
@@ -142,7 +144,13 @@ function formatWeekRangeLabel(weekStart: string, currentWeekStart: string): stri
   const [, startMonth, startDay] = weekStart.split("-");
   const [, endMonth, endDay] = weekEnd.split("-");
   const range = `${Number(startMonth)}.${Number(startDay)}.–${Number(endMonth)}.${Number(endDay)}.`;
-  return weekStart === currentWeekStart ? `이번 주 · ${range}` : range;
+  if (weekStart === currentWeekStart) {
+    return `이번 주 · ${range}`;
+  }
+  if (weekStart === shiftSeoulYmd(currentWeekStart, -7)) {
+    return `저번 주 · ${range}`;
+  }
+  return range;
 }
 
 function formatMonthLabel(ym: string, currentYm: string): string {
@@ -154,7 +162,9 @@ function formatMonthLabel(ym: string, currentYm: string): string {
 function emptyPeriodTotals(): AdminOrderPeriodTotals {
   return {
     today: { amount: 0, count: 0 },
+    yesterday: { amount: 0, count: 0 },
     thisWeek: { amount: 0, count: 0 },
+    lastWeek: { amount: 0, count: 0 },
     thisMonth: { amount: 0, count: 0 },
     daily: [],
     weekly: [],
@@ -167,7 +177,10 @@ export function buildAdminOrderPeriodTotals(
   now = new Date(),
 ): AdminOrderPeriodTotals {
   const today = seoulYmd(now);
+  const yesterday = shiftSeoulYmd(today, -1);
   const weekStart = seoulWeekStartYmd(today);
+  const lastWeekStart = shiftSeoulYmd(weekStart, -7);
+  const lastWeekEnd = shiftSeoulYmd(weekStart, -1);
   const monthStart = seoulMonthStartYmd(today);
   const currentYm = today.slice(0, 7);
   const totals = emptyPeriodTotals();
@@ -198,9 +211,17 @@ export function buildAdminOrderPeriodTotals(
       totals.today.amount += amount;
       totals.today.count += 1;
     }
+    if (ymd === yesterday) {
+      totals.yesterday.amount += amount;
+      totals.yesterday.count += 1;
+    }
     if (ymd >= weekStart && ymd <= today) {
       totals.thisWeek.amount += amount;
       totals.thisWeek.count += 1;
+    }
+    if (ymd >= lastWeekStart && ymd <= lastWeekEnd) {
+      totals.lastWeek.amount += amount;
+      totals.lastWeek.count += 1;
     }
     if (ymd >= monthStart && ymd <= today) {
       totals.thisMonth.amount += amount;
