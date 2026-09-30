@@ -16,6 +16,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { formatKRW } from "@/lib/utils";
 import { verifyCheckoutSession, isStripeConfigured } from "@/lib/stripe";
 import { cartMeetsMinOrderUsd, getUsdKrwRate, MIN_ORDER_USD } from "@/lib/currency";
+import { getMoqStep, isValidMoqQuantity } from "@/lib/store/moq-quantity";
 
 export type CheckoutState = {
   error?: string;
@@ -97,6 +98,17 @@ export async function submitQuoteRequest(
   const cart = await getCart();
   if (cart.items.length === 0) {
     return { error: t("emptyCart") };
+  }
+
+  const tCart = await getTranslations("cart");
+  for (const item of cart.items) {
+    const step = getMoqStep(item.moq);
+    if (item.quantity < step) {
+      return { error: tCart("errors.moqNotMet", { moq: step }) };
+    }
+    if (!isValidMoqQuantity(item.quantity, step)) {
+      return { error: tCart("errors.moqMultiple", { moq: step }) };
+    }
   }
 
   const usdKrwRate = await getUsdKrwRate();

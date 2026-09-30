@@ -18,6 +18,7 @@ import { enrichProductImages } from "@/lib/product-images";
 import { getEffectiveProductPrice } from "@/lib/store/products-url";
 import { getLocalizedProductName } from "@/lib/store/localized-product-name";
 import { cartMeetsMinOrderUsd, getUsdKrwRate, MIN_ORDER_USD } from "@/lib/currency";
+import { getMoqStep, isValidMoqQuantity } from "@/lib/store/moq-quantity";
 
 export const DEMO_CART_COOKIE = "kb_demo_cart";
 export const DEMO_ORDERS_COOKIE = "kb_demo_orders";
@@ -119,6 +120,14 @@ export async function createQuoteOrderFromCart(
 
   const usdKrwRate = await getUsdKrwRate();
   if (!cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
+    return {};
+  }
+
+  const hasInvalidMoqQty = cart.items.some((item) => {
+    const step = getMoqStep(item.moq);
+    return item.quantity < step || !isValidMoqQuantity(item.quantity, step);
+  });
+  if (hasInvalidMoqQty) {
     return {};
   }
 
@@ -583,6 +592,7 @@ async function resolveProductForCart(
 export type CartLibErrorCode =
   | "invalid_quantity"
   | "moq_not_met"
+  | "moq_multiple_not_met"
   | "insufficient_stock"
   | "out_of_stock"
   | "product_not_found"
@@ -603,14 +613,18 @@ function validateQuantity(
   product: ProductWithRelations,
   quantity: number,
 ): CartLibResult | null {
-  if (!Number.isFinite(quantity) || quantity < 1) {
+  if (!Number.isFinite(quantity) || !Number.isInteger(quantity) || quantity < 1) {
     return { errorCode: "invalid_quantity" };
   }
   if (product.sold_out) {
     return { errorCode: "out_of_stock" };
   }
-  if (quantity < product.moq) {
-    return { errorCode: "moq_not_met", errorParams: { moq: product.moq } };
+  const step = getMoqStep(product.moq);
+  if (quantity < step) {
+    return { errorCode: "moq_not_met", errorParams: { moq: step } };
+  }
+  if (!isValidMoqQuantity(quantity, step)) {
+    return { errorCode: "moq_multiple_not_met", errorParams: { moq: step } };
   }
   return null;
 }

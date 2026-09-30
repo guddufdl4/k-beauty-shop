@@ -8,6 +8,7 @@ type CartTranslator = (
 const ERROR_KEY_BY_CODE: Record<CartLibErrorCode, string> = {
   invalid_quantity: "errors.invalidQuantity",
   moq_not_met: "errors.moqNotMet",
+  moq_multiple_not_met: "errors.moqMultiple",
   insufficient_stock: "errors.insufficientStock",
   out_of_stock: "errors.outOfStock",
   product_not_found: "errors.productNotFound",

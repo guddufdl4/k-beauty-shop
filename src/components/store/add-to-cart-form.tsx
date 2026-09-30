@@ -6,6 +6,8 @@ import {
   addToCart,
   type CartActionState,
 } from "@/app/actions/cart";
+import { MoqQuantityInput, snapMoqFormQuantity } from "@/components/store/moq-quantity-input";
+import { getMoqStep } from "@/lib/store/moq-quantity";
 import { isProductSoldOut } from "@/lib/store/products-url";
 
 type Props = {
@@ -22,28 +24,31 @@ export function AddToCartForm({ productId, moq, stock, soldOut = false, disabled
   const t = useTranslations("cart");
   const [state, formAction, pending] = useActionState(addToCart, initialState);
   const unavailable = isProductSoldOut({ sold_out: soldOut, stock });
-  const safeMoq = Math.max(1, moq);
+  const safeMoq = getMoqStep(moq);
   const maxQuantity = 999999;
 
   return (
-    <form action={formAction} className="mt-6 space-y-3">
+    <form
+      action={formAction}
+      noValidate
+      className="mt-6 space-y-3"
+      onSubmit={(event) => snapMoqFormQuantity(event.currentTarget, safeMoq, maxQuantity)}
+    >
       <input type="hidden" name="productId" value={productId} />
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label htmlFor="quantity" className="text-sm font-medium text-zinc-700">
           {t("quantity")}
         </label>
-        <input
-          id="quantity"
-          name="quantity"
-          type="number"
-          min={safeMoq}
-          max={unavailable ? safeMoq : maxQuantity}
-          step={1}
+        <MoqQuantityInput
+          moq={safeMoq}
           defaultValue={safeMoq}
+          max={unavailable ? safeMoq : maxQuantity}
           disabled={unavailable || disabled}
-          className="w-28 rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
+          className="w-20 rounded-lg border border-zinc-300 px-2 py-2 text-center text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
         />
-        <span className="text-xs text-zinc-500">{t("moqHint", { count: safeMoq })}</span>
+        <span className="text-xs text-zinc-500">
+          {t("moqHint", { count: safeMoq, next: safeMoq * 2, third: safeMoq * 3 })}
+        </span>
       </div>
       <button
         type="submit"

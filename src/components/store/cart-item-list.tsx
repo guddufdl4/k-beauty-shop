@@ -1,12 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   removeFromCart,
   updateQuantity,
   type CartActionState,
 } from "@/app/actions/cart";
+import { MoqQuantityInput, snapMoqFormQuantity } from "@/components/store/moq-quantity-input";
+import { getMoqStep } from "@/lib/store/moq-quantity";
 import { formatLocalePrice } from "@/lib/utils";
 import type { CartItemView } from "@/types/cart";
 
@@ -21,8 +24,10 @@ function CartItemRow({
   locale: string;
   usdKrwRate: number;
 }) {
+  const t = useTranslations("cart");
   const [updateState, updateAction, updatePending] = useActionState(updateQuantity, initialState);
   const [removeState, removeAction, removePending] = useActionState(removeFromCart, initialState);
+  const step = getMoqStep(item.moq);
 
   const error = updateState.error ?? removeState.error;
 
@@ -39,23 +44,25 @@ function CartItemRow({
         </div>
 
         <div className="flex flex-col items-start gap-2 sm:items-end">
-          <form action={updateAction} className="flex items-center gap-2">
+          <form
+            action={updateAction}
+            noValidate
+            className="flex items-center gap-2"
+            onSubmit={(event) => snapMoqFormQuantity(event.currentTarget, step)}
+          >
             <input type="hidden" name="productId" value={item.productId} />
-            <input
-              name="quantity"
-              type="number"
-              min={Math.max(1, item.moq)}
-              max={999999}
-              step={1}
+            <MoqQuantityInput
+              id={`quantity-${item.productId}`}
+              moq={step}
               defaultValue={item.quantity}
-              className="w-24 rounded-lg border border-zinc-300 px-3 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              className="w-20 rounded-lg border border-zinc-300 px-2 py-2 text-center text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
             />
             <button
               type="submit"
               disabled={updatePending}
               className="rounded-lg border border-zinc-300 px-3 py-3 text-sm hover:bg-zinc-50 disabled:opacity-60"
             >
-              Update
+              {t("change")}
             </button>
           </form>
 
@@ -66,7 +73,7 @@ function CartItemRow({
               disabled={removePending}
               className="py-3 text-sm text-zinc-500 hover:text-red-600 disabled:opacity-60"
             >
-              Remove
+              {t("remove")}
             </button>
           </form>
         </div>
