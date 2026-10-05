@@ -1,5 +1,7 @@
 "use server";
 
+import { maintenanceActionError } from "@/lib/maintenance-server";
+
 import { revalidatePath } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
@@ -11,6 +13,8 @@ export async function updateProfileFullName(
   _prev: ProfileState,
   formData: FormData,
 ): Promise<ProfileState> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("account");
   const fullName = String(formData.get("full_name") ?? "").trim();
 

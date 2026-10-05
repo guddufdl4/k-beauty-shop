@@ -1,5 +1,7 @@
 "use server";
 
+import { maintenanceActionError } from "@/lib/maintenance-server";
+
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
 
@@ -48,6 +50,8 @@ export async function submitQuoteRequest(
   _prev: CheckoutState,
   formData: FormData,
 ): Promise<CheckoutState> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("checkout");
   const locale = await getLocale();
   const session = await getSessionProfile();
@@ -222,6 +226,8 @@ export async function confirmOrderPayment(
   orderNumber: string,
   sessionId: string,
 ): Promise<void> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) throw new Error(maintenanceError);
   if (!isStripeConfigured() || !sessionId) {
     return;
   }

@@ -1,3 +1,5 @@
+import { MaintenanceSettingsForm } from "@/components/admin/maintenance-settings-form";
+import { getMaintenanceSettings } from "@/lib/maintenance";
 import Link from "next/link";
 import { AdminHomeSettingsForm } from "@/components/admin/home-settings-form";
 import { AdminSettingsForm } from "@/components/admin/settings-form";
@@ -59,6 +61,7 @@ export default async function AdminSettingsPage() {
       </div>
 
       <AdminSettingsNav />
+      <MaintenanceSettingsForm initialSettings={await getMaintenanceSettings()} />
       <AdminSettingsForm initialSettings={settings} />
       <div className="mt-8">
         <AdminSocialSettingsForm initialSettings={settings} />

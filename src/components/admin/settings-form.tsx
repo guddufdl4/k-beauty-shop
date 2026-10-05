@@ -213,7 +213,7 @@ export function AdminSettingsForm({ initialSettings }: Props) {
 
       <section className="space-y-4 border-t border-zinc-100 pt-6">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-900">점검·공지 배너</h2>
+          <h2 className="text-lg font-semibold text-zinc-900">공지 배너</h2>
           <p className="mt-1 text-sm text-zinc-500">
             활성화하면 모든 스토어 페이지 상단에 안내 배너가 표시됩니다.
           </p>
@@ -226,7 +226,7 @@ export function AdminSettingsForm({ initialSettings }: Props) {
             defaultChecked={settings.maintenance_enabled}
             className="size-4 rounded border-zinc-300 text-rose-600 focus:ring-rose-500"
           />
-          점검/공지 배너 표시
+          공지 배너 표시 (사이트 이용 가능)
         </label>
 
         <div>

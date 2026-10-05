@@ -39,3 +39,23 @@ export async function updateSession(
   await supabase.auth.getUser();
   return supabaseResponse;
 }
+
+// Validate the authenticated user and database role; metadata/cookie claims are never trusted.
+export async function isMaintenanceAdmin(request: NextRequest, response: NextResponse): Promise<boolean> {
+  const config = getSanitizedSupabaseConfig();
+  if (!config) return false;
+  const supabase = createServerClient(config.url, config.anonKey, {
+    global: { headers: { apikey: config.anonKey }, fetch: createSsrSupabaseFetch(config.anonKey) },
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (values) => values.forEach(({ name, value, options }) => {
+        request.cookies.set(name, value);
+        response.cookies.set(name, value, options);
+      }),
+    },
+  });
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return false;
+  const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  return data?.role === "admin";
+}

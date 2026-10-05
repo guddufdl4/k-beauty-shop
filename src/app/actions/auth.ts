@@ -1,5 +1,7 @@
 "use server";
 
+import { maintenanceActionError } from "@/lib/maintenance-server";
+
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { hasLocale } from "next-intl";
@@ -103,6 +105,8 @@ export async function signUp(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("auth");
   const locale = await getLocale();
   const parsed = parseSignupForm(formData);
@@ -193,6 +197,8 @@ export async function resendSignupConfirmation(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("auth");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!looksLikeEmail(email)) {

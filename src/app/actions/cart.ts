@@ -1,5 +1,7 @@
 "use server";
 
+import { maintenanceActionError } from "@/lib/maintenance-server";
+
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import {
@@ -21,6 +23,8 @@ export async function addToCart(
   _prev: CartActionState,
   formData: FormData,
 ): Promise<CartActionState> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("cart");
   const productId = String(formData.get("productId") ?? "").trim();
   const quantity = Number(formData.get("quantity") ?? 1);
@@ -43,6 +47,8 @@ export async function updateQuantity(
   _prev: CartActionState,
   formData: FormData,
 ): Promise<CartActionState> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("cart");
   const productId = String(formData.get("productId") ?? "").trim();
   const quantity = Number(formData.get("quantity") ?? 1);
@@ -65,6 +71,8 @@ export async function removeFromCart(
   _prev: CartActionState,
   formData: FormData,
 ): Promise<CartActionState> {
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("cart");
   const productId = String(formData.get("productId") ?? "").trim();
 
