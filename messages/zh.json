@@ -291,6 +291,7 @@
     "supabaseWarning": "未连接 Supabase — 显示示例商品数据。",
     "retailPrice": "零售价",
     "wholesalePrice": "批发价 (B2B)",
+    "supplyPriceOnRequest": "请咨询供货价",
     "moq": "MOQ",
     "moqUnit": "最低 {count} 件",
     "unitsPerBox": "每箱数量",

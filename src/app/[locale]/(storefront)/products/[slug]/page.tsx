@@ -150,6 +150,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
   const priceColumns = isPricedStorefrontProduct(product)
     ? getProductPriceColumns(product)
     : null;
+  const hasSupplyPrice = priceColumns != null && usableShopPrice(priceColumns.primary.amount) != null;
   const retailAmount =
     canViewPrices && isPricedStorefrontProduct(product)
       ? usableShopPrice(product.compare_at_price)
@@ -373,12 +374,12 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                       value={formatKRW(retailAmount)}
                     />
                   ) : null}
-                  {canViewPrices && priceColumns ? (
-                    <InfoRow
-                      label={t(priceColumns.primary.labelKey)}
-                      value={formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
-                    />
-                  ) : null}
+                  <InfoRow
+                    label={t("wholesalePrice")}
+                    value={canViewPrices && priceColumns
+                      ? (hasSupplyPrice ? formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate) : t("supplyPriceOnRequest"))
+                      : t(session.user ? "businessApprovalPending" : "signInToViewPrice")}
+                  />
                 </dl>
 
                 {canViewPrices && priceColumns ? (
@@ -387,7 +388,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                       {t(priceColumns.primary.labelKey)}
                     </p>
                     <p className="text-2xl font-bold text-zinc-900">
-                      {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
+                      {hasSupplyPrice ? formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate) : t("supplyPriceOnRequest")}
                     </p>
                   </div>
                 ) : (
@@ -418,7 +419,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   moq={product.moq}
                   stock={canViewPrices && isPricedStorefrontProduct(product) ? product.stock : 0}
                   soldOut={product.sold_out}
-                  canAdd={canViewPrices && isPricedStorefrontProduct(product)}
+                  canAdd={canViewPrices && hasSupplyPrice && isPricedStorefrontProduct(product)}
                   approvalPending={Boolean(session.user) && !canViewPrices}
                   defaultQuantity={Number.isFinite(defaultQty) ? defaultQty : undefined}
                 />

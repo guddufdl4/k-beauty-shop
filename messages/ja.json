@@ -291,6 +291,7 @@
     "supabaseWarning": "Supabase未接続 — サンプル商品データを表示しています。",
     "retailPrice": "小売価格",
     "wholesalePrice": "卸売価格 (B2B)",
+    "supplyPriceOnRequest": "価格はお問い合わせください",
     "moq": "MOQ",
     "moqUnit": "最低 {count} 個",
     "unitsPerBox": "ボックス入数",
