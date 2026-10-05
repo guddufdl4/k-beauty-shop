@@ -1,9 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { resolveProductImageUrl } from "@/lib/product-images";
 import { HomeTrendingSection } from "@/components/store/home-product-tabs";
 import { HeroBannerSlider, type HeroBannerSlide } from "@/components/store/hero-banner-slider";
 import { HomeTrustBar, HomeCategorySection, HomeFeaturedBrandsSection } from "@/components/store/header";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
 import { getUsdKrwRate } from "@/lib/currency";
+import { getDisplayBrandName } from "@/lib/store/products-url";
 import { buildProductsHref } from "@/lib/store/products-url";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import {
@@ -25,6 +27,7 @@ import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
 import type { HeroSlide } from "@/types/database";
 import {
   getPriorityBrandProducts,
+  getProducts,
   getStorefrontCategories,
   selectTrendingCategoryProducts,
 } from "@/lib/supabase/products";
@@ -231,16 +234,29 @@ export default async function HomePage() {
   const siteSettings = await loadSiteSettingsSafely();
   const heroCopy = buildDefaultHeroCopy(siteSettings, t);
 
+  const categoryRows = await Promise.all(["skincare", "makeup", "haircare"].map((categorySlug) =>
+    getProducts({ categorySlug, limit: 8, requireRealImage: true, audience, sort: "trending" }),
+  ));
+
   const heroSlides = getHeroSlides(siteSettings)
     .map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, siteSettings, t))
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
   const trendingProducts = {
     all: localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories), locale),
-    skincare: localizeStorefrontProducts(selectTrendingCategoryProducts(products, "skincare", categories), locale),
-    makeup: localizeStorefrontProducts(selectTrendingCategoryProducts(products, "makeup", categories), locale),
-    haircare: localizeStorefrontProducts(selectTrendingCategoryProducts(products, "haircare", categories), locale),
+    skincare: localizeStorefrontProducts(categoryRows[0].products, locale),
+    makeup: localizeStorefrontProducts(categoryRows[1].products, locale),
+    haircare: localizeStorefrontProducts(categoryRows[2].products, locale),
   } as const;
+
+  const heroProducts = trendingProducts.all.filter((product) => !product.sold_out).slice(0, 5);
+  const leadSlide = heroSlides.find((slide) => slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID);
+  if (leadSlide && heroProducts.length) {
+    leadSlide.products = heroProducts.map((product) => ({
+      id: product.id, name: product.name, brand: getDisplayBrandName(product.brand ?? ""),
+      src: resolveProductImageUrl(product), href: `/products/${product.slug}`,
+    }));
+  }
 
   const homeSeo = getHomeSeo(locale as AppLocale);
   const homeSeoParagraphs =

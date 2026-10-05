@@ -795,5 +795,30 @@
     "awardTitle": "2025年 · 300万美元出口塔",
     "awardBody": "HANMI TRADING COMPANY于2025年第62届贸易日获颁300万美元出口塔，韩国贸易协会获奖证明书记录了这一荣誉。",
     "awardCertificate": "韩国贸易协会出口业绩获奖证明书"
+  },
+  "accountDesign": {
+    "welcome": "欢迎，{name}。",
+    "admin": "管理员",
+    "approved": "已批准的企业",
+    "pending": "等待审核",
+    "details": "账户信息",
+    "email": "电子邮件",
+    "company": "公司",
+    "phone": "电话 / WhatsApp",
+    "country": "国家",
+    "approvedHelp": "您的企业账户可查看供货价格并提交报价请求。",
+    "pendingHelp": "注册已保存。管理员批准后可查看供货价格。",
+    "history": "订单与报价记录",
+    "historyHelp": "已提交的订单和报价请求将保存在您的账户中。",
+    "quotes": "报价清单",
+    "quotesHelp": "查看已选商品并下载发票草稿。",
+    "catalog": "产品目录",
+    "catalogHelp": "为下一笔批发订单寻找产品。",
+    "dashboard": "管理后台",
+    "dashboardHelp": "管理产品、会员和客户请求。",
+    "support": "客户支持",
+    "supportHelp": "如需订单相关帮助，请联系我们。",
+    "downloadHistory": "保存记录 (Excel)",
+    "historyError": "暂时无法加载订单记录，请稍后重试。"
   }
 }

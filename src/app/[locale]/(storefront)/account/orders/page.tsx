@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
-import { createClient } from "@/lib/supabase/server";
+import { getCustomerOrders } from "@/lib/account-orders";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -27,36 +27,34 @@ export default async function AccountOrdersPage() {
   }
 
   let orders: OrderRow[] = [];
+  let loadError = false;
+  const ui = await getTranslations("accountDesign");
 
   if (configured && user) {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("orders")
-      .select("order_number, status, total, currency, created_at")
-      .eq("user_id", user.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-
-    if (error) {
+    try {
+      orders = await getCustomerOrders(user.id);
+    } catch {
+      loadError = true;
       console.error("[account/orders] query failed");
-    } else {
-      orders = (data ?? []) as OrderRow[];
     }
   }
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4 rounded-3xl border border-pink-100 bg-gradient-to-br from-rose-50 via-white to-violet-50 p-7 sm:p-10">
         <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="mt-2 text-zinc-600">{t("description")}</p>
+          <p className="mb-3 text-xs font-bold tracking-[0.2em] text-accent">HMT KOREA</p>
+          <h1 className="text-3xl font-bold">{ui("history")}</h1>
+          <p className="mt-2 text-zinc-600">{ui("historyHelp")}</p>
         </div>
         <Link href="/account" className="text-sm font-semibold text-accent-hover hover:text-accent">
           {tAccount("title")}
         </Link>
       </div>
 
-      {!isSupabaseConfigured() ? (
+      {orders.length > 0 ? <div className="mb-5 flex justify-end"><a href="/api/account/orders/export" download className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white hover:bg-accent-hover">{ui("downloadHistory")}</a></div> : null}
+
+      {loadError ? <p role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">{ui("historyError")}</p> : !isSupabaseConfigured() ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {t("unavailable")}
         </p>

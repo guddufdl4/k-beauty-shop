@@ -2211,7 +2211,8 @@ async function fetchPriorityBrandProductsFromSource(
     };
   }
 
-  const supabase = createPublicClient();
+  // Price-bearing projections must use the signed-in member/admin session.
+  const supabase = audience === "guest" ? createPublicClient() : await createSafeClient();
   if (!supabase) {
     const products = getStaticHomepageFallbackProducts(limit);
     return {
@@ -2259,7 +2260,7 @@ async function fetchPriorityBrandProductsFromSource(
       )
     ).filter((product) => !isDemoProduct(product) && productMatchesBrandPriority(product));
 
-    if (dbProducts.length === 0) {
+    if (!dbProducts.some((product) => productHasRealImage(product))) {
       const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit, audience);
       dbProducts = homepageResult.products;
     }

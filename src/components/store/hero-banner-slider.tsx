@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { Link } from "@/i18n/navigation";
+import NextImage from "next/image";
 
 import { HeroBannerImage } from "@/components/store/hero-banner-image";
 import styles from "@/components/store/hero-banner-slider.module.css";
@@ -23,6 +24,7 @@ import type {
 import { resolveHeroSlideLayout } from "@/lib/admin/hero-image-spec";
 
 export type HeroBannerSlide = {
+  products?: { id: string; name: string; brand: string; src: string; href: string }[];
   id: string;
   src: string;
   mobileSrc?: string;
@@ -426,6 +428,35 @@ function HeroSlideFrame({
   const mobileImageSrc = slide.mobileSrc ?? slide.src;
   const imageAlt = slide.brandLabel.trim() || "HMT KOREA";
 
+  if (slide.products?.length) {
+    return (
+      <div className="relative isolate grid w-full min-w-0 min-h-[530px] overflow-hidden bg-gradient-to-br from-[#fff7fa] via-[#fbe5ee] to-[#f5e9ff] sm:min-h-[370px] sm:grid-cols-[44%_56%] lg:min-h-[470px]">
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-40 h-[580px] w-[580px] rounded-full border-[70px] border-white/30" />
+        <div className="relative z-20 flex min-w-0 flex-col justify-center px-12 pb-2 pt-10 sm:py-12 lg:pl-16">
+          <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#e11d73]">{copy.badge}</p>
+          {isPrimaryHeading ? <h1 className="text-3xl font-bold leading-[1.08] tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl">{copy.title}</h1>
+            : <h2 className="text-3xl font-bold leading-[1.08] tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl">{copy.title}</h2>}
+          <p className="mt-5 max-w-sm text-sm leading-6 text-zinc-600 lg:text-base">{copy.description}</p>
+          <HeroNavLink href={copy.orderGuideHref || slide.href} tabIndex={isActive ? undefined : -1}
+            className="mt-6 w-fit rounded-full bg-accent px-6 py-3 text-sm font-bold text-white shadow-lg shadow-pink-200 transition hover:bg-accent-hover">
+            {copy.orderGuideLabel || copy.shopBestSellersLabel}
+          </HeroNavLink>
+        </div>
+        <div className="relative z-10 flex min-w-0 items-center justify-center px-7 pb-12 pt-7 sm:pl-2 sm:pr-12 lg:pr-16">
+          <div className="grid w-full min-w-0 max-w-[640px] grid-cols-6 items-end gap-3 sm:gap-4">
+            {slide.products.map((product, index) => (
+              <Link key={product.id} href={product.href} tabIndex={isActive ? undefined : -1} aria-label={product.name}
+                className={`group relative col-span-2 min-w-0 overflow-hidden rounded-2xl border border-white/80 bg-white p-2 shadow-[0_16px_35px_-20px_rgba(110,35,75,0.4)] transition hover:-translate-y-1 ${index === 3 ? "col-start-2" : ""} ${index === 1 ? "-translate-y-3" : ""}`}>
+                <div className="relative aspect-square"><NextImage src={product.src} alt={product.name} fill sizes="(max-width: 640px) 110px, 180px" priority={priority} className="object-contain p-1 transition group-hover:scale-105" /></div>
+                <p className="truncate px-1 pb-1 text-center text-[10px] font-bold tracking-wide text-zinc-700 sm:text-xs">{product.brand}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full min-h-[280px] bg-[#f4f2ef] sm:aspect-[1920/600]">
       <HeroBannerImage
@@ -734,7 +765,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
           {slides.map((slide, index) => (
             <div
               key={slide.id}
-              className={showControls ? "min-w-full shrink-0 snap-center snap-always" : "w-full"}
+              className={showControls ? "w-full min-w-0 shrink-0 snap-center snap-always" : "w-full"}
               aria-hidden={showControls && index !== activeIndex ? true : undefined}
               inert={showControls && index !== activeIndex ? true : undefined}
             >

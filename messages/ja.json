@@ -795,5 +795,30 @@
     "awardTitle": "2025年 · 300万ドル輸出の塔",
     "awardBody": "HANMI TRADING COMPANYは2025年第62回貿易の日に300万ドル輸出の塔を受賞しました。韓国貿易協会の受賞証明書に記載されています。",
     "awardCertificate": "韓国貿易協会の輸出功績受賞証明書"
+  },
+  "accountDesign": {
+    "welcome": "{name}様、ようこそ。",
+    "admin": "管理者",
+    "approved": "承認済み事業者",
+    "pending": "承認待ち",
+    "details": "アカウント情報",
+    "email": "メール",
+    "company": "会社",
+    "phone": "電話 / WhatsApp",
+    "country": "国",
+    "approvedHelp": "卸価格の確認と見積依頼が可能な事業者アカウントです。",
+    "pendingHelp": "登録が保存されました。管理者の承認後に卸価格を確認できます。",
+    "history": "注文・見積履歴",
+    "historyHelp": "送信した注文と見積依頼はアカウントに保存されます。",
+    "quotes": "見積リスト",
+    "quotesHelp": "商品を確認し、請求書の下書きをダウンロードできます。",
+    "catalog": "商品カタログ",
+    "catalogHelp": "次の卸注文に必要な商品を探しましょう。",
+    "dashboard": "管理画面",
+    "dashboardHelp": "商品・会員・お客様の依頼を管理します。",
+    "support": "カスタマーサポート",
+    "supportHelp": "ご注文に関するお問い合わせはこちら。",
+    "downloadHistory": "履歴を保存 (Excel)",
+    "historyError": "履歴を読み込めません。後でもう一度お試しください。"
   }
 }

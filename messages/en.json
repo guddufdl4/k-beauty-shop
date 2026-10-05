@@ -794,5 +794,30 @@
     "awardTitle": "2025 · 3-Million Dollar Export Tower",
     "awardBody": "HANMI TRADING COMPANY received the 3-Million Dollar Export Tower at the 62nd Trade Day in 2025, as recorded in the Korea International Trade Association award certificate.",
     "awardCertificate": "Award Certificate for Outstanding Export Performance"
+  },
+  "accountDesign": {
+    "welcome": "Welcome, {name}.",
+    "admin": "Administrator",
+    "approved": "Approved business",
+    "pending": "Awaiting approval",
+    "details": "Account details",
+    "email": "Email",
+    "company": "Company",
+    "phone": "Phone / WhatsApp",
+    "country": "Country",
+    "approvedHelp": "Your business account can view supply prices and submit quotes.",
+    "pendingHelp": "Your registration is saved. Supply prices become available after administrator approval.",
+    "history": "Order & quote history",
+    "historyHelp": "Submitted orders and quote requests are saved to your account.",
+    "quotes": "Quote list",
+    "quotesHelp": "Review your selection and download a draft invoice.",
+    "catalog": "Product catalog",
+    "catalogHelp": "Discover products for your next wholesale order.",
+    "dashboard": "Admin dashboard",
+    "dashboardHelp": "Manage products, members and customer requests.",
+    "support": "Customer support",
+    "supportHelp": "Contact our team for help with your order.",
+    "downloadHistory": "Download history (Excel)",
+    "historyError": "History temporarily unavailable. Please try again."
   }
 }
