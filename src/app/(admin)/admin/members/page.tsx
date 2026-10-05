@@ -1,4 +1,4 @@
-import { setBusinessApproval } from "@/app/actions/members";
+import { MemberApprovalForm } from "./member-approval-form";
 import Link from "next/link";
 import {
   ADMIN_MEMBERS_PAGE_SIZE,
@@ -82,8 +82,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           : (error ?? "회원 목록을 불러오지 못했습니다.")}
       </p>
 
-      <form action={setBusinessApproval} className="mt-4">
-        <div className="mb-3 flex gap-3"><button name="decision" value="approve" className="rounded-lg bg-violet-700 px-4 py-2 text-sm text-white">선택 회원 승인</button><button name="decision" value="revoke" className="rounded-lg border px-4 py-2 text-sm">선택 회원 승인 취소</button></div>
+      <MemberApprovalForm key={`${query}:${page}`} selectableCount={members.filter((member) => member.role !== "admin").length}>
       <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -121,7 +120,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           </tbody>
         </table>
       </div>
-      </form>
+      </MemberApprovalForm>
 
       {available && totalPages > 1 ? (
         <nav className="mt-6 flex flex-wrap items-center justify-center gap-2" aria-label="회원 목록 페이지">
