@@ -610,9 +610,9 @@
     "signupSuccess": "계정이 만들어졌습니다. HMT Korea에서 보낸 메일에서 이메일 주소를 확인해 주세요.",
     "signupSuccessFallback": "계정이 만들어졌습니다. 인증 메일의 링크는 localhost가 아니라 hmtkorea.com으로 연결됩니다.",
     "countryRequired": "국가를 선택해 주세요.",
-    "companyRequired": "회사명을 입력해 주세요.",
+    "companyRequired": "실제 회사명을 정확히 입력하세요.",
     "emailInvalid": "올바른 이메일 주소를 입력해 주세요.",
-    "nameRequired": "이름을 입력해 주세요.",
+    "nameRequired": "실명을 정확히 입력하세요.",
     "usernameInvalid": "아이디는 영문으로 시작하고 3–30자의 허용 문자만 사용할 수 있습니다.",
     "usernameTaken": "이미 사용 중인 아이디입니다. 다른 아이디를 선택해 주세요.",
     "passwordWeak": "비밀번호는 8자 이상이어야 합니다.",
@@ -636,7 +636,11 @@
     "resendEmail": "Resend confirmation email",
     "resendPending": "Sending…",
     "resendSuccess": "If the account exists, we sent another confirmation email.",
-    "resendThrottled": "Please wait before requesting another confirmation email."
+    "resendThrottled": "Please wait before requesting another confirmation email.",
+    "phone": "휴대폰 번호",
+    "phoneHint": "국가번호를 선택하고 휴대폰 번호를 입력하세요.",
+    "phoneCountry": "전화 국가번호",
+    "phoneInvalid": "선택한 국가에 맞는 올바른 전화번호를 입력하세요."
   },
   "account": {
     "title": "마이페이지",

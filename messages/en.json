@@ -620,9 +620,9 @@
     "signupSuccess": "Account created. Please open the HMT Korea email we just sent and confirm your address.",
     "signupSuccessFallback": "Account created. Please open the confirmation email and use the link — it will return you to hmtkorea.com, not localhost.",
     "countryRequired": "Please select your country.",
-    "companyRequired": "Please enter your company name.",
+    "companyRequired": "Please enter your actual company name.",
     "emailInvalid": "Please enter a valid email address.",
-    "nameRequired": "Please enter your name.",
+    "nameRequired": "Please enter your real name.",
     "usernameInvalid": "Please choose an ID that starts with a letter and uses 3–30 valid characters.",
     "usernameTaken": "That ID is already taken. Please choose another.",
     "passwordWeak": "Password must be at least 8 characters.",
@@ -631,7 +631,11 @@
     "confirmEmailFailed": "We created the account but could not send the confirmation email. Please try again or contact us.",
     "invalidLogin": "Please check your email/ID and password.",
     "emailConfirmed": "Your email is confirmed. You can log in now.",
-    "confirmFailed": "We could not confirm that email link. Please request a new one or try logging in."
+    "confirmFailed": "We could not confirm that email link. Please request a new one or try logging in.",
+    "phone": "Mobile phone number",
+    "phoneHint": "Select the country code and enter your mobile number.",
+    "phoneCountry": "Phone country code",
+    "phoneInvalid": "Please enter a valid phone number for the selected country."
   },
   "account": {
     "title": "My account",

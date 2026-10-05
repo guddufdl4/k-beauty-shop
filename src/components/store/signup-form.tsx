@@ -3,13 +3,16 @@
 import { useActionState, useMemo, useState } from "react";
 import type { AuthState } from "@/app/actions/auth";
 import { resendSignupConfirmation } from "@/app/actions/auth";
-import { SIGNUP_COUNTRIES, SIGNUP_CURRENCIES, isSignupPasswordStrong } from "@/lib/auth/signup-fields";
+import { callingCode, SIGNUP_COUNTRIES, SIGNUP_CURRENCIES, isSignupPasswordStrong } from "@/lib/auth/signup-fields";
 import { Link } from "@/i18n/navigation";
 
 type Props = {
   action: (prev: AuthState, formData: FormData) => Promise<AuthState>;
   returnTo?: string;
   labels: {
+    phone: string;
+    phoneHint: string;
+    phoneCountry: string;
     country: string;
     company: string;
     companyHint: string;
@@ -46,6 +49,7 @@ export function SignupForm({ action, returnTo, labels, footer }: Props) {
   const [resendState, resendAction, resendPending] = useActionState(resendSignupConfirmation, {});
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState("KR");
   const [email, setEmail] = useState("");
 
   const passwordOk = isSignupPasswordStrong(password);
@@ -68,14 +72,14 @@ export function SignupForm({ action, returnTo, labels, footer }: Props) {
         <li>• {labels.benefitQuotes}</li>
       </ul>
 
-      <form action={formAction} className="space-y-5" noValidate>
+      <form action={formAction} className="space-y-5">
         {returnTo ? <input type="hidden" name="next" value={returnTo} /> : null}
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="country_code" className="block text-sm font-medium">
               {labels.country} <span className="text-violet-700">*</span>
             </label>
-            <select id="country_code" name="country_code" required defaultValue="" className={fieldClass}>
+            <select id="country_code" name="country_code" required defaultValue="" onChange={(event) => setPhoneCountry(event.target.value)} className={fieldClass}>
               <option value="" disabled>
                 {labels.country}
               </option>
@@ -137,6 +141,16 @@ export function SignupForm({ action, returnTo, labels, footer }: Props) {
               onChange={(event) => setEmail(event.target.value)}
               className={fieldClass}
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="phone_number" className="block text-sm font-medium">{labels.phone} <span className="text-violet-700">*</span></label>
+            <p id="phone-hint" className="mt-1 text-xs text-zinc-500">{labels.phoneHint}</p>
+            <div className="flex gap-2">
+              <select name="phone_country" aria-label={labels.phoneCountry} value={phoneCountry} onChange={(event) => setPhoneCountry(event.target.value)} className={`${fieldClass} max-w-56`}>
+                {SIGNUP_COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name} ({callingCode(country.code)})</option>)}
+              </select>
+              <input id="phone_number" name="phone_number" type="tel" inputMode="tel" autoComplete="tel-national" required minLength={6} maxLength={30} aria-describedby="phone-hint" className={fieldClass} />
+            </div>
           </div>
           <div>
             <label htmlFor="preferred_currency" className="block text-sm font-medium">

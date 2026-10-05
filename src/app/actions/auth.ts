@@ -21,6 +21,7 @@ const RESEND_COOKIE = "hmt_confirm_resend_at";
 const RESEND_THROTTLE_MS = 60_000;
 
 function signupMetadata(input: {
+  phoneNumber: string;
   fullName: string;
   companyName: string;
   countryCode: string;
@@ -28,6 +29,7 @@ function signupMetadata(input: {
   locale: string;
 }) {
   return {
+    phone_number: input.phoneNumber,
     full_name: input.fullName,
     company_name: input.companyName,
     country_code: input.countryCode,
@@ -111,7 +113,7 @@ export async function signUp(
 
   const returnTo = safeStorefrontReturnTo(String(formData.get("next") ?? ""), "/account");
   const metadata = signupMetadata({
-    fullName: parsed.fullName,
+    phoneNumber: parsed.phoneNumber,    fullName: parsed.fullName,
     companyName: parsed.companyName,
     countryCode: parsed.countryCode,
     preferredCurrency: parsed.preferredCurrency,

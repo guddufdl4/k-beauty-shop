@@ -606,9 +606,9 @@
     "signupSuccess": "アカウントを作成しました。HMT Koreaから届いたメールでアドレスを確認してください。",
     "signupSuccessFallback": "アカウントを作成しました。確認リンクはlocalhostではなく hmtkorea.com に戻ります。",
     "countryRequired": "国を選択してください。",
-    "companyRequired": "会社名を入力してください。",
+    "companyRequired": "正式な会社名を入力してください。",
     "emailInvalid": "有効なメールアドレスを入力してください。",
-    "nameRequired": "氏名を入力してください。",
+    "nameRequired": "実際の氏名を入力してください。",
     "usernameInvalid": "IDは英字で始まり、3〜30文字の使用可能な文字にしてください。",
     "usernameTaken": "このIDは既に使われています。別のIDを選んでください。",
     "passwordWeak": "パスワードは8文字以上にしてください。",
@@ -632,7 +632,11 @@
     "resendEmail": "Resend confirmation email",
     "resendPending": "Sending…",
     "resendSuccess": "If the account exists, we sent another confirmation email.",
-    "resendThrottled": "Please wait before requesting another confirmation email."
+    "resendThrottled": "Please wait before requesting another confirmation email.",
+    "phone": "携帯電話番号",
+    "phoneHint": "国番号を選択し、携帯電話番号を入力してください。",
+    "phoneCountry": "電話の国番号",
+    "phoneInvalid": "選択した国の有効な電話番号を入力してください。"
   },
   "account": {
     "title": "マイページ",

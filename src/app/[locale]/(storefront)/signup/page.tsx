@@ -37,6 +37,9 @@ export default async function SignUpPage({
           action={signUp}
           returnTo={returnTo}
           labels={{
+            phone: t("phone"),
+            phoneHint: t("phoneHint"),
+            phoneCountry: t("phoneCountry"),
             country: t("country"),
             company: t("company"),
             companyHint: t("companyHint"),

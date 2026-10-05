@@ -2,6 +2,7 @@ import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export type AdminMemberRow = {
+  phoneNumber?: string | null;
   id: string;
   username: string | null;
   email: string;
@@ -111,7 +112,10 @@ export async function listAdminMembers(
   const totalPages = Math.max(1, Math.ceil(total / ADMIN_MEMBERS_PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = (safePage - 1) * ADMIN_MEMBERS_PAGE_SIZE;
-  const paged = filtered.slice(start, start + ADMIN_MEMBERS_PAGE_SIZE);
+  const paged = await Promise.all(filtered.slice(start, start + ADMIN_MEMBERS_PAGE_SIZE).map(async (member) => {
+    const { data } = await supabase.auth.admin.getUserById(member.id);
+    return { ...member, phoneNumber: textOrNull(data.user?.user_metadata?.phone_number) };
+  }));
 
   return {
     members: paged,

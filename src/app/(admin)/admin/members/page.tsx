@@ -89,6 +89,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
             <tr>
               <th className="px-4 py-3">선택</th><th className="px-4 py-3">아이디</th>
               <th className="px-4 py-3">이메일</th>
+              <th className="px-4 py-3">휴대폰</th>
               <th className="px-4 py-3">이름</th>
               <th className="px-4 py-3">회사</th>
               <th className="px-4 py-3">역할</th>
@@ -98,7 +99,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td className="px-4 py-8 text-center text-zinc-500" colSpan={7}>
+                <td className="px-4 py-8 text-center text-zinc-500" colSpan={8}>
                   {available ? "가입한 회원이 없습니다." : "profiles 테이블을 조회할 수 없습니다."}
                 </td>
               </tr>
@@ -108,6 +109,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
                   <td className="px-4 py-3">{member.role !== "admin" ? <input type="checkbox" name="member_id" value={member.id} aria-label={`${member.email} 선택`} /> : null}</td>
                   <td className="px-4 py-3 font-semibold text-zinc-900">{member.username ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.email || "—"}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-zinc-700">{member.phoneNumber ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{memberRoleLabel(member.role)}</td>

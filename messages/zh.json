@@ -606,9 +606,9 @@
     "signupSuccess": "账户已创建。请打开 HMT Korea 发送的邮件并确认地址。",
     "signupSuccessFallback": "账户已创建。确认链接会返回 hmtkorea.com，而不是 localhost。",
     "countryRequired": "请选择国家/地区。",
-    "companyRequired": "请输入公司名称。",
+    "companyRequired": "请输入真实公司名称。",
     "emailInvalid": "请输入有效邮箱。",
-    "nameRequired": "请输入姓名。",
+    "nameRequired": "请输入真实姓名。",
     "usernameInvalid": "用户名需以字母开头，长度为 3–30 个可用字符。",
     "usernameTaken": "该用户名已被使用，请换一个。",
     "passwordWeak": "密码至少 8 位。",
@@ -632,7 +632,11 @@
     "resendEmail": "Resend confirmation email",
     "resendPending": "Sending…",
     "resendSuccess": "If the account exists, we sent another confirmation email.",
-    "resendThrottled": "Please wait before requesting another confirmation email."
+    "resendThrottled": "Please wait before requesting another confirmation email.",
+    "phone": "手机号码",
+    "phoneHint": "请选择国家区号并输入手机号码。",
+    "phoneCountry": "电话国家区号",
+    "phoneInvalid": "请输入所选国家的有效电话号码。"
   },
   "account": {
     "title": "我的账户",

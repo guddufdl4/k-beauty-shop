@@ -1,3 +1,5 @@
+import { getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/max";
+
 export const SIGNUP_CURRENCIES = ["USD", "KRW"] as const;
 export type SignupCurrency = (typeof SIGNUP_CURRENCIES)[number];
 
@@ -56,10 +58,21 @@ export const SIGNUP_COUNTRIES: { code: string; name: string }[] = [
   { code: "MN", name: "Mongolia" },
 ];
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[A-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?)+$/i;
+
+export function callingCode(country: string): string {
+  return `+${getCountryCallingCode(country as CountryCode)}`;
+}
+
+function validIdentity(value: string, maxLength: number): boolean {
+  return value.length >= 2 && value.length <= maxLength && /\p{L}/u.test(value)
+    && !/[\p{Cc}<>]/u.test(value) && !/^(.)\1+$/u.test(value.replace(/\s/g, ""))
+    && !/^(test|testing|dummy|asdf|qwerty|n\/?a|none|null|undefined|테스트|없음)$/i.test(value);
+}
 
 export type ParsedSignupInput = {
   countryCode: string;
+  phoneNumber: string;
   companyName: string;
   email: string;
   fullName: string;
@@ -70,6 +83,7 @@ export type ParsedSignupInput = {
 };
 
 export type SignupFormErrorKey =
+  | "phoneInvalid"
   | "countryRequired"
   | "companyRequired"
   | "emailInvalid"
@@ -94,15 +108,21 @@ export function parseSignupForm(formData: FormData): ParsedSignupInput | { error
   if (!SIGNUP_COUNTRIES.some((country) => country.code === countryCode)) {
     return { errorKey: "countryRequired" };
   }
-  if (companyName.length < 2 || companyName.length > 200) {
+  if (!validIdentity(companyName, 200)) {
     return { errorKey: "companyRequired" };
   }
-  if (!EMAIL_PATTERN.test(email) || email.length > 200) {
+  if (!looksLikeEmail(email) || email.length > 200) {
     return { errorKey: "emailInvalid" };
   }
-  if (fullName.length < 2 || fullName.length > 80) {
+  if (!validIdentity(fullName, 80)) {
     return { errorKey: "nameRequired" };
   }
+  const phoneCountry = String(formData.get("phone_country") ?? "").trim().toUpperCase();
+  const phoneInput = String(formData.get("phone_number") ?? "").trim();
+  if (!SIGNUP_COUNTRIES.some((country) => country.code === phoneCountry) || !/^[0-9 ()+.-]{6,30}$/.test(phoneInput)) return { errorKey: "phoneInvalid" };
+  const phone = parsePhoneNumberFromString(phoneInput, phoneCountry as CountryCode);
+  if (!phone?.isValid() || phone.country !== phoneCountry) return { errorKey: "phoneInvalid" };
+  if (!["MOBILE", "FIXED_LINE_OR_MOBILE"].includes(phone.getType() ?? "")) return { errorKey: "phoneInvalid" };
   if (password.length < 8 || password.length > 72) {
     return { errorKey: "passwordWeak" };
   }
@@ -118,6 +138,7 @@ export function parseSignupForm(formData: FormData): ParsedSignupInput | { error
 
   return {
     countryCode,
+    phoneNumber: phone.number,
     companyName,
     email,
     fullName,
@@ -129,7 +150,9 @@ export function parseSignupForm(formData: FormData): ParsedSignupInput | { error
 }
 
 export function looksLikeEmail(value: string): boolean {
-  return EMAIL_PATTERN.test(value.trim());
+  const email = value.trim();
+  const local = email.split("@")[0];
+  return EMAIL_PATTERN.test(email) && local.length <= 64 && !local.startsWith(".") && !local.endsWith(".") && !local.includes("..");
 }
 
 export function isSignupPasswordStrong(password: string): boolean {
