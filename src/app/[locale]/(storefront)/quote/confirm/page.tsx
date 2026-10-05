@@ -1,3 +1,5 @@
+import { QuoteReadStatus } from "@/components/store/quote-read-status";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -55,6 +57,7 @@ export default async function QuoteConfirmPage({
     (mockMode
       ? [{ name: "Sample wholesale item", code: "HMT-000001", quantity: 12 }]
       : []);
+  const session = await getSessionProfile();
   const status = loaded?.order ? mapOrderStatusToQuoteDisplay(loaded.order.status) : "submitted";
 
   return (
@@ -81,6 +84,7 @@ export default async function QuoteConfirmPage({
         </div>
       </dl>
 
+      {loaded?.order ? <QuoteReadStatus orderNumber={orderNumber} reviewedAt={loaded.order.shipping_address?.quote_reviewed_at} admin={session.profile?.role === "admin"} /> : null}
       {items.length > 0 ? (
         <section className="mt-8">
           <h2 className="text-lg font-semibold">{t("summaryTitle")}</h2>

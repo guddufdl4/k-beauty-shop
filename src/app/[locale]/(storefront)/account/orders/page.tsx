@@ -1,3 +1,4 @@
+import { QuoteReadStatus } from "@/components/store/quote-read-status";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
@@ -13,6 +14,7 @@ type OrderRow = {
   total: number;
   currency: string;
   created_at: string;
+  shipping_address: { quote_reviewed_at?: string } | null;
 };
 
 export default async function AccountOrdersPage() {
@@ -80,6 +82,7 @@ export default async function AccountOrdersPage() {
                   {order.total.toLocaleString()} {order.currency}
                 </p>
               </Link>
+              {order.order_number.startsWith("QT-") ? <div className="px-5"><QuoteReadStatus orderNumber={order.order_number} reviewedAt={order.shipping_address?.quote_reviewed_at} /></div> : null}
             </li>
           ))}
         </ul>

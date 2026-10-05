@@ -13,7 +13,7 @@ export const HOMEPAGE_LEAD_HERO_IMAGE_HEIGHT = 600;
 export const HOMEPAGE_LEAD_HERO_COPY = {
   badge: "WHOLESALE",
   title: "Korean Cosmetics Wholesale",
-  subtitle: "Authentic products · Flexible MOQ · Worldwide shipping",
+  subtitle: "Authentic products · Flexible MOQ · Export-ready supply",
   button_text: "Order guide",
   button_link: DEFAULT_ORDER_GUIDE_HREF,
   wholesale_label: "",

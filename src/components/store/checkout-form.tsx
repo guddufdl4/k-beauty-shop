@@ -130,7 +130,7 @@ export function CheckoutForm({
               <option value="FOB">FOB</option>
               <option value="DAP">DAP</option>
               <option value="Discuss with sales">{t("discussWithSales")}</option>
-              <option value="ETC">ETC</option>
+              <option value="ETC">{t("customEntry")}</option>
             </select>
           </label>
           <label className="block" htmlFor="shipping_method">
@@ -148,7 +148,7 @@ export function CheckoutForm({
               <option value="UPS">UPS</option>
               <option value="FedEx">FedEx</option>
               <option value="DHL">DHL</option>
-              <option value="ETC">ETC</option>
+              <option value="ETC">{t("customEntry")}</option>
             </select>
           </label>
           {tradeTerms === "ETC" ? (

@@ -31,6 +31,7 @@ export default async function HtmlSitemapPage() {
     { href: "/about", label: tFooter("about") },
     { href: "/contact", label: tFooter("contact") },
     { href: "/wholesale-inquiry", label: tFooter("wholesale") },
+    { href: "/import-inquiry", label: tFooter("importInquiry") },
     { href: "/order-guide", label: tFooter("orderGuide") },
     { href: "/cart", label: tFooter("quoteList") },
     { href: "/shipping", label: tFooter("shipping") },

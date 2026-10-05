@@ -8,12 +8,12 @@ function ResourceIcon({ kind }: { kind: "approval" | "minimum" | "documents" }) 
   return <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent"><path d={paths[kind]} /></svg>;
 }
 
-export async function SupportPageShell({ title, subtitle, activeHref, children }: {
-  title: string; subtitle?: string; activeHref: string; children: ReactNode;
+export async function SupportPageShell({ title, subtitle, activeHref, children, showResources = true }: {
+  title: string; subtitle?: string; activeHref: string; children: ReactNode; showResources?: boolean;
 }) {
   const [t, footer] = await Promise.all([getTranslations("supportDesign"), getTranslations("footer")]);
   const groups = [
-    { title: footer("infoTitle"), links: [["/shipping", "shipping"], ["/cart", "quoteList"], ["/payment", "payment"], ["/returns", "returns"], ["/faq", "faq"], ["/wholesale-inquiry", "wholesale"]] },
+    { title: footer("infoTitle"), links: [["/shipping", "shipping"], ["/cart", "quoteList"], ["/payment", "payment"], ["/returns", "returns"], ["/faq", "faq"], ["/wholesale-inquiry", "wholesale"], ["/import-inquiry", "importInquiry"]] },
     { title: footer("supportTitle"), links: [["/categories", "categories"], ["/products", "catalog"], ["/order-guide", "orderGuide"], ["/contact", "contact"]] },
     { title: footer("aboutTitle"), links: [["/about", "about"], ["/terms", "terms"], ["/privacy", "privacy"], ["/signup", "membership"], ["/sitemap", "sitemap"]] },
   ];
@@ -27,11 +27,11 @@ export async function SupportPageShell({ title, subtitle, activeHref, children }
         <p className="relative text-xs font-semibold uppercase tracking-[0.2em] text-accent">{t("eyebrow")}</p>
         <h1 className="relative mt-3 max-w-3xl text-balance text-3xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">{title}</h1>
         {subtitle ? <p className="relative mt-4 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">{subtitle}</p> : null}
-        <div className="relative mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-zinc-600">
+        {showResources ? <div className="relative mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-zinc-600">
           <span className="flex items-center gap-2"><ResourceIcon kind="approval" />{t("approval")}</span>
           <span className="flex items-center gap-2"><ResourceIcon kind="minimum" />{t("minimum", { amount: MIN_ORDER_USD })}</span>
           <span className="flex items-center gap-2"><ResourceIcon kind="documents" />{t("documents")}</span>
-        </div>
+        </div> : null}
       </header>
       <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
         <aside className="min-w-0 lg:self-start">

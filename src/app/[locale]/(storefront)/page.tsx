@@ -118,7 +118,7 @@ function buildDefaultHeroCopy(
   return {
     badge: siteSettings.hero_badge,
     title: siteSettings.hero_title?.trim() || t("hero.title"),
-    description: siteSettings.hero_subtitle?.trim() || t("hero.description"),
+    description: (siteSettings.hero_subtitle?.trim() || t("hero.description")).replace(/worldwide shipping/gi, "Export-ready supply"),
     shopBestSellersLabel:
       siteSettings.hero_button_text?.trim() || t("hero.shopBestSellers"),
     shopBestSellersHref: normalizeHeroHref(
@@ -195,7 +195,7 @@ function mapStoredHeroSlideToBannerSlide(
       ? {
           badge: adminCopy?.badge?.trim() || HOMEPAGE_LEAD_HERO_COPY.badge,
           title: adminCopy?.title?.trim() || HOMEPAGE_LEAD_HERO_COPY.title,
-          description: adminCopy?.description?.trim() || HOMEPAGE_LEAD_HERO_COPY.subtitle,
+          description: (adminCopy?.description?.trim() || HOMEPAGE_LEAD_HERO_COPY.subtitle).replace(/worldwide shipping/gi, "Export-ready supply"),
           shopBestSellersLabel:
             adminCopy?.shopBestSellersLabel?.trim() || HOMEPAGE_LEAD_HERO_COPY.button_text,
           shopBestSellersHref:

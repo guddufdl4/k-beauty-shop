@@ -32,6 +32,7 @@ export const DEMO_CART_COOKIE = "kb_demo_cart";
 export const DEMO_ORDERS_COOKIE = "kb_demo_orders";
 
 export type ShippingAddress = {
+  quote_reviewed_at?: string;
   recipient_name: string;
   phone: string;
   line1: string;

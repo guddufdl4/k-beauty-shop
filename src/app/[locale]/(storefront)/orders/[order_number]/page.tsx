@@ -1,3 +1,6 @@
+import { mapOrderStatusToQuoteDisplay } from "@/lib/store/quote-status";
+import { QuoteReadStatus } from "@/components/store/quote-read-status";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -32,27 +35,19 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
     notFound();
   }
 
-  const isPaid = order.status === "paid";
+  const session = await getSessionProfile();
+  const isQuote = order.order_number.startsWith("QT-");
+  const quote = await getTranslations("checkout");
   const statusLabel = t(`status.${order.status}` as "status.paid");
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
-      <div
-        className={`rounded-2xl border px-6 py-4 ${
-          isPaid ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"
-        }`}
-      >
-        <p className={`text-sm font-medium ${isPaid ? "text-emerald-800" : "text-amber-800"}`}>
-          {isPaid ? t("paymentCompleted") : t("orderReceived")}
-        </p>
-        <p className={`mt-1 text-2xl font-bold ${isPaid ? "text-emerald-900" : "text-amber-900"}`}>
-          {order.order_number}
-        </p>
-        <p className={`mt-1 text-sm ${isPaid ? "text-emerald-700" : "text-amber-700"}`}>
-          {t("statusLabel")}: {statusLabel}
-          {!isPaid ? ` · ${t("demoHint")}` : null}
-        </p>
-      </div>
+      {isQuote ? <QuoteReadStatus orderNumber={order.order_number} reviewedAt={order.shipping_address?.quote_reviewed_at} admin={session.profile?.role === "admin"} /> : null}
+      <section className="rounded-2xl border border-zinc-200 bg-white px-6 py-5">
+        <p className="text-sm text-zinc-500">{isQuote ? quote("quoteNumber") : t("orderReceived")}</p>
+        <h1 className="mt-1 text-2xl font-bold text-zinc-900">{order.order_number}</h1>
+        <p className="mt-2 text-sm text-zinc-600">{t("statusLabel")}: {isQuote ? quote(`quoteStatus.${mapOrderStatusToQuoteDisplay(order.status)}`) : statusLabel}</p>
+      </section>
 
       <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("orderItemsTitle")}</h2>
@@ -78,7 +73,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
             <span className="text-zinc-600">{t("shipping")}</span>
             <span>
               {order.shipping_cost === 0
-                ? t("freeShipping")
+                ? (isQuote ? t("freightExcluded") : t("freeShipping"))
                 : formatLocalePrice(order.shipping_cost, locale, usdKrwRate)}
             </span>
           </div>

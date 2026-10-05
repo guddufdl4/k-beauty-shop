@@ -105,6 +105,7 @@ export default async function AdminDashboardPage() {
         >
           주문 관리
         </Link>
+        <Link href="/admin/inquiries" className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold">수입·도매 문의 관리</Link>
         <Link
           href="/admin/products"
           className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"

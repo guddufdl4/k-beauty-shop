@@ -22,16 +22,18 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ verified?: string; error?: string; next?: string }>;
+  searchParams: Promise<{ verified?: string; error?: string; next?: string; closed?: string }>;
 }) {
   const t = await getTranslations("auth");
-  const { verified, error, next } = await searchParams;
+  const accountSettings = await getTranslations("accountSettings");
+  const { verified, error, next, closed } = await searchParams;
   const returnTo = safeStorefrontReturnTo(next, "/account");
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-16">
       <h1 className="text-3xl font-bold">{t("loginTitle")}</h1>
       <p className="mt-2 text-zinc-600">{t("loginSubtitle")}</p>
+      {closed === "1" ? <p role="status" className="mt-4 text-sm text-green-700">{accountSettings("closed")}</p> : null}
       {verified ? <p className="mt-4 text-sm text-green-700">{t("emailConfirmed")}</p> : null}
       {error === "confirm" ? <p className="mt-4 text-sm text-red-600">{t("confirmFailed")}</p> : null}
       <div className="mt-8">

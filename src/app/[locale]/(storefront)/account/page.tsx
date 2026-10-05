@@ -1,8 +1,7 @@
-import { updateProfileFullName } from "@/app/actions/profile";
+import { AccountSettingsForm } from "@/components/store/account-settings-form";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import NextLink from "next/link";
-import { ProfileForm } from "@/components/store/profile-form";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -39,7 +38,8 @@ export default async function AccountPage({
   }
 
   const contact = user ? (await (await createClient()).from("profiles").select("phone,country_code").eq("id", user.id).maybeSingle()).data : null;
-  const email = profile?.email ?? user?.email ?? "";
+  const email = user?.email ?? profile?.email ?? "";
+  const accountSettings = await getTranslations("accountSettings");
   const isAdmin = profile?.role === "admin";
   const ui = await getTranslations("accountDesign");
   const approved = isAdmin || profile?.role === "wholesale";
@@ -69,9 +69,11 @@ export default async function AccountPage({
             {href:"/products",title:ui("catalog"),description:ui("catalogHelp"),icon:"▦"},
             {href:isAdmin ? "/admin" : "/contact",title:isAdmin ? ui("dashboard") : ui("support"),description:isAdmin ? ui("dashboardHelp") : ui("supportHelp"),icon:"↗"},
           ].map((item)=>{ const ItemLink = item.href === "/admin" ? NextLink : Link; return <ItemLink key={item.href} href={item.href} className="group rounded-3xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-lg hover:shadow-pink-100/40"><span aria-hidden className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-xl text-accent">{item.icon}</span><h2 className="font-bold text-zinc-900">{item.title}</h2><p className="mt-2 text-sm leading-6 text-zinc-500">{item.description}</p></ItemLink>; })}</section>
-          {!isAdmin ? <section className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8"><h2 className="text-lg font-semibold">{t("nicknameTitle")}</h2><p className="mt-2 text-sm text-zinc-500">{t("nicknameDescription")}</p><div className="mt-5"><ProfileForm action={updateProfileFullName} defaultFullName={profile?.full_name} /></div></section> : null}
+
         </div>
       </div>
+      <section className="mt-7 rounded-3xl border border-zinc-200 p-6 sm:p-8"><h2 className="text-lg font-bold">{accountSettings("policies")}</h2><div className="mt-4 flex flex-wrap gap-4"><Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("terms")}</Link><Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("privacy")}</Link></div></section>
+      {user ? <AccountSettingsForm name={profile?.full_name} company={profile?.company_name} phone={contact?.phone} country={contact?.country_code} admin={isAdmin} /> : null}
     </main>
   );
 }

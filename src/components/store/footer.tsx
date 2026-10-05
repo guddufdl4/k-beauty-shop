@@ -162,6 +162,7 @@ export async function StoreFooter({
                 {t("wholesale")}
               </Link>
             </li>
+            <li><Link href="/import-inquiry" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">{t("importInquiry")}</Link></li>
           </ul>
         </div>
 

@@ -53,6 +53,7 @@ const STATIC_PATHS: Array<{
   { path: "/faq", changeFrequency: "monthly", priority: 0.4 },
   { path: "/order-guide", changeFrequency: "monthly", priority: 0.5 },
   { path: "/wholesale-inquiry", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/import-inquiry", changeFrequency: "monthly", priority: 0.5 },
 ];
 
 async function pagesSitemap(): Promise<MetadataRoute.Sitemap> {
