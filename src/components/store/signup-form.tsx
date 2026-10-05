@@ -220,14 +220,14 @@ export function SignupForm({ action, returnTo, labels, footer, policies }: Props
         </div>
 
         <div className="space-y-3 text-sm">
-          <div className="flex items-start gap-2">
+          <div className="relative flex items-start gap-2">
             <input id="accept_terms" name="accept_terms" type="checkbox" required className="mt-1 accent-violet-700" />
             <div className="min-w-0 flex-1">
               <label htmlFor="accept_terms">{labels.acceptTerms}</label>{" "}
               <SignupPolicyPreview id="signup-terms-preview" title={labels.terms} paragraphs={policies.terms} />
             </div>
           </div>
-          <div className="flex items-start gap-2">
+          <div className="relative flex items-start gap-2">
             <input id="accept_privacy" name="accept_privacy" type="checkbox" required className="mt-1 accent-violet-700" />
             <div className="min-w-0 flex-1">
               <label htmlFor="accept_privacy">{labels.acceptPrivacy}</label>{" "}

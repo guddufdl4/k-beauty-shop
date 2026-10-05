@@ -43,8 +43,9 @@ export async function sendQuoteInquiryEmail(input: SendEmailInput): Promise<{ ok
 
   const from = process.env.RESEND_FROM?.trim() || DEFAULT_FROM;
   const replyTo = input.replyTo?.trim().toLowerCase();
+  const salesRecipients = quoteInquiryRecipients();
   const to = [
-    ...quoteInquiryRecipients(),
+    ...salesRecipients,
     ...(replyTo ? [replyTo] : []),
   ].filter((value, index, list) => list.indexOf(value) === index);
 
@@ -77,7 +78,8 @@ export async function sendQuoteInquiryEmail(input: SendEmailInput): Promise<{ ok
         continue;
       }
 
-      delivered += 1;
+      // A customer copy alone does not confirm notification to the sales inbox.
+      if (salesRecipients.includes(recipient)) delivered += 1;
     } catch (error) {
       console.error("[email] Resend request error:", recipient, error);
     }

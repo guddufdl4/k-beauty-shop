@@ -95,12 +95,19 @@ function validatePayload(body: WholesaleInquiryPayload) {
 }
 
 export async function POST(request: Request) {
+  if (Number(request.headers.get("content-length")) > 30000) {
+    return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+  }
   let body: WholesaleInquiryPayload;
 
   try {
     body = (await request.json()) as WholesaleInquiryPayload;
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
   }
 
   const result = validatePayload(body);

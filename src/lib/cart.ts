@@ -1,4 +1,5 @@
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
+import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
 import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
 import { formatKRW } from "@/lib/utils";
@@ -174,7 +175,9 @@ export async function createQuoteOrderFromCart(
     return typeof data?.order_number === "string" ? data.order_number : null;
   });
   let orderNumber = await allocateOrderNumber();
-  const countryCode = buyer.country.length === 2 ? buyer.country.toUpperCase() : "XX";
+  const countryCode = SIGNUP_COUNTRIES.find((entry) =>
+    entry.code === buyer.country.toUpperCase() || entry.name === buyer.country,
+  )?.code ?? "XX";
   const shippingAddress: ShippingAddress & {
     line2?: string;
     email?: string;

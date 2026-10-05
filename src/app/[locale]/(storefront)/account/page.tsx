@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import NextLink from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { getAuthUser, getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
@@ -41,6 +41,8 @@ export default async function AccountPage({
   const email = user?.email ?? profile?.email ?? "";
   const accountSettings = await getTranslations("accountSettings");
   const isAdmin = profile?.role === "admin";
+  const authUser = user && !contact?.phone ? await getAuthUser() : null;
+  const phone = contact?.phone || (typeof authUser?.user_metadata?.phone_number === "string" ? authUser.user_metadata.phone_number : "");
   const ui = await getTranslations("accountDesign");
   const approved = isAdmin || profile?.role === "wholesale";
   const name = profile?.full_name || profile?.company_name || t("title");
@@ -59,7 +61,7 @@ export default async function AccountPage({
       <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_1.6fr]">
         <section className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8">
           <h2 className="text-lg font-bold">{ui("details")}</h2>
-          <dl className="mt-6 space-y-5 text-sm">{[[ui("email"),email],[ui("company"),profile?.company_name],[ui("phone"),contact?.phone],[ui("country"),contact?.country_code]].map(([label,value])=><div key={label}><dt className="text-xs text-zinc-500">{label}</dt><dd className="mt-1 break-words font-medium text-zinc-900">{value || "—"}</dd></div>)}</dl>
+          <dl className="mt-6 space-y-5 text-sm">{[[ui("email"),email],[ui("company"),profile?.company_name],[ui("phone"),phone],[ui("country"),contact?.country_code]].map(([label,value])=><div key={label}><dt className="text-xs text-zinc-500">{label}</dt><dd className="mt-1 break-words font-medium text-zinc-900">{value || "—"}</dd></div>)}</dl>
           <div className="mt-6 rounded-2xl bg-zinc-50 p-4 text-sm leading-6 text-zinc-600">{approved ? ui("approvedHelp") : ui("pendingHelp")}</div>
         </section>
         <div className="space-y-6">
@@ -73,7 +75,7 @@ export default async function AccountPage({
         </div>
       </div>
       <section className="mt-7 rounded-3xl border border-zinc-200 p-6 sm:p-8"><h2 className="text-lg font-bold">{accountSettings("policies")}</h2><div className="mt-4 flex flex-wrap gap-4"><Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("terms")}</Link><Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("privacy")}</Link></div></section>
-      {user ? <AccountSettingsForm name={profile?.full_name} company={profile?.company_name} phone={contact?.phone} country={contact?.country_code} admin={isAdmin} /> : null}
+      {user ? <AccountSettingsForm name={profile?.full_name} company={profile?.company_name} phone={phone} country={contact?.country_code} admin={isAdmin} /> : null}
     </main>
   );
 }

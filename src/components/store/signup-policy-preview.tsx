@@ -23,7 +23,7 @@ export function SignupPolicyPreview({ id, title, paragraphs }: {
     return () => document.removeEventListener("pointerdown", closeOutside);
   }, []);
   const open = hovered || focused || pinned;
-  return <div ref={root} className={`relative inline-block max-w-full align-top ${open ? "z-40" : "z-0"}`}
+  return <div ref={root} className={`static inline-block max-w-full align-top sm:relative ${open ? "z-40" : "z-0"}`}
     onMouseEnter={() => { cancelTimer(); timer.current = setTimeout(() => setHovered(true), 220); }}
     onMouseLeave={() => { cancelTimer(); timer.current = setTimeout(() => setHovered(false), 180); }}
     onFocus={(event) => { if (event.target.matches(":focus-visible")) setFocused(true); }}
@@ -32,7 +32,7 @@ export function SignupPolicyPreview({ id, title, paragraphs }: {
     <button type="button" aria-expanded={open} aria-controls={id}
       onClick={() => { cancelTimer(); setPinned(!pinned); setFocused(false); setHovered(false); }}
       className="font-medium text-violet-700 underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-violet-700">{title}</button>
-    <div hidden={!open} className="absolute left-0 top-full w-[min(32rem,calc(100vw-5rem))] pt-2">
+    <div hidden={!open} className="absolute left-0 top-full z-40 w-[min(32rem,calc(100vw-5rem))] pt-2">
     <section id={id} aria-label={title}
       className="max-h-72 overflow-y-auto overscroll-contain rounded-xl border border-violet-200 bg-white p-4 text-sm leading-6 text-zinc-700 shadow-xl shadow-violet-950/10">
       <h3 className="mb-3 font-semibold text-zinc-900">{title}</h3>

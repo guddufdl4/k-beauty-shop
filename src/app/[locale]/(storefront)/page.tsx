@@ -249,7 +249,8 @@ export default async function HomePage() {
     haircare: localizeStorefrontProducts(categoryRows[2].products, locale),
   } as const;
 
-  const heroProducts = trendingProducts.all.filter((product) => !product.sold_out).slice(0, 5);
+  const heroPool = [...trendingProducts.all, ...trendingProducts.skincare, ...trendingProducts.makeup, ...trendingProducts.haircare];
+  const heroProducts = [...new Map(heroPool.filter((product) => !product.sold_out).map((product) => [product.id, product])).values()].slice(0, 5);
   const leadSlide = heroSlides.find((slide) => slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID);
   if (leadSlide && heroProducts.length) {
     leadSlide.products = heroProducts.map((product) => ({

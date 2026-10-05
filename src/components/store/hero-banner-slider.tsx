@@ -430,20 +430,20 @@ function HeroSlideFrame({
 
   if (slide.products?.length) {
     return (
-      <div className="relative isolate grid w-full min-w-0 h-[530px] overflow-hidden bg-gradient-to-br from-[#fff7fa] via-[#fbe5ee] to-[#f5e9ff] sm:h-[370px] sm:grid-cols-[44%_56%] lg:h-[470px]">
+      <div className="relative isolate grid w-full min-w-0 h-[530px] grid-rows-[270px_260px] overflow-hidden bg-gradient-to-br from-[#fff7fa] via-[#fbe5ee] to-[#f5e9ff] sm:h-[370px] sm:grid-rows-1 sm:grid-cols-[44%_56%] lg:h-[470px]">
         <NextImage src="/hero/pink-world-blossom-v1.webp" alt="" fill sizes="(max-width: 1280px) 100vw, 1280px" priority={priority} className="pointer-events-none object-cover object-right" />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fff2f7]/80 via-[#fff2f7]/25 to-transparent" />
-        <div className="relative z-20 flex min-w-0 flex-col justify-center px-12 pb-2 pt-10 sm:py-12 lg:pl-16">
+        <div className="relative z-20 flex min-w-0 flex-col justify-center px-10 pb-0 pt-4 sm:px-12 sm:py-12 lg:pl-16">
           <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#e11d73]">{copy.badge}</p>
           {isPrimaryHeading ? <h1 className="text-3xl font-bold leading-[1.08] tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl">{copy.title}</h1>
             : <h2 className="text-3xl font-bold leading-[1.08] tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl">{copy.title}</h2>}
-          <p className="mt-5 max-w-sm text-sm leading-6 text-zinc-600 lg:text-base">{copy.description}</p>
+          <p className="mt-3 max-w-sm sm:mt-5 text-sm leading-6 text-zinc-600 lg:text-base">{copy.description}</p>
           <HeroNavLink href={copy.orderGuideHref || slide.href} tabIndex={isActive ? undefined : -1}
-            className="mt-6 w-fit rounded-full bg-accent px-6 py-3 text-sm font-bold text-white shadow-lg shadow-pink-200 transition hover:bg-accent-hover">
+            className="mt-4 w-fit sm:mt-6 rounded-full bg-accent px-6 py-3 text-sm font-bold text-white shadow-lg shadow-pink-200 transition hover:bg-accent-hover">
             {copy.orderGuideLabel || copy.shopBestSellersLabel}
           </HeroNavLink>
         </div>
-        <div className="relative z-10 flex min-w-0 items-center justify-center px-7 pb-12 pt-7 sm:pl-2 sm:pr-12 lg:pr-16">
+        <div className="relative z-10 flex min-w-0 items-center justify-center px-7 pb-10 pt-2 sm:pb-12 sm:pt-7 sm:pl-2 sm:pr-12 lg:pr-16">
           <div className="grid w-full min-w-0 max-w-[640px] grid-cols-6 items-end gap-3 sm:gap-4">
             {slide.products.map((product, index) => (
               <Link key={product.id} href={product.href} tabIndex={isActive ? undefined : -1} aria-label={product.name}
