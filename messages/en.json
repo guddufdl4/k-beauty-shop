@@ -43,7 +43,8 @@
     "searchSuggestionBrands": "Brands",
     "followUs": "Follow us",
     "cartSummary": "{count} items · {total}",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "howToOrder": "How to Order"
   },
   "localeSwitcher": {
     "label": "Language",
@@ -155,7 +156,8 @@
     "brandsTitle": "Partner Brand",
     "categoryNavSubtitle": "View all {category}",
     "promoBestProducts": "Best Products",
-    "promoShopNow": "SHOP NOW"
+    "promoShopNow": "SHOP NOW",
+    "whyHmtKorea": "Why HMT Korea"
   },
   "footer": {
     "about": "About",
@@ -234,18 +236,18 @@
     "orderGuideS3FieldContact": "Contact Information",
     "orderGuideS3P4": "Our sales team will review your request and confirm product availability, pricing, and shipping details before issuing the final invoice.",
     "orderGuideS4Title": "4. Payment",
-    "orderGuideS4P1": "Once your order details are confirmed, we will issue an invoice.",
-    "orderGuideS4PaymentTerms": "Payment Terms:",
-    "orderGuideS4Deposit": "50% deposit to start order processing",
-    "orderGuideS4Balance": "Remaining 50% payment before shipment",
-    "orderGuideS4P2": "Please review the invoice carefully and complete the initial payment to proceed with your order.",
+    "orderGuideS4P1": "After your quotation is confirmed, payment is by bank transfer.",
+    "orderGuideS4PaymentTerms": "Payment:",
+    "orderGuideS4Deposit": "Bank transfer after the quotation is confirmed.",
+    "orderGuideS4Balance": "Final payment details are confirmed on the invoice.",
+    "orderGuideS4P2": "Please review the invoice and complete the confirmed bank transfer so we can process the order.",
     "orderGuideS5Title": "5. Order Processing & Final Confirmation",
-    "orderGuideS5P1": "Our standard lead time is approximately 2–3 weeks, depending on brand, product availability, and supplier conditions.",
+    "orderGuideS5P1": "Lead time is confirmed with your quotation. It depends on the products, stock, and shipping method.",
     "orderGuideS5P2": "Once the final quantities are confirmed, we will send an updated invoice.",
     "orderGuideS5P3": "Any applicable shipping charges and final order details will be confirmed before dispatch.",
     "orderGuideS6Title": "6. Shipping & Dispatch",
     "orderGuideS6P1": "Once your order is ready and the final payment is completed, we will carefully prepare and arrange the shipment.",
-    "orderGuideS6P2": "Your products will be dispatched from our warehouse in Ilsan, Gyeonggi-do, South Korea, according to the confirmed shipping arrangements.",
+    "orderGuideS6P2": "Orders are dispatched from South Korea after payment and packing are confirmed.",
     "orderGuideS6P3": "You can use your own freight forwarder, and our team will coordinate the necessary shipping details with you.",
     "orderGuideS6P4": "We are committed to providing reliable product sourcing, careful order handling, and smooth international shipping to support your business.",
     "orderGuideHelpTitle": "Need Help?",
@@ -395,7 +397,7 @@
     "companyName": "HMT Korea",
     "introSuffix": " is a Korean cosmetics wholesale and export store. Buyers can browse the catalog, request wholesale terms after sign-in, and contact the team for export inquiries.",
     "shopTitle": "About this store",
-    "shopDescription": "This storefront is operated by HMT Korea so wholesale buyers can browse Korean cosmetics, review product details, and submit wholesale inquiries.",
+    "shopDescription": "This storefront is operated by HMT Korea for overseas wholesale buyers. MOQ is set per product. After a quotation, payment is by bank transfer.",
     "viewProducts": "View products"
   },
   "checkout": {

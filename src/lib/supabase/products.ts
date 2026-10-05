@@ -973,7 +973,12 @@ function compareProductsForList(
     }
   }
 
-  return b[options.orderBy].localeCompare(a[options.orderBy]);
+  const dateCompare = b[options.orderBy].localeCompare(a[options.orderBy]);
+  if (dateCompare !== 0) {
+    return dateCompare;
+  }
+
+  return b.id.localeCompare(a.id);
 }
 
 function sortProductsForList(
@@ -1488,6 +1493,8 @@ export async function getProducts(
       } else {
         filtered = filtered.order(orderBy, { ascending: false });
       }
+
+      filtered = filtered.order("id", { ascending: false });
     }
 
     return filtered as T;
@@ -1528,14 +1535,6 @@ export async function getProducts(
       mapProductWithRelations(row as unknown as Record<string, unknown>),
     );
     products = await hydrateProductLocaleNames(supabase, products);
-
-    if (sort === "sale" && includePriceColumns) {
-      products = products.filter((product) => isProductOnSale(product));
-    }
-
-    if (requireRealImage) {
-      products = products.filter((product) => productHasRealImage(product));
-    }
 
     return {
       products: finalizeStorefrontProductList(products, audience, privileged),

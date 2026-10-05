@@ -1,4 +1,4 @@
-import { collapseRepeatedBrandPrefix } from "@/lib/store/product-copy";
+import { collapseRepeatedBrandPrefix, formatStorefrontDisplayTitle } from "@/lib/store/product-copy";
 import { hangulProductNameToEnglish } from "@/lib/store/hangul-product-english";
 
 type NamedProduct = {
@@ -187,10 +187,10 @@ function latinNameFallback(product: NamedProduct): string {
 
 export function getLocalizedProductName(product: NamedProduct, locale: string): string {
   const { en, ko } = resolveProductNamePair(product);
-  if (isKoreanLocale(locale)) {
-    return ko || product.name;
-  }
-  return en || latinNameFallback(product);
+  const raw = isKoreanLocale(locale)
+    ? ko || product.name
+    : en || latinNameFallback(product);
+  return formatStorefrontDisplayTitle(raw, product.brand, extractProductVolume(product));
 }
 
 function isVolumeHeader(normalized: string): boolean {

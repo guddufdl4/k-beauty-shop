@@ -12,7 +12,6 @@ import { CategoryLandingSeo } from "@/components/store/category-landing-seo";
 import { JsonLd } from "@/components/store/json-ld";
 import { getDisplayBrandName } from "@/lib/store/products-url";
 import { getMoqBadgeKey, parseProductListSort } from "@/lib/store/products-url";
-import { interleaveByBrand } from "@/lib/store/brand-diversity";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
 import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
@@ -129,12 +128,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const sort = parseProductListSort(sortQuery);
   const currentPage = Math.max(1, Number.parseInt(pageQuery ?? "1", 10) || 1);
   const audience = await resolveStorefrontAudience();
-  const isDefaultBrowse = !brandFilter && !searchTerm && !categorySlug && !sort;
-  const queryLimit =
-    isDefaultBrowse && currentPage === 1
-      ? STOREFRONT_PRODUCTS_PAGE_SIZE * 20
-      : STOREFRONT_PRODUCTS_PAGE_SIZE;
-  const queryPage = isDefaultBrowse && currentPage === 1 ? 1 : currentPage;
 
   const [{ products: fetchedProducts, totalCount, meta }, { categories }] = await Promise.all([
     getProducts({
@@ -143,30 +136,25 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       brandExact: Boolean(brandFilter),
       search: searchTerm,
       sort,
-      limit: queryLimit,
-      page: queryPage,
+      limit: STOREFRONT_PRODUCTS_PAGE_SIZE,
+      page: currentPage,
       requireRealImage: true,
       audience,
     }),
     getStorefrontCategories(),
   ]);
 
-  const products = localizeStorefrontProducts(
-    isDefaultBrowse && currentPage === 1
-      ? interleaveByBrand(fetchedProducts, 2).slice(0, STOREFRONT_PRODUCTS_PAGE_SIZE)
-      : fetchedProducts,
-    locale,
-  );
+  const products = localizeStorefrontProducts(fetchedProducts, locale);
 
   const countAvailable = meta.countAvailable !== false;
   const totalPages = countAvailable
     ? Math.max(1, Math.ceil(totalCount / STOREFRONT_PRODUCTS_PAGE_SIZE))
     : Math.max(1, currentPage);
-  const safePage = Math.min(currentPage, totalPages);
+  const paginationPage = Math.min(currentPage, totalPages);
   const pageStart =
     products.length === 0
       ? 0
-      : (safePage - 1) * STOREFRONT_PRODUCTS_PAGE_SIZE + 1;
+      : (currentPage - 1) * STOREFRONT_PRODUCTS_PAGE_SIZE + 1;
   const pageEnd =
     products.length === 0 ? 0 : pageStart + products.length - 1;
 
@@ -215,7 +203,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     : [];
   const categoryIntro = categoryBodyParagraphs[0] ?? "";
   const categoryFollowUpParagraphs = categoryBodyParagraphs.slice(1);
-  const showCategoryLandingSeo = Boolean(categorySeo && safePage === 1);
+  const showCategoryLandingSeo = Boolean(categorySeo && paginationPage === 1);
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
@@ -336,7 +324,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
               {countAvailable && totalPages > 1 ? (
                 <ProductsPagination
-                  currentPage={safePage}
+                  currentPage={paginationPage}
                   totalPages={totalPages}
                   listHrefOptions={listHrefOptions}
                 />

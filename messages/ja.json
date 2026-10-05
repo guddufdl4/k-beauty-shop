@@ -43,7 +43,8 @@
     "searchSuggestionBrands": "ブランド",
     "followUs": "フォロー",
     "cartSummary": "{count}点 · {total}",
-    "closeMenu": "メニューを閉じる"
+    "closeMenu": "メニューを閉じる",
+    "howToOrder": "ご注文方法"
   },
   "localeSwitcher": {
     "label": "言語",
@@ -155,7 +156,8 @@
     "brandsTitle": "Partner Brand",
     "categoryNavSubtitle": "{category}をすべて見る",
     "promoBestProducts": "ベスト商品",
-    "promoShopNow": "SHOP NOW"
+    "promoShopNow": "SHOP NOW",
+    "whyHmtKorea": "HMT Koreaを選ぶ理由"
   },
   "footer": {
     "about": "会社概要",
@@ -234,18 +236,18 @@
     "orderGuideS3FieldContact": "連絡先（Contact Information）",
     "orderGuideS3P4": "セールスチームがご依頼を確認し、在庫・価格・配送条件を確認したうえで最終インボイスを発行します。",
     "orderGuideS4Title": "4. お支払い",
-    "orderGuideS4P1": "ご注文内容が確定しましたら、インボイスを発行します。",
-    "orderGuideS4PaymentTerms": "お支払い条件:",
-    "orderGuideS4Deposit": "注文処理開始のための前金50%",
-    "orderGuideS4Balance": "出荷前の残金50%",
-    "orderGuideS4P2": "インボイスをご確認のうえ、前金をお支払いいただきご注文を進めてください。",
+    "orderGuideS4P1": "お見積り確定後、銀行送金でお支払いいただきます。",
+    "orderGuideS4PaymentTerms": "お支払い:",
+    "orderGuideS4Deposit": "お見積り確定後、銀行送金でお支払いいただきます。",
+    "orderGuideS4Balance": "最終支払内容は請求書で確認します。",
+    "orderGuideS4P2": "請求内容をご確認のうえ、案内された銀行送金を完了してください。",
     "orderGuideS5Title": "5. 注文処理と最終確認",
-    "orderGuideS5P1": "標準リードタイムは約2–3週間で、ブランド・在庫・供給状況により異なります。",
+    "orderGuideS5P1": "リードタイムはお見積り時に確定します。商品・在庫・配送方法により異なります。",
     "orderGuideS5P2": "最終数量が確定しましたら、更新インボイスをお送りします。",
     "orderGuideS5P3": "該当する送料と最終ご注文内容は出荷前に確定します。",
     "orderGuideS6Title": "6. 配送と出荷",
     "orderGuideS6P1": "ご注文の準備が整い、残金のお支払いが完了しましたら出荷を手配します。",
-    "orderGuideS6P2": "確定した配送条件に従い、韓国・京畿道・一山の倉庫から出荷します。",
+    "orderGuideS6P2": "入金と梱包の確認後、韓国から出荷します。",
     "orderGuideS6P3": "ご指定のフォワーダーをご利用いただけます。必要な船積み情報は当社チームが調整します。",
     "orderGuideS6P4": "安定した商品調達、丁寧な注文対応、円滑な海外出荷でお客様のビジネスをサポートします。",
     "orderGuideHelpTitle": "サポートが必要ですか？",
@@ -390,7 +392,7 @@
     "companyName": "HMT Korea",
     "introSuffix": "は韓国化粧品の卸売・輸出ストアです。バイヤーはカタログを閲覧し、ログイン後に卸条件を確認し、輸出に関するお問い合わせができます。",
     "shopTitle": "ストアについて",
-    "shopDescription": "本ストアは HMT Korea が運営し、卸売バイヤーが韓国化粧品を閲覧し、商品情報を確認したうえで卸売お問い合わせを送信できるようにしています。",
+    "shopDescription": "HMT Koreaは海外卸売バイヤー向けのストアです。MOQは商品ごとに異なり、見積後の銀行送金でお支払いいただきます。",
     "areasTitle": "事業領域",
     "viewProducts": "商品を見る"
   },

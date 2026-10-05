@@ -43,7 +43,8 @@
     "searchSuggestionBrands": "品牌",
     "followUs": "关注我们",
     "cartSummary": "{count} 件 · {total}",
-    "closeMenu": "关闭菜单"
+    "closeMenu": "关闭菜单",
+    "howToOrder": "如何订购"
   },
   "localeSwitcher": {
     "label": "语言",
@@ -155,7 +156,8 @@
     "brandsTitle": "Partner Brand",
     "categoryNavSubtitle": "查看全部{category}",
     "promoBestProducts": "精选商品",
-    "promoShopNow": "SHOP NOW"
+    "promoShopNow": "SHOP NOW",
+    "whyHmtKorea": "为什么选择 HMT Korea"
   },
   "footer": {
     "about": "关于我们",
@@ -234,18 +236,18 @@
     "orderGuideS3FieldContact": "联系信息（Contact Information）",
     "orderGuideS3P4": "销售团队会审核您的申请，确认库存、价格和运输细节后出具最终发票。",
     "orderGuideS4Title": "4. 付款",
-    "orderGuideS4P1": "订单内容确认后，我们将出具发票。",
-    "orderGuideS4PaymentTerms": "付款条件：",
-    "orderGuideS4Deposit": "预付 50% 以开始处理订单",
-    "orderGuideS4Balance": "发货前支付剩余 50%",
-    "orderGuideS4P2": "请仔细核对发票并完成首付款，以便继续处理订单。",
+    "orderGuideS4P1": "报价确认后，通过银行转账付款。",
+    "orderGuideS4PaymentTerms": "付款：",
+    "orderGuideS4Deposit": "报价确认后通过银行转账付款。",
+    "orderGuideS4Balance": "最终付款细节以发票为准。",
+    "orderGuideS4P2": "请核对发票并完成确认的银行转账，以便我们处理订单。",
     "orderGuideS5Title": "5. 订单处理与最终确认",
-    "orderGuideS5P1": "标准交期约为 2–3 周，视品牌、库存和供应商情况而定。",
+    "orderGuideS5P1": "交期将在报价时确认，视产品、库存和运输方式而定。",
     "orderGuideS5P2": "最终数量确认后，我们将发送更新发票。",
     "orderGuideS5P3": "相关运费和最终订单细节将在发货前确认。",
     "orderGuideS6Title": "6. 运输与发货",
     "orderGuideS6P1": "订单备妥并完成尾款后，我们将认真备货并安排发运。",
-    "orderGuideS6P2": "货物将按照确认的运输安排，从韩国京畿道一山仓库发出。",
+    "orderGuideS6P2": "付款和包装确认后，订单从韩国发货。",
     "orderGuideS6P3": "您可以使用自己的货代，我们的团队会与您协调所需运输细节。",
     "orderGuideS6P4": "我们致力于可靠采购、谨慎履约和顺畅的国际运输，以支持您的业务。",
     "orderGuideHelpTitle": "需要帮助？",
@@ -390,7 +392,7 @@
     "companyName": "HMT Korea",
     "introSuffix": " 是韩国化妆品批发与出口店铺。买家可以浏览目录、登录后查看批发条件，并联系团队进行出口咨询。",
     "shopTitle": "关于本店",
-    "shopDescription": "本店由 HMT Korea 运营，方便批发买家浏览韩国化妆品、查看商品信息并提交批发询价。",
+    "shopDescription": "HMT Korea 面向海外批发买家。MOQ 按产品而定，报价后通过银行转账付款。",
     "areasTitle": "业务范围",
     "viewProducts": "查看商品"
   },

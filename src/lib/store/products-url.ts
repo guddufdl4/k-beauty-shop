@@ -399,6 +399,7 @@ export type MainNavLink = {
 export const MAIN_NAV_LINKS: MainNavLink[] = [
   { key: "newArrivals", href: buildProductsHref({ sort: "latest" }) },
   { key: "bestSellers", href: buildProductsHref({ sort: "trending" }) },
+  { key: "howToOrder", href: "/order-guide" },
   { key: "wholesale", href: "/wholesale-inquiry", highlight: true },
 ];
 

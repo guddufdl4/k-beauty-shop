@@ -6,8 +6,15 @@ import { Link } from "@/i18n/navigation";
 
 import { getCartItemCount } from "@/lib/cart";
 
-import { getStorefrontCategories } from "@/lib/supabase/products";
+import { getProducts, getStorefrontCategories } from "@/lib/supabase/products";
 import { localizeCategories, pickStorefrontNavCategories } from "@/lib/store/localized-category";
+import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
+import {
+  getCategoryPlaceholderUrl,
+  productHasRealImage,
+  resolveBestProductImageUrl,
+  resolveHomeCategoryImageUrls,
+} from "@/lib/product-images";
 
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 
@@ -19,7 +26,6 @@ import { MobileNavActions, MobileNavPanels, MobileNavRoot } from "./mobile-nav";
 import { StoreSearchBar } from "./store-search-bar";
 import { BrandsMegaMenu } from "./brands-mega-menu";
 import { CategoryIcon } from "@/lib/store/category-icons";
-import { resolveHomeCategoryImageUrls } from "@/lib/product-images";
 import { resolveFeaturedBrands, type FeaturedBrand } from "@/lib/store/partner-brands";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getNavBrandGroups } from "@/lib/supabase/brand-hub";
@@ -157,6 +163,7 @@ export async function StoreHeader({ storeName }: Props) {
           shopLatest: tNav("shopLatest"),
           newArrivals: tNav("newArrivals"),
           bestSellers: tNav("bestSellers"),
+          howToOrder: tNav("howToOrder"),
           wholesale: tNav("wholesale"),
           about: tNav("about"),
           searchPlaceholder: tNav("searchPlaceholder"),
@@ -267,10 +274,10 @@ export async function StoreMainNav({
       <div className="mx-auto flex w-full max-w-7xl items-stretch px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-stretch overflow-visible">
           <Link
-            href="/brands"
+            href="/products"
             className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            {tNav("shop")}
+            {tNav("products")}
           </Link>
           <BrandsMegaMenu
             featuredBrands={featuredBrands}
@@ -283,7 +290,7 @@ export async function StoreMainNav({
               href={item.href}
               className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              {tNav(item.key as "newArrivals")}
+              {tNav(item.key as "newArrivals" | "bestSellers" | "howToOrder")}
             </Link>
           ))}
           {wholesaleLink ? (
@@ -396,6 +403,28 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
   );
 
   const categoryImages = resolveHomeCategoryImageUrls(products, categories, enabledSlugs);
+  const audience = await resolveStorefrontAudience();
+  const missingSlugs = enabledSlugs.filter((slug) => !categoryImages[slug]);
+  if (missingSlugs.length > 0) {
+    const filled = await Promise.all(
+      missingSlugs.map(async (slug) => {
+        const { products: categoryProducts } = await getProducts({
+          categorySlug: slug,
+          limit: 8,
+          requireRealImage: true,
+          audience,
+        });
+        const withImage = categoryProducts.find((product) => productHasRealImage(product));
+        return [
+          slug,
+          withImage ? resolveBestProductImageUrl(withImage) : getCategoryPlaceholderUrl(slug),
+        ] as const;
+      }),
+    );
+    for (const [slug, imageUrl] of filled) {
+      categoryImages[slug] = imageUrl;
+    }
+  }
 
   const items = enabledSlugs.map((slug) => {
     const category = categoryBySlug.get(slug);
@@ -406,7 +435,7 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
       slug,
       label,
       href: buildProductsHref({ category: slug }),
-      imageUrl: categoryImages[slug] ?? null,
+      imageUrl: categoryImages[slug] ?? getCategoryPlaceholderUrl(slug),
     };
   });
 
@@ -437,7 +466,14 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
               className="group flex min-w-0 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               <div className="relative mx-auto aspect-square w-full min-h-[90px] max-w-[120px] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 transition-colors group-hover:border-accent sm:max-w-none">
-                {item.imageUrl ? (
+                {item.imageUrl.endsWith(".svg") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.imageUrl}
+                    alt={item.label}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : item.imageUrl ? (
                   <Image
                     src={item.imageUrl}
                     alt={item.label}

@@ -297,8 +297,8 @@ export default async function HomePage() {
       <HomeFeaturedBrandsSection products={products} />
 
       <CatalogSeoCopy
-        heading={homeSeo.h1}
-        headingLevel="h1"
+        heading={t("whyHmtKorea")}
+        headingLevel="h2"
         paragraphs={homeSeoParagraphs}
         links={[
           { href: "/products", label: t("viewProducts") },

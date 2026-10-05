@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { getPublicSiteContact, getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -15,8 +16,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AboutPage() {
-  const t = await getTranslations("about");
-  const companyName = t("companyName");
+  const [t, settings] = await Promise.all([
+    getTranslations("about"),
+    getSiteSettings(),
+  ]);
+  const contact = getPublicSiteContact(settings);
+  const companyName = contact.store_name || t("companyName");
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
@@ -32,6 +37,17 @@ export default async function AboutPage() {
           <h2 className="text-lg font-semibold text-zinc-900">{t("shopTitle")}</h2>
           <p className="mt-2">{t("shopDescription")}</p>
         </div>
+        {contact.company_address || contact.public_email || contact.public_phone || contact.public_whatsapp ? (
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-900">{companyName}</h2>
+            <ul className="mt-2 space-y-1">
+              {contact.company_address ? <li>{contact.company_address}</li> : null}
+              {contact.public_email ? <li>{contact.public_email}</li> : null}
+              {contact.public_phone ? <li>{contact.public_phone}</li> : null}
+              {contact.public_whatsapp ? <li>WhatsApp {contact.public_whatsapp}</li> : null}
+            </ul>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-10">

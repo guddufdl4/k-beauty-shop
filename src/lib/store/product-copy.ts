@@ -105,6 +105,55 @@ export function formatProductDisplayName(name: string, brand?: string | null): s
   return collapseRepeatedBrandPrefix(`${trimmedBrand} ${trimmedName}`, trimmedBrand);
 }
 
+const OBVIOUS_IMPORT_SUFFIX =
+  /(?:\s+|\s*[-–—]\s*)(?:import(?:ed)?(?:\s+from\s+excel)?|from\s+excel|xlsx|csv|sheet\s*\d*)\s*$/i;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** UI-only catalog title: spaces, duplicate brand, duplicate size. Never mutates SKU/slug. */
+export function formatStorefrontDisplayTitle(
+  name: string,
+  brand?: string | null,
+  size?: string | null,
+): string {
+  const original = String(name ?? "").trim();
+  let result = original.replace(/_/g, " ").replace(/\s+/g, " ").trim();
+  if (!result) {
+    return original;
+  }
+
+  result = result.replace(OBVIOUS_IMPORT_SUFFIX, "").replace(/\s+/g, " ").trim();
+  result = collapseRepeatedBrandPrefix(result, brand);
+
+  const brandName = sanitizeProductName(String(brand ?? ""));
+  if (brandName) {
+    const lower = result.toLowerCase();
+    const brandLower = brandName.toLowerCase();
+    // Only strip an exact leading brand token. Fuzzy alias / first-word matches
+    // (TFS vs THE FACE SHOP, "The …" vs "The Face Shop") change product meaning.
+    if (lower === brandLower || lower.startsWith(`${brandLower} `)) {
+      const stripped = result.slice(brandName.length).replace(/^[\s\-–—:,]+/, "").trim();
+      if (stripped.length >= 3) {
+        result = stripped;
+      }
+    }
+  }
+
+  const sizeLabel = String(size ?? "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
+  if (sizeLabel && result.toLowerCase() !== sizeLabel.toLowerCase()) {
+    const sizePattern = new RegExp(`\\b${escapeRegExp(sizeLabel)}\\b`, "gi");
+    const matches = result.match(sizePattern);
+    if (matches && matches.length >= 2) {
+      result = result.replace(new RegExp(`(?:\\s*${escapeRegExp(sizeLabel)})+$`, "i"), "").trim();
+    }
+  }
+
+  result = result.replace(/\s+/g, " ").trim();
+  return result || original;
+}
+
 export function isRedundantProductDescription(
   description: string | null | undefined,
   name: string,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { getPublicSiteContact, getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -15,7 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function TermsPage() {
-  const t = await getTranslations("legal");
+  const [t, settings] = await Promise.all([
+    getTranslations("legal"),
+    getSiteSettings(),
+  ]);
+  const contact = getPublicSiteContact(settings);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
@@ -33,6 +38,16 @@ export default async function TermsPage() {
         <p>{t("termsAccountsBody")}</p>
         <h2 className="mt-8 text-base font-semibold text-zinc-900">{t("termsOrdersTitle")}</h2>
         <p>{t("termsOrdersBody")}</p>
+        {contact.public_email || contact.public_phone || contact.public_whatsapp || contact.company_address ? (
+          <>
+            <h2 className="mt-8 text-base font-semibold text-zinc-900">{contact.store_name}</h2>
+            <p>
+              {[contact.company_address, contact.public_email, contact.public_phone, contact.public_whatsapp]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </>
+        ) : null}
       </div>
 
       <div className="mt-12 flex flex-wrap gap-4">

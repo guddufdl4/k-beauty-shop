@@ -129,16 +129,14 @@ function CategoryLink({
   ].join(" ");
 
   return (
-    <li>
-      <Link
-        href={href}
-        className={linkClassName}
-        aria-current={isActive ? "page" : undefined}
-      >
-        {isActive ? <ActiveMarker /> : <span className="w-2.5 shrink-0" aria-hidden />}
-        <span className="truncate">{getLocalizedCategoryName(category, locale)}</span>
-      </Link>
-    </li>
+    <Link
+      href={href}
+      className={linkClassName}
+      aria-current={isActive ? "page" : undefined}
+    >
+      {isActive ? <ActiveMarker /> : <span className="w-2.5 shrink-0" aria-hidden />}
+      <span className="truncate">{getLocalizedCategoryName(category, locale)}</span>
+    </Link>
   );
 }
 
@@ -229,16 +227,17 @@ function CategoryNavList({
                         {showNested ? (
                           <ul className="space-y-0.5">
                             {nested.map((child) => (
-                              <CategoryLink
-                                key={child.id}
-                                category={child}
-                                isActive={activeCategorySlug === child.slug}
-                                indent={2}
-                                searchQuery={searchQuery}
-                                brandFilter={brandFilter}
-                                sort={sort}
-                                locale={locale}
-                              />
+                              <li key={child.id}>
+                                <CategoryLink
+                                  category={child}
+                                  isActive={activeCategorySlug === child.slug}
+                                  indent={2}
+                                  searchQuery={searchQuery}
+                                  brandFilter={brandFilter}
+                                  sort={sort}
+                                  locale={locale}
+                                />
+                              </li>
                             ))}
                           </ul>
                         ) : null}

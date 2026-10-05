@@ -308,8 +308,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <h1 className="mt-2 text-balance break-words text-3xl font-bold tracking-tight text-zinc-900">
                 {displayName}
               </h1>
-              {product.short_description ? (
-                <p className="mt-3 break-words text-lg text-zinc-600">{product.short_description}</p>
+              {volume ? (
+                <p className="mt-3 break-words text-lg text-zinc-600">{volume}</p>
               ) : null}
 
               <div className="mt-8 min-w-0 space-y-4 rounded-2xl border border-rose-100 bg-white p-6">
@@ -337,8 +337,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 ) : (
                   <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-5">
                     <p className="text-lg font-semibold text-zinc-800">{t("signInToViewPrice")}</p>
-                    <p className="mt-1 text-sm text-zinc-600">{t("signInToViewPriceHint")}</p>
-                    <p className="mt-2 text-sm text-zinc-600">{t("signInToAddToCart")}</p>
                     <Link
                       href="/login"
                       className="mt-4 inline-flex rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
@@ -381,12 +379,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                     <div className="min-w-0">
                       <dt className="text-zinc-500">{t("barcode")}</dt>
                       <dd className="break-all font-mono text-zinc-800">{barcode}</dd>
-                    </div>
-                  ) : null}
-                  {product.short_description ? (
-                    <div className="min-w-0">
-                      <dt className="text-zinc-500">{t("volume")}</dt>
-                      <dd className="break-words font-semibold text-zinc-900">{product.short_description}</dd>
                     </div>
                   ) : null}
                   {origin ? (

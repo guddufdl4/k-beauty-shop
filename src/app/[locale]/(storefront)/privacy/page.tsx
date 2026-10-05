@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
+import { getPublicSiteContact, getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -15,7 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PrivacyPage() {
-  const t = await getTranslations("legal");
+  const [t, settings] = await Promise.all([
+    getTranslations("legal"),
+    getSiteSettings(),
+  ]);
+  const contact = getPublicSiteContact(settings);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
@@ -28,6 +33,15 @@ export default async function PrivacyPage() {
         <p>{t("privacyUseBody")}</p>
         <h2 className="mt-8 text-base font-semibold text-zinc-900">{t("privacyContactTitle")}</h2>
         <p>{t("privacyContactBody")}</p>
+        {contact.public_email || contact.public_phone || contact.public_whatsapp || contact.company_address ? (
+          <p>
+            {contact.store_name}
+            {": "}
+            {[contact.company_address, contact.public_email, contact.public_phone, contact.public_whatsapp]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-12 flex flex-wrap gap-4">

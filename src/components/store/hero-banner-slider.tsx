@@ -412,12 +412,14 @@ function HeroSlideFrame({
   priority,
   preload,
   isActive,
+  isPrimaryHeading,
 }: {
   slide: HeroBannerSlide;
   defaultCopy: HeroCopy;
   priority?: boolean;
   preload?: boolean;
   isActive: boolean;
+  isPrimaryHeading: boolean;
 }) {
   const copy = mergeSlideCopy(defaultCopy, slide);
   const { desktop, mobile } = resolveHeroSlideLayout(slide.layout);
@@ -475,7 +477,7 @@ function HeroSlideFrame({
       >
         <HeroCopyPanel
           copy={copy}
-          isPrimaryHeading={false}
+          isPrimaryHeading={isPrimaryHeading}
           hidden={!isActive}
         />
       </div>
@@ -655,7 +657,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
             className="relative aspect-[1920/600] w-full bg-gradient-to-br from-slate-50 via-white to-rose-50/30"
             style={buildDesktopOnlyCopyCssVars(desktop)}
           >
-            <HeroCopyPanel copy={copy} isPrimaryHeading={false} />
+            <HeroCopyPanel copy={copy} isPrimaryHeading />
           </div>
         </div>
       </section>
@@ -742,6 +744,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
                 priority={index === 0}
                 preload={index === 0}
                 isActive={!showControls || index === activeIndex}
+                isPrimaryHeading={index === 0}
               />
             </div>
           ))}

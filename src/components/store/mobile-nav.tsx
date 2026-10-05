@@ -32,6 +32,7 @@ type MobileNavLabels = {
   shopLatest: string;
   newArrivals: string;
   bestSellers: string;
+  howToOrder: string;
   wholesale: string;
   about: string;
   searchPlaceholder: string;
@@ -250,20 +251,11 @@ export function MobileNavPanels() {
   } = useMobileNav();
 
   const tHome = useTranslations("home.featuredBrands");
-  const [shopOpen, setShopOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
-
-  const shopLinks = [
-    { href: "/brands", label: labels.shop },
-    { href: "/products", label: labels.allProducts },
-    { href: buildProductsHref({ sort: "sale" }), label: labels.shopSale },
-    { href: buildProductsHref({ sort: "trending" }), label: labels.shopTrending },
-    { href: buildProductsHref({ sort: "latest" }), label: labels.shopLatest },
-  ];
 
   const primaryLinks = MAIN_NAV_LINKS.filter((item) => !item.highlight).map((item) => ({
     href: item.href,
-    label: labels[item.key as "newArrivals" | "bestSellers"],
+    label: labels[item.key as "newArrivals" | "bestSellers" | "howToOrder"],
   }));
 
   const wholesaleLink = MAIN_NAV_LINKS.find((item) => item.highlight);
@@ -308,38 +300,9 @@ export function MobileNavPanels() {
             <LocaleSwitcher className="inline-flex" />
           </div>
           <nav className="flex flex-col divide-y divide-zinc-100">
-            <div className="py-1">
-              <button
-                type="button"
-                className={mobileLinkClass}
-                aria-expanded={shopOpen}
-                onClick={() => setShopOpen((value) => !value)}
-              >
-                {labels.shop}
-                <svg
-                  viewBox="0 0 20 20"
-                  className={`${accordionChevronClass} ${shopOpen ? "rotate-180" : ""}`}
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M5.3 7.7a1 1 0 011.4 0L10 10.9l3.3-3.2a1 1 0 111.4 1.4l-4 4a1 1 0 01-1.4 0l-4-4a1 1 0 010-1.4z" />
-                </svg>
-              </button>
-              {shopOpen ? (
-                <div className="mt-1 space-y-0.5 pb-3 pl-1">
-                  {shopLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={mobileSubLinkClass}
-                      onClick={closeAll}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            <Link href="/products" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
+              <span>{labels.products}</span>
+            </Link>
 
             <div className="py-1">
               <button
