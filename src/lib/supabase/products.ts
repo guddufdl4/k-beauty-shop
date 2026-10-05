@@ -1918,10 +1918,8 @@ function finalizeHomepageProducts(
   products: ProductWithRelations[],
   limit: number,
 ): ProductWithRelations[] {
-  return interleaveByBrand(
-    sortHomepagePriorityProducts(products.filter((product) => productHasRealImage(product))),
-    2,
-  ).slice(0, limit);
+  const sorted = sortHomepagePriorityProducts(products.filter((product) => productHasRealImage(product)));
+  return [...new Map([...interleaveByBrand(sorted, 2), ...sorted].map((product) => [product.id, product])).values()].slice(0, limit);
 }
 
 export type HomepageTabKey = "bestSellers" | "mostViewed" | "newArrivals" | "allProducts";
@@ -1988,7 +1986,7 @@ export function selectDiverseTrendingProducts(
       }
     }
 
-    return interleaveByBrand(picked, 2).slice(0, limit);
+    return [...new Map([...interleaveByBrand(picked, 2), ...picked].map((product) => [product.id, product])).values()].slice(0, limit);
   }
 
   const picked: StorefrontProduct[] = [];
@@ -2011,7 +2009,7 @@ export function selectDiverseTrendingProducts(
     .sort(compareBestSellers)
     .filter((product) => !usedIds.has(product.id));
 
-  return [...picked, ...interleaveByBrand(remainder, 2)].slice(0, limit);
+  return [...new Map([...picked, ...interleaveByBrand(remainder, 2), ...remainder].map((product) => [product.id, product])).values()].slice(0, limit);
 }
 
 function compareBestSellers(a: StorefrontProduct, b: StorefrontProduct): number {
@@ -2077,7 +2075,8 @@ export function selectTrendingCategoryProducts(
     const navSlug = resolveNavCategorySlugForProduct(product, categories, navCategories);
     return navSlug === categorySlug;
   });
-  return interleaveByBrand([...filtered].sort(compareBestSellers), 2).slice(0, limit);
+  const sorted = [...filtered].sort(compareBestSellers);
+  return [...new Map([...interleaveByBrand(sorted, 2), ...sorted].map((product) => [product.id, product])).values()].slice(0, limit);
 }
 
 function quoteInFilterValues(values: string[]): string {
