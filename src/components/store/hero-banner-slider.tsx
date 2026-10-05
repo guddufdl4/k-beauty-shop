@@ -430,8 +430,9 @@ function HeroSlideFrame({
 
   if (slide.products?.length) {
     return (
-      <div className="relative isolate grid w-full min-w-0 min-h-[530px] overflow-hidden bg-gradient-to-br from-[#fff7fa] via-[#fbe5ee] to-[#f5e9ff] sm:min-h-[370px] sm:grid-cols-[44%_56%] lg:min-h-[470px]">
-        <div aria-hidden className="pointer-events-none absolute -right-16 -top-40 h-[580px] w-[580px] rounded-full border-[70px] border-white/30" />
+      <div className="relative isolate grid w-full min-w-0 h-[530px] overflow-hidden bg-gradient-to-br from-[#fff7fa] via-[#fbe5ee] to-[#f5e9ff] sm:h-[370px] sm:grid-cols-[44%_56%] lg:h-[470px]">
+        <NextImage src="/hero/pink-world-blossom-v1.webp" alt="" fill sizes="(max-width: 1280px) 100vw, 1280px" priority={priority} className="pointer-events-none object-cover object-right" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fff2f7]/80 via-[#fff2f7]/25 to-transparent" />
         <div className="relative z-20 flex min-w-0 flex-col justify-center px-12 pb-2 pt-10 sm:py-12 lg:pl-16">
           <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#e11d73]">{copy.badge}</p>
           {isPrimaryHeading ? <h1 className="text-3xl font-bold leading-[1.08] tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl">{copy.title}</h1>
@@ -458,7 +459,7 @@ function HeroSlideFrame({
   }
 
   return (
-    <div className="relative w-full min-h-[280px] bg-[#f4f2ef] sm:aspect-[1920/600]">
+    <div className="relative w-full h-[530px] bg-[#f4f2ef] sm:h-[370px] lg:h-[470px]">
       <HeroBannerImage
         src={slide.src}
         alt={imageAlt}
