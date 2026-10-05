@@ -82,7 +82,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           : (error ?? "회원 목록을 불러오지 못했습니다.")}
       </p>
 
-      <MemberApprovalForm key={`${query}:${page}`} selectableCount={members.filter((member) => member.role !== "admin").length}>
+      <MemberApprovalForm key={`${query}:${page}`} adminId={user?.id ?? "unconfigured"} selectableCount={members.filter((member) => member.role !== "admin").length}>
       <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -106,7 +106,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
             ) : (
               members.map((member) => (
                 <tr key={member.id} className="border-t border-zinc-100">
-                  <td className="px-4 py-3">{member.role !== "admin" ? <input type="checkbox" name="member_id" value={member.id} aria-label={`${member.email} 선택`} /> : null}</td>
+                  <td className="px-4 py-3">{member.role !== "admin" ? <input type="checkbox" data-member-id={member.id} aria-label={`${member.email} 선택`} /> : null}</td>
                   <td className="px-4 py-3 font-semibold text-zinc-900">{member.username ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.email || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-700">{member.phoneNumber ?? "—"}</td>
