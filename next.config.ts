@@ -34,6 +34,15 @@ const imageSettings = {
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["sharp", "xlsx", "@imgly/background-removal-node", "onnxruntime-node"],
+  // Vercel uses Linux x64 CPU inference; cached GPU binaries are not required.
+  outputFileTracingExcludes: process.platform === "linux" ? {
+    "/*": [
+      "node_modules/onnxruntime-node/bin/napi-v3/{darwin,win32}/**/*",
+      "node_modules/onnxruntime-node/bin/napi-v3/linux/arm64/**/*",
+      "node_modules/onnxruntime-node/bin/napi-v3/linux/x64/libonnxruntime_providers_cuda.so",
+      "node_modules/onnxruntime-node/bin/napi-v3/linux/x64/libonnxruntime_providers_tensorrt.so",
+    ],
+  } : undefined,
   images: supabaseHostname
     ? {
         ...imageSettings,
