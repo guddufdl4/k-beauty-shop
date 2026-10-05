@@ -322,7 +322,7 @@
     "pageNumberLabel": "Page {page}",
     "imagePending": "{brand} {name} — image coming soon",
     "signInToViewPrice": "Sign in to view wholesale price",
-    "signInToViewPriceHint": "Wholesale pricing is available to registered buyers.",
+    "signInToViewPriceHint": "Business registration is reviewed by our team. Wholesale prices and invoices are available after administrator approval.",
     "signInToViewPriceAction": "Log in",
     "createWholesaleAccount": "Create wholesale account",
     "signInToAddToCart": "Log in to add items to your quote list.",
@@ -355,7 +355,8 @@
       "noCategory": "No category",
       "soldOutLabel": "Availability",
       "available": "Available"
-    }
+    },
+    "businessApprovalPending": "Business approval pending"
   },
   "brands": {
     "browse": "Browse",
@@ -475,7 +476,7 @@
     "referenceNote": "Prices are a catalog reference. Final terms are confirmed by email.",
     "processing": "Sending…",
     "submitQuote": "Send quote request",
-    "loginRequired": "Please log in to send a quote request.",
+    "loginRequired": "Business approval pending. Our team will review your registration before enabling wholesale prices and invoice downloads.",
     "loginAction": "Log in",
     "companyRequired": "Please enter your company name.",
     "contactRequired": "Please enter a contact name.",
@@ -486,7 +487,13 @@
     "emailSendFailed": "We could not send the quote email. Please try again or use wholesale inquiry.",
     "successTitle": "Quote request received",
     "successBody": "We received the products and quantities you requested. This is not a payment. Next steps are confirmed after stock review.",
-    "continueShopping": "Continue browsing"
+    "continueShopping": "Continue browsing",
+    "selectCountry": "Select a country",
+    "tradeNoteTitle": "Note",
+    "shippingSeparate": "Shipping is not included. Shipping fees are charged separately on the invoice when you place an order.",
+    "shippingCalculated": "Shipping fees are calculated after products and quantities are confirmed, based on weight and volume.",
+    "brandMinimum": "Some brands may have a minimum order amount, and prices may change when your order is confirmed. Please contact our team for details.",
+    "vatExcluded": "Amounts exclude VAT."
   },
   "orderConfirmation": {
     "paymentCompleted": "Payment completed",
@@ -567,13 +574,16 @@
       "orderCreateFailed": "Failed to create the order.",
       "authRequired": "Please log in to continue.",
       "minOrderNotMet": "The minimum order amount is USD {amount}."
-    }
+    },
+    "approvalPending": "Business approval pending. Our team will review your registration before enabling wholesale prices and invoice downloads.",
+    "invoiceExcel": "Download Excel",
+    "invoicePdf": "Download PDF"
   },
   "auth": {
     "loginTitle": "Log in",
     "loginSubtitle": "Sign in with your HMT Korea account",
     "signupTitle": "Create wholesale account",
-    "signupSubtitle": "Create a wholesale buyer account to view member prices and request quotations. This storefront is for overseas B2B buyers.",
+    "signupSubtitle": "Business registration is reviewed by our team. Wholesale prices and invoices are available after administrator approval.",
     "email": "Email",
     "emailHint": "We will send a confirmation link from HMT Korea to this address.",
     "loginIdentifier": "Email or ID",
@@ -583,7 +593,7 @@
     "passwordHint": "Use at least 8 characters.",
     "passwordMatch": "Passwords match.",
     "benefitsTitle": "Wholesale account benefits",
-    "benefitPrices": "View wholesale prices",
+    "benefitPrices": "Business registration is reviewed by our team. Wholesale prices and invoices are available after administrator approval.",
     "benefitMoq": "Check MOQ and box quantity",
     "benefitQuotes": "Request wholesale quotations",
     "acceptTerms": "I agree to the",

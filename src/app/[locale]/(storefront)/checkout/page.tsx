@@ -1,3 +1,4 @@
+import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { getTranslations, getLocale } from "next-intl/server";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { getUsdKrwRate } from "@/lib/currency";
@@ -73,7 +74,7 @@ export default async function CheckoutPage() {
           cart={cart}
           locale={locale}
           usdKrwRate={usdKrwRate}
-          isMember={Boolean(session.user)}
+          isMember={hasBusinessApproval(session.profile)}
           defaultCompanyName={defaultCompanyName}
           defaultContactName={session.profile?.full_name ?? ""}
           defaultEmail={session.profile?.email ?? session.user?.email ?? ""}

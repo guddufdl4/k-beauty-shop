@@ -1403,7 +1403,7 @@ export async function getProducts(
 
   const supabase = privileged
     ? createServiceClient() ?? (await createSafeClient())
-    : options?.usePublicClient
+    : options?.usePublicClient || audience === "guest"
       ? createPublicClient() ?? (await createSafeClient())
       : await createSafeClient();
   if (!supabase) {
@@ -1795,7 +1795,7 @@ async function fetchPriorityBrandListProducts(
   if (!supabase) {
     supabase = privileged
       ? createServiceClient() ?? (await createSafeClient())
-      : await createSafeClient();
+      : audience === "guest" ? createPublicClient() : await createSafeClient();
   }
 
   if (!supabase) {
@@ -2298,7 +2298,7 @@ export async function getProductBySlug(
     };
   }
 
-  const supabase = await createSafeClient();
+  const supabase = resolvedAudience === "guest" ? createPublicClient() : await createSafeClient();
   if (!supabase) {
     const product = STATIC_PRODUCTS.find((p) => p.slug === slug) ?? null;
     return {

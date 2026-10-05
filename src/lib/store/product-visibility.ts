@@ -21,7 +21,7 @@ export async function resolveStorefrontAudience(): Promise<StorefrontAudience> {
     return "admin";
   }
 
-  return "member";
+  return profile?.role === "wholesale" ? "member" : "guest";
 }
 
 export function canViewProductPrices(audience: StorefrontAudience): boolean {

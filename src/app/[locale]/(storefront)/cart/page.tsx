@@ -1,3 +1,4 @@
+import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { CartItemList } from "@/components/store/cart-item-list";
@@ -11,6 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
 import type { Metadata } from "next";
+
+import { TradeNotes } from "@/components/store/trade-notes";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +54,7 @@ export default async function CartPage() {
     <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
       <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
       <p className="mt-2 text-sm text-zinc-600">{t("quoteHint")}</p>
+      {session.user && !hasBusinessApproval(session.profile) ? <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{t("approvalPending")}</p> : null}
 
       {cart.items.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center sm:p-10">
@@ -72,7 +76,7 @@ export default async function CartPage() {
               items={cart.items}
               locale={locale}
               usdKrwRate={usdKrwRate}
-              showPrices={Boolean(session.user)}
+              showPrices={hasBusinessApproval(session.profile)}
             />
             <aside className="h-fit rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
               <h2 className="text-lg font-semibold">{t("orderSummary")}</h2>
@@ -96,6 +100,10 @@ export default async function CartPage() {
               </p>
             </aside>
           </div>
+          <div className="flex flex-wrap gap-3">
+            <a download href="/api/cart/invoice?format=xlsx" className="rounded-xl border border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700">{t("invoiceExcel")}</a>
+            <a download href="/api/cart/invoice?format=pdf" className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white">{t("invoicePdf")}</a>
+          </div>
           <CheckoutForm
             cart={cart}
             locale={locale}
@@ -108,6 +116,7 @@ export default async function CartPage() {
           />
         </div>
       )}
+      <TradeNotes />
     </main>
   );
 }

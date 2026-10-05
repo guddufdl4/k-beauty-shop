@@ -318,7 +318,7 @@
     "pageJumpGo": "移動",
     "pageNumberLabel": "{page}ページ",
     "signInToViewPrice": "ログインして価格を確認",
-    "signInToViewPriceHint": "卸売価格は会員のみ閲覧できます。",
+    "signInToViewPriceHint": "事業者登録後、管理者の承認が完了すると卸売価格とインボイスをご利用いただけます。",
     "signInToViewPriceAction": "ログイン",
     "signInToAddToCart": "カートを利用するにはログインしてください。",
     "descriptionFallback": "詳細な商品説明は準備中です。下記の仕様をご確認いただくか、卸売お問い合わせをご利用ください。",
@@ -355,7 +355,8 @@
     "shippingQuotationBody": "Lead time, freight, and payment terms are confirmed after your quotation and stock check. There is no card checkout on this site.",
     "returns": "Returns",
     "returnsBody": "Wholesale export returns are reviewed case by case for damaged or incorrect shipments. Use your quotation number when you contact us.",
-    "lastUpdated": "Last updated: {date}"
+    "lastUpdated": "Last updated: {date}",
+    "businessApprovalPending": "事業者承認待ち"
   },
   "categories": {
     "browse": "Browse",
@@ -496,7 +497,10 @@
     "orderQuantity": "Order qty {count}",
     "totalUnits": "{count} units",
     "boxCount": "{count} boxes",
-    "boxesAndUnits": "{boxes} boxes · {units} units"
+    "boxesAndUnits": "{boxes} boxes · {units} units",
+    "approvalPending": "事業者承認待ちです。管理者の確認後、卸売価格とインボイスをご利用いただけます。",
+    "invoiceExcel": "Excelをダウンロード",
+    "invoicePdf": "PDFをダウンロード"
   },
   "checkout": {
     "title": "見積依頼",
@@ -537,7 +541,7 @@
     "referenceNote": "表示価格はカタログ参考です。最終条件はメールで確定します。",
     "processing": "送信中…",
     "submitQuote": "見積を送信",
-    "loginRequired": "見積を送るにはログインしてください。",
+    "loginRequired": "事業者承認待ちです。管理者の確認後、卸売価格とインボイスをご利用いただけます。",
     "loginAction": "ログイン",
     "companyRequired": "会社名を入力してください。",
     "contactRequired": "担当者名を入力してください。",
@@ -568,13 +572,19 @@
       "awaiting_payment": "Awaiting payment",
       "payment_confirmed": "Payment confirmed",
       "cancelled": "Cancelled"
-    }
+    },
+    "selectCountry": "国を選択してください",
+    "tradeNoteTitle": "ご案内",
+    "shippingSeparate": "送料は含まれていません。ご注文時にインボイスで別途請求されます。",
+    "shippingCalculated": "送料は商品と数量の確定後、重量と容積に基づき計算されます。",
+    "brandMinimum": "ブランドごとの最低注文金額や注文確定時の価格変更が適用される場合があります。詳細は担当者にお問い合わせください。",
+    "vatExcluded": "表示金額にVATは含まれていません。"
   },
   "auth": {
     "loginTitle": "ログイン",
     "loginSubtitle": "HMT Koreaアカウントでログイン",
     "signupTitle": "卸売アカウントを作成",
-    "signupSubtitle": "卸売バイヤーアカウントを作成し、価格確認と輸出お問い合わせを行ってください。",
+    "signupSubtitle": "事業者登録後、管理者の承認が完了すると卸売価格とインボイスをご利用いただけます。",
     "email": "メール",
     "emailHint": "HMT Koreaからこのアドレスに確認メールを送ります。",
     "loginIdentifier": "メールまたはID",
@@ -611,7 +621,7 @@
     "passwordHint": "Use at least 8 characters.",
     "passwordMatch": "Passwords match.",
     "benefitsTitle": "Wholesale account benefits",
-    "benefitPrices": "View wholesale prices",
+    "benefitPrices": "事業者登録後、管理者の承認が完了すると卸売価格とインボイスをご利用いただけます。",
     "benefitMoq": "Check MOQ and box quantity",
     "benefitQuotes": "Request wholesale quotations",
     "acceptTerms": "I agree to the",

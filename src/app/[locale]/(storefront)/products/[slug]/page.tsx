@@ -392,9 +392,9 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   </div>
                 ) : (
                   <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-5">
-                    <p className="text-lg font-semibold text-zinc-800">{t("signInToViewPrice")}</p>
+                    <p className="text-lg font-semibold text-zinc-800">{t(session.user ? "businessApprovalPending" : "signInToViewPrice")}</p>
                     <p className="mt-1 text-sm text-zinc-600">{t("signInToViewPriceHint")}</p>
-                    <div className="mt-4 flex flex-wrap gap-3">
+                    {!session.user ? (<div className="mt-4 flex flex-wrap gap-3">
                       <Link
                         href={withReturnTo("/login", returnTo)}
                         className="inline-flex rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800"
@@ -407,7 +407,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                       >
                         {t("createWholesaleAccount")}
                       </Link>
-                    </div>
+                    </div>) : null}
                   </div>
                 )}
 
@@ -419,6 +419,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   stock={canViewPrices && isPricedStorefrontProduct(product) ? product.stock : 0}
                   soldOut={product.sold_out}
                   canAdd={canViewPrices && isPricedStorefrontProduct(product)}
+                  approvalPending={Boolean(session.user) && !canViewPrices}
                   defaultQuantity={Number.isFinite(defaultQty) ? defaultQty : undefined}
                 />
               </div>

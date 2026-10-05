@@ -12,6 +12,8 @@ import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
 import { withReturnTo } from "@/lib/auth/return-to";
 import type { CartView } from "@/types/cart";
 
+import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
+
 type Props = {
   cart: CartView;
   locale: string;
@@ -83,7 +85,12 @@ export function CheckoutForm({
           </label>
           <label className="block" htmlFor="country">
             <span className="text-sm text-zinc-600">{t("country")}</span>
-            <input id="country" name="country" required maxLength={500} defaultValue={defaultCountry} className={inputClassName} />
+            <select id="country" name="country" required defaultValue={SIGNUP_COUNTRIES.find((country) => country.code === defaultCountry || country.name === defaultCountry)?.code ?? ""} className={inputClassName}>
+              <option value="">{t("selectCountry")}</option>
+              {SIGNUP_COUNTRIES.map((country) => (
+                <option key={country.code} value={country.code}>{country.name}</option>
+              ))}
+            </select>
           </label>
           <p className="sm:col-span-2 text-sm font-medium text-zinc-800">{t("contactSection")}</p>
           <label className="block" htmlFor="contact_name">

@@ -1,3 +1,4 @@
+import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
 import { formatKRW } from "@/lib/utils";
@@ -528,6 +529,9 @@ export async function revalidateQuoteCart(cart: CartView): Promise<CartView | nu
 }
 
 export async function getCart(): Promise<CartView> {
+  if (isSupabaseConfigured() && !hasBusinessApproval((await getSessionProfile()).profile)) {
+    return { items: [], subtotal: 0, itemCount: 0, source: "database" };
+  }
   const locale = await getLocale();
   const userId = await getCurrentUserId();
   if (!userId) {
@@ -715,6 +719,7 @@ export async function addToCart(
   productId: string,
   quantity: number,
 ): Promise<CartLibResult> {
+  if (isSupabaseConfigured() && !hasBusinessApproval((await getSessionProfile()).profile)) return { errorCode: "auth_required" };
   const product = await resolveProductForCart(productId);
   if (!product) {
     return { errorCode: "product_not_found" };
@@ -899,6 +904,7 @@ export function calculateShippingCost(subtotal: number): number {
 export async function createOrder(
   shippingAddress: ShippingAddress,
 ): Promise<CartLibResult & { orderNumber?: string }> {
+  if (!hasBusinessApproval((await getSessionProfile()).profile)) return { errorCode: "auth_required" };
   const userId = await getCurrentUserId();
   if (!userId) {
     return { errorCode: "auth_required" };

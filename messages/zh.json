@@ -318,7 +318,7 @@
     "pageJumpGo": "跳转",
     "pageNumberLabel": "第 {page} 页",
     "signInToViewPrice": "登录后查看价格",
-    "signInToViewPriceHint": "批发价格仅对注册会员开放。",
+    "signInToViewPriceHint": "企业注册经管理员批准后，即可查看批发价并下载发票。",
     "signInToViewPriceAction": "登录",
     "signInToAddToCart": "请登录后再加入购物车。",
     "descriptionFallback": "详细商品说明尚未准备。请查看下方规格，或通过批发询价联系我们。",
@@ -355,7 +355,8 @@
     "shippingQuotationBody": "Lead time, freight, and payment terms are confirmed after your quotation and stock check. There is no card checkout on this site.",
     "returns": "Returns",
     "returnsBody": "Wholesale export returns are reviewed case by case for damaged or incorrect shipments. Use your quotation number when you contact us.",
-    "lastUpdated": "Last updated: {date}"
+    "lastUpdated": "Last updated: {date}",
+    "businessApprovalPending": "企业审核中"
   },
   "categories": {
     "browse": "Browse",
@@ -496,7 +497,10 @@
     "orderQuantity": "Order qty {count}",
     "totalUnits": "{count} units",
     "boxCount": "{count} boxes",
-    "boxesAndUnits": "{boxes} boxes · {units} units"
+    "boxesAndUnits": "{boxes} boxes · {units} units",
+    "approvalPending": "企业审核中。管理员批准后即可查看批发价并下载发票。",
+    "invoiceExcel": "下载Excel",
+    "invoicePdf": "下载PDF"
   },
   "checkout": {
     "title": "询价",
@@ -537,7 +541,7 @@
     "referenceNote": "所示价格仅供参考，最终条件以邮件确认为准。",
     "processing": "发送中…",
     "submitQuote": "发送询价",
-    "loginRequired": "请登录后提交询价。",
+    "loginRequired": "企业审核中。管理员批准后即可查看批发价并下载发票。",
     "loginAction": "登录",
     "companyRequired": "请填写公司名称。",
     "contactRequired": "请填写联系人。",
@@ -568,13 +572,19 @@
       "awaiting_payment": "Awaiting payment",
       "payment_confirmed": "Payment confirmed",
       "cancelled": "Cancelled"
-    }
+    },
+    "selectCountry": "请选择国家",
+    "tradeNoteTitle": "注意事项",
+    "shippingSeparate": "价格不含运费。下单时运费将在发票中另行收取。",
+    "shippingCalculated": "运费在产品和数量确认后，按重量和体积计算。",
+    "brandMinimum": "部分品牌可能有最低订购金额，订单确认时价格可能变动。详情请联系我们。",
+    "vatExcluded": "显示金额不含增值税。"
   },
   "auth": {
     "loginTitle": "登录",
     "loginSubtitle": "使用 HMT Korea 账户登录",
     "signupTitle": "创建批发账户",
-    "signupSubtitle": "创建批发买家账户以查看价格并提交出口询价。",
+    "signupSubtitle": "企业注册经管理员批准后，即可查看批发价并下载发票。",
     "email": "邮箱",
     "emailHint": "HMT Korea 会向此地址发送确认邮件。",
     "loginIdentifier": "邮箱或用户名",
@@ -611,7 +621,7 @@
     "passwordHint": "Use at least 8 characters.",
     "passwordMatch": "Passwords match.",
     "benefitsTitle": "Wholesale account benefits",
-    "benefitPrices": "View wholesale prices",
+    "benefitPrices": "企业注册经管理员批准后，即可查看批发价并下载发票。",
     "benefitMoq": "Check MOQ and box quantity",
     "benefitQuotes": "Request wholesale quotations",
     "acceptTerms": "I agree to the",

@@ -1,5 +1,8 @@
 "use server";
 
+import { hasBusinessApproval } from "@/lib/auth/business-approval";
+import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
+
 import { revalidatePath } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
@@ -49,7 +52,7 @@ export async function submitQuoteRequest(
   const locale = await getLocale();
   const session = await getSessionProfile();
 
-  if (!session.user) {
+  if (!session.user || !hasBusinessApproval(session.profile)) {
     return { error: t("loginRequired") };
   }
 
@@ -61,7 +64,8 @@ export async function submitQuoteRequest(
   const contactName = trimField(formData.get("contact_name")) || session.profile?.full_name || "";
   const email = trimField(formData.get("email")) || session.user.email || "";
   const phone = trimField(formData.get("phone"));
-  const country = trimField(formData.get("country"));
+  const countryCode = trimField(formData.get("country"));
+  const country = SIGNUP_COUNTRIES.find((entry) => entry.code === countryCode)?.name ?? "";
   const consignee = trimField(formData.get("consignee"));
   const notifyParty = trimField(formData.get("notify_party"));
   const shippingAddress = trimField(formData.get("shipping_address"));

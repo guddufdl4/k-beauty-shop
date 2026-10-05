@@ -43,6 +43,7 @@ const nextConfig: NextConfig = {
       "node_modules/onnxruntime-node/bin/napi-v3/linux/x64/libonnxruntime_providers_tensorrt.so",
     ],
   } : undefined,
+  outputFileTracingIncludes: { "/api/cart/invoice": ["src/assets/fonts/NotoSansKR-Regular.ttf"] },
   images: supabaseHostname
     ? {
         ...imageSettings,

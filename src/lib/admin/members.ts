@@ -1,3 +1,4 @@
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export type AdminMemberRow = {
@@ -67,6 +68,7 @@ export async function listAdminMembers(
   query = "",
   page = 1,
 ): Promise<AdminMemberList> {
+  if ((await getSessionProfile()).profile?.role !== "admin") return emptyList(false, "Admin access required");
   const supabase = createServiceClient();
   if (!supabase) {
     return emptyList(false, "Supabase not configured");
@@ -146,7 +148,7 @@ export function memberRoleLabel(role: string): string {
     return "관리자";
   }
   if (role === "wholesale") {
-    return "도매";
+    return "사업자 승인 완료";
   }
-  return "회원";
+  return "승인 대기";
 }

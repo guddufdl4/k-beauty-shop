@@ -322,7 +322,7 @@
     "pageNumberLabel": "{page}페이지",
     "imagePending": "{brand} {name} — 이미지 준비 중",
     "signInToViewPrice": "로그인 후 도매가를 확인하세요",
-    "signInToViewPriceHint": "도매 가격은 등록된 바이어에게 제공됩니다.",
+    "signInToViewPriceHint": "사업자 회원가입 후 관리자 승인이 완료되면 공급가와 인보이스를 확인할 수 있습니다.",
     "signInToViewPriceAction": "로그인",
     "signInToAddToCart": "장바구니 이용을 위해 로그인해 주세요.",
     "descriptionFallback": "상세 상품 설명은 아직 준비 중입니다. 아래 사양을 확인하거나 도매 문의를 남겨 주세요.",
@@ -355,7 +355,8 @@
     "shippingQuotationBody": "Lead time, freight, and payment terms are confirmed after your quotation and stock check. There is no card checkout on this site.",
     "returns": "Returns",
     "returnsBody": "Wholesale export returns are reviewed case by case for damaged or incorrect shipments. Use your quotation number when you contact us.",
-    "lastUpdated": "Last updated: {date}"
+    "lastUpdated": "Last updated: {date}",
+    "businessApprovalPending": "사업자 승인 대기"
   },
   "categories": {
     "browse": "Browse",
@@ -460,7 +461,7 @@
     "referenceNote": "표시 가격은 카탈로그 참고용이며, 최종 조건은 이메일로 확정됩니다.",
     "processing": "보내는 중…",
     "submitQuote": "견적 요청 보내기",
-    "loginRequired": "견적 요청을 보내려면 로그인해 주세요.",
+    "loginRequired": "사업자 승인 대기 중입니다. 관리자 검토 후 공급가 조회와 인보이스 다운로드가 가능합니다.",
     "loginAction": "로그인",
     "companyRequired": "회사명을 입력해 주세요.",
     "contactRequired": "담당자명을 입력해 주세요.",
@@ -491,7 +492,13 @@
       "awaiting_payment": "Awaiting payment",
       "payment_confirmed": "Payment confirmed",
       "cancelled": "Cancelled"
-    }
+    },
+    "selectCountry": "국가를 선택하세요",
+    "tradeNoteTitle": "안내",
+    "shippingSeparate": "배송비는 포함되어 있지 않으며 주문 시 인보이스에 별도로 청구됩니다.",
+    "shippingCalculated": "배송비는 상품과 수량 확정 후 중량과 부피를 기준으로 계산됩니다.",
+    "brandMinimum": "브랜드별 최소 주문금액이 적용되거나 주문 확정 시 가격이 변경될 수 있습니다. 자세한 사항은 담당자에게 문의해 주세요.",
+    "vatExcluded": "표시 금액은 VAT 별도입니다."
   },
   "orderConfirmation": {
     "paymentCompleted": "결제가 완료되었습니다",
@@ -572,13 +579,16 @@
     "orderQuantity": "Order qty {count}",
     "totalUnits": "{count} units",
     "boxCount": "{count} boxes",
-    "boxesAndUnits": "{boxes} boxes · {units} units"
+    "boxesAndUnits": "{boxes} boxes · {units} units",
+    "approvalPending": "사업자 승인 대기 중입니다. 관리자 검토 후 공급가 조회와 인보이스 다운로드가 가능합니다.",
+    "invoiceExcel": "Excel 다운로드",
+    "invoicePdf": "PDF 다운로드"
   },
   "auth": {
     "loginTitle": "로그인",
     "loginSubtitle": "HMT Korea 계정으로 로그인",
     "signupTitle": "도매 계정 만들기",
-    "signupSubtitle": "도매 바이어 계정을 만들고 가격 확인과 수출 문의를 진행하세요.",
+    "signupSubtitle": "사업자 회원가입 후 관리자 승인이 완료되면 공급가와 인보이스를 확인할 수 있습니다.",
     "email": "이메일",
     "emailHint": "HMT Korea에서 인증 메일을 이 주소로 보냅니다.",
     "loginIdentifier": "이메일 또는 아이디",
@@ -615,7 +625,7 @@
     "passwordHint": "Use at least 8 characters.",
     "passwordMatch": "Passwords match.",
     "benefitsTitle": "Wholesale account benefits",
-    "benefitPrices": "View wholesale prices",
+    "benefitPrices": "사업자 회원가입 후 관리자 승인이 완료되면 공급가와 인보이스를 확인할 수 있습니다.",
     "benefitMoq": "Check MOQ and box quantity",
     "benefitQuotes": "Request wholesale quotations",
     "acceptTerms": "I agree to the",
