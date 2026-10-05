@@ -1,3 +1,4 @@
+import { SupportPageShell } from "@/components/store/support-page-shell";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -33,13 +34,11 @@ export default async function OrderGuidePage() {
   ];
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
+    <SupportPageShell activeHref="/order-guide" title={t("orderGuideTitle")}>
       <p className="text-xs font-semibold uppercase tracking-widest text-accent">
         {t("orderGuideEyebrow")}
       </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">
-        {t("orderGuideTitle")}
-      </h1>
+
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 sm:text-base">{t("orderGuideIntro")}</p>
 
       <section className="mt-10 space-y-3">
@@ -144,6 +143,6 @@ export default async function OrderGuidePage() {
           {t("contactCta")}
         </Link>
       </div>
-    </main>
+    </SupportPageShell>
   );
 }

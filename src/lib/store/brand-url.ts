@@ -3,6 +3,7 @@ import {
   getBrandFilterValue,
   getDisplayBrandName,
   normalizeBrandKey,
+  isUnverifiedDemoBrand,
 } from "@/lib/store/products-url";
 
 export type BrandCatalogEntry = {
@@ -23,6 +24,7 @@ export function buildBrandCatalogEntries(rawBrands: string[]): {
   const slugOwners = new Map<string, Set<string>>();
 
   for (const raw of rawBrands) {
+    if (isUnverifiedDemoBrand(raw)) continue;
     const filterBrand = getBrandFilterValue(raw);
     if (!filterBrand) {
       continue;
@@ -64,7 +66,10 @@ export function resolveBrandCatalogEntry(
   slug: string,
   entries: BrandCatalogEntry[],
 ): BrandCatalogEntry | null {
-  const normalizedSlug = slug.trim().toLowerCase();
+  const rawSlug = slug.trim().toLowerCase();
+  const normalizedSlug = rawSlug === "jeju-dew-co" || rawSlug === "jeju-dow-co"
+    ? "jdew"
+    : rawSlug === "jiggot" ? "jigott" : rawSlug;
   if (!normalizedSlug) {
     return null;
   }

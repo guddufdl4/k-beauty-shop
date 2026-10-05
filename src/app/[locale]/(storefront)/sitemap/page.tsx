@@ -1,3 +1,4 @@
+import { SupportPageShell } from "@/components/store/support-page-shell";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -41,19 +42,20 @@ export default async function HtmlSitemapPage() {
     { href: "/signup", label: tFooter("membership") },
   ];
 
+  const design = await getTranslations("supportDesign");
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{t("sitemapTitle")}</h1>
+    <SupportPageShell activeHref="/sitemap" title={t("sitemapTitle")} subtitle={design("sitemapIntro")}>
+
       <p className="mt-4 text-sm leading-relaxed text-zinc-600 sm:text-base">{t("sitemapIntro")}</p>
-      <ul className="mt-8 space-y-2 text-sm text-zinc-700">
+      <ul className="mt-8 grid gap-3 text-sm text-zinc-700 sm:grid-cols-2">
         {links.map((item) => (
           <li key={item.href}>
-            <Link href={item.href} className="hover:text-accent hover:underline">
+            <Link href={item.href} className="flex min-h-14 items-center rounded-xl border border-zinc-100 bg-zinc-50/60 px-4 font-medium hover:border-violet-200 hover:text-accent">
               {item.label}
             </Link>
           </li>
         ))}
       </ul>
-    </main>
+    </SupportPageShell>
   );
 }

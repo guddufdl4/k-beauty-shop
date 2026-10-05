@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import Image from "next/image";
+import { BrandLogo } from "@/components/store/brand-logo";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { buildBrandHref } from "@/lib/store/brand-url";
@@ -462,21 +462,7 @@ export function BrandsDirectory({ brands }: BrandsDirectoryProps) {
               aria-label={t("viewBrandLink", { brand: brand.displayName })}
               className="flex h-20 items-center justify-center border border-zinc-200 bg-white px-4 text-center transition-colors hover:border-rose-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
             >
-              {brand.logoUrl ? (
-                <Image
-                  src={brand.logoUrl}
-                  alt=""
-                  width={140}
-                  height={48}
-                  sizes="140px"
-                  loading="lazy"
-                  className="h-10 w-auto max-w-full object-contain"
-                />
-              ) : (
-                <span className="text-sm font-bold uppercase tracking-wide text-zinc-600 transition-colors group-hover:text-rose-600">
-                  {brand.displayName}
-                </span>
-              )}
+              <BrandLogo name={brand.displayName} src={brand.logoUrl} />
             </Link>
           ))}
         </div>

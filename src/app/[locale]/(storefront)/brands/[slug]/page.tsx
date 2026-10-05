@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { BrandLogo } from "@/components/store/brand-logo";
 import { getTranslations, getLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Link, redirect } from "@/i18n/navigation";
@@ -224,20 +224,7 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
       <header className="mb-8 border-b border-zinc-200 pb-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
           <div className="flex h-24 w-full max-w-[200px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-4 sm:h-28">
-            {logoUrl ? (
-              <Image
-                src={logoUrl}
-                alt={entry.displayName}
-                width={180}
-                height={64}
-                sizes="180px"
-                className="h-12 w-auto max-w-full object-contain sm:h-14"
-              />
-            ) : (
-              <span className="text-center text-sm font-bold uppercase leading-tight tracking-wide text-zinc-800 sm:text-base">
-                {entry.displayName}
-              </span>
-            )}
+            <BrandLogo src={logoUrl} name={entry.displayName} />
           </div>
 
           <div className="min-w-0 flex-1">

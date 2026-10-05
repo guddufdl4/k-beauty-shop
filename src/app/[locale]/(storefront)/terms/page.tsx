@@ -1,3 +1,4 @@
+import { SupportPageShell } from "@/components/store/support-page-shell";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -23,9 +24,9 @@ export default async function TermsPage() {
   const contact = getPublicSiteContact(settings);
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
+    <SupportPageShell activeHref="/terms" title={t("termsTitle")}>
       <p className="text-sm font-medium uppercase tracking-widest text-rose-500">{t("termsEyebrow")}</p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900">{t("termsTitle")}</h1>
+
       <p className="mt-3 text-sm text-zinc-500">{t("termsEffective")}</p>
 
       <div className="prose prose-zinc mt-10 max-w-none text-sm leading-relaxed text-zinc-700">
@@ -61,6 +62,6 @@ export default async function TermsPage() {
           Home
         </Link>
       </div>
-    </main>
+    </SupportPageShell>
   );
 }

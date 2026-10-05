@@ -174,6 +174,14 @@ export type BrandAliasGroup = {
 
 export const CONFIRMED_BRAND_ALIAS_GROUPS: BrandAliasGroup[] = [
   {
+    canonical: "JIGOTT",
+    aliases: ["JIGOTT", "JIGGOT"],
+  },
+  {
+    canonical: "J:DEW",
+    aliases: ["J:DEW", "JDEW", "Jeju Dew Co.", "Jeju Dow Co."],
+  },
+  {
     canonical: "ANUA",
     aliases: ["ANUA", "ANUA_2", "Anua(X)", "ANUA(X)"],
   },
@@ -329,6 +337,7 @@ export function buildBrandCatalog(rawBrands: string[]): string[] {
   const catalog: string[] = [];
 
   for (const raw of rawBrands) {
+    if (isUnverifiedDemoBrand(raw)) continue;
     const entry = getBrandFilterValue(raw);
     if (!entry) {
       continue;
@@ -344,6 +353,12 @@ export function buildBrandCatalog(rawBrands: string[]): string[] {
   }
 
   return catalog.sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
+}
+
+/** Legacy demonstration brands confirmed as erroneous by the store owner. */
+export function isUnverifiedDemoBrand(brand: string): boolean {
+  return ["Han River Beauty", "Lumière Seoul", "Peach Blossom K", "Seoul Glow Lab"]
+    .some((name) => normalizeBrandKey(name) === normalizeBrandKey(brand));
 }
 
 /** First A–Z index letter for brand directory filters; non-Latin leading chars map to "#". */

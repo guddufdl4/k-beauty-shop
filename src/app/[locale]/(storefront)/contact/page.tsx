@@ -1,3 +1,4 @@
+import { SupportPageShell } from "@/components/store/support-page-shell";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -31,9 +32,10 @@ export default async function ContactPage() {
       contact.business_hours,
   );
 
+  const design = await getTranslations("supportDesign");
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{t("contactTitle")}</h1>
+    <SupportPageShell activeHref="/contact" title={t("contactTitle")} subtitle={design("contactIntro")}>
+
       <div className="mt-8 space-y-4 text-sm leading-relaxed text-zinc-600 sm:text-base">
         <p>{t("contactBody")}</p>
         {hasDirectContact ? (
@@ -100,6 +102,7 @@ export default async function ContactPage() {
           <p>{t("contactUnavailable")}</p>
         )}
       </div>
+      <section className="mt-8 bg-violet-50/40"><h2>{design("contactChecklistTitle")}</h2><p className="mt-2 text-sm text-zinc-600">{design("contactChecklistBody")}</p></section>
       <div className="mt-10 flex flex-wrap gap-3">
         <Link
           href="/wholesale-inquiry"
@@ -108,6 +111,6 @@ export default async function ContactPage() {
           {t("wholesaleCta")}
         </Link>
       </div>
-    </main>
+    </SupportPageShell>
   );
 }

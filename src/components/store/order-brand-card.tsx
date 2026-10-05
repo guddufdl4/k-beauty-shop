@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BrandLogo } from "@/components/store/brand-logo";
 import { Link } from "@/i18n/navigation";
 import { buildBrandHref } from "@/lib/store/brand-url";
 import type { BrandDirectoryItem } from "@/lib/supabase/brand-hub";
@@ -15,21 +15,7 @@ export function OrderBrandCard({ brand, viewBrandLabel }: Props) {
       aria-label={viewBrandLabel}
       className="flex h-24 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-center shadow-sm transition-colors hover:border-accent hover:bg-accent-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      {brand.logoUrl ? (
-        <Image
-          src={brand.logoUrl}
-          alt=""
-          width={160}
-          height={56}
-          sizes="160px"
-          loading="lazy"
-          className="h-10 w-auto max-w-full object-contain"
-        />
-      ) : (
-        <span className="line-clamp-2 text-sm font-semibold uppercase tracking-wide text-zinc-800">
-          {brand.displayName}
-        </span>
-      )}
+      <BrandLogo name={brand.displayName} src={brand.logoUrl} />
     </Link>
   );
 }
