@@ -1,6 +1,7 @@
 import { updateProfileFullName } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
+import NextLink from "next/link";
 import { ProfileForm } from "@/components/store/profile-form";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
@@ -67,7 +68,7 @@ export default async function AccountPage({
             {href:"/cart",title:ui("quotes"),description:ui("quotesHelp"),icon:"＋"},
             {href:"/products",title:ui("catalog"),description:ui("catalogHelp"),icon:"▦"},
             {href:isAdmin ? "/admin" : "/contact",title:isAdmin ? ui("dashboard") : ui("support"),description:isAdmin ? ui("dashboardHelp") : ui("supportHelp"),icon:"↗"},
-          ].map((item)=><Link key={item.href} href={item.href} className="group rounded-3xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-lg hover:shadow-pink-100/40"><span aria-hidden className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-xl text-accent">{item.icon}</span><h2 className="font-bold text-zinc-900">{item.title}</h2><p className="mt-2 text-sm leading-6 text-zinc-500">{item.description}</p></Link>)}</section>
+          ].map((item)=>{ const ItemLink = item.href === "/admin" ? NextLink : Link; return <ItemLink key={item.href} href={item.href} className="group rounded-3xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-lg hover:shadow-pink-100/40"><span aria-hidden className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-xl text-accent">{item.icon}</span><h2 className="font-bold text-zinc-900">{item.title}</h2><p className="mt-2 text-sm leading-6 text-zinc-500">{item.description}</p></ItemLink>; })}</section>
           {!isAdmin ? <section className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8"><h2 className="text-lg font-semibold">{t("nicknameTitle")}</h2><p className="mt-2 text-sm text-zinc-500">{t("nicknameDescription")}</p><div className="mt-5"><ProfileForm action={updateProfileFullName} defaultFullName={profile?.full_name} /></div></section> : null}
         </div>
       </div>
