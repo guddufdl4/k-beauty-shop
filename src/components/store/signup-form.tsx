@@ -4,9 +4,10 @@ import { useActionState, useMemo, useState } from "react";
 import type { AuthState } from "@/app/actions/auth";
 import { resendSignupConfirmation } from "@/app/actions/auth";
 import { callingCode, SIGNUP_COUNTRIES, SIGNUP_CURRENCIES, isSignupPasswordStrong } from "@/lib/auth/signup-fields";
-import { Link } from "@/i18n/navigation";
+import { SignupPolicyPreview } from "@/components/store/signup-policy-preview";
 
 type Props = {
+  policies: { terms: string[]; privacy: string[] };
   action: (prev: AuthState, formData: FormData) => Promise<AuthState>;
   returnTo?: string;
   labels: {
@@ -44,7 +45,7 @@ type Props = {
 const fieldClass =
   "mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-violet-700 focus:outline-none focus:ring-1 focus:ring-violet-700";
 
-export function SignupForm({ action, returnTo, labels, footer }: Props) {
+export function SignupForm({ action, returnTo, labels, footer, policies }: Props) {
   const [state, formAction, pending] = useActionState(action, {});
   const [resendState, resendAction, resendPending] = useActionState(resendSignupConfirmation, {});
   const [password, setPassword] = useState("");
@@ -219,24 +220,20 @@ export function SignupForm({ action, returnTo, labels, footer }: Props) {
         </div>
 
         <div className="space-y-3 text-sm">
-          <label htmlFor="accept_terms" className="flex items-start gap-2">
+          <div className="flex items-start gap-2">
             <input id="accept_terms" name="accept_terms" type="checkbox" required className="mt-1 accent-violet-700" />
-            <span>
-              {labels.acceptTerms}{" "}
-              <Link href="/terms" className="font-medium text-violet-700 underline">
-                {labels.terms}
-              </Link>
-            </span>
-          </label>
-          <label htmlFor="accept_privacy" className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <label htmlFor="accept_terms">{labels.acceptTerms}</label>{" "}
+              <SignupPolicyPreview id="signup-terms-preview" title={labels.terms} paragraphs={policies.terms} />
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
             <input id="accept_privacy" name="accept_privacy" type="checkbox" required className="mt-1 accent-violet-700" />
-            <span>
-              {labels.acceptPrivacy}{" "}
-              <Link href="/privacy" className="font-medium text-violet-700 underline">
-                {labels.privacy}
-              </Link>
-            </span>
-          </label>
+            <div className="min-w-0 flex-1">
+              <label htmlFor="accept_privacy">{labels.acceptPrivacy}</label>{" "}
+              <SignupPolicyPreview id="signup-privacy-preview" title={labels.privacy} paragraphs={policies.privacy} />
+            </div>
+          </div>
         </div>
 
         {state.error ? (

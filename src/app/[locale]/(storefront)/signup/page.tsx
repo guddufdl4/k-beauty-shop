@@ -6,6 +6,7 @@ import { SignupForm } from "@/components/store/signup-form";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
 import { safeStorefrontReturnTo } from "@/lib/auth/return-to";
+import { getPublicSiteContact, getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -25,6 +26,9 @@ export default async function SignUpPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const t = await getTranslations("auth");
+  const legal = await getTranslations("legal");
+  const contact = getPublicSiteContact(await getSiteSettings());
+  const contactText = [contact.store_name, contact.company_address, contact.public_email, contact.public_phone, contact.public_whatsapp].filter(Boolean).join(" · ");
   const { next } = await searchParams;
   const returnTo = safeStorefrontReturnTo(next, "/account");
 
@@ -34,6 +38,10 @@ export default async function SignUpPage({
       <p className="mt-2 text-zinc-600">{t("signupSubtitle")}</p>
       <div className="mt-8">
         <SignupForm
+          policies={{
+            terms: [legal("termsEffective"), legal("termsIntro"), ...["Scope", "Services", "Accounts", "Orders"].map((section) => `${legal(`terms${section}Title`)}\n${legal(`terms${section}Body`)}`), contactText],
+            privacy: [legal("privacyIntro"), `${legal("privacyUseTitle")}\n${legal("privacyUseBody")}`, `${legal("privacyContactTitle")}\n${legal("privacyContactBody")}`, contactText],
+          }}
           action={signUp}
           returnTo={returnTo}
           labels={{
