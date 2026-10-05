@@ -63,7 +63,7 @@ export default async function AdminDashboardPage() {
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-zinc-900">오늘 접속</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          관리자 계정으로 스토어를 보면 집계되지 않습니다. 다른 사람 방문만 표시합니다.
+          한국시간 기준 하루 동안 방문한 브라우저 수입니다. 실시간 동시 접속자 수와 다르며, 관리자·봇은 제외합니다. 같은 페이지의 1분 이내 반복 조회는 중복 제외합니다. 점검 화면 방문도 포함합니다.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <AdminStatCard
@@ -87,7 +87,7 @@ export default async function AdminDashboardPage() {
         ) : null}
         {!visitStats.available ? (
           <p className="mt-3 text-sm text-amber-700">
-            방문 집계 테이블이 아직 없습니다. supabase/migrations/018_storefront_visits.sql 을 적용하면 표시됩니다.
+            방문 통계를 불러오지 못했습니다. 잠시 후 새로고침하고, 계속되면 DB 연결과 방문 집계 테이블을 확인해 주세요.
           </p>
         ) : null}
       </section>

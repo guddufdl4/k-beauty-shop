@@ -188,14 +188,17 @@ export async function getStorefrontVisitStats(): Promise<StorefrontVisitStats> {
 
   const today = seoulYmd();
   const start = shiftSeoulYmd(today, -6);
-  const { data, error } = await supabase
-    .from("storefront_visits")
-    .select("visited_at, visitor_key")
-    .gte("visited_at", seoulDayStartIso(start))
-    .limit(20000);
-
-  if (error) {
-    return emptyStats(false);
+  const data: { visited_at: string; visitor_key: string }[] = [];
+  const end = seoulDayStartIso(shiftSeoulYmd(today, 1));
+  for (let offset = 0; ; offset += 1000) {
+    const page = await supabase.from("storefront_visits")
+      .select("visited_at, visitor_key")
+      .gte("visited_at", seoulDayStartIso(start)).lt("visited_at", end)
+      .order("visited_at", { ascending: true }).order("id", { ascending: true })
+      .range(offset, offset + 999);
+    if (page.error) return emptyStats(false);
+    data.push(...(page.data ?? []));
+    if (!page.data?.length) break;
   }
 
   const byDay = new Map<string, { visitors: Set<string>; views: number }>();

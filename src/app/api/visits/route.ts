@@ -39,7 +39,8 @@ export async function POST(request: Request) {
   const existing = cookieStore.get(VISITOR_COOKIE)?.value?.trim() || "";
   const visitorKey = existing || randomUUID();
 
-  await recordStorefrontVisit({ path: normalized, visitorKey });
+  const recorded = await recordStorefrontVisit({ path: normalized, visitorKey });
+  if (!recorded) return NextResponse.json({ error: "Visit recording unavailable" }, { status: 503 });
 
   const response = new NextResponse(null, { status: 204 });
   if (!existing) {
