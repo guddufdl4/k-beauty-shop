@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as XLSX from "xlsx";
 import type { CartView } from "@/lib/cart";
+import { MIN_ORDER_USD } from "@/lib/currency";
 
 export type InvoiceInput = {
   cart: CartView;
@@ -18,7 +19,7 @@ export type InvoiceInput = {
 
 const notes = [
   "Draft pro forma invoice based on the current quote list. Subject to availability and final confirmation.",
-  "Minimum order amount: USD 500. Shipping is excluded and charged separately on the final invoice.",
+  `Minimum order amount: USD ${MIN_ORDER_USD}. Shipping is excluded and charged separately on the final invoice.`,
   "Shipping is calculated after products and quantities are confirmed, based on weight and volume.",
   "Brand minimum order amounts and price changes may apply. Amounts exclude VAT.",
 ];

@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 
 /** Storefront USD = KRW / this rate. */
 export const DEFAULT_USD_KRW_RATE = 1300;
-export const MIN_ORDER_USD = 500;
+export const MIN_ORDER_USD = 1000;
 const RATE_CACHE_SECONDS = 1_800;
 
 function parseEnvRate(): number | null {
