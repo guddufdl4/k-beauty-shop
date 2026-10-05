@@ -36,7 +36,7 @@ import { getDisplayBrandName } from "@/lib/store/products-url";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency";
-import { formatLocaleProductPrice } from "@/lib/utils";
+import { formatKRW, formatLocaleProductPrice } from "@/lib/utils";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getProductBySlug, getProducts } from "@/lib/supabase/products";
@@ -51,6 +51,8 @@ import { buildProductsHref } from "@/lib/store/products-url";
 import { catalogTitleIncludesVolume, formatCatalogDate, formatOriginLabel } from "@/lib/store/origin-label";
 import { withReturnTo } from "@/lib/auth/return-to";
 import { isValidHmtProductCode } from "@/lib/supabase/product-code";
+
+import { getPublicRetailPrice } from "@/lib/store/retail-price";
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -151,7 +153,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
   const retailAmount =
     canViewPrices && isPricedStorefrontProduct(product)
       ? usableShopPrice(product.compare_at_price)
-      : null;
+      : meta.source === "database" ? await getPublicRetailPrice(product.id) : null;
   const displayName = getLocalizedProductName(product, locale);
   const koreanName = getKoreanProductSubtitle(product, displayName);
   const localizedDescription = getLocalizedProductDescription(product, locale);
@@ -365,10 +367,10 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   {showUnitsPerBox ? (
                     <InfoRow label={t("unitsPerBox")} value={t("unitsPerBoxValue", { count: product.moq })} />
                   ) : null}
-                  {canViewPrices && retailAmount != null ? (
+                  {retailAmount != null ? (
                     <InfoRow
                       label={t("retailPrice")}
-                      value={formatLocaleProductPrice(retailAmount, locale, usdKrwRate)}
+                      value={formatKRW(retailAmount)}
                     />
                   ) : null}
                   {canViewPrices && priceColumns ? (
