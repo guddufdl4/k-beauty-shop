@@ -45,6 +45,13 @@ import {
   isSoftDeleteColumnAvailable,
   markSoftDeleteColumnMissing,
 } from "./soft-delete";
+import {
+  ensureProductCodeColumnProbed,
+  isMissingProductCodeColumnError,
+  isProductCodeColumnAvailable,
+  markProductCodeColumnMissing,
+  readProductCode,
+} from "./product-code";
 
 export const formatUsd = formatKRW;
 
@@ -92,6 +99,8 @@ export type Product = {
   brand: string;
   sku: string;
   barcode: string | null;
+  /** Public HMT catalog code. Absent until migration 020 is applied. */
+  product_code?: string | null;
   price: number;
   wholesale_price: number | null;
   compare_at_price: number | null;
@@ -244,6 +253,7 @@ function staticProduct(
     description: partial.description ?? null,
     short_description: partial.short_description ?? null,
     barcode: partial.barcode ?? null,
+    product_code: partial.product_code ?? null,
     wholesale_price: partial.wholesale_price ?? null,
     compare_at_price: partial.compare_at_price ?? null,
     weight_grams: partial.weight_grams ?? null,
@@ -275,6 +285,7 @@ export const STATIC_PRODUCTS: ProductWithRelations[] = [
     short_description: "수분 충전 세럼 50ml",
     brand: "Seoul Glow",
     sku: "SG-HS-50",
+    product_code: "HMT-000001",
     barcode: null,
     price: 28000,
     wholesale_price: 18000,
@@ -709,6 +720,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     brand: String(row.brand),
     sku: String(row.sku),
     barcode: row.barcode ? String(row.barcode) : null,
+    product_code: readProductCode(row),
     price: parseDecimal(row.price),
     wholesale_price:
       row.wholesale_price != null ? parseDecimal(row.wholesale_price) : null,
@@ -866,7 +878,7 @@ async function hydrateProductLocaleNames(
 }
 
 function matchesProductSearch(
-  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "sku" | "brand" | "barcode">,
+  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "sku" | "brand" | "barcode" | "product_code">,
   search: string,
 ): boolean {
   const term = search.trim().toLowerCase();
@@ -874,9 +886,19 @@ function matchesProductSearch(
     return true;
   }
 
-  return [product.name, product.name_en ?? "", product.name_ko ?? "", product.sku, product.brand, product.barcode ?? ""].some(
-    (value) => value.toLowerCase().includes(term),
-  );
+  const compactCode = (product.product_code ?? "").replace(/-/g, "").toLowerCase();
+  const compactTerm = term.replace(/-/g, "");
+
+  return [
+    product.name,
+    product.name_en ?? "",
+    product.name_ko ?? "",
+    product.sku,
+    product.brand,
+    product.barcode ?? "",
+    product.product_code ?? "",
+  ].some((value) => value.toLowerCase().includes(term)) ||
+    (compactTerm.length >= 1 && compactCode.includes(compactTerm));
 }
 
 function filterStaticProducts(
@@ -996,10 +1018,17 @@ function sortStaticProducts(
 }
 
 /** Lightweight select for admin product list table (skips heavy text/json columns). */
-const ADMIN_LIST_SELECT =
+const ADMIN_LIST_SELECT_CORE =
   "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, moq, stock, sold_out, status, image_url, import_batch_id, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), import_batch:product_import_batches(id, filename), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
 
 const ADMIN_FULL_SELECT = `*, category:categories(id, name, slug), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)`;
+
+function adminListSelect(): string {
+  if (!isProductCodeColumnAvailable()) {
+    return ADMIN_LIST_SELECT_CORE;
+  }
+  return ADMIN_LIST_SELECT_CORE.replace("sku, barcode,", "sku, barcode, product_code,");
+}
 
 function resolveProductSelect(
   audience: StorefrontAudience,
@@ -1007,7 +1036,7 @@ function resolveProductSelect(
 ): { select: string; includePriceColumns: boolean } {
   if (options?.privileged) {
     return {
-      select: options.lightSelect ? ADMIN_LIST_SELECT : ADMIN_FULL_SELECT,
+      select: options.lightSelect ? adminListSelect() : ADMIN_FULL_SELECT,
       includePriceColumns: true,
     };
   }
@@ -1382,6 +1411,7 @@ export async function getProducts(
   }
 
   await ensureSoftDeleteColumnProbed(supabase);
+  await ensureProductCodeColumnProbed(supabase);
 
   let categoryIds: string[] | null = null;
   if (categorySlug) {
@@ -1441,9 +1471,20 @@ export async function getProducts(
 
     if (searchTerm) {
       const escaped = escapeIlikePattern(searchTerm);
-      filtered = filtered.or(
-        `name.ilike.%${escaped}%,sku.ilike.%${escaped}%,brand.ilike.%${escaped}%,barcode.ilike.%${escaped}%`,
-      );
+      const searchFields = [
+        `name.ilike.%${escaped}%`,
+        `sku.ilike.%${escaped}%`,
+        `brand.ilike.%${escaped}%`,
+        `barcode.ilike.%${escaped}%`,
+      ];
+      if (isProductCodeColumnAvailable()) {
+        searchFields.push(`product_code.ilike.%${escaped}%`);
+        const digits = searchTerm.replace(/\D/g, "");
+        if (digits) {
+          searchFields.push(`product_code.ilike.%${escapeIlikePattern(digits)}%`);
+        }
+      }
+      filtered = filtered.or(searchFields.join(","));
     }
 
     if (brandFilter) {
@@ -1516,6 +1557,10 @@ export async function getProducts(
         markSoftDeleteColumnMissing();
         return getProducts(categoryOrOptions);
       }
+      if (isMissingProductCodeColumnError(error.message)) {
+        markProductCodeColumnMissing();
+        return getProducts(categoryOrOptions);
+      }
 
       return {
         ...staticProductsResult(),
@@ -1563,6 +1608,10 @@ export async function getProducts(
   if (error) {
     if (isMissingDeletedAtColumnError(error)) {
       markSoftDeleteColumnMissing();
+      return getProducts(categoryOrOptions);
+    }
+    if (isMissingProductCodeColumnError(typeof error === "string" ? error : undefined)) {
+      markProductCodeColumnMissing();
       return getProducts(categoryOrOptions);
     }
 
@@ -1817,7 +1866,7 @@ async function fetchBrandPriorityListStatsFromSource(): Promise<{
     configured: true,
     supabase,
     audience: "admin",
-    productSelect: ADMIN_LIST_SELECT,
+    productSelect: adminListSelect(),
     includePriceColumns: true,
   });
 
@@ -2259,6 +2308,7 @@ export async function getProductBySlug(
   }
 
   await ensureSoftDeleteColumnProbed(supabase);
+  await ensureProductCodeColumnProbed(supabase);
 
   let detailQuery = supabase
     .from("products")
@@ -2275,6 +2325,10 @@ export async function getProductBySlug(
   if (error) {
     if (isMissingDeletedAtColumnError(error.message)) {
       markSoftDeleteColumnMissing();
+      return getProductBySlug(slug, resolvedAudience);
+    }
+    if (isMissingProductCodeColumnError(error.message)) {
+      markProductCodeColumnMissing();
       return getProductBySlug(slug, resolvedAudience);
     }
 

@@ -6,6 +6,9 @@ export type CartItemView = {
   slug: string;
   brand: string;
   sku: string;
+  barcode: string | null;
+  productCode: string | null;
+  imageUrl: string | null;
   unitPrice: number;
   moq: number;
   stock: number;

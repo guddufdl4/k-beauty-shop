@@ -56,7 +56,6 @@ export const SIGNUP_COUNTRIES: { code: string; name: string }[] = [
   { code: "MN", name: "Mongolia" },
 ];
 
-const USERNAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9._-]{2,29}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type ParsedSignupInput = {
@@ -64,9 +63,10 @@ export type ParsedSignupInput = {
   companyName: string;
   email: string;
   fullName: string;
-  username: string;
   password: string;
   preferredCurrency: SignupCurrency;
+  acceptedTerms: boolean;
+  acceptedPrivacy: boolean;
 };
 
 export type SignupFormErrorKey =
@@ -74,20 +74,22 @@ export type SignupFormErrorKey =
   | "companyRequired"
   | "emailInvalid"
   | "nameRequired"
-  | "usernameInvalid"
   | "passwordWeak"
   | "passwordMismatch"
-  | "currencyRequired";
+  | "currencyRequired"
+  | "consentRequired";
 
 export function parseSignupForm(formData: FormData): ParsedSignupInput | { errorKey: SignupFormErrorKey } {
   const countryCode = String(formData.get("country_code") ?? "").trim().toUpperCase();
   const companyName = String(formData.get("company_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const fullName = String(formData.get("full_name") ?? "").trim();
-  const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("password_confirm") ?? "");
   const preferredCurrency = String(formData.get("preferred_currency") ?? "").trim().toUpperCase();
+  const acceptedTerms = formData.get("accept_terms") === "on" || formData.get("accept_terms") === "true";
+  const acceptedPrivacy =
+    formData.get("accept_privacy") === "on" || formData.get("accept_privacy") === "true";
 
   if (!SIGNUP_COUNTRIES.some((country) => country.code === countryCode)) {
     return { errorKey: "countryRequired" };
@@ -101,9 +103,6 @@ export function parseSignupForm(formData: FormData): ParsedSignupInput | { error
   if (fullName.length < 2 || fullName.length > 80) {
     return { errorKey: "nameRequired" };
   }
-  if (!USERNAME_PATTERN.test(username)) {
-    return { errorKey: "usernameInvalid" };
-  }
   if (password.length < 8 || password.length > 72) {
     return { errorKey: "passwordWeak" };
   }
@@ -113,18 +112,26 @@ export function parseSignupForm(formData: FormData): ParsedSignupInput | { error
   if (!SIGNUP_CURRENCIES.includes(preferredCurrency as SignupCurrency)) {
     return { errorKey: "currencyRequired" };
   }
+  if (!acceptedTerms || !acceptedPrivacy) {
+    return { errorKey: "consentRequired" };
+  }
 
   return {
     countryCode,
     companyName,
     email,
     fullName,
-    username,
     password,
     preferredCurrency: preferredCurrency as SignupCurrency,
+    acceptedTerms,
+    acceptedPrivacy,
   };
 }
 
 export function looksLikeEmail(value: string): boolean {
   return EMAIL_PATTERN.test(value.trim());
+}
+
+export function isSignupPasswordStrong(password: string): boolean {
+  return password.length >= 8 && password.length <= 72;
 }

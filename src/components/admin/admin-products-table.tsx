@@ -241,6 +241,11 @@ const ProductTableRow = memo(function ProductTableRow({
         </div>
       </td>
       <td className="px-3 py-2.5 align-top">
+        {product.product_code ? (
+          <p className="font-mono text-xs font-semibold text-violet-700">
+            {product.product_code}
+          </p>
+        ) : null}
         <p className="font-mono text-xs font-medium text-zinc-800">
           {displayProductSku(product.barcode, product.sku)}
         </p>

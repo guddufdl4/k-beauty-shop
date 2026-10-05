@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { SignupForm } from "@/components/store/signup-form";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
+import { safeStorefrontReturnTo } from "@/lib/auth/return-to";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -18,8 +19,14 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
   const t = await getTranslations("auth");
+  const { next } = await searchParams;
+  const returnTo = safeStorefrontReturnTo(next, "/account");
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-16">
@@ -28,6 +35,7 @@ export default async function SignUpPage() {
       <div className="mt-8">
         <SignupForm
           action={signUp}
+          returnTo={returnTo}
           labels={{
             country: t("country"),
             company: t("company"),
@@ -35,18 +43,29 @@ export default async function SignUpPage() {
             email: t("email"),
             emailHint: t("emailHint"),
             name: t("name"),
-            username: t("username"),
-            usernameHint: t("usernameHint"),
             password: t("password"),
+            passwordHint: t("passwordHint"),
             passwordConfirm: t("passwordConfirm"),
+            passwordMatch: t("passwordMatch"),
+            passwordMismatch: t("passwordMismatch"),
             currency: t("currency"),
+            acceptTerms: t("acceptTerms"),
+            acceptPrivacy: t("acceptPrivacy"),
+            terms: t("termsLink"),
+            privacy: t("privacyLink"),
             submit: t("signupButton"),
             pending: t("processing"),
+            benefitsTitle: t("benefitsTitle"),
+            benefitPrices: t("benefitPrices"),
+            benefitMoq: t("benefitMoq"),
+            benefitQuotes: t("benefitQuotes"),
+            resend: t("resendEmail"),
+            resendPending: t("resendPending"),
           }}
           footer={
             <p className="text-center text-sm text-zinc-600">
               {t("hasAccount")}{" "}
-              <Link href="/login" className="text-rose-600 hover:underline">
+              <Link href="/login" className="text-violet-700 hover:underline">
                 {t("loginTitle")}
               </Link>
             </p>
@@ -56,4 +75,3 @@ export default async function SignUpPage() {
     </main>
   );
 }
-

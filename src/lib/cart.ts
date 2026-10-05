@@ -11,6 +11,13 @@ import {
   isSoftDeleteColumnAvailable,
 } from "@/lib/supabase/soft-delete";
 import {
+  ensureProductCodeColumnProbed,
+  isMissingProductCodeColumnError,
+  isProductCodeColumnAvailable,
+  markProductCodeColumnMissing,
+  readProductCode,
+} from "@/lib/supabase/product-code";
+import {
   FALLBACK_PRODUCTS,
   type ProductWithRelations,
 } from "@/lib/supabase/products";
@@ -40,6 +47,9 @@ export type CartItemView = {
   slug: string;
   brand: string;
   sku: string;
+  barcode: string | null;
+  productCode: string | null;
+  imageUrl: string | null;
   unitPrice: number;
   moq: number;
   stock: number;
@@ -65,6 +75,7 @@ export type DemoOrder = {
     product_id: string;
     product_name: string;
     product_sku: string;
+    product_code?: string | null;
     unit_price: number;
     quantity: number;
     line_total: number;
@@ -86,6 +97,20 @@ export function generateOrderNumber(prefix = "KB"): string {
   const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
   const suffix = String(Math.floor(1000 + Math.random() * 9000));
   return `${prefix}-${ymd}-${suffix}`;
+}
+
+function quoteDateStamp(now = new Date()): string {
+  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+}
+
+export async function generateSequentialQuoteNumber(
+  lookupLatest?: (prefix: string) => Promise<string | null>,
+): Promise<string> {
+  const prefix = `QT-${quoteDateStamp()}-`;
+  const latest = lookupLatest ? await lookupLatest(prefix) : null;
+  const lastSeq = latest?.startsWith(prefix) ? Number(latest.slice(prefix.length)) : 0;
+  const next = Number.isFinite(lastSeq) ? lastSeq + 1 : 1;
+  return `${prefix}${String(Math.max(1, next)).padStart(4, "0")}`;
 }
 
 function isUuid(value: string): boolean {
@@ -131,20 +156,22 @@ export async function createQuoteOrderFromCart(
     return {};
   }
 
-  const currentUserId = await getCurrentUserId();
-  let userId = currentUserId;
-
+  const userId = await getCurrentUserId();
   if (!userId) {
-    const { data: admin } = await service
-      .from("profiles")
-      .select("id")
-      .eq("role", "admin")
-      .limit(1)
-      .maybeSingle();
-    userId = admin?.id ?? null;
+    return {};
   }
 
-  const orderNumber = generateOrderNumber("QT");
+  const allocateOrderNumber = () => generateSequentialQuoteNumber(async (prefix) => {
+    const { data } = await service
+      .from("orders")
+      .select("order_number")
+      .like("order_number", `${prefix}%`)
+      .order("order_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return typeof data?.order_number === "string" ? data.order_number : null;
+  });
+  let orderNumber = await allocateOrderNumber();
   const countryCode = buyer.country.length === 2 ? buyer.country.toUpperCase() : "XX";
   const shippingAddress: ShippingAddress & {
     line2?: string;
@@ -213,11 +240,13 @@ export async function createQuoteOrderFromCart(
     payload.user_id = userId;
   }
 
-  const { data: order, error: orderError } = await service
-    .from("orders")
-    .insert(payload)
-    .select("id")
-    .single();
+  let orderResult = await service.from("orders").insert(payload).select("id").single();
+  for (let attempt = 0; attempt < 3 && orderResult.error?.code === "23505"; attempt++) {
+    orderNumber = await allocateOrderNumber();
+    payload.order_number = orderNumber;
+    orderResult = await service.from("orders").insert(payload).select("id").single();
+  }
+  const { data: order, error: orderError } = orderResult;
 
   if (orderError || !order) {
     console.error("[quote] order insert failed:", orderError?.message);
@@ -321,6 +350,8 @@ async function getDatabaseCart(userId: string, locale: string): Promise<CartView
     return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
   }
 
+  await ensureProductCodeColumnProbed(supabase);
+  const productCodeSelect = isProductCodeColumnAvailable() ? ",\n        product_code" : "";
   const { data, error } = await supabase
     .from("cart_items")
     .select(
@@ -334,6 +365,8 @@ async function getDatabaseCart(userId: string, locale: string): Promise<CartView
         slug,
         brand,
         sku,
+        barcode${productCodeSelect},
+        image_url,
         price,
         wholesale_price,
         moq,
@@ -343,7 +376,14 @@ async function getDatabaseCart(userId: string, locale: string): Promise<CartView
     )
     .eq("user_id", userId);
 
-  if (error || !data) {
+  if (error) {
+    if (isMissingProductCodeColumnError(error.message)) {
+      markProductCodeColumnMissing();
+      return getDatabaseCart(userId, locale);
+    }
+    return { items: [], subtotal: 0, itemCount: 0, source: "database" };
+  }
+  if (!data) {
     return { items: [], subtotal: 0, itemCount: 0, source: "database" };
   }
 
@@ -372,6 +412,9 @@ async function getDatabaseCart(userId: string, locale: string): Promise<CartView
       slug: String(product.slug),
       brand: String(product.brand),
       sku: String(product.sku),
+      barcode: product.barcode ? String(product.barcode) : null,
+      productCode: typeof product.product_code === "string" ? product.product_code : null,
+      imageUrl: product.image_url ? String(product.image_url) : null,
       unitPrice,
       moq: Number(product.moq ?? 1),
       stock: Number(product.stock ?? 0),
@@ -424,6 +467,9 @@ function cartItemFromProduct(
     slug: product.slug,
     brand: product.brand,
     sku: product.sku,
+    barcode: product.barcode ?? null,
+    productCode: product.product_code ?? null,
+    imageUrl: product.image_url ?? null,
     unitPrice,
     moq: product.moq,
     stock: product.stock,
@@ -452,10 +498,42 @@ async function getCookieCart(locale: string): Promise<CartView> {
   return { items, subtotal, itemCount, source: "cookie" };
 }
 
+export async function revalidateQuoteCart(cart: CartView): Promise<CartView | null> {
+  const locale = await getLocale();
+  const items: CartItemView[] = [];
+
+  for (const item of cart.items) {
+    const product = await resolveProductForCart(item.productId);
+    if (!product) {
+      return null;
+    }
+    const quantity = item.quantity;
+    const step = getMoqStep(product.moq);
+    if (quantity < step || !isValidMoqQuantity(quantity, step)) {
+      return null;
+    }
+    items.push(cartItemFromProduct(product, quantity, locale));
+  }
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return {
+    items,
+    subtotal: items.reduce((sum, item) => sum + item.lineTotal, 0),
+    itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+    source: cart.source,
+  };
+}
+
 export async function getCart(): Promise<CartView> {
   const locale = await getLocale();
   const userId = await getCurrentUserId();
   if (!userId) {
+    if (isSupabaseConfigured()) {
+      return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
+    }
     return getCookieCart(locale);
   }
 
@@ -469,6 +547,9 @@ export async function getCart(): Promise<CartView> {
 export async function getCartItemCount(): Promise<number> {
   const userId = await getCurrentUserId();
   if (!userId) {
+    if (isSupabaseConfigured()) {
+      return 0;
+    }
     const raw = await readDemoCart();
     return Object.values(raw).reduce((sum, quantity) => {
       const qty = Number(quantity);
@@ -550,6 +631,7 @@ async function resolveProductForCart(
     brand: String(record.brand),
     sku: String(record.sku),
     barcode: record.barcode ? String(record.barcode) : null,
+    product_code: typeof record.product_code === "string" ? record.product_code : null,
     price: Number(record.price ?? 0),
     wholesale_price:
       record.wholesale_price != null ? Number(record.wholesale_price) : null,
@@ -640,6 +722,9 @@ export async function addToCart(
 
   const userId = await getCurrentUserId();
   if (!userId) {
+    if (isSupabaseConfigured() && !isDemoProductId(productId)) {
+      return { errorCode: "auth_required" };
+    }
     const cart = await readDemoCart();
     const nextQuantity = Number(cart[productId] ?? 0) + quantity;
     const validationError = validateQuantity(product, nextQuantity);
@@ -910,8 +995,10 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
         shipping_address: ShippingAddress;
         created_at: string;
         items: Array<{
+          product_id: string | null;
           product_name: string;
           product_sku: string;
+          product_code: string | null;
           unit_price: number;
           quantity: number;
           line_total: number;
@@ -942,6 +1029,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
           shipping_address,
           created_at,
           items:order_items (
+            product_id,
             product_name,
             product_sku,
             unit_price,
@@ -954,7 +1042,17 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
       if (!isAdmin) {
         orderQuery = orderQuery.is("deleted_at", null);
       }
-      const { data } = await orderQuery.maybeSingle();
+      let orderResult = await orderQuery.maybeSingle();
+      if (orderResult.error && /deleted_at/i.test(orderResult.error.message) &&
+          /does not exist|could not find/i.test(orderResult.error.message)) {
+        // Older production schemas have no orders.deleted_at column.
+        orderResult = await supabase.from("orders").select(`
+          order_number, user_id, status, subtotal, shipping_cost, total, currency,
+          shipping_address, created_at,
+          items:order_items (product_id, product_name, product_sku, unit_price, quantity, line_total)
+        `).eq("order_number", orderNumber).maybeSingle();
+      }
+      const { data } = orderResult;
 
       if (data) {
         const record = data as Record<string, unknown>;
@@ -966,6 +1064,29 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
 
         const items =
           (record.items as Array<Record<string, unknown>> | null) ?? [];
+        const productIds = items
+          .map((item) => (typeof item.product_id === "string" ? item.product_id : null))
+          .filter((id): id is string => Boolean(id));
+        const codes = new Map<string, string>();
+        if (productIds.length && isProductCodeColumnAvailable()) {
+          await ensureProductCodeColumnProbed(supabase);
+          if (isProductCodeColumnAvailable()) {
+            const { data: codeRows, error: codeError } = await supabase
+              .from("products")
+              .select("id, product_code")
+              .in("id", productIds);
+            if (codeError && isMissingProductCodeColumnError(codeError.message)) {
+              markProductCodeColumnMissing();
+            } else {
+              for (const row of (codeRows ?? []) as Array<Record<string, unknown>>) {
+                const code = readProductCode(row);
+                if (typeof row.id === "string" && code) {
+                  codes.set(row.id, code);
+                }
+              }
+            }
+          }
+        }
 
         return {
           order: {
@@ -977,13 +1098,18 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
             currency: String(record.currency),
             shipping_address: record.shipping_address as ShippingAddress,
             created_at: String(record.created_at),
-            items: items.map((item) => ({
-              product_name: String(item.product_name),
-              product_sku: String(item.product_sku),
-              unit_price: Number(item.unit_price),
-              quantity: Number(item.quantity),
-              line_total: Number(item.line_total),
-            })),
+            items: items.map((item) => {
+              const productId = typeof item.product_id === "string" ? item.product_id : null;
+              return {
+                product_id: productId,
+                product_name: String(item.product_name),
+                product_sku: String(item.product_sku),
+                product_code: productId ? codes.get(productId) ?? null : null,
+                unit_price: Number(item.unit_price),
+                quantity: Number(item.quantity),
+                line_total: Number(item.line_total),
+              };
+            }),
             source: "database",
           },
         };

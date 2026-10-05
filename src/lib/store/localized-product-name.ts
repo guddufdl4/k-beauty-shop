@@ -193,6 +193,23 @@ export function getLocalizedProductName(product: NamedProduct, locale: string): 
   return formatStorefrontDisplayTitle(raw, product.brand, extractProductVolume(product));
 }
 
+export function getKoreanProductSubtitle(product: NamedProduct, englishName: string): string | null {
+  const { ko } = resolveProductNamePair(product);
+  const korean = ko?.trim();
+  if (!korean || containsHangul(englishName) || !containsHangul(korean)) {
+    return null;
+  }
+  const formatted = formatStorefrontDisplayTitle(
+    korean,
+    product.brand,
+    extractProductVolume(product),
+  );
+  if (!formatted || formatted.toLowerCase() === englishName.toLowerCase()) {
+    return null;
+  }
+  return formatted;
+}
+
 function isVolumeHeader(normalized: string): boolean {
   if (!normalized || normalized.includes("inbox") || normalized.includes("outbox")) {
     return false;

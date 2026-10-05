@@ -132,6 +132,11 @@ export async function StoreFooter({
             </li>
             <li>
               <Link href="/cart" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+                {t("quoteList")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/payment" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("payment")}
               </Link>
             </li>

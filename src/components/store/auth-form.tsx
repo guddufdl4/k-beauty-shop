@@ -11,6 +11,7 @@ type Props = {
   passwordLabel?: string;
   pendingLabel?: string;
   processingLabel?: string;
+  returnTo?: string;
 };
 
 export function AuthForm({
@@ -21,11 +22,13 @@ export function AuthForm({
   passwordLabel = "Password",
   pendingLabel = "Processing...",
   processingLabel,
+  returnTo,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
     <form action={formAction} className="mx-auto w-full max-w-md space-y-4">
+      {returnTo ? <input type="hidden" name="next" value={returnTo} /> : null}
       <div>
         <label htmlFor="email" className="block text-sm font-medium">
           {emailLabel}
@@ -58,7 +61,7 @@ export function AuthForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-rose-600 py-2.5 text-white hover:bg-rose-700 disabled:opacity-50"
+        className="w-full rounded-lg bg-violet-700 py-2.5 text-white hover:bg-violet-800 disabled:opacity-50"
       >
         {pending ? (processingLabel ?? pendingLabel) : submitLabel}
       </button>

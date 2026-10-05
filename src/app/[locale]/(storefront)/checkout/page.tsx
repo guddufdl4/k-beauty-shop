@@ -32,14 +32,16 @@ export default async function CheckoutPage() {
   ]);
 
   let defaultCompanyName = "";
+  let defaultCountry = "";
   if (session.user) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("profiles")
-      .select("company_name")
+      .select("company_name, country_code")
       .eq("id", session.user.id)
       .maybeSingle();
     defaultCompanyName = typeof data?.company_name === "string" ? data.company_name : "";
+    defaultCountry = typeof data?.country_code === "string" ? data.country_code : "";
   }
 
   if (cart.items.length === 0) {
@@ -71,9 +73,11 @@ export default async function CheckoutPage() {
           cart={cart}
           locale={locale}
           usdKrwRate={usdKrwRate}
+          isMember={Boolean(session.user)}
           defaultCompanyName={defaultCompanyName}
           defaultContactName={session.profile?.full_name ?? ""}
           defaultEmail={session.profile?.email ?? session.user?.email ?? ""}
+          defaultCountry={defaultCountry}
         />
       </div>
     </main>

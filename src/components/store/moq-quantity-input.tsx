@@ -16,6 +16,7 @@ type Props = {
   max?: number;
   disabled?: boolean;
   className?: string;
+  productName?: string;
 };
 
 export function MoqQuantityInput({
@@ -25,7 +26,8 @@ export function MoqQuantityInput({
   defaultValue,
   max = 999999,
   disabled,
-  className = "w-24 rounded-lg border border-zinc-300 px-3 py-2 text-center text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100 disabled:cursor-not-allowed disabled:bg-zinc-100",
+  productName,
+  className = "w-24 rounded-lg border border-zinc-300 px-3 py-2 text-center text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-zinc-100",
 }: Props) {
   const t = useTranslations("cart");
   const step = getMoqStep(moq);
@@ -48,7 +50,7 @@ export function MoqQuantityInput({
     <div className="flex items-center gap-1">
       <button
         type="button"
-        aria-label={t("decreaseQuantity")}
+        aria-label={productName ? `${t("decreaseQuantity")} ${productName}` : t("decreaseQuantity")}
         disabled={disabled || value <= step}
         onClick={() => commit(stepMoqQuantity(value, step, -1, max))}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-lg leading-none text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -71,7 +73,7 @@ export function MoqQuantityInput({
       />
       <button
         type="button"
-        aria-label={t("increaseQuantity")}
+        aria-label={productName ? `${t("increaseQuantity")} ${productName}` : t("increaseQuantity")}
         disabled={disabled || value + step > max}
         onClick={() => commit(stepMoqQuantity(value, step, 1, max))}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-lg leading-none text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"

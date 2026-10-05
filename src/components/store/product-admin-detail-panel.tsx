@@ -554,6 +554,8 @@ export function ProductAdminDetailPanel({
 
         <AddToCartForm
           productId={product.id}
+          productSlug={product.slug}
+          productName={product.name}
           moq={product.moq}
           stock={product.stock}
           soldOut={product.sold_out}

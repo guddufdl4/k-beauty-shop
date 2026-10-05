@@ -1,12 +1,15 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { hasLocale } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { PRIVACY_POLICY_VERSION, TERMS_POLICY_VERSION } from "@/lib/auth/consent";
 import { buildSignupConfirmEmail } from "@/lib/auth/confirm-email";
 import { looksLikeEmail, parseSignupForm } from "@/lib/auth/signup-fields";
+import { safeStorefrontReturnTo } from "@/lib/auth/return-to";
 import { sendCustomerEmail } from "@/lib/email";
 import { resolveAuthEmailBaseUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
@@ -14,11 +17,13 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 export type AuthState = { error?: string; success?: string };
 
+const RESEND_COOKIE = "hmt_confirm_resend_at";
+const RESEND_THROTTLE_MS = 60_000;
+
 function signupMetadata(input: {
   fullName: string;
   companyName: string;
   countryCode: string;
-  username: string;
   preferredCurrency: string;
   locale: string;
 }) {
@@ -26,29 +31,13 @@ function signupMetadata(input: {
     full_name: input.fullName,
     company_name: input.companyName,
     country_code: input.countryCode,
-    username: input.username,
     preferred_currency: input.preferredCurrency,
     locale: input.locale,
+    terms_accepted: "true",
+    privacy_accepted: "true",
+    terms_version: TERMS_POLICY_VERSION,
+    privacy_version: PRIVACY_POLICY_VERSION,
   };
-}
-
-async function usernameTaken(username: string): Promise<boolean> {
-  const service = createServiceClient();
-  if (!service) {
-    return false;
-  }
-
-  const { data, error } = await service
-    .from("profiles")
-    .select("id")
-    .ilike("username", username)
-    .maybeSingle();
-
-  if (error) {
-    return false;
-  }
-
-  return Boolean(data?.id);
 }
 
 async function persistSignupProfile(
@@ -58,7 +47,6 @@ async function persistSignupProfile(
     fullName: string;
     companyName: string;
     countryCode: string;
-    username: string;
     preferredCurrency: string;
   },
 ) {
@@ -67,22 +55,46 @@ async function persistSignupProfile(
     return;
   }
 
-  const { error } = await service.from("profiles").upsert(
+  const acceptedAt = new Date().toISOString();
+  const withConsent = {
+    id: userId,
+    email: input.email,
+    full_name: input.fullName,
+    company_name: input.companyName,
+    country_code: input.countryCode,
+    preferred_currency: input.preferredCurrency,
+    role: "customer" as const,
+    terms_accepted_at: acceptedAt,
+    privacy_accepted_at: acceptedAt,
+    terms_version: TERMS_POLICY_VERSION,
+    privacy_version: PRIVACY_POLICY_VERSION,
+  };
+
+  const { error } = await service.from("profiles").upsert(withConsent, { onConflict: "id" });
+  if (!error) {
+    return;
+  }
+
+  const { error: fallbackError } = await service.from("profiles").upsert(
     {
       id: userId,
       email: input.email,
       full_name: input.fullName,
       company_name: input.companyName,
       country_code: input.countryCode,
-      username: input.username,
       preferred_currency: input.preferredCurrency,
       role: "customer",
     },
     { onConflict: "id" },
   );
-  if (error) {
-    console.error("[auth] profile upsert after signup:", error.message);
+  if (fallbackError) {
+    console.error("[auth] profile upsert after signup:", fallbackError.message);
   }
+}
+
+function confirmRedirectPath(locale: string, returnTo: string) {
+  const nextPath = returnTo.startsWith("/") ? `/${locale}${returnTo === "/" ? "" : returnTo}` : `/${locale}/account`;
+  return nextPath;
 }
 
 export async function signUp(
@@ -94,24 +106,19 @@ export async function signUp(
   const parsed = parseSignupForm(formData);
 
   if ("errorKey" in parsed) {
-    const errorKey = parsed.errorKey;
-    return { error: t(errorKey) };
+    return { error: t(parsed.errorKey) };
   }
 
-  if (await usernameTaken(parsed.username)) {
-    return { error: t("usernameTaken") };
-  }
-
+  const returnTo = safeStorefrontReturnTo(String(formData.get("next") ?? ""), "/account");
   const metadata = signupMetadata({
     fullName: parsed.fullName,
     companyName: parsed.companyName,
     countryCode: parsed.countryCode,
-    username: parsed.username,
     preferredCurrency: parsed.preferredCurrency,
     locale,
   });
   const siteUrl = resolveAuthEmailBaseUrl();
-  const nextPath = `/${locale}/account`;
+  const nextPath = confirmRedirectPath(locale, returnTo);
   const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`;
   const service = createServiceClient();
 
@@ -180,6 +187,47 @@ export async function signUp(
   return { success: t("signupSuccessFallback") };
 }
 
+export async function resendSignupConfirmation(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const t = await getTranslations("auth");
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!looksLikeEmail(email)) {
+    return { error: t("emailInvalid") };
+  }
+
+  const store = await cookies();
+  const last = Number(store.get(RESEND_COOKIE)?.value ?? 0);
+  if (last && Date.now() - last < RESEND_THROTTLE_MS) {
+    return { error: t("resendThrottled") };
+  }
+
+  const locale = await getLocale();
+  const returnTo = safeStorefrontReturnTo(String(formData.get("next") ?? ""), "/account");
+  const siteUrl = resolveAuthEmailBaseUrl();
+  const nextPath = confirmRedirectPath(locale, returnTo);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+    },
+  });
+  if (error) {
+    return { error: error.message };
+  }
+
+  store.set(RESEND_COOKIE, String(Date.now()), {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 120,
+  });
+  return { success: t("resendSuccess") };
+}
+
 export async function signIn(
   _prev: AuthState,
   formData: FormData,
@@ -187,6 +235,7 @@ export async function signIn(
   const t = await getTranslations("auth");
   const identifier = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const returnTo = safeStorefrontReturnTo(String(formData.get("next") ?? ""), "/account");
 
   if (!identifier || !password) {
     return { error: t("emailPasswordRequired") };
@@ -213,7 +262,7 @@ export async function signIn(
 
   revalidatePath("/account");
   revalidatePath("/admin");
-  return redirect({ href: "/account", locale: await getLocale() });
+  return redirect({ href: returnTo, locale: await getLocale() });
 }
 
 export async function signOut() {

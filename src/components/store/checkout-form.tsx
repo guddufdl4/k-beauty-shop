@@ -9,29 +9,34 @@ import {
 import { Link } from "@/i18n/navigation";
 import { formatLocalePrice } from "@/lib/utils";
 import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
+import { withReturnTo } from "@/lib/auth/return-to";
 import type { CartView } from "@/types/cart";
 
 type Props = {
   cart: CartView;
   locale: string;
   usdKrwRate: number;
+  isMember: boolean;
   defaultCompanyName?: string;
   defaultContactName?: string;
   defaultEmail?: string;
+  defaultCountry?: string;
 };
 
 const initialState: CheckoutState = {};
 
 const inputClassName =
-  "mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100";
+  "mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100";
 
 export function CheckoutForm({
   cart,
   locale,
   usdKrwRate,
+  isMember,
   defaultCompanyName = "",
   defaultContactName = "",
   defaultEmail = "",
+  defaultCountry = "",
 }: Props) {
   const t = useTranslations("checkout");
   const [state, formAction, pending] = useActionState(submitQuoteRequest, initialState);
@@ -39,17 +44,24 @@ export function CheckoutForm({
   const [shippingMethod, setShippingMethod] = useState("");
   const meetsMinOrder = cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate);
 
-  if (state.success) {
+  if (!isMember) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-900 sm:p-8">
-        <p className="text-base font-semibold">{t("successTitle")}</p>
-        <p className="mt-2 leading-relaxed">{t("successBody")}</p>
-        <Link
-          href="/products"
-          className="mt-6 inline-flex rounded-xl bg-rose-600 px-5 py-2.5 font-semibold text-white hover:bg-rose-700"
-        >
-          {t("continueShopping")}
-        </Link>
+      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
+        <p className="font-semibold text-zinc-900">{t("loginRequired")}</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href={withReturnTo("/login", "/cart")}
+            className="inline-flex rounded-xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-800"
+          >
+            {t("loginAction")}
+          </Link>
+          <Link
+            href={withReturnTo("/signup", "/cart")}
+            className="inline-flex rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-800"
+          >
+            {t("createWholesaleAccount")}
+          </Link>
+        </div>
       </div>
     );
   }
@@ -65,38 +77,31 @@ export function CheckoutForm({
         <h2 className="text-lg font-semibold">{t("buyerTitle")}</h2>
         <p className="mt-1 text-sm text-zinc-600">{t("buyerHint")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="block sm:col-span-2">
+          <label className="block sm:col-span-2" htmlFor="company_name">
             <span className="text-sm text-zinc-600">{t("companyName")}</span>
-            <input name="company_name" required maxLength={500} defaultValue={defaultCompanyName} className={inputClassName} />
+            <input id="company_name" name="company_name" required maxLength={500} defaultValue={defaultCompanyName} className={inputClassName} />
           </label>
-          <label className="block">
+          <label className="block" htmlFor="country">
             <span className="text-sm text-zinc-600">{t("country")}</span>
-            <input name="country" required maxLength={500} className={inputClassName} />
+            <input id="country" name="country" required maxLength={500} defaultValue={defaultCountry} className={inputClassName} />
           </label>
           <p className="sm:col-span-2 text-sm font-medium text-zinc-800">{t("contactSection")}</p>
-          <label className="block">
+          <label className="block" htmlFor="contact_name">
             <span className="text-sm text-zinc-600">{t("contactName")}</span>
-            <input name="contact_name" required maxLength={500} defaultValue={defaultContactName} className={inputClassName} />
+            <input id="contact_name" name="contact_name" required maxLength={500} defaultValue={defaultContactName} className={inputClassName} />
           </label>
-          <label className="block">
+          <label className="block" htmlFor="email">
             <span className="text-sm text-zinc-600">{t("email")}</span>
-            <input name="email" type="email" required maxLength={500} defaultValue={defaultEmail} className={inputClassName} />
+            <input id="email" name="email" type="email" required maxLength={500} defaultValue={defaultEmail} className={inputClassName} />
           </label>
-          <label className="block sm:col-span-2">
+          <label className="block sm:col-span-2" htmlFor="phone">
             <span className="text-sm text-zinc-600">{t("phone")}</span>
-            <input name="phone" type="tel" maxLength={500} className={inputClassName} />
+            <input id="phone" name="phone" type="tel" maxLength={500} className={inputClassName} />
           </label>
-          <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">{t("consignee")}</span>
-            <input name="consignee" maxLength={500} placeholder={t("consigneePlaceholder")} className={inputClassName} />
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">{t("notifyParty")}</span>
-            <input name="notify_party" maxLength={500} placeholder={t("notifyPartyPlaceholder")} className={inputClassName} />
-          </label>
-          <label className="block sm:col-span-2">
+          <label className="block sm:col-span-2" htmlFor="shipping_address">
             <span className="text-sm text-zinc-600">{t("shippingAddress")}</span>
             <textarea
+              id="shipping_address"
               name="shipping_address"
               rows={3}
               maxLength={500}
@@ -104,9 +109,10 @@ export function CheckoutForm({
               className={`${inputClassName} resize-y`}
             />
           </label>
-          <label className="block">
+          <label className="block" htmlFor="trade_terms">
             <span className="text-sm text-zinc-600">{t("tradeTerms")}</span>
             <select
+              id="trade_terms"
               name="trade_terms"
               value={tradeTerms}
               onChange={(event) => setTradeTerms(event.target.value)}
@@ -116,18 +122,21 @@ export function CheckoutForm({
               <option value="EXW">EXW</option>
               <option value="FOB">FOB</option>
               <option value="DAP">DAP</option>
+              <option value="Discuss with sales">{t("discussWithSales")}</option>
               <option value="ETC">ETC</option>
             </select>
           </label>
-          <label className="block">
+          <label className="block" htmlFor="shipping_method">
             <span className="text-sm text-zinc-600">{t("shippingMethod")}</span>
             <select
+              id="shipping_method"
               name="shipping_method"
               value={shippingMethod}
               onChange={(event) => setShippingMethod(event.target.value)}
               className={inputClassName}
             >
               <option value="">{t("selectOptional")}</option>
+              <option value="Discuss with sales">{t("discussWithSales")}</option>
               <option value="Forwarder">Forwarder</option>
               <option value="UPS">UPS</option>
               <option value="FedEx">FedEx</option>
@@ -136,20 +145,20 @@ export function CheckoutForm({
             </select>
           </label>
           {tradeTerms === "ETC" ? (
-            <label className="block sm:col-span-2">
+            <label className="block sm:col-span-2" htmlFor="trade_terms_etc">
               <span className="text-sm text-zinc-600">{t("tradeTermsEtc")}</span>
-              <input name="trade_terms_etc" required maxLength={500} className={inputClassName} />
+              <input id="trade_terms_etc" name="trade_terms_etc" required maxLength={500} className={inputClassName} />
             </label>
           ) : null}
           {shippingMethod === "ETC" ? (
-            <label className="block sm:col-span-2">
+            <label className="block sm:col-span-2" htmlFor="shipping_method_etc">
               <span className="text-sm text-zinc-600">{t("shippingMethodEtc")}</span>
-              <input name="shipping_method_etc" required maxLength={500} className={inputClassName} />
+              <input id="shipping_method_etc" name="shipping_method_etc" required maxLength={500} className={inputClassName} />
             </label>
           ) : null}
-          <label className="block sm:col-span-2">
+          <label className="block sm:col-span-2" htmlFor="message">
             <span className="text-sm text-zinc-600">{t("message")}</span>
-            <textarea name="message" rows={4} maxLength={5000} placeholder={t("messagePlaceholder")} className={`${inputClassName} resize-y`} />
+            <textarea id="message" name="message" rows={4} maxLength={5000} placeholder={t("messagePlaceholder")} className={`${inputClassName} resize-y`} />
           </label>
         </div>
       </div>
@@ -158,14 +167,12 @@ export function CheckoutForm({
         <h2 className="text-lg font-semibold">{t("summaryTitle")}</h2>
         <ul className="mt-4 space-y-3">
           {cart.items.map((item) => (
-            <li
-              key={item.productId}
-              className="flex items-start justify-between gap-4 text-sm"
-            >
+            <li key={item.productId} className="flex items-start justify-between gap-4 text-sm">
               <div>
                 <p className="font-medium">{item.name}</p>
                 <p className="text-zinc-500">
-                  {item.sku} · {t("lineItem", { quantity: item.quantity, price: formatLocalePrice(item.unitPrice, locale, usdKrwRate) })}
+                  {[item.productCode, item.sku].filter(Boolean).join(" · ")} ·{" "}
+                  {t("lineItem", { quantity: item.quantity, price: formatLocalePrice(item.unitPrice, locale, usdKrwRate) })}
                 </p>
               </div>
               <p className="font-medium">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p>
@@ -183,7 +190,7 @@ export function CheckoutForm({
       </div>
 
       {state.error ? (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -191,7 +198,7 @@ export function CheckoutForm({
       <button
         type="submit"
         disabled={pending || !meetsMinOrder}
-        className="w-full rounded-xl bg-rose-600 py-3 font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
+        className="w-full rounded-xl bg-violet-700 py-3 font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {pending ? t("processing") : t("submitQuote")}
       </button>

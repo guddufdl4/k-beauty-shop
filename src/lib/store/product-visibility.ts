@@ -6,6 +6,7 @@ import type {
   ProductWithRelations,
 } from "@/lib/supabase/products";
 import { omitProductSourceRow, withLocalizedNameFields } from "@/lib/store/localized-product-name";
+import { isProductCodeColumnAvailable } from "@/lib/supabase/product-code";
 
 export type StorefrontAudience = "guest" | "member" | "admin";
 
@@ -114,13 +115,20 @@ const GUEST_LIST_PRODUCT_COLUMNS = [
   "updated_at",
 ] as const;
 
+function withOptionalProductCode(columns: readonly string[]): string {
+  if (!isProductCodeColumnAvailable() || columns.includes("product_code")) {
+    return columns.join(", ");
+  }
+  return `${columns.join(", ")}, product_code`;
+}
+
 export function buildGuestProductSelect(): string {
-  return `${GUEST_PRODUCT_COLUMNS.join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
+  return `${withOptionalProductCode(GUEST_PRODUCT_COLUMNS)},${PRODUCT_RELATIONS_SUFFIX}`;
 }
 
 /** Lighter projection for paginated storefront grids (card fields only). */
 export function buildGuestListProductSelect(): string {
-  return `${GUEST_LIST_PRODUCT_COLUMNS.join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
+  return `${withOptionalProductCode(GUEST_LIST_PRODUCT_COLUMNS)},${PRODUCT_RELATIONS_SUFFIX}`;
 }
 
 const MEMBER_LIST_PRODUCT_COLUMNS = [
@@ -130,11 +138,11 @@ const MEMBER_LIST_PRODUCT_COLUMNS = [
 ] as const;
 
 export function buildMemberListProductSelect(): string {
-  return `${MEMBER_LIST_PRODUCT_COLUMNS.join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
+  return `${withOptionalProductCode(MEMBER_LIST_PRODUCT_COLUMNS)},${PRODUCT_RELATIONS_SUFFIX}`;
 }
 
 export function buildMemberProductSelect(): string {
-  return `${[...GUEST_PRODUCT_COLUMNS, ...MEMBER_INTERNAL_COLUMNS, ...MEMBER_PRICE_COLUMNS].join(", ")},${PRODUCT_RELATIONS_SUFFIX}`;
+  return `${withOptionalProductCode([...GUEST_PRODUCT_COLUMNS, ...MEMBER_INTERNAL_COLUMNS, ...MEMBER_PRICE_COLUMNS])},${PRODUCT_RELATIONS_SUFFIX}`;
 }
 
 export function isPricedStorefrontProduct(
@@ -155,6 +163,7 @@ function projectPublicProduct(product: Product): PublicProduct {
     brand: named.brand,
     sku: named.sku,
     barcode: named.barcode,
+    product_code: named.product_code ?? null,
     moq: named.moq,
     sold_out: named.sold_out,
     weight_grams: named.weight_grams,

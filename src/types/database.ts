@@ -26,6 +26,10 @@ export interface Profile {
   country_code: string | null;
   username: string | null;
   preferred_currency: "USD" | "KRW" | null;
+  terms_accepted_at?: string | null;
+  privacy_accepted_at?: string | null;
+  terms_version?: string | null;
+  privacy_version?: string | null;
   role: UserRole;
   wholesale_approved: boolean;
   wholesale_tier: string | null;
@@ -57,6 +61,7 @@ export interface Product {
   brand: string;
   sku: string;
   barcode: string | null;
+  product_code?: string | null;
   price: number;
   wholesale_price: number | null;
   compare_at_price: number | null;

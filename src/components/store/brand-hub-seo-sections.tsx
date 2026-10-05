@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { buildBrandHref } from "@/lib/store/brand-url";
-import { DEFAULT_WHOLESALE_INQUIRY_HREF } from "@/lib/store/storefront-href";
+import { QUOTE_LIST_HREF } from "@/lib/store/quote-list";
 import type { RelatedBrandHubItem } from "@/lib/supabase/brand-hub";
 
 type CategoryLink = {
@@ -54,7 +54,7 @@ export function BrandHubWholesaleCta({
     <aside className="mt-10 rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-6 sm:px-6">
       <p className="text-base font-semibold text-zinc-900">{needQuoteLabel}</p>
       <Link
-        href={DEFAULT_WHOLESALE_INQUIRY_HREF}
+        href={QUOTE_LIST_HREF}
         className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
       >
         {requestQuoteLabel}

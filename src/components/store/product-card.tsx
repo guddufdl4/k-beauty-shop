@@ -164,6 +164,9 @@ export function ProductCard({
         {volume ? (
           <p className="text-xs text-zinc-500">{volume}</p>
         ) : null}
+        {product.product_code ? (
+          <p className="font-mono text-[11px] tracking-wide text-zinc-500">{product.product_code}</p>
+        ) : null}
         {barcode ? (
           <p className="font-mono text-[11px] tracking-wide text-zinc-400">{barcode}</p>
         ) : null}

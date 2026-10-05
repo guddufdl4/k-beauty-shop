@@ -2,25 +2,32 @@
 
 import { revalidatePath } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
+import { redirect } from "@/i18n/navigation";
 import {
   clearCart,
   getCart,
   createQuoteOrderFromCart,
   markOrderPaid,
+  revalidateQuoteCart,
 } from "@/lib/cart";
 import {
   escapeHtml,
+  isQuoteMailConfigured,
   sendQuoteInquiryEmail,
 } from "@/lib/email";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { formatKRW } from "@/lib/utils";
 import { verifyCheckoutSession, isStripeConfigured } from "@/lib/stripe";
 import { cartMeetsMinOrderUsd, getUsdKrwRate, MIN_ORDER_USD } from "@/lib/currency";
 import { getMoqStep, isValidMoqQuantity } from "@/lib/store/moq-quantity";
+import { QUOTE_CONFIRM_HREF } from "@/lib/store/quote-list";
 
 export type CheckoutState = {
   error?: string;
   success?: boolean;
+  orderNumber?: string;
+  emailSent?: boolean;
 };
 
 const MAX_FIELD = 500;
@@ -40,14 +47,19 @@ export async function submitQuoteRequest(
 ): Promise<CheckoutState> {
   const t = await getTranslations("checkout");
   const locale = await getLocale();
+  const session = await getSessionProfile();
+
+  if (!session.user) {
+    return { error: t("loginRequired") };
+  }
 
   if (trimField(formData.get("spam_trap"))) {
     return { success: true };
   }
 
-  const companyName = trimField(formData.get("company_name"));
-  const contactName = trimField(formData.get("contact_name"));
-  const email = trimField(formData.get("email"));
+  const companyName = trimField(formData.get("company_name")) || session.profile?.company_name || "";
+  const contactName = trimField(formData.get("contact_name")) || session.profile?.full_name || "";
+  const email = trimField(formData.get("email")) || session.user.email || "";
   const phone = trimField(formData.get("phone"));
   const country = trimField(formData.get("country"));
   const consignee = trimField(formData.get("consignee"));
@@ -96,12 +108,13 @@ export async function submitQuoteRequest(
   }
 
   const cart = await getCart();
-  if (cart.items.length === 0) {
+  const verified = await revalidateQuoteCart(cart);
+  if (!verified) {
     return { error: t("emptyCart") };
   }
 
   const tCart = await getTranslations("cart");
-  for (const item of cart.items) {
+  for (const item of verified.items) {
     const step = getMoqStep(item.moq);
     if (item.quantity < step) {
       return { error: tCart("errors.moqNotMet", { moq: step }) };
@@ -112,89 +125,11 @@ export async function submitQuoteRequest(
   }
 
   const usdKrwRate = await getUsdKrwRate();
-  if (!cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
+  if (!cartMeetsMinOrderUsd(verified.subtotal, usdKrwRate)) {
     return { error: t("minOrderUsd", { amount: MIN_ORDER_USD }) };
   }
 
-  const totalUnits = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-  const brands = [...new Set(cart.items.map((item) => item.brand).filter(Boolean))];
-
-  const lineText = cart.items
-    .map(
-      (item) =>
-        `${item.sku} | ${item.brand} | ${item.name} | qty ${item.quantity} | ${formatKRW(item.unitPrice)} | ${formatKRW(item.lineTotal)}`,
-    )
-    .join("\n");
-
-  const text = [
-    "HMT Korea wholesale quote request",
-    `Locale: ${locale}`,
-    `Company: ${companyName}`,
-    `Contact: ${contactName}`,
-    `Email: ${email}`,
-    `Phone: ${phone || "-"}`,
-    `Country: ${country}`,
-    `Consignee: ${consignee || "-"}`,
-    `Notify party: ${notifyParty || "-"}`,
-    `Shipping address: ${destination || "-"}`,
-    `Trade terms: ${tradeTerms || "-"}${tradeTermsEtc ? ` (${tradeTermsEtc})` : ""}`,
-    `Shipping method: ${shippingMethod || "-"}${shippingMethodEtc ? ` (${shippingMethodEtc})` : ""}`,
-    `Notes: ${message || "-"}`,
-    "",
-    "Requested items:",
-    lineText,
-    "",
-    `Reference subtotal (KRW): ${formatKRW(cart.subtotal)}`,
-    `Total units: ${totalUnits}`,
-  ].join("\n");
-
-  const rows = cart.items
-    .map(
-      (item) => `<tr>
-        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.sku)}</td>
-        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.brand)}</td>
-        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.name)}</td>
-        <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${item.quantity}</td>
-        <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${escapeHtml(formatKRW(item.unitPrice))}</td>
-        <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${escapeHtml(formatKRW(item.lineTotal))}</td>
-      </tr>`,
-    )
-    .join("");
-
-  const html = `<div style="font-family:Arial,sans-serif;color:#18181b">
-    <h2>HMT Korea wholesale quote request</h2>
-    <p>A buyer submitted product quantities from the storefront cart. This is not a paid order.</p>
-    <table style="border-collapse:collapse;margin:16px 0">
-      <tr><td style="padding:4px 12px 4px 0"><strong>Company</strong></td><td>${escapeHtml(companyName)}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Contact</strong></td><td>${escapeHtml(contactName)}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Email</strong></td><td>${escapeHtml(email)}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Phone</strong></td><td>${escapeHtml(phone || "-")}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Country</strong></td><td>${escapeHtml(country)}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Consignee</strong></td><td>${escapeHtml(consignee || "-")}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Notify party</strong></td><td>${escapeHtml(notifyParty || "-")}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Shipping address</strong></td><td>${escapeHtml(destination || "-")}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Trade terms</strong></td><td>${escapeHtml(tradeTerms || "-")}${tradeTermsEtc ? ` (${escapeHtml(tradeTermsEtc)})` : ""}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Shipping method</strong></td><td>${escapeHtml(shippingMethod || "-")}${shippingMethodEtc ? ` (${escapeHtml(shippingMethodEtc)})` : ""}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0"><strong>Locale</strong></td><td>${escapeHtml(locale)}</td></tr>
-    </table>
-    ${message ? `<p><strong>Notes</strong><br/>${escapeHtml(message).replaceAll("\n", "<br/>")}</p>` : ""}
-    <table style="border-collapse:collapse;width:100%;font-size:14px">
-      <thead>
-        <tr>
-          <th style="padding:8px;border:1px solid #e4e4e7;text-align:left">SKU</th>
-          <th style="padding:8px;border:1px solid #e4e4e7;text-align:left">Brand</th>
-          <th style="padding:8px;border:1px solid #e4e4e7;text-align:left">Product</th>
-          <th style="padding:8px;border:1px solid #e4e4e7;text-align:right">Qty</th>
-          <th style="padding:8px;border:1px solid #e4e4e7;text-align:right">Unit (KRW)</th>
-          <th style="padding:8px;border:1px solid #e4e4e7;text-align:right">Line (KRW)</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <p><strong>Reference subtotal:</strong> ${escapeHtml(formatKRW(cart.subtotal))} · <strong>Total units:</strong> ${totalUnits}</p>
-  </div>`;
-
-  await createQuoteOrderFromCart(cart, {
+  const created = await createQuoteOrderFromCart(verified, {
     companyName,
     contactName,
     email,
@@ -211,6 +146,19 @@ export async function submitQuoteRequest(
     notes: message,
   });
 
+  if (!created.orderNumber) {
+    return { error: tCart("errors.orderCreateFailed") };
+  }
+
+  const totalUnits = verified.items.reduce((sum, item) => sum + item.quantity, 0);
+  const brands = [...new Set(verified.items.map((item) => item.brand).filter(Boolean))];
+  const lineText = verified.items
+    .map(
+      (item) =>
+        `${item.productCode || item.sku} | ${item.brand} | ${item.name} | qty ${item.quantity} | ${formatKRW(item.unitPrice)} | ${formatKRW(item.lineTotal)}`,
+    )
+    .join("\n");
+
   const service = createServiceClient();
   if (service) {
     const { error } = await service.from("wholesale_inquiries").insert({
@@ -219,43 +167,38 @@ export async function submitQuoteRequest(
       country,
       email,
       whatsapp: phone || null,
-      interested_brands: brands.join(", ").slice(0, MAX_FIELD) || "Cart quote",
+      interested_brands: brands.join(", ").slice(0, MAX_FIELD) || "Quote list",
       estimated_quantity: `${totalUnits} units`,
-      message: [
-        consignee ? `Consignee: ${consignee}` : "",
-        notifyParty ? `Notify party: ${notifyParty}` : "",
-        destination ? `Shipping address: ${destination}` : "",
-        tradeTerms ? `Trade terms: ${tradeTerms}${tradeTermsEtc ? ` (${tradeTermsEtc})` : ""}` : "",
-        shippingMethod
-          ? `Shipping method: ${shippingMethod}${shippingMethodEtc ? ` (${shippingMethodEtc})` : ""}`
-          : "",
-        message,
-        "",
-        lineText,
-        `Reference subtotal (KRW): ${formatKRW(cart.subtotal)}`,
-      ]
+      message: [message, "", lineText, `Reference subtotal (KRW): ${formatKRW(verified.subtotal)}`]
         .filter(Boolean)
         .join("\n")
         .slice(0, MAX_MESSAGE),
       locale,
     });
-
     if (error) {
       console.error("[quote] inquiry insert failed:", error.message);
     }
   }
 
-  const sent = await sendQuoteInquiryEmail({
-    subject: `[HMT Korea] Quote request · ${companyName} · ${cart.items.length} SKUs`,
-    html,
-    text,
-    replyTo: email,
-  });
-
-  if (!sent.ok) {
-    return {
-      error: sent.error === "email_not_configured" ? t("emailNotConfigured") : t("emailSendFailed"),
-    };
+  let emailSent = false;
+  if (isQuoteMailConfigured()) {
+    const rows = verified.items
+      .map(
+        (item) => `<tr>
+        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.productCode || item.sku)}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.brand)}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.name)}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${item.quantity}</td>
+      </tr>`,
+      )
+      .join("");
+    const sent = await sendQuoteInquiryEmail({
+      subject: `[HMT Korea] Quote request · ${created.orderNumber} · ${companyName}`,
+      html: `<div style="font-family:Arial,sans-serif"><h2>HMT Korea wholesale quote request</h2><p>${escapeHtml(created.orderNumber)}</p><table>${rows}</table></div>`,
+      text: `HMT Korea wholesale quote request\n${created.orderNumber}\n${lineText}`,
+      replyTo: email,
+    });
+    emailSent = sent.ok;
   }
 
   await clearCart();
@@ -265,7 +208,10 @@ export async function submitQuoteRequest(
   revalidatePath("/admin");
   revalidatePath("/", "layout");
 
-  return { success: true };
+  return redirect({
+    href: `${QUOTE_CONFIRM_HREF}?n=${encodeURIComponent(created.orderNumber)}${emailSent ? "&mail=1" : ""}`,
+    locale,
+  });
 }
 
 export async function confirmOrderPayment(

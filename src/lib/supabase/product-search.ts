@@ -8,6 +8,12 @@ import {
   isSoftDeleteColumnAvailable,
 } from "./soft-delete";
 import {
+  ensureProductCodeColumnProbed,
+  isMissingProductCodeColumnError,
+  isProductCodeColumnAvailable,
+  markProductCodeColumnMissing,
+} from "./product-code";
+import {
   getBrandFilterValue,
   getDisplayBrandName,
 } from "@/lib/store/products-url";
@@ -74,7 +80,7 @@ function scoreFieldMatch(value: string, query: string): number {
 }
 
 function scoreProductMatch(
-  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "brand" | "sku" | "barcode">,
+  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "brand" | "sku" | "barcode" | "product_code">,
   query: string,
 ): number {
   return Math.max(
@@ -85,11 +91,13 @@ function scoreProductMatch(
     scoreFieldMatch(getDisplayBrandName(product.brand), query),
     scoreFieldMatch(product.sku, query),
     scoreFieldMatch(product.barcode ?? "", query),
+    scoreFieldMatch(product.product_code ?? "", query),
+    scoreFieldMatch((product.product_code ?? "").replace(/^HMT-/, ""), query),
   );
 }
 
 function productMatchesQuery(
-  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "brand" | "sku" | "barcode" | "status">,
+  product: Pick<ProductWithRelations, "name" | "name_en" | "name_ko" | "brand" | "sku" | "barcode" | "product_code" | "status">,
   query: string,
 ): boolean {
   if (product.status !== "active") {
@@ -171,16 +179,31 @@ async function fetchSuggestionsFromDatabase(
   }
 
   await ensureSoftDeleteColumnProbed(supabase);
+  await ensureProductCodeColumnProbed(supabase);
 
   const escaped = escapeIlikePattern(query);
+  const searchFields = [
+    `name.ilike.%${escaped}%`,
+    `sku.ilike.%${escaped}%`,
+    `brand.ilike.%${escaped}%`,
+    `barcode.ilike.%${escaped}%`,
+  ];
+  if (isProductCodeColumnAvailable()) {
+    searchFields.push(`product_code.ilike.%${escaped}%`);
+    const digits = query.replace(/\D/g, "");
+    if (digits) {
+      searchFields.push(`product_code.ilike.%${escapeIlikePattern(digits)}%`);
+    }
+  }
+  const selectColumns = isProductCodeColumnAvailable()
+    ? "id, name, name_en, name_ko, brand, slug, sku, barcode, product_code, status, image_url, source_row"
+    : "id, name, name_en, name_ko, brand, slug, sku, barcode, status, image_url, source_row";
   let productQuery = supabase
     .from("products")
-    .select("id, name, name_en, name_ko, brand, slug, sku, barcode, status, image_url, source_row")
+    .select(selectColumns)
     .eq("status", "active")
     .eq("needs_image", false)
-    .or(
-      `name.ilike.%${escaped}%,sku.ilike.%${escaped}%,brand.ilike.%${escaped}%,barcode.ilike.%${escaped}%`,
-    )
+    .or(searchFields.join(","))
     .order("name", { ascending: true })
     .limit(Math.max(limit * 3, 24));
 
@@ -189,11 +212,19 @@ async function fetchSuggestionsFromDatabase(
   }
 
   const { data, error } = await productQuery;
-  if (error || !data?.length) {
-    return error ? null : { products: [], brands: [] };
+  if (error) {
+    if (isMissingProductCodeColumnError(error.message)) {
+      markProductCodeColumnMissing();
+      return fetchSuggestionsFromDatabase(query, limit, locale);
+    }
+    return null;
+  }
+  if (!data?.length) {
+    return { products: [], brands: [] };
   }
 
-  const products = data.map((row) =>
+  const rows = data as unknown as Array<Record<string, unknown>>;
+  const products = rows.map((row) =>
     withLocalizedNameFields({
       id: String(row.id),
       name: String(row.name),
@@ -203,6 +234,8 @@ async function fetchSuggestionsFromDatabase(
       slug: String(row.slug),
       sku: String(row.sku),
       barcode: row.barcode ? String(row.barcode) : null,
+      product_code:
+        typeof row.product_code === "string" ? row.product_code : null,
       status: "active" as const,
       image_url: row.image_url ? String(row.image_url) : null,
       source_row:

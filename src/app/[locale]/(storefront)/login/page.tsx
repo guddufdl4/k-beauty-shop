@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { AuthForm } from "@/components/store/auth-form";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
+import { safeStorefrontReturnTo, withReturnTo } from "@/lib/auth/return-to";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -21,10 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ verified?: string; error?: string }>;
+  searchParams: Promise<{ verified?: string; error?: string; next?: string }>;
 }) {
   const t = await getTranslations("auth");
-  const { verified, error } = await searchParams;
+  const { verified, error, next } = await searchParams;
+  const returnTo = safeStorefrontReturnTo(next, "/account");
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-16">
@@ -35,6 +37,7 @@ export default async function LoginPage({
       <div className="mt-8">
         <AuthForm
           action={signIn}
+          returnTo={returnTo}
           submitLabel={t("loginButton")}
           emailLabel={t("loginIdentifier")}
           passwordLabel={t("password")}
@@ -42,7 +45,7 @@ export default async function LoginPage({
           footer={
             <p className="text-center text-sm text-zinc-600">
               {t("noAccount")}{" "}
-              <Link href="/signup" className="text-rose-600 hover:underline">
+              <Link href={withReturnTo("/signup", returnTo)} className="text-violet-700 hover:underline">
                 {t("signupTitle")}
               </Link>
             </p>
@@ -52,4 +55,3 @@ export default async function LoginPage({
     </main>
   );
 }
-

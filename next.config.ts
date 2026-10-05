@@ -48,6 +48,8 @@ const nextConfig: NextConfig = {
     : { ...imageSettings },
   experimental: {
     optimizePackageImports: ["next-intl"],
+    // Local environments that block child processes can use worker threads.
+    workerThreads: process.env.HMT_BUILD_WORKER_THREADS === "1",
   },
   webpack: (config, { dev }) => {
     if (dev) {

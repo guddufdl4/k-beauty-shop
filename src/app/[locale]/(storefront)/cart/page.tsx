@@ -35,14 +35,16 @@ export default async function CartPage() {
   ]);
 
   let defaultCompanyName = "";
+  let defaultCountry = "";
   if (session.user) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("profiles")
-      .select("company_name")
+      .select("company_name, country_code")
       .eq("id", session.user.id)
       .maybeSingle();
     defaultCompanyName = typeof data?.company_name === "string" ? data.company_name : "";
+    defaultCountry = typeof data?.country_code === "string" ? data.country_code : "";
   }
 
   return (
@@ -58,7 +60,7 @@ export default async function CartPage() {
           </p>
           <Link
             href="/products"
-            className="mt-4 inline-block rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-700"
+            className="mt-4 inline-block rounded-full bg-violet-700 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-800"
           >
             {t("browseProducts")}
           </Link>
@@ -66,12 +68,21 @@ export default async function CartPage() {
       ) : (
         <div className="mt-8 space-y-8">
           <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-            <CartItemList items={cart.items} locale={locale} usdKrwRate={usdKrwRate} />
+            <CartItemList
+              items={cart.items}
+              locale={locale}
+              usdKrwRate={usdKrwRate}
+              showPrices={Boolean(session.user)}
+            />
             <aside className="h-fit rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
               <h2 className="text-lg font-semibold">{t("orderSummary")}</h2>
               <div className="mt-4 flex justify-between text-sm">
                 <span className="text-zinc-600">{t("subtotal")}</span>
-                <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
+                <span>
+                  {session.user
+                    ? formatLocalePrice(cart.subtotal, locale, usdKrwRate)
+                    : t("loginRequired")}
+                </span>
               </div>
               <p className="mt-3 text-xs text-zinc-500">{t("quoteNote")}</p>
               <p
@@ -89,9 +100,11 @@ export default async function CartPage() {
             cart={cart}
             locale={locale}
             usdKrwRate={usdKrwRate}
+            isMember={Boolean(session.user)}
             defaultCompanyName={defaultCompanyName}
             defaultContactName={session.profile?.full_name ?? ""}
             defaultEmail={session.profile?.email ?? session.user?.email ?? ""}
+            defaultCountry={defaultCountry}
           />
         </div>
       )}
