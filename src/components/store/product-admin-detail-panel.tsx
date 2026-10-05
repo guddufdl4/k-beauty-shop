@@ -14,8 +14,9 @@ import {
   getDisplayBrandName,
   getProductPriceColumns,
   usesBoxQuantityField,
+  usableShopPrice,
 } from "@/lib/store/products-url";
-import { formatLocaleProductPrice } from "@/lib/utils";
+import { formatKRW, formatLocaleProductPrice } from "@/lib/utils";
 import type { Category, ProductWithRelations } from "@/lib/supabase/products";
 
 type ProductAdminDetailPanelProps = {
@@ -241,6 +242,8 @@ export function ProductAdminDetailPanel({
     wholesale_price: product.wholesale_price,
     compare_at_price: initialProduct.compare_at_price,
   });
+  const retailAmount = usableShopPrice(initialProduct.compare_at_price);
+  const hasSupplyPrice = usableShopPrice(priceColumns.primary.amount) != null;
   const quantityLabel = usesBoxQuantityField({
     price: product.price,
     wholesale_price: product.wholesale_price,
@@ -497,16 +500,16 @@ export function ProductAdminDetailPanel({
                     {t(priceColumns.primary.labelKey)}
                   </p>
                   <p className="text-2xl font-bold text-zinc-900">
-                    {formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate)}
+                    {hasSupplyPrice ? formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate) : t("supplyPriceOnRequest")}
                   </p>
                 </div>
-                {priceColumns.secondary ? (
+                {retailAmount != null ? (
                   <div className="min-w-0 text-right">
                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                      {wholesaleLabel}
+                      {t("retailPrice")}
                     </p>
                     <p className="text-xl font-bold text-rose-700">
-                      {formatLocaleProductPrice(priceColumns.secondary.amount, locale, usdKrwRate)}
+                      {formatKRW(retailAmount)}
                     </p>
                   </div>
                 ) : null}
@@ -557,6 +560,7 @@ export function ProductAdminDetailPanel({
           productSlug={product.slug}
           productName={product.name}
           moq={product.moq}
+          canAdd={hasSupplyPrice}
           stock={product.stock}
           soldOut={product.sold_out}
         />
