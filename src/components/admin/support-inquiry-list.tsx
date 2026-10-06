@@ -1,11 +1,11 @@
 import { InquiryTrashButton } from "./inquiry-trash-button";
 import Link from "next/link";
-import { requireAdminSession } from "@/lib/supabase/auth-helpers";
+import { requireInquiryManagementSession } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 import { supportInquiryCopy } from "@/lib/support-inquiry-copy";
 import { SupportInquiryStatus } from "./support-inquiry-status";
 export async function SupportInquiryList({ page, id, deleted = false }: { page: number; id?: string; deleted?: boolean }) {
-  await requireAdminSession();
+  await requireInquiryManagementSession();
   const client = createServiceClient();
   if (!client) return <p role="alert">문의를 불러올 수 없습니다.</p>;
   const focused = id && /^[0-9a-f-]{36}$/i.test(id) ? id : null;

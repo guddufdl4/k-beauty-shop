@@ -1,10 +1,11 @@
 "use server";
+import { canManageInquiries } from "@/lib/auth/member-access";
 import { revalidatePath } from "next/cache";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 export async function changeInquiryTrash(form: FormData) {
   const { user, profile } = await getSessionProfile();
-  if (!user || profile?.role !== "admin") return { error: "관리자 권한이 필요합니다." };
+  if (!user || !canManageInquiries(profile)) return { error: "문의 관리 권한이 필요합니다." };
   const id = String(form.get("id")), type = String(form.get("type")), decision = String(form.get("decision"));
   const tables: Record<string,string> = { support: "support_inquiries", import: "import_inquiries", wholesale: "wholesale_inquiries" };
   if (!tables[type] || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) || !["delete","restore"].includes(decision)) return { error: "잘못된 요청입니다." };

@@ -1,11 +1,11 @@
 import { InquiryTrashButton } from "@/components/admin/inquiry-trash-button";
 import { SupportInquiryList } from "@/components/admin/support-inquiry-list";
 import Link from "next/link";
-import { requireAdminSession } from "@/lib/supabase/auth-helpers";
+import { requireInquiryManagementSession } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 export const dynamic = "force-dynamic";
 export default async function AdminInquiries({ searchParams }: { searchParams: Promise<{ type?: string; page?: string; id?: string; trash?: string }> }) {
-  await requireAdminSession();
+  await requireInquiryManagementSession();
   const params = await searchParams;
   const type = params.type === "wholesale" ? "wholesale" : params.type === "import" ? "import" : "support";
   const deleted = params.trash === "1";

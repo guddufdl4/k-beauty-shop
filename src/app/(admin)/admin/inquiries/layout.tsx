@@ -1,5 +1,5 @@
-import { requireAdminSession } from "@/lib/supabase/auth-helpers";
+import { requireInquiryManagementSession } from "@/lib/supabase/auth-helpers";
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  await requireAdminSession();
+  await requireInquiryManagementSession();
   return children;
 }

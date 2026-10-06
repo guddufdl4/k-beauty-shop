@@ -4,6 +4,10 @@ export function canManageMembers(profile: MemberAccess): boolean {
   return profile?.role === "admin" || profile?.staff_scope === "members";
 }
 
+export function canManageInquiries(profile: MemberAccess): boolean {
+  return profile?.role === "admin" || profile?.staff_scope === "members";
+}
+
 export function canManageMemberTarget(actor: MemberAccess, target: MemberAccess): boolean {
   if (!canManageMembers(actor) || target?.role === "admin") return false;
   return actor?.role === "admin" || target?.staff_scope !== "members";

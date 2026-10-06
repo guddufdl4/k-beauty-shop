@@ -18,6 +18,10 @@ function form(decision,grade){const f=new FormData();f.append('member_id','00000
  actor={user:{id:'a'},profile:{role:'admin'}};calls=[];await actions.setBusinessApproval(form('grade','members'));assert.equal(calls[0][1].staff_scope,'members');assert(!calls.some(c=>c[0]==='eq'));
  calls=[];await actions.setBusinessApproval(form('grade','normal'));assert.equal(calls[0][1].staff_scope,'none');
  const approval=moduleAt('src/lib/auth/business-approval.ts',{});assert.equal(approval.hasBusinessApproval({role:'customer',member_grade:'vip'}),false);assert.equal(approval.hasBusinessApproval({role:'customer',staff_scope:'members'}),false);
- for(const folder of ['orders','products','settings','inquiries']) assert(fs.readFileSync(`src/app/(admin)/admin/${folder}/layout.tsx`,'utf8').includes('await requireAdminSession()'));
+ for(const folder of ['orders','products','settings']) assert(fs.readFileSync(`src/app/(admin)/admin/${folder}/layout.tsx`,'utf8').includes('await requireAdminSession()'));
  console.log('PASS: guest/customer/VIP denial, staff target protection, staff assignment denial, admin assignment/revoke, approval independence, restricted subtree gates');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+assert(access.canManageInquiries({role:"customer",staff_scope:"members"}));
+assert(!access.canManageInquiries({role:"customer",member_grade:"vip"}));
+assert(fs.readFileSync("src/app/(admin)/admin/inquiries/layout.tsx","utf8").includes("await requireInquiryManagementSession()"));

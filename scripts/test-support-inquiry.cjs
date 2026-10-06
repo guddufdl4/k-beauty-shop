@@ -15,9 +15,9 @@ function request(body=valid,origin='https://hmt.test'){return new Request('https
  r=await api.POST(request({...valid,spam_trap:'bot'}));assert.equal(r.status,200);assert.equal(databaseCalls,0);assert.equal(emailCalls,0);
  for(const [m,status] of [['unavailable',503],['queryError',503],['limited',429],['insertError',503],['duplicate',200],['raceDuplicate',200]]){mode=m;emailCalls=0;r=await api.POST(request());assert.equal(r.status,status);assert.equal(emailCalls,0);}
  for(const m of ['normal','mailError']){mode=m;emailCalls=0;r=await api.POST(request());assert.equal(r.status,200);assert.equal((await r.json()).reference,valid.id);assert.equal(saved.email,'test@example.com');assert.equal(emailCalls,1);}
- const actions=load('src/app/actions/support-inquiries.ts',{'@/lib/supabase/auth-helpers':{getSessionProfile:async()=>actor},'@/lib/supabase/service':imports['@/lib/supabase/service'],'next/cache':{revalidatePath(){}}});
+ const actions=load('src/app/actions/support-inquiries.ts',{'@/lib/auth/member-access':{canManageInquiries:p=>p?.role==='admin'||p?.staff_scope==='members'},'@/lib/supabase/auth-helpers':{getSessionProfile:async()=>actor},'@/lib/supabase/service':imports['@/lib/supabase/service'],'next/cache':{revalidatePath(){}}});
  const form=new FormData();form.set('id',valid.id);form.set('decision','resolve');mode='normal';
- for(const role of ['customer','wholesale']){actor={user:{id:'u'},profile:{role,staff_scope:'members'}};updates=[];assert((await actions.updateSupportInquiry(form)).error);assert.equal(updates.length,0);}
- actor={user:{id:'a'},profile:{role:'admin'}};assert((await actions.updateSupportInquiry(form)).success);assert(updates[0].resolved_at);
- console.log('PASS: payload validation, consent, same-origin, honeypot, throttling, idempotency, DB failure handling, email failure persistence, admin-only status updates');
+ for(const role of ['customer','wholesale']){actor={user:{id:'u'},profile:{role,staff_scope:'none'}};updates=[];assert((await actions.updateSupportInquiry(form)).error);assert.equal(updates.length,0);}
+ actor={user:{id:'staff'},profile:{role:'customer',staff_scope:'members'}};assert((await actions.updateSupportInquiry(form)).success);actor={user:{id:'a'},profile:{role:'admin'}};assert((await actions.updateSupportInquiry(form)).success);assert(updates[0].resolved_at);
+ console.log('PASS: payload validation, consent, same-origin, honeypot, throttling, idempotency, DB failure handling, email failure persistence, admin/staff status updates and ordinary member denial');
 })().catch(e=>{console.error(e);process.exitCode=1});

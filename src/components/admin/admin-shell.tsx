@@ -1,3 +1,4 @@
+import { canManageInquiries } from "@/lib/auth/member-access";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import Link from "next/link";
 import { AdminNotifications } from "./admin-notifications";
@@ -20,7 +21,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-rose-100 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <nav className="flex flex-wrap items-center gap-2">
-            {navLinks.filter((item) => isAdmin || item.href === "/admin" || item.href === "/admin/members").map((item) => (
+            {navLinks.filter((item) => isAdmin || item.href === "/admin" || item.href === "/admin/members" || (item.href === "/admin/inquiries" && canManageInquiries(profile))).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

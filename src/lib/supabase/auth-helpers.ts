@@ -1,4 +1,4 @@
-import { canManageMembers } from "@/lib/auth/member-access";
+import { canManageMembers, canManageInquiries } from "@/lib/auth/member-access";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -176,4 +176,10 @@ export async function requireMemberManagementSession(): Promise<void> {
   const { user, profile } = await getSessionProfile();
   if (!user) redirect("/en/login");
   if (!canManageMembers(profile)) redirect("/en");
+}
+
+export async function requireInquiryManagementSession(): Promise<void> {
+  const { user, profile } = await getSessionProfile();
+  if (!user) redirect("/en/login");
+  if (!canManageInquiries(profile)) redirect("/en");
 }
