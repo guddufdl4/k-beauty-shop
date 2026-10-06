@@ -1,13 +1,12 @@
+import { COUNTRY_REGIONS } from "./country-regions";
 import { getCountries, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/max";
 
 export const SIGNUP_CURRENCIES = ["USD", "KRW"] as const;
 export type SignupCurrency = (typeof SIGNUP_CURRENCIES)[number];
 
-const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
-const countryNameOverrides: Record<string,string> = { KR: "South Korea", KP: "North Korea", HK: "Hong Kong", MO: "Macau (Macao)", TW: "Taiwan", PS: "Palestine", TR: "Turkiye" };
-export const PHONE_COUNTRIES = getCountries().map(code => ({ code: String(code), name: countryNameOverrides[code] || countryNames.of(code) || code })).sort((a,b) => a.name.localeCompare(b.name,"en"));
-// Include territories without their own supported telephone numbering plan in address/country fields.
-export const SIGNUP_COUNTRIES = [...PHONE_COUNTRIES, ...["AQ","BV","HM","TF","UM","GS","PN"].map(code => ({ code, name: countryNames.of(code) || code }))].sort((a,b) => a.name.localeCompare(b.name,"en"));
+export const SIGNUP_COUNTRIES = COUNTRY_REGIONS;
+const phoneCountryCodes = new Set<string>(getCountries());
+export const PHONE_COUNTRIES = COUNTRY_REGIONS.filter(country => phoneCountryCodes.has(country.code));
 
 const EMAIL_PATTERN = /^[A-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?)+$/i;
 
