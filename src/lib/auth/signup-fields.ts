@@ -10,6 +10,7 @@ export const SIGNUP_COUNTRIES: { code: string; name: string }[] = [
   { code: "CN", name: "China" },
   { code: "TW", name: "Taiwan" },
   { code: "HK", name: "Hong Kong" },
+  { code: "MO", name: "Macau (Macao)" },
   { code: "SG", name: "Singapore" },
   { code: "MY", name: "Malaysia" },
   { code: "TH", name: "Thailand" },
