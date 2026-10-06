@@ -260,7 +260,7 @@ function OrdersTable({
 
   return (
     <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-      <table className="min-w-full text-left text-sm">
+      <table className="w-full min-w-[1100px] text-left text-sm">
         <thead className="border-b border-zinc-100 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
           <tr>
             <th className="px-4 py-3">번호</th>

@@ -425,14 +425,16 @@ export async function deleteAdminOrder(orderNumber: string): Promise<{ ok: boole
       return { ok: false, error: "주문 저장소에 연결하지 못했습니다." };
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("orders")
       .update({ deleted_at: new Date().toISOString() })
       .eq("order_number", normalized)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .select("order_number");
     if (error) {
       return { ok: false, error: error.message };
     }
+    if (!data?.length) return { ok: false, error: "이미 삭제되었거나 찾을 수 없는 주문입니다." };
     return { ok: true };
   }
 
@@ -456,13 +458,16 @@ export async function restoreAdminOrder(orderNumber: string): Promise<{ ok: bool
     return { ok: false, error: "주문 저장소에 연결하지 못했습니다." };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("orders")
     .update({ deleted_at: null })
-    .eq("order_number", normalized);
+    .eq("order_number", normalized)
+    .not("deleted_at", "is", null)
+    .select("order_number");
   if (error) {
     return { ok: false, error: error.message };
   }
+  if (!data?.length) return { ok: false, error: "이미 복원되었거나 찾을 수 없는 주문입니다." };
   return { ok: true };
 }
 
