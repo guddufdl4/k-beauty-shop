@@ -13,7 +13,7 @@ export async function GET() {
     .neq("role", "admin").gte("created_at", since).order("created_at", { ascending: false }).order("id").limit(100);
   const ordersQuery = () => client.from("orders").select("order_number,created_at,payment_provider")
     .gte("created_at", since).order("created_at", { ascending: false }).order("order_number").limit(100);
-  const [members, initialOrders, support] = await Promise.all([membersQuery, ordersQuery().is("deleted_at", null), client.from("support_inquiries").select("id,subject,created_at").is("resolved_at", null).gte("created_at", since).order("created_at", { ascending: false }).order("id").limit(100)]);
+  const [members, initialOrders, support] = await Promise.all([membersQuery, ordersQuery().is("deleted_at", null), client.from("support_inquiries").select("id,subject,created_at").is("resolved_at", null).is("deleted_at", null).gte("created_at", since).order("created_at", { ascending: false }).order("id").limit(100)]);
   let orders = initialOrders;
   if (orders.error && /deleted_at/i.test(orders.error.message) && /does not exist|could not find/i.test(orders.error.message)) {
     orders = await ordersQuery();

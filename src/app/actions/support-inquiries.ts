@@ -12,7 +12,7 @@ export async function updateSupportInquiry(form: FormData) {
   if (!client) return { error: "문의를 저장할 수 없습니다." };
   const now = new Date().toISOString();
   const patch = decision === "viewed" ? { viewed_at: now } : { resolved_at: decision === "resolve" ? now : null };
-  let query = client.from("support_inquiries").update(patch).eq("id", id);
+  let query = client.from("support_inquiries").update(patch).eq("id", id).is("deleted_at", null);
   if (decision === "viewed") query = query.is("viewed_at", null);
   const result = await query.select("id");
   if (result.error) return { error: "변경하지 못했습니다. 다시 시도해 주세요." };
