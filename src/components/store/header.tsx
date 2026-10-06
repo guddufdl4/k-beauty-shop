@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { AdminNotifications } from "@/components/admin/admin-notifications";
 
 import Image from "next/image";
 
@@ -193,6 +194,7 @@ export async function StoreHeader({ storeName }: Props) {
 
 
           <div className="ml-auto flex items-center gap-2 sm:gap-4">
+            {user && profile?.role === "admin" ? <AdminNotifications /> : null}
 
             <div className="hidden items-center gap-3 lg:flex">
 

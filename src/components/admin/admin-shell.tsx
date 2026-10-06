@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminNotifications } from "./admin-notifications";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
 const navLinks = [
@@ -25,12 +26,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
-          <Link
+          <div className="flex items-center gap-3"><AdminNotifications /><Link
             href={storefrontHref()}
             className="rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
           >
             {"\u2190 \uc2a4\ud130 \ud648"}
-          </Link>
+          </Link></div>
         </div>
       </header>
       {children}
