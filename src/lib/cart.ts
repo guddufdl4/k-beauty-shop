@@ -147,7 +147,7 @@ export async function createQuoteOrderFromCart(
   }
 
   const usdKrwRate = await getUsdKrwRate();
-  if (!cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
+  if (hasBusinessApproval((await getSessionProfile()).profile) && !cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
     return {};
   }
 
@@ -349,8 +349,9 @@ async function getFallbackProduct(
   return FALLBACK_PRODUCTS.find((product) => product.id === productId) ?? null;
 }
 
-async function getDatabaseCart(userId: string, locale: string): Promise<CartView> {
-  const supabase = await createSafeClient();
+async function getDatabaseCart(userId: string, locale: string, showPrices: boolean): Promise<CartView> {
+  // Service projection stays server-side; every cart read is scoped to the authenticated owner.
+  const supabase = createServiceClient();
   if (!supabase) {
     return { items: [], subtotal: 0, itemCount: 0, source: "cookie" };
   }
@@ -384,7 +385,7 @@ async function getDatabaseCart(userId: string, locale: string): Promise<CartView
   if (error) {
     if (isMissingProductCodeColumnError(error.message)) {
       markProductCodeColumnMissing();
-      return getDatabaseCart(userId, locale);
+      return getDatabaseCart(userId, locale, showPrices);
     }
     return { items: [], subtotal: 0, itemCount: 0, source: "database" };
   }
@@ -402,12 +403,12 @@ async function getDatabaseCart(userId: string, locale: string): Promise<CartView
     }
 
     const quantity = Number(record.quantity ?? 1);
-    const unitPrice = getEffectiveProductPrice({
+    const unitPrice = showPrices ? getEffectiveProductPrice({
       price: Number(product.price ?? 0),
       wholesale_price:
         product.wholesale_price != null ? Number(product.wholesale_price) : null,
       compare_at_price: null,
-    });
+    }) : 0;
 
     items.push({
       id: String(record.id),
@@ -422,7 +423,7 @@ async function getDatabaseCart(userId: string, locale: string): Promise<CartView
       imageUrl: product.image_url ? String(product.image_url) : null,
       unitPrice,
       moq: Number(product.moq ?? 1),
-      stock: Number(product.stock ?? 0),
+      stock: showPrices ? Number(product.stock ?? 0) : 0,
       lineTotal: unitPrice * quantity,
     });
   }
@@ -533,9 +534,7 @@ export async function revalidateQuoteCart(cart: CartView): Promise<CartView | nu
 }
 
 export async function getCart(): Promise<CartView> {
-  if (isSupabaseConfigured() && !hasBusinessApproval((await getSessionProfile()).profile)) {
-    return { items: [], subtotal: 0, itemCount: 0, source: "database" };
-  }
+  const session = await getSessionProfile();
   const locale = await getLocale();
   const userId = await getCurrentUserId();
   if (!userId) {
@@ -546,7 +545,7 @@ export async function getCart(): Promise<CartView> {
   }
 
   if (isSupabaseConfigured()) {
-    return getDatabaseCart(userId, locale);
+    return getDatabaseCart(userId, locale, hasBusinessApproval(session.profile));
   }
 
   return getCookieCart(locale);
@@ -600,7 +599,8 @@ async function resolveProductForCart(
     return null;
   }
 
-  const supabase = await createSafeClient();
+  if (!(await getCurrentUserId())) return null;
+  const supabase = createServiceClient();
   if (!supabase) {
     return null;
   }
@@ -723,7 +723,7 @@ export async function addToCart(
   productId: string,
   quantity: number,
 ): Promise<CartLibResult> {
-  if (isSupabaseConfigured() && !hasBusinessApproval((await getSessionProfile()).profile)) return { errorCode: "auth_required" };
+  if (isSupabaseConfigured() && !(await getCurrentUserId())) return { errorCode: "auth_required" };
   const product = await resolveProductForCart(productId);
   if (!product) {
     return { errorCode: "product_not_found" };

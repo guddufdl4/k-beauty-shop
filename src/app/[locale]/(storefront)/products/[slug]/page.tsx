@@ -417,9 +417,9 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   productSlug={product.slug}
                   productName={displayName}
                   moq={product.moq}
-                  stock={canViewPrices && isPricedStorefrontProduct(product) ? product.stock : 0}
+                  stock={canViewPrices && isPricedStorefrontProduct(product) ? product.stock : 1}
                   soldOut={product.sold_out}
-                  canAdd={canViewPrices && hasSupplyPrice && isPricedStorefrontProduct(product)}
+                  canAdd={Boolean(session.user)}
                   approvalPending={Boolean(session.user) && !canViewPrices}
                   defaultQuantity={Number.isFinite(defaultQty) ? defaultQty : undefined}
                 />

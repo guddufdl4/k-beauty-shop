@@ -1,3 +1,4 @@
+import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { QuoteReadStatus } from "@/components/store/quote-read-status";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -18,7 +19,7 @@ type OrderRow = {
 };
 
 export default async function AccountOrdersPage() {
-  const [{ configured, user }, t, tAccount] = await Promise.all([
+  const [{ configured, user, profile }, t, tAccount] = await Promise.all([
     getSessionProfile(),
     getTranslations("account.orders"),
     getTranslations("account"),
@@ -79,7 +80,7 @@ export default async function AccountOrdersPage() {
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-zinc-900">
-                  {order.total.toLocaleString()} {order.currency}
+                  {hasBusinessApproval(profile) ? `${order.total.toLocaleString()} ${order.currency}` : null}
                 </p>
               </Link>
               {order.order_number.startsWith("QT-") ? <div className="px-5"><QuoteReadStatus orderNumber={order.order_number} reviewedAt={order.shipping_address?.quote_reviewed_at} /></div> : null}

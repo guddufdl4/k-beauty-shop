@@ -508,7 +508,7 @@
     "totalUnits": "{count} units",
     "boxCount": "{count} boxes",
     "boxesAndUnits": "{boxes} boxes · {units} units",
-    "approvalPending": "事業者承認待ちです。管理者の確認後、卸売価格とインボイスをご利用いただけます。",
+    "approvalPending": "ログイン後は事業者承認前でも商品を追加し、見積もりを依頼できます。卸売価格と請求書は事業者証明の承認後に利用できます。",
     "invoiceExcel": "Excelをダウンロード",
     "invoicePdf": "PDFをダウンロード"
   },
@@ -548,6 +548,7 @@
     "spamTrapLabel": "この欄は空のままにしてください",
     "summaryTitle": "ご依頼商品",
     "lineItem": "{quantity} × {price}",
+    "quantityOnly": "{quantity}点",
     "referenceSubtotal": "参考小計",
     "referenceNote": "表示価格はカタログ参考です。最終条件はメールで確定します。",
     "processing": "送信中…",

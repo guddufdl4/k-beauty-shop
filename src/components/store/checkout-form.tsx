@@ -19,6 +19,7 @@ type Props = {
   locale: string;
   usdKrwRate: number;
   isMember: boolean;
+  showPrices?: boolean;
   defaultCompanyName?: string;
   defaultContactName?: string;
   defaultEmail?: string;
@@ -35,6 +36,7 @@ export function CheckoutForm({
   locale,
   usdKrwRate,
   isMember,
+  showPrices = true,
   defaultCompanyName = "",
   defaultContactName = "",
   defaultEmail = "",
@@ -44,7 +46,7 @@ export function CheckoutForm({
   const [state, formAction, pending] = useActionState(submitQuoteRequest, initialState);
   const [tradeTerms, setTradeTerms] = useState("");
   const [shippingMethod, setShippingMethod] = useState("");
-  const meetsMinOrder = cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate);
+  const meetsMinOrder = !showPrices || cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate);
 
   if (!isMember) {
     return (
@@ -179,17 +181,17 @@ export function CheckoutForm({
                 <p className="font-medium">{item.name}</p>
                 <p className="text-zinc-500">
                   {[item.productCode, item.sku].filter(Boolean).join(" · ")} ·{" "}
-                  {t("lineItem", { quantity: item.quantity, price: formatLocalePrice(item.unitPrice, locale, usdKrwRate) })}
+                  {showPrices ? t("lineItem", { quantity: item.quantity, price: formatLocalePrice(item.unitPrice, locale, usdKrwRate) }) : t("quantityOnly", { quantity: item.quantity })}
                 </p>
               </div>
-              <p className="font-medium">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p>
+              {showPrices ? <p className="font-medium">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p> : null}
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex justify-between border-t border-zinc-100 pt-4 text-sm font-semibold">
+        {showPrices ? <div className="mt-4 flex justify-between border-t border-zinc-100 pt-4 text-sm font-semibold">
           <span>{t("referenceSubtotal")}</span>
           <span>{formatLocalePrice(cart.subtotal, locale, usdKrwRate)}</span>
-        </div>
+        </div> : null}
         <p className="mt-3 text-xs text-zinc-500">{t("referenceNote")}</p>
         <p className={meetsMinOrder ? "mt-2 text-xs text-zinc-500" : "mt-2 text-xs font-medium text-rose-700"}>
           {t("minOrderUsd", { amount: MIN_ORDER_USD })}

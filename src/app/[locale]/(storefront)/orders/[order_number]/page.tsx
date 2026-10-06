@@ -1,3 +1,4 @@
+import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { mapOrderStatusToQuoteDisplay } from "@/lib/store/quote-status";
 import { QuoteReadStatus } from "@/components/store/quote-read-status";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
@@ -60,11 +61,11 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
                   {t("quantitySku", { quantity: item.quantity, sku: item.product_sku })}
                 </p>
               </div>
-              <p className="font-medium">{formatLocalePrice(item.line_total, locale, usdKrwRate)}</p>
+              {hasBusinessApproval(session.profile) ? <p className="font-medium">{formatLocalePrice(item.line_total, locale, usdKrwRate)}</p> : null}
             </li>
           ))}
         </ul>
-        <div className="mt-4 space-y-2 border-t border-zinc-100 pt-4 text-sm">
+        {hasBusinessApproval(session.profile) ? <div className="mt-4 space-y-2 border-t border-zinc-100 pt-4 text-sm">
           <div className="flex justify-between">
             <span className="text-zinc-600">{t("subtotal")}</span>
             <span>{formatLocalePrice(order.subtotal, locale, usdKrwRate)}</span>
@@ -81,7 +82,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
             <span>{t("total")}</span>
             <span className="text-rose-700">{formatLocalePrice(order.total, locale, usdKrwRate)}</span>
           </div>
-        </div>
+        </div> : null}
       </div>
 
       <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">

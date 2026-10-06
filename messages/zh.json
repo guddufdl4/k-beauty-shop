@@ -508,7 +508,7 @@
     "totalUnits": "{count} units",
     "boxCount": "{count} boxes",
     "boxesAndUnits": "{boxes} boxes · {units} units",
-    "approvalPending": "企业审核中。管理员批准后即可查看批发价并下载发票。",
+    "approvalPending": "登录后，企业审核前也可添加商品并提交报价请求。企业证明获批后可查看批发价和下载发票。",
     "invoiceExcel": "下载Excel",
     "invoicePdf": "下载PDF"
   },
@@ -548,6 +548,7 @@
     "spamTrapLabel": "请将此栏留空",
     "summaryTitle": "询价商品",
     "lineItem": "{quantity} × {price}",
+    "quantityOnly": "{quantity}件",
     "referenceSubtotal": "参考小计",
     "referenceNote": "所示价格仅供参考，最终条件以邮件确认为准。",
     "processing": "发送中…",

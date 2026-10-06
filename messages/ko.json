@@ -467,6 +467,7 @@
     "spamTrapLabel": "이 칸은 비워 두세요",
     "summaryTitle": "요청 상품",
     "lineItem": "{quantity}개 × {price}",
+    "quantityOnly": "{quantity}개",
     "referenceSubtotal": "참고 소계",
     "referenceNote": "표시 가격은 카탈로그 참고용이며, 최종 조건은 이메일로 확정됩니다.",
     "processing": "보내는 중…",
@@ -591,7 +592,7 @@
     "totalUnits": "{count} units",
     "boxCount": "{count} boxes",
     "boxesAndUnits": "{boxes} boxes · {units} units",
-    "approvalPending": "사업자 승인 대기 중입니다. 관리자 검토 후 공급가 조회와 인보이스 다운로드가 가능합니다.",
+    "approvalPending": "로그인한 회원은 사업자 승인 전에도 상품을 담고 견적을 요청할 수 있습니다. 가격 조회와 인보이스 다운로드는 사업자 증빙 승인 후 가능합니다.",
     "invoiceExcel": "Excel 다운로드",
     "invoicePdf": "PDF 다운로드"
   },

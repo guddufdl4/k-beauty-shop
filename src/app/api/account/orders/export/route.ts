@@ -1,3 +1,4 @@
+import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
@@ -6,14 +7,14 @@ import { getCustomerOrders } from "@/lib/account-orders";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET() {
-  const { user } = await getSessionProfile();
+  const { user, profile } = await getSessionProfile();
   if (!user) return NextResponse.json({ error: "Login required" }, { status: 401 });
   try {
     const orders = await getCustomerOrders(user.id);
     const sheet = XLSX.utils.aoa_to_sheet([
       ["HMT KOREA - ORDER & QUOTE HISTORY"],
       ["Order number", "Date (UTC)", "Status", "Total", "Currency"],
-      ...orders.map((order) => [order.order_number, order.created_at, order.status, order.total, order.currency]),
+      ...orders.map((order) => [order.order_number, order.created_at, order.status, hasBusinessApproval(profile) ? order.total : "", hasBusinessApproval(profile) ? order.currency : ""]),
     ]);
     sheet["!cols"] = [28, 28, 18, 18, 12].map((wch) => ({ wch }));
     const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, sheet, "Order history");

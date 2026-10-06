@@ -56,7 +56,7 @@ export async function submitQuoteRequest(
   const locale = await getLocale();
   const session = await getSessionProfile();
 
-  if (!session.user || !hasBusinessApproval(session.profile)) {
+  if (!session.user) {
     return { error: t("loginRequired") };
   }
 
@@ -133,7 +133,7 @@ export async function submitQuoteRequest(
   }
 
   const usdKrwRate = await getUsdKrwRate();
-  if (!cartMeetsMinOrderUsd(verified.subtotal, usdKrwRate)) {
+  if (hasBusinessApproval(session.profile) && !cartMeetsMinOrderUsd(verified.subtotal, usdKrwRate)) {
     return { error: t("minOrderUsd", { amount: MIN_ORDER_USD }) };
   }
 

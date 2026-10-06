@@ -74,7 +74,8 @@ export default async function CheckoutPage() {
           cart={cart}
           locale={locale}
           usdKrwRate={usdKrwRate}
-          isMember={hasBusinessApproval(session.profile)}
+          isMember={Boolean(session.user)}
+          showPrices={hasBusinessApproval(session.profile)}
           defaultCompanyName={defaultCompanyName}
           defaultContactName={session.profile?.full_name ?? ""}
           defaultEmail={session.profile?.email ?? session.user?.email ?? ""}

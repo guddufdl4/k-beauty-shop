@@ -83,15 +83,15 @@ export default async function CartPage() {
               <div className="mt-4 flex justify-between text-sm">
                 <span className="text-zinc-600">{t("subtotal")}</span>
                 <span>
-                  {session.user
+                  {hasBusinessApproval(session.profile)
                     ? formatLocalePrice(cart.subtotal, locale, usdKrwRate)
-                    : t("loginRequired")}
+                    : session.user ? t("approvalPending") : t("loginRequired")}
                 </span>
               </div>
               <p className="mt-3 text-xs text-zinc-500">{t("quoteNote")}</p>
               <p
                 className={
-                  cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)
+                  !hasBusinessApproval(session.profile) || cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)
                     ? "mt-2 text-xs text-zinc-500"
                     : "mt-2 text-xs font-medium text-rose-700"
                 }
@@ -100,15 +100,16 @@ export default async function CartPage() {
               </p>
             </aside>
           </div>
-          <div className="flex flex-wrap gap-3">
+          {hasBusinessApproval(session.profile) ? <div className="flex flex-wrap gap-3">
             <a download href="/api/cart/invoice?format=xlsx" className="rounded-xl border border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700">{t("invoiceExcel")}</a>
             <a download href="/api/cart/invoice?format=pdf" className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white">{t("invoicePdf")}</a>
-          </div>
+          </div> : null}
           <CheckoutForm
             cart={cart}
             locale={locale}
             usdKrwRate={usdKrwRate}
             isMember={Boolean(session.user)}
+            showPrices={hasBusinessApproval(session.profile)}
             defaultCompanyName={defaultCompanyName}
             defaultContactName={session.profile?.full_name ?? ""}
             defaultEmail={session.profile?.email ?? session.user?.email ?? ""}

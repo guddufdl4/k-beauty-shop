@@ -50,7 +50,6 @@ export function AddToCartForm({
   const boxes = quoteBoxCount(quantity, safeMoq);
   const returnTo = `/products/${productSlug}?qty=${quantity}`;
 
-  if (approvalPending) return <p className="mt-6 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{t("approvalPending")}</p>;
 
   if (!canAdd) {
     return (
@@ -87,6 +86,7 @@ export function AddToCartForm({
       className="mt-6 space-y-3"
       onSubmit={(event) => snapMoqFormQuantity(event.currentTarget, safeMoq, maxQuantity)}
     >
+      {approvalPending ? <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{t("approvalPending")}</p> : null}
       <input type="hidden" name="productId" value={productId} />
       <div className="flex flex-wrap items-center gap-3">
         <label htmlFor="quantity" className="text-sm font-medium text-zinc-700">

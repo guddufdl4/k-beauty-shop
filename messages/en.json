@@ -482,6 +482,7 @@
     "spamTrapLabel": "Leave this field empty",
     "summaryTitle": "Requested items",
     "lineItem": "{quantity} × {price}",
+    "quantityOnly": "{quantity} units",
     "referenceSubtotal": "Reference subtotal",
     "referenceNote": "Prices are a catalog reference. Final terms are confirmed by email.",
     "processing": "Sending…",
@@ -586,7 +587,7 @@
       "authRequired": "Please log in to continue.",
       "minOrderNotMet": "The minimum order amount is USD {amount}."
     },
-    "approvalPending": "Business approval pending. Our team will review your registration before enabling wholesale prices and invoice downloads.",
+    "approvalPending": "Signed-in members can add products and request quotations before business approval. Wholesale prices and invoice downloads require approved business evidence.",
     "invoiceExcel": "Download Excel",
     "invoicePdf": "Download PDF"
   },
