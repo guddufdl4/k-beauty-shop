@@ -3,7 +3,7 @@ import { parsePhoneNumberFromString } from "libphonenumber-js/max";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { saveAccount, closeAccount, changeAccountEmail } from "@/app/actions/account";
-import { SIGNUP_COUNTRIES, callingCode } from "@/lib/auth/signup-fields";
+import { SIGNUP_COUNTRIES, PHONE_COUNTRIES, callingCode } from "@/lib/auth/signup-fields";
 const field = "mt-2 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm";
 export function AccountSettingsForm({ name, company, phone, country, admin }: { name?: string | null; company?: string | null; phone?: string | null; country?: string | null; admin: boolean }) {
   const t = useTranslations("accountSettings");
@@ -16,7 +16,7 @@ export function AccountSettingsForm({ name, company, phone, country, admin }: { 
       <form action={save} className="mt-5 grid gap-4 sm:grid-cols-2">
         {[["full_name", "name", name], ["company_name", "company", company], ["phone_number", "phone", phone]].map(([key, label, value]) => <label key={key} className="text-sm">{t(label!)}<input name={key!} required maxLength={key === "phone_number" ? 30 : 200} type={key === "phone_number" ? "tel" : "text"} defaultValue={value ?? ""} className={field} /></label>)}
         <label className="text-sm">{t("country")}<select name="country_code" defaultValue={country || "KR"} className={field}>{SIGNUP_COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}</select></label>
-        <label className="text-sm">{t("phoneCountry")}<select name="phone_country" defaultValue={(phone ? parsePhoneNumberFromString(phone)?.country : null) || country || "KR"} className={field}>{SIGNUP_COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name} ({callingCode(c.code)})</option>)}</select></label>
+        <label className="text-sm">{t("phoneCountry")}<select name="phone_country" defaultValue={(phone ? parsePhoneNumberFromString(phone)?.country : null) || (PHONE_COUNTRIES.some(c => c.code === country) ? country! : "KR")} className={field}>{PHONE_COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name} ({callingCode(c.code)})</option>)}</select></label>
         <p className="text-sm text-zinc-500 sm:col-span-2">{t("emailHelp")}</p>
         {saved.error || saved.success ? <p role="status" className="text-sm sm:col-span-2">{saved.error || saved.success}</p> : null}
         <button disabled={saving} className="rounded-xl bg-accent px-5 py-3 font-semibold text-white disabled:opacity-50">{saving ? t("processing") : t("save")}</button>

@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import type { AuthState } from "@/app/actions/auth";
 import { resendSignupConfirmation } from "@/app/actions/auth";
-import { callingCode, SIGNUP_COUNTRIES, SIGNUP_CURRENCIES, isSignupPasswordStrong } from "@/lib/auth/signup-fields";
+import { callingCode, SIGNUP_COUNTRIES, PHONE_COUNTRIES, SIGNUP_CURRENCIES, isSignupPasswordStrong } from "@/lib/auth/signup-fields";
 import { SignupPolicyPreview } from "@/components/store/signup-policy-preview";
 
 type Props = {
@@ -80,7 +80,7 @@ export function SignupForm({ action, returnTo, labels, footer, policies }: Props
             <label htmlFor="country_code" className="block text-sm font-medium">
               {labels.country} <span className="text-violet-700">*</span>
             </label>
-            <select id="country_code" name="country_code" required defaultValue="" onChange={(event) => setPhoneCountry(event.target.value)} className={fieldClass}>
+            <select id="country_code" name="country_code" required defaultValue="" onChange={(event) => { if (PHONE_COUNTRIES.some(c => c.code === event.target.value)) setPhoneCountry(event.target.value); }} className={fieldClass}>
               <option value="" disabled>
                 {labels.country}
               </option>
@@ -148,7 +148,7 @@ export function SignupForm({ action, returnTo, labels, footer, policies }: Props
             <p id="phone-hint" className="mt-1 text-xs text-zinc-500">{labels.phoneHint}</p>
             <div className="flex gap-2">
               <select name="phone_country" aria-label={labels.phoneCountry} value={phoneCountry} onChange={(event) => setPhoneCountry(event.target.value)} className={`${fieldClass} max-w-56`}>
-                {SIGNUP_COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name} ({callingCode(country.code)})</option>)}
+                {PHONE_COUNTRIES.map((country) => <option key={country.code} value={country.code}>{country.name} ({callingCode(country.code)})</option>)}
               </select>
               <input id="phone_number" name="phone_number" type="tel" inputMode="tel" autoComplete="tel-national" required minLength={6} maxLength={30} aria-describedby="phone-hint" className={fieldClass} />
             </div>

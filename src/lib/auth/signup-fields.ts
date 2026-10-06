@@ -1,63 +1,13 @@
-import { getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/max";
+import { getCountries, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js/max";
 
 export const SIGNUP_CURRENCIES = ["USD", "KRW"] as const;
 export type SignupCurrency = (typeof SIGNUP_CURRENCIES)[number];
 
-export const SIGNUP_COUNTRIES: { code: string; name: string }[] = [
-  { code: "KR", name: "South Korea" },
-  { code: "US", name: "United States" },
-  { code: "JP", name: "Japan" },
-  { code: "CN", name: "China" },
-  { code: "TW", name: "Taiwan" },
-  { code: "HK", name: "Hong Kong" },
-  { code: "MO", name: "Macau (Macao)" },
-  { code: "SG", name: "Singapore" },
-  { code: "MY", name: "Malaysia" },
-  { code: "TH", name: "Thailand" },
-  { code: "VN", name: "Vietnam" },
-  { code: "ID", name: "Indonesia" },
-  { code: "PH", name: "Philippines" },
-  { code: "AU", name: "Australia" },
-  { code: "NZ", name: "New Zealand" },
-  { code: "CA", name: "Canada" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "IT", name: "Italy" },
-  { code: "ES", name: "Spain" },
-  { code: "NL", name: "Netherlands" },
-  { code: "BE", name: "Belgium" },
-  { code: "PL", name: "Poland" },
-  { code: "SE", name: "Sweden" },
-  { code: "NO", name: "Norway" },
-  { code: "DK", name: "Denmark" },
-  { code: "FI", name: "Finland" },
-  { code: "IE", name: "Ireland" },
-  { code: "CH", name: "Switzerland" },
-  { code: "AT", name: "Austria" },
-  { code: "PT", name: "Portugal" },
-  { code: "CZ", name: "Czechia" },
-  { code: "AE", name: "United Arab Emirates" },
-  { code: "SA", name: "Saudi Arabia" },
-  { code: "QA", name: "Qatar" },
-  { code: "KW", name: "Kuwait" },
-  { code: "IL", name: "Israel" },
-  { code: "TR", name: "Turkiye" },
-  { code: "IN", name: "India" },
-  { code: "BR", name: "Brazil" },
-  { code: "MX", name: "Mexico" },
-  { code: "AR", name: "Argentina" },
-  { code: "CL", name: "Chile" },
-  { code: "CO", name: "Colombia" },
-  { code: "ZA", name: "South Africa" },
-  { code: "NG", name: "Nigeria" },
-  { code: "EG", name: "Egypt" },
-  { code: "RU", name: "Russia" },
-  { code: "UA", name: "Ukraine" },
-  { code: "KZ", name: "Kazakhstan" },
-  { code: "UZ", name: "Uzbekistan" },
-  { code: "MN", name: "Mongolia" },
-];
+const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
+const countryNameOverrides: Record<string,string> = { KR: "South Korea", KP: "North Korea", HK: "Hong Kong", MO: "Macau (Macao)", TW: "Taiwan", PS: "Palestine", TR: "Turkiye" };
+export const PHONE_COUNTRIES = getCountries().map(code => ({ code: String(code), name: countryNameOverrides[code] || countryNames.of(code) || code })).sort((a,b) => a.name.localeCompare(b.name,"en"));
+// Include territories without their own supported telephone numbering plan in address/country fields.
+export const SIGNUP_COUNTRIES = [...PHONE_COUNTRIES, ...["AQ","BV","HM","TF","UM","GS","PN"].map(code => ({ code, name: countryNames.of(code) || code }))].sort((a,b) => a.name.localeCompare(b.name,"en"));
 
 const EMAIL_PATTERN = /^[A-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?)+$/i;
 
@@ -120,7 +70,7 @@ export function parseSignupForm(formData: FormData): ParsedSignupInput | { error
   }
   const phoneCountry = String(formData.get("phone_country") ?? "").trim().toUpperCase();
   const phoneInput = String(formData.get("phone_number") ?? "").trim();
-  if (!SIGNUP_COUNTRIES.some((country) => country.code === phoneCountry) || !/^[0-9 ()+.-]{6,30}$/.test(phoneInput)) return { errorKey: "phoneInvalid" };
+  if (!PHONE_COUNTRIES.some((country) => country.code === phoneCountry) || !/^[0-9 ()+.-]{6,30}$/.test(phoneInput)) return { errorKey: "phoneInvalid" };
   const phone = parsePhoneNumberFromString(phoneInput, phoneCountry as CountryCode);
   if (!phone?.isValid() || phone.country !== phoneCountry) return { errorKey: "phoneInvalid" };
   if (!["MOBILE", "FIXED_LINE_OR_MOBILE"].includes(phone.getType() ?? "")) return { errorKey: "phoneInvalid" };
