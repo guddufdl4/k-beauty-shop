@@ -37,7 +37,7 @@ export async function POST(request:Request) {
   const bytes=new Uint8Array(await head.arrayBuffer());
   const valid=bytes[0]===37&&bytes[1]===80&&bytes[2]===68&&bytes[3]===70&&bytes[4]===45||bytes[0]===255&&bytes[1]===216&&bytes[2]===255||[137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v);
   if(!valid){await bucket.remove([input.path]);return Response.json({error:"file_type"},{status:400});}
-  const result=await service.from("business_documents").upsert({user_id:user.id,file_path:input.path,file_name:String(input.file_name||"document").replace(/[\/\r\n<>]/g,"_").slice(0,160),submitted_at:new Date().toISOString(),website:website||null,business_number:input.business_number.trim(),consent_at:new Date().toISOString(),ai_consent_at:input.ai_consent===true?new Date().toISOString():null,ai_result:null,ai_file_path:null,ai_reviewed_at:null,ai_started_at:null},{onConflict:"user_id"});
+  const result=await service.from("business_documents").upsert({user_id:user.id,file_path:input.path,file_name:String(input.file_name||"document").replace(/[\/\r\n<>]/g,"_").slice(0,160),submitted_at:new Date().toISOString(),website:website||null,business_number:input.business_number.trim(),consent_at:new Date().toISOString(),ai_consent_at:null,ai_result:null,ai_file_path:null,ai_reviewed_at:null,ai_started_at:null},{onConflict:"user_id"});
   if(result.error)return Response.json({error:"save"},{status:503});
   revalidatePath("/admin/members");revalidatePath("/","layout");return response(200);
  }

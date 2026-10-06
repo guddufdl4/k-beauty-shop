@@ -5,8 +5,6 @@ import {createServiceClient} from "@/lib/supabase/service";
 import {canManageMemberTarget} from "@/lib/auth/member-access";
 import {COUNTRY_REGIONS} from "@/lib/auth/country-regions";
 import {MemberEditForm} from "./member-edit-form";
-import {BusinessAiReviewPanel} from "@/components/admin/business-ai-review";
-import {BusinessAiConnectionCheck} from "@/components/admin/business-ai-check";
 export const dynamic="force-dynamic";
 export default async function Page({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const session=await getSessionProfile();const client=createServiceClient();
@@ -14,6 +12,5 @@ export default async function Page({params}:{params:Promise<{id:string}>}){
  const {data}=await client.from("profiles").select("id,email,full_name,company_name,country_code,phone,business_number,role,staff_scope").eq("id",id).maybeSingle();
  if(!data||!canManageMemberTarget(session.profile,data))notFound();
  const auth=await client.auth.admin.getUserById(id);
- const evidence=await client.from("business_documents").select("ai_result,ai_file_path,file_path").eq("user_id",id).maybeSingle();
- return <main className="mx-auto max-w-3xl px-5 py-10"><Link href="/admin/members" className="text-sm text-violet-700">← 회원 목록</Link><h1 className="mt-5 text-2xl font-bold">회원 정보 수정</h1><p className="mt-2 text-sm text-zinc-500">{data.email}</p><MemberEditForm member={{...data,phone_number:data.phone??auth.data.user?.user_metadata?.phone_number??null}} countries={COUNTRY_REGIONS}/><BusinessAiReviewPanel memberId={id} configured={Boolean(process.env.OPENAI_API_KEY)} initial={evidence.data?.ai_file_path===evidence.data?.file_path?evidence.data?.ai_result:null}/>{session.profile?.role==="admin"&&<BusinessAiConnectionCheck/>}</main>;
+ return <main className="mx-auto max-w-3xl px-5 py-10"><Link href="/admin/members" className="text-sm text-violet-700">← 회원 목록</Link><h1 className="mt-5 text-2xl font-bold">회원 정보 수정</h1><p className="mt-2 text-sm text-zinc-500">{data.email}</p><MemberEditForm member={{...data,phone_number:data.phone??auth.data.user?.user_metadata?.phone_number??null}} countries={COUNTRY_REGIONS}/></main>;
 }
