@@ -82,7 +82,7 @@ export default async function AccountPage({
         </div>
       </div>
       <section className="mt-7 rounded-3xl border border-zinc-200 p-6 sm:p-8"><h2 className="text-lg font-bold">{accountSettings("policies")}</h2><div className="mt-4 flex flex-wrap gap-4"><Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("terms")}</Link><Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("privacy")}</Link></div></section>
-      {user && !isAdmin ? <BusinessDocumentForm locale={locale} submitted={evidence?.file_name || null} businessNumber={evidence?.business_number || contact?.business_number || ""} /> : null}
+      {user && !isAdmin ? <BusinessDocumentForm locale={locale} submitted={evidence?.file_name || null} businessNumber={contact?.business_number ?? evidence?.business_number ?? ""} /> : null}
       {user ? <AccountSettingsForm name={profile?.full_name} company={profile?.company_name} phone={phone} country={contact?.country_code} admin={isAdmin} /> : null}
     </main>
   );

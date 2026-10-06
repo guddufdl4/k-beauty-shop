@@ -21,7 +21,7 @@ export async function editMemberProfile(form:FormData):Promise<{error?:string;su
  if(number&&!validBusinessNumber(number))return {error:"사업자 번호를 확인해 주세요."};
  // Changing the number requires renewed review; never grant price access through profile editing.
  const numberChanged=number!==(target.business_number||"");
- let update=client.from("profiles").update({full_name:name||null,company_name:company||null,country_code:country||null,business_number:number||null,...(numberChanged?{role:"customer"}:{})}).eq("id",id).neq("role","admin");
+ let update=client.from("profiles").update({full_name:name||null,company_name:company||null,country_code:country||null,phone:parsedPhone?.number||null,business_number:number||null,...(numberChanged?{role:"customer"}:{})}).eq("id",id).neq("role","admin");
  if(session.profile?.role!=="admin")update=update.eq("staff_scope","none");
  const result=await update.select("id");if(result.error||!result.data?.length)return {error:"저장하지 못했습니다. 다시 시도해 주세요."};
  const phoneUpdate=await client.auth.admin.updateUserById(id,{user_metadata:{phone_number:parsedPhone?.number||null}});
@@ -44,8 +44,11 @@ export async function setBusinessApproval(formData: FormData) {
   if (!client) throw new Error("Service unavailable");
   if (decision === "approve" && !isAdmin) {
     const proof = await client.from("business_documents").select("user_id,file_path,business_number").in("user_id",ids);
+    const targets = await client.from("profiles").select("id,business_number").in("id",ids);
+    if(targets.error)return {error:"회원 정보를 확인할 수 없습니다."};
+    const numbers=new Map((targets.data||[]).map(row=>[row.id,row.business_number]));
     if (proof.error) return { error: "증빙 정보를 확인할 수 없습니다." };
-    const eligible = new Set((proof.data || []).filter(row => row.file_path && row.business_number).map(row => row.user_id));
+    const eligible = new Set((proof.data || []).filter(row => row.file_path && row.business_number && row.business_number===numbers.get(row.user_id)).map(row => row.user_id));
     if (ids.some(id => !eligible.has(id))) return { error: "사업자 증빙을 제출하지 않은 회원이 포함돼 있습니다. 증빙 제출 회원만 선택해 주세요." };
   }
   const patch = decision === "grade"

@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { canManageMembers, canManageMemberTarget, memberGradeLabel } from "@/lib/auth/member-access";
 import { MemberApprovalForm } from "./member-approval-form";
+import {BusinessAiReviewPanel} from "@/components/admin/business-ai-review";
 import Link from "next/link";
 import {
   ADMIN_MEMBERS_PAGE_SIZE,
@@ -29,7 +30,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
     requestedPage,
   );
   const service = createServiceClient();
-  const evidenceResult = service && members.length && canManageMembers(profile) ? await service.from("business_documents").select("user_id,file_path,business_number,submitted_at").in("user_id",members.map(m=>m.id)) : null;
+  const evidenceResult = service && members.length && canManageMembers(profile) ? await service.from("business_documents").select("user_id,file_path,business_number,submitted_at,ai_result,ai_file_path").in("user_id",members.map(m=>m.id)) : null;
   const evidence = new Map((evidenceResult?.data || []).map(row=>[row.user_id,row]));
   const countryNames = new Intl.DisplayNames(["ko"], { type: "region" });
   const countryLabel = (code: string | null) => { if (!code) return "미등록"; const normalized = code.toUpperCase(); if (!/^[A-Z]{2}$/.test(normalized)) return code; return `${({ KR: "대한민국", HK: "홍콩", MO: "마카오", TW: "대만" } as Record<string,string>)[normalized] || countryNames.of(normalized) || normalized} (${normalized})`; };
@@ -120,7 +121,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
                   <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}{canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope})?<Link href={`/admin/members/${member.id}`} className="mt-1 block text-xs text-violet-700 underline">정보 수정</Link>:null}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td><td className="whitespace-nowrap px-4 py-3 text-zinc-700">{countryLabel(member.countryCode)}</td>
                   <td className="px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
-                  <td className="px-4 py-3 text-xs">{evidenceResult?.error ? "확인 오류" : evidence.get(member.id)?.file_path ? <a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">증빙 열람 · {evidence.get(member.id)?.business_number}</a> : "미제출"}</td>
+                  <td className="px-4 py-3 text-xs">{evidenceResult?.error ? "확인 오류" : evidence.get(member.id)?.file_path ? <><a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">증빙 열람 · {evidence.get(member.id)?.business_number}</a>{canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope})?<BusinessAiReviewPanel memberId={member.id} configured={Boolean(process.env.OPENAI_API_KEY)} initial={evidence.get(member.id)?.ai_file_path===evidence.get(member.id)?.file_path?evidence.get(member.id)?.ai_result:null}/>:null}</> : "미제출"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
                     {formatMemberJoinedAt(member.createdAt)}
                   </td>

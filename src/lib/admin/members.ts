@@ -82,7 +82,7 @@ export async function listAdminMembers(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, email, username, full_name, company_name, country_code, role, preferred_currency, created_at, member_grade, staff_scope",
+      "id, email, username, full_name, company_name, country_code, phone, role, preferred_currency, created_at, member_grade, staff_scope",
     )
     .order("created_at", { ascending: false })
     .limit(2000);
@@ -97,6 +97,7 @@ export async function listAdminMembers(
     id: String((row as { id?: string }).id ?? ""),
     username: textOrNull((row as { username?: string }).username),
     email: String((row as { email?: string }).email ?? ""),
+    phoneNumber: textOrNull((row as { phone?: string }).phone),
     fullName: textOrNull((row as { full_name?: string }).full_name),
     companyName: textOrNull((row as { company_name?: string }).company_name),
     countryCode: textOrNull((row as { country_code?: string }).country_code),
@@ -119,7 +120,7 @@ export async function listAdminMembers(
   const start = (safePage - 1) * ADMIN_MEMBERS_PAGE_SIZE;
   const paged = await Promise.all(filtered.slice(start, start + ADMIN_MEMBERS_PAGE_SIZE).map(async (member) => {
     const { data } = await supabase.auth.admin.getUserById(member.id);
-    return { ...member, phoneNumber: textOrNull(data.user?.user_metadata?.phone_number) };
+    return { ...member, phoneNumber: member.phoneNumber ?? textOrNull(data.user?.user_metadata?.phone_number) };
   }));
 
   return {
