@@ -91,6 +91,15 @@ export async function listAdminMembers(
     return emptyList(false, error.message);
   }
 
+  const documents = await supabase.from("business_documents")
+    .select("user_id,file_path,submitted_at")
+    .order("submitted_at", { ascending: false })
+    .limit(2000);
+  if (documents.error) return emptyList(false, documents.error.message);
+  const submitted = new Map<string,string>((documents.data ?? [])
+    .filter(row=>Boolean(row.file_path))
+    .map(row=>[String(row.user_id),String(row.submitted_at || "")]));
+
   const members: AdminMemberRow[] = (data ?? []).map((row) => ({
     memberGrade: String((row as { member_grade?: string }).member_grade ?? "normal"),
     staffScope: String((row as { staff_scope?: string }).staff_scope ?? "none"),
@@ -113,6 +122,18 @@ export async function listAdminMembers(
           .some((value) => String(value).toLowerCase().includes(q)),
       )
     : members;
+
+  // Sort the complete search result before pagination so older submissions
+  // appear on page one, rather than only moving within their existing page.
+  filtered.sort((a,b)=>{
+    const rank=(member:AdminMemberRow)=>submitted.has(member.id)
+      ? member.role === "customer" ? 0 : 1 : 2;
+    const priority=rank(a)-rank(b);
+    if(priority)return priority;
+    const dateA=submitted.get(a.id)||a.createdAt||"";
+    const dateB=submitted.get(b.id)||b.createdAt||"";
+    return dateB.localeCompare(dateA)||a.id.localeCompare(b.id);
+  });
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / ADMIN_MEMBERS_PAGE_SIZE));

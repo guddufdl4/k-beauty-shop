@@ -56,6 +56,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">관리자 · 회원</h1>
+          <p className="mt-2 text-sm font-medium text-violet-700">증빙 제출·승인 대기 회원 우선 · 다음은 증빙 제출 회원 · 최근 제출순</p>
           <p className="mt-1 text-sm text-zinc-500">
             회원가입한 아이디와 이메일을 확인합니다. 비밀번호는 표시하지 않습니다.
           </p>
