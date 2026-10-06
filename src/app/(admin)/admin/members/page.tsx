@@ -31,6 +31,8 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
   const service = createServiceClient();
   const evidenceResult = service && members.length && canManageMembers(profile) ? await service.from("business_documents").select("user_id,file_path,business_number,submitted_at").in("user_id",members.map(m=>m.id)) : null;
   const evidence = new Map((evidenceResult?.data || []).map(row=>[row.user_id,row]));
+  const countryNames = new Intl.DisplayNames(["ko"], { type: "region" });
+  const countryLabel = (code: string | null) => { if (!code) return "미등록"; const normalized = code.toUpperCase(); if (!/^[A-Z]{2}$/.test(normalized)) return code; return `${({ KR: "대한민국", HK: "홍콩", MO: "마카오", TW: "대만" } as Record<string,string>)[normalized] || countryNames.of(normalized) || normalized} (${normalized})`; };
   const from = total === 0 ? 0 : (page - 1) * ADMIN_MEMBERS_PAGE_SIZE + 1;
   const to = Math.min(page * ADMIN_MEMBERS_PAGE_SIZE, total);
 
@@ -96,7 +98,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
               <th className="px-4 py-3">이메일</th>
               <th className="px-4 py-3">휴대폰</th>
               <th className="px-4 py-3">이름</th>
-              <th className="px-4 py-3">회사</th>
+              <th className="px-4 py-3">회사</th><th className="px-4 py-3">국가</th>
               <th className="px-4 py-3">역할</th>
               <th className="px-4 py-3">사업자 증빙</th><th className="px-4 py-3">가입일</th>
             </tr>
@@ -104,7 +106,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td className="px-4 py-8 text-center text-zinc-500" colSpan={9}>
+                <td className="px-4 py-8 text-center text-zinc-500" colSpan={10}>
                   {available ? "가입한 회원이 없습니다." : "profiles 테이블을 조회할 수 없습니다."}
                 </td>
               </tr>
@@ -116,7 +118,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
                   <td className="px-4 py-3 text-zinc-700">{member.email || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-700">{member.phoneNumber ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td>
+                  <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td><td className="whitespace-nowrap px-4 py-3 text-zinc-700">{countryLabel(member.countryCode)}</td>
                   <td className="px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
                   <td className="px-4 py-3 text-xs">{evidenceResult?.error ? "확인 오류" : evidence.get(member.id)?.file_path ? <a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">증빙 열람 · {evidence.get(member.id)?.business_number}</a> : "미제출"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
