@@ -1,3 +1,5 @@
+import { BusinessDocumentForm } from "@/components/store/business-document-form";
+import { createServiceClient } from "@/lib/supabase/service";
 import { canManageMembers } from "@/lib/auth/member-access";
 import { AccountSettingsForm } from "@/components/store/account-settings-form";
 import { redirect } from "next/navigation";
@@ -38,7 +40,10 @@ export default async function AccountPage({
     redirect("/login");
   }
 
-  const contact = user ? (await (await createClient()).from("profiles").select("phone,country_code").eq("id", user.id).maybeSingle()).data : null;
+  const locale = await getLocale();
+  const service = createServiceClient();
+  const evidence = user && service ? (await service.from("business_documents").select("file_name,submitted_at,business_number").eq("user_id",user.id).maybeSingle()).data : null;
+  const contact = user ? (await (await createClient()).from("profiles").select("phone,country_code,business_number").eq("id", user.id).maybeSingle()).data : null;
   const email = user?.email ?? profile?.email ?? "";
   const accountSettings = await getTranslations("accountSettings");
   const memberStaff = canManageMembers(profile);
@@ -77,6 +82,7 @@ export default async function AccountPage({
         </div>
       </div>
       <section className="mt-7 rounded-3xl border border-zinc-200 p-6 sm:p-8"><h2 className="text-lg font-bold">{accountSettings("policies")}</h2><div className="mt-4 flex flex-wrap gap-4"><Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("terms")}</Link><Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">{accountSettings("privacy")}</Link></div></section>
+      {user && !isAdmin ? <BusinessDocumentForm locale={locale} submitted={evidence?.file_name || null} businessNumber={evidence?.business_number || contact?.business_number || ""} /> : null}
       {user ? <AccountSettingsForm name={profile?.full_name} company={profile?.company_name} phone={phone} country={contact?.country_code} admin={isAdmin} /> : null}
     </main>
   );

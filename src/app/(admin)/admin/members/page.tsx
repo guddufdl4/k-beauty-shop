@@ -1,3 +1,4 @@
+import { createServiceClient } from "@/lib/supabase/service";
 import { canManageMembers, canManageMemberTarget, memberGradeLabel } from "@/lib/auth/member-access";
 import { MemberApprovalForm } from "./member-approval-form";
 import Link from "next/link";
@@ -27,6 +28,9 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
     query,
     requestedPage,
   );
+  const service = createServiceClient();
+  const evidenceResult = service && members.length && canManageMembers(profile) ? await service.from("business_documents").select("user_id,file_path,business_number,submitted_at").in("user_id",members.map(m=>m.id)) : null;
+  const evidence = new Map((evidenceResult?.data || []).map(row=>[row.user_id,row]));
   const from = total === 0 ? 0 : (page - 1) * ADMIN_MEMBERS_PAGE_SIZE + 1;
   const to = Math.min(page * ADMIN_MEMBERS_PAGE_SIZE, total);
 
@@ -94,13 +98,13 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
               <th className="px-4 py-3">이름</th>
               <th className="px-4 py-3">회사</th>
               <th className="px-4 py-3">역할</th>
-              <th className="px-4 py-3">가입일</th>
+              <th className="px-4 py-3">사업자 증빙</th><th className="px-4 py-3">가입일</th>
             </tr>
           </thead>
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td className="px-4 py-8 text-center text-zinc-500" colSpan={8}>
+                <td className="px-4 py-8 text-center text-zinc-500" colSpan={9}>
                   {available ? "가입한 회원이 없습니다." : "profiles 테이블을 조회할 수 없습니다."}
                 </td>
               </tr>
@@ -114,6 +118,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
                   <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
+                  <td className="px-4 py-3 text-xs">{evidenceResult?.error ? "확인 오류" : evidence.get(member.id)?.file_path ? <a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">증빙 열람 · {evidence.get(member.id)?.business_number}</a> : "미제출"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
                     {formatMemberJoinedAt(member.createdAt)}
                   </td>

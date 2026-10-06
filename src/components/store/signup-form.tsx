@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { useActionState, useMemo, useState } from "react";
 import type { AuthState } from "@/app/actions/auth";
 import { resendSignupConfirmation } from "@/app/actions/auth";
@@ -46,6 +47,7 @@ const fieldClass =
   "mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-violet-700 focus:outline-none focus:ring-1 focus:ring-violet-700";
 
 export function SignupForm({ action, returnTo, labels, footer, policies }: Props) {
+  const locale = useLocale();
   const [state, formAction, pending] = useActionState(action, {});
   const [resendState, resendAction, resendPending] = useActionState(resendSignupConfirmation, {});
   const [password, setPassword] = useState("");
@@ -92,7 +94,7 @@ export function SignupForm({ action, returnTo, labels, footer, policies }: Props
             </select>
           </div>
           <div>
-            <label htmlFor="company_name" className="block text-sm font-medium">
+            <label htmlFor="business_number" className="block text-sm font-medium">{locale === "ko" ? "사업자 번호 / 현지 사업자 등록번호" : locale === "ja" ? "事業者登録番号" : locale === "zh" ? "企业注册号" : "Business / local registration number"} *</label><input id="business_number" name="business_number" required minLength={3} maxLength={50} className={fieldClass} /><label htmlFor="company_name" className="block text-sm font-medium">
               {labels.company} <span className="text-violet-700">*</span>
             </label>
             <p id="company_name-hint" className="mt-1 text-xs text-zinc-500">

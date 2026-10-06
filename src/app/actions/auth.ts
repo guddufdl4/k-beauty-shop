@@ -1,4 +1,5 @@
 "use server";
+import { validBusinessNumber } from "@/lib/auth/business-number";
 
 import { maintenanceActionError } from "@/lib/maintenance-server";
 
@@ -51,6 +52,7 @@ async function persistSignupProfile(
     fullName: string;
     companyName: string;
     countryCode: string;
+    businessNumber?: string;
     preferredCurrency: string;
   },
 ) {
@@ -68,6 +70,7 @@ async function persistSignupProfile(
     country_code: input.countryCode,
     preferred_currency: input.preferredCurrency,
     role: "customer" as const,
+    business_number: input.businessNumber || null,
     terms_accepted_at: acceptedAt,
     privacy_accepted_at: acceptedAt,
     terms_version: TERMS_POLICY_VERSION,
@@ -109,6 +112,8 @@ export async function signUp(
   if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("auth");
   const locale = await getLocale();
+  const businessNumber = String(formData.get("business_number") || "").trim();
+  if (!validBusinessNumber(businessNumber)) return { error: locale === "ko" ? "사업자 번호를 올바르게 입력해 주세요." : "Please enter a valid business registration number." };
   const parsed = parseSignupForm(formData);
 
   if ("errorKey" in parsed) {
@@ -116,13 +121,13 @@ export async function signUp(
   }
 
   const returnTo = safeStorefrontReturnTo(String(formData.get("next") ?? ""), "/account");
-  const metadata = signupMetadata({
+  const metadata = { business_number: businessNumber, ...signupMetadata({
     phoneNumber: parsed.phoneNumber,    fullName: parsed.fullName,
     companyName: parsed.companyName,
     countryCode: parsed.countryCode,
     preferredCurrency: parsed.preferredCurrency,
     locale,
-  });
+  }) };
   const siteUrl = resolveAuthEmailBaseUrl();
   const nextPath = confirmRedirectPath(locale, returnTo);
   const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`;
@@ -145,7 +150,7 @@ export async function signUp(
 
     const userId = data.user?.id;
     if (userId) {
-      await persistSignupProfile(userId, parsed);
+      await persistSignupProfile(userId, { ...parsed, businessNumber });
     }
 
     const hashedToken = data.properties?.hashed_token;

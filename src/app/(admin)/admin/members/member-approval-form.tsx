@@ -41,8 +41,8 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
       const result = await setBusinessApproval(data);
       saveSelection(storageKey, []);
       return { success: `${result.updated}명에게 변경을 적용했습니다. 관리자와 권한 밖의 계정은 제외됩니다.` };
-    } catch {
-      return { error: "승인 상태를 변경하지 못했습니다. 선택은 유지됩니다. 다시 시도해 주세요." };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "승인 상태를 변경하지 못했습니다. 선택은 유지됩니다. 다시 시도해 주세요." };
     }
   }, {});
 

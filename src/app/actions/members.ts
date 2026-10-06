@@ -17,6 +17,12 @@ export async function setBusinessApproval(formData: FormData) {
   if (decision === "grade" && (!["normal", "vip", "members"].includes(grade) || (grade === "members" && !isAdmin))) throw new Error("Invalid grade");
   const client = createServiceClient();
   if (!client) throw new Error("Service unavailable");
+  if (decision === "approve") {
+    const proof = await client.from("business_documents").select("user_id,file_path,business_number").in("user_id",ids);
+    if (proof.error) throw new Error("증빙 정보를 확인할 수 없습니다.");
+    const eligible = new Set((proof.data || []).filter(row => row.file_path && row.business_number).map(row => row.user_id));
+    if (ids.some(id => !eligible.has(id))) throw new Error("사업자 증빙을 제출하지 않은 회원이 포함돼 있습니다. 증빙 제출 회원만 선택해 주세요.");
+  }
   const patch = decision === "grade"
     ? grade === "members" ? { staff_scope: "members" } : { member_grade: grade, ...(isAdmin ? { staff_scope: "none" } : {}) }
     : { role: decision === "approve" ? "wholesale" : "customer" };
