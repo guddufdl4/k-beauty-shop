@@ -1,3 +1,5 @@
+import { SupportInquiryForm } from "@/components/store/support-inquiry-form";
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { SupportPageShell } from "@/components/store/support-page-shell";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -22,7 +24,7 @@ function whatsAppHref(value: string): string {
 }
 
 export default async function ContactPage() {
-  const [t, settings] = await Promise.all([getTranslations("supportPages"), getSiteSettings()]);
+  const [t, settings, session] = await Promise.all([getTranslations("supportPages"), getSiteSettings(), getSessionProfile()]);
   const contact = getPublicSiteContact(settings);
   const hasDirectContact = Boolean(
     contact.public_email ||
@@ -36,6 +38,7 @@ export default async function ContactPage() {
   return (
     <SupportPageShell activeHref="/contact" title={t("contactTitle")} subtitle={design("contactIntro")}>
 
+      <SupportInquiryForm name={session.profile?.full_name || ""} email={session.user?.email || ""} />
       <div className="mt-8 space-y-4 text-sm leading-relaxed text-zinc-600 sm:text-base">
         <p>{t("contactBody")}</p>
         {hasDirectContact ? (

@@ -4,6 +4,7 @@ import { AdminNotifications } from "./admin-notifications";
 import { storefrontHref } from "@/lib/store/storefront-href";
 
 const navLinks = [
+  { href: "/admin/inquiries", label: "문의 관리" },
   { href: "/admin", label: "\ub300\uc2dc\ubcf4\ub4dc" },
   { href: "/admin/members", label: "\ud68c\uc6d0" },
   { href: "/admin/orders", label: "\uc8fc\ubb38 \uad00\ub9ac" },

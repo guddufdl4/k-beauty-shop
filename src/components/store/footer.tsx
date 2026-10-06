@@ -1,4 +1,5 @@
-import { getTranslations } from "next-intl/server";
+import { supportInquiryCopy } from "@/lib/support-inquiry-copy";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { PublicSiteContact } from "@/lib/site-settings";
 import { ViewModeToggle } from "./view-mode";
@@ -36,6 +37,7 @@ export async function StoreFooter({
   facebook_url,
 }: Props) {
   const t = await getTranslations("footer");
+  const support = supportInquiryCopy(await getLocale());
   const design = await getTranslations("supportDesign");
   const brand = store_name?.trim() || "HMT Korea";
   const acronym = brand.replace(/\s+/g, "").toUpperCase();
@@ -48,7 +50,10 @@ export async function StoreFooter({
       <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
         <div className="flex flex-col gap-5 rounded-2xl border border-violet-100 bg-gradient-to-r from-violet-50 to-rose-50 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div><p className="text-xl font-semibold tracking-tight text-zinc-950">{design("footerTitle")}</p><p className="mt-2 text-sm leading-6 text-zinc-600">{design("footerBody")}</p></div>
+          <div className="flex flex-wrap gap-3">
+          <Link href="/contact#inquiry" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-violet-200 bg-white px-6 text-sm font-semibold text-violet-700 hover:bg-violet-50">{support.cta}</Link>
           <Link href="/products" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-accent px-6 text-sm font-semibold text-white hover:bg-accent-hover">{design("footerCta")}<span aria-hidden className="ml-3">↗</span></Link>
+          </div>
         </div>
       </div>
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-10 sm:grid-cols-2 sm:gap-10 sm:px-6 sm:py-12 lg:grid-cols-4">
