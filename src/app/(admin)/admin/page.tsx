@@ -1,3 +1,4 @@
+import { canManageMembers } from "@/lib/auth/member-access";
 import Link from "next/link";
 import { AdminStatCard } from "@/components/admin/stat-card";
 import { VisitTrendChart } from "@/components/admin/visit-trend-chart";
@@ -16,7 +17,7 @@ export default async function AdminDashboardPage() {
     getStorefrontVisitStats(),
   ]);
 
-  if (configured && (!user || profile?.role !== "admin")) {
+  if (configured && (!user || !canManageMembers(profile))) {
     const accessMessage = !user
       ? "관리자 계정으로 로그인하세요."
       : profileError
@@ -99,6 +100,7 @@ export default async function AdminDashboardPage() {
         >
           회원
         </Link>
+        {profile?.role === "admin" ? <>
         <Link
           href="/admin/orders"
           className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
@@ -118,6 +120,7 @@ export default async function AdminDashboardPage() {
         >
           사이트 설정
         </Link>
+        </> : null}
       </nav>
 
       <p className="mt-8 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">

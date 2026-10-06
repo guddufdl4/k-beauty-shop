@@ -1,7 +1,10 @@
+import { canManageMembers } from "@/lib/auth/member-access";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export type AdminMemberRow = {
+  memberGrade: string;
+  staffScope: string;
   phoneNumber?: string | null;
   id: string;
   username: string | null;
@@ -69,7 +72,7 @@ export async function listAdminMembers(
   query = "",
   page = 1,
 ): Promise<AdminMemberList> {
-  if ((await getSessionProfile()).profile?.role !== "admin") return emptyList(false, "Admin access required");
+  if (!canManageMembers((await getSessionProfile()).profile)) return emptyList(false, "Admin access required");
   const supabase = createServiceClient();
   if (!supabase) {
     return emptyList(false, "Supabase not configured");
@@ -79,7 +82,7 @@ export async function listAdminMembers(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, email, username, full_name, company_name, country_code, role, preferred_currency, created_at",
+      "id, email, username, full_name, company_name, country_code, role, preferred_currency, created_at, member_grade, staff_scope",
     )
     .order("created_at", { ascending: false })
     .limit(2000);
@@ -89,6 +92,8 @@ export async function listAdminMembers(
   }
 
   const members: AdminMemberRow[] = (data ?? []).map((row) => ({
+    memberGrade: String((row as { member_grade?: string }).member_grade ?? "normal"),
+    staffScope: String((row as { staff_scope?: string }).staff_scope ?? "none"),
     id: String((row as { id?: string }).id ?? ""),
     username: textOrNull((row as { username?: string }).username),
     email: String((row as { email?: string }).email ?? ""),

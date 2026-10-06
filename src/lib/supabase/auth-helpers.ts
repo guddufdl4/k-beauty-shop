@@ -1,3 +1,4 @@
+import { canManageMembers } from "@/lib/auth/member-access";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -42,13 +43,17 @@ export type SessionProfile = {
   full_name: string | null;
   company_name: string | null;
   role: "customer" | "admin" | "wholesale";
+  member_grade?: "normal" | "vip";
+  staff_scope?: "none" | "members";
 };
+
+const profileColumns = "id, email, full_name, company_name, role, member_grade, staff_scope";
 
 async function fetchProfileByUserId(userId: string) {
   const supabase = await createClient();
   return supabase
     .from("profiles")
-    .select("id, email, full_name, company_name, role")
+    .select(profileColumns)
     .eq("id", userId)
     .maybeSingle();
 }
@@ -61,7 +66,7 @@ async function fetchProfileWithServiceRole(userId: string) {
 
   return serviceClient
     .from("profiles")
-    .select("id, email, full_name, company_name, role")
+    .select(profileColumns)
     .eq("id", userId)
     .maybeSingle();
 }
@@ -165,4 +170,10 @@ export async function requireAdminSession(): Promise<void> {
   if (profile?.role !== "admin") {
     redirect("/en");
   }
+}
+
+export async function requireMemberManagementSession(): Promise<void> {
+  const { user, profile } = await getSessionProfile();
+  if (!user) redirect("/en/login");
+  if (!canManageMembers(profile)) redirect("/en");
 }

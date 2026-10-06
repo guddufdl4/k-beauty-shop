@@ -1,3 +1,4 @@
+import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import Link from "next/link";
 import { AdminNotifications } from "./admin-notifications";
 import { storefrontHref } from "@/lib/store/storefront-href";
@@ -10,13 +11,15 @@ const navLinks = [
   { href: "/admin/settings", label: "\uc0ac\uc774\ud2b8 \uc124\uc815" },
 ] as const;
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export async function AdminShell({ children }: { children: React.ReactNode }) {
+  const { profile } = await getSessionProfile();
+  const isAdmin = profile?.role === "admin";
   return (
     <div className="min-h-screen bg-zinc-100">
       <header className="border-b border-rose-100 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <nav className="flex flex-wrap items-center gap-2">
-            {navLinks.map((item) => (
+            {navLinks.filter((item) => isAdmin || item.href === "/admin" || item.href === "/admin/members").map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -26,7 +29,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3"><AdminNotifications /><Link
+          <div className="flex items-center gap-3">{isAdmin ? <AdminNotifications /> : null}<Link
             href={storefrontHref()}
             className="rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
           >

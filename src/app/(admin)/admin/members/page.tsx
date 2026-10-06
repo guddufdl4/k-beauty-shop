@@ -1,3 +1,4 @@
+import { canManageMembers, canManageMemberTarget, memberGradeLabel } from "@/lib/auth/member-access";
 import { MemberApprovalForm } from "./member-approval-form";
 import Link from "next/link";
 import {
@@ -29,7 +30,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
   const from = total === 0 ? 0 : (page - 1) * ADMIN_MEMBERS_PAGE_SIZE + 1;
   const to = Math.min(page * ADMIN_MEMBERS_PAGE_SIZE, total);
 
-  if (configured && (!user || profile?.role !== "admin")) {
+  if (configured && (!user || !canManageMembers(profile))) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-16">
         <h1 className="text-2xl font-bold text-zinc-900">관리자 · 회원</h1>
@@ -82,7 +83,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           : (error ?? "회원 목록을 불러오지 못했습니다.")}
       </p>
 
-      <MemberApprovalForm key={`${query}:${page}`} adminId={user?.id ?? "unconfigured"} selectableCount={members.filter((member) => member.role !== "admin").length}>
+      <MemberApprovalForm key={`${query}:${page}`} canAssignStaff={profile?.role === "admin"} adminId={user?.id ?? "unconfigured"} selectableCount={members.filter((member) => canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope })).length}>
       <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -106,13 +107,13 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
             ) : (
               members.map((member) => (
                 <tr key={member.id} className="border-t border-zinc-100">
-                  <td className="px-4 py-3">{member.role !== "admin" ? <input type="checkbox" data-member-id={member.id} aria-label={`${member.email} 선택`} /> : null}</td>
+                  <td className="px-4 py-3">{canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope }) ? <input type="checkbox" data-member-id={member.id} aria-label={`${member.email} 선택`} /> : null}</td>
                   <td className="px-4 py-3 font-semibold text-zinc-900">{member.username ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.email || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-700">{member.phoneNumber ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-700">{memberRoleLabel(member.role)}</td>
+                  <td className="px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
                     {formatMemberJoinedAt(member.createdAt)}
                   </td>

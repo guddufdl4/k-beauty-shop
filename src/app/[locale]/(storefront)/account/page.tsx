@@ -1,3 +1,4 @@
+import { canManageMembers } from "@/lib/auth/member-access";
 import { AccountSettingsForm } from "@/components/store/account-settings-form";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -40,6 +41,7 @@ export default async function AccountPage({
   const contact = user ? (await (await createClient()).from("profiles").select("phone,country_code").eq("id", user.id).maybeSingle()).data : null;
   const email = user?.email ?? profile?.email ?? "";
   const accountSettings = await getTranslations("accountSettings");
+  const memberStaff = canManageMembers(profile);
   const isAdmin = profile?.role === "admin";
   const authUser = user && !contact?.phone ? await getAuthUser() : null;
   const phone = contact?.phone || (typeof authUser?.user_metadata?.phone_number === "string" ? authUser.user_metadata.phone_number : "");
@@ -69,7 +71,7 @@ export default async function AccountPage({
             {href:"/account/orders",title:ui("history"),description:ui("historyHelp"),icon:"↗"},
             {href:"/cart",title:ui("quotes"),description:ui("quotesHelp"),icon:"＋"},
             {href:"/products",title:ui("catalog"),description:ui("catalogHelp"),icon:"▦"},
-            {href:isAdmin ? "/admin" : "/contact",title:isAdmin ? ui("dashboard") : ui("support"),description:isAdmin ? ui("dashboardHelp") : ui("supportHelp"),icon:"↗"},
+            {href:memberStaff ? "/admin" : "/contact",title:memberStaff ? ui("dashboard") : ui("support"),description:memberStaff ? ui("dashboardHelp") : ui("supportHelp"),icon:"↗"},
           ].map((item)=>{ const ItemLink = item.href === "/admin" ? NextLink : Link; return <ItemLink key={item.href} href={item.href} className="group rounded-3xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-lg hover:shadow-pink-100/40"><span aria-hidden className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-xl text-accent">{item.icon}</span><h2 className="font-bold text-zinc-900">{item.title}</h2><p className="mt-2 text-sm leading-6 text-zinc-500">{item.description}</p></ItemLink>; })}</section>
 
         </div>

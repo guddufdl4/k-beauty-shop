@@ -1,5 +1,5 @@
 import { AdminShell } from "@/components/admin/admin-shell";
-import { requireAdminSession } from "@/lib/supabase/auth-helpers";
+import { requireMemberManagementSession } from "@/lib/supabase/auth-helpers";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireAdminSession();
+  await requireMemberManagementSession();
 
   return <AdminShell>{children}</AdminShell>;
 }
