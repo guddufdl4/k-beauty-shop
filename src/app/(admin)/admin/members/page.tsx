@@ -117,7 +117,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
                   <td className="px-4 py-3 font-semibold text-zinc-900">{member.username ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.email || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-700">{member.phoneNumber ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}</td>
+                  <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}{canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope})?<Link href={`/admin/members/${member.id}`} className="mt-1 block text-xs text-violet-700 underline">정보 수정</Link>:null}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td><td className="whitespace-nowrap px-4 py-3 text-zinc-700">{countryLabel(member.countryCode)}</td>
                   <td className="px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
                   <td className="px-4 py-3 text-xs">{evidenceResult?.error ? "확인 오류" : evidence.get(member.id)?.file_path ? <a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="text-violet-700 underline">증빙 열람 · {evidence.get(member.id)?.business_number}</a> : "미제출"}</td>

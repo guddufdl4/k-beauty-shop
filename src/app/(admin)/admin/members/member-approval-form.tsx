@@ -39,6 +39,7 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
   const [state, formAction, pending] = useActionState<{ error?: string; success?: string }, FormData>(async (_previous, data) => {
     try {
       const result = await setBusinessApproval(data);
+      if ("error" in result) return { error: result.error };
       saveSelection(storageKey, []);
       return { success: `${result.updated}명에게 변경을 적용했습니다. 관리자와 권한 밖의 계정은 제외됩니다.` };
     } catch (error) {
