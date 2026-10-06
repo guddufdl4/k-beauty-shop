@@ -10,6 +10,7 @@ export async function GET(){
  ]);
  if(documents.error||orders.error)return new Response(null,{status:503});
  const notifications=[];
+ if(profile?.role!=="admin"&&profile?.role!=="wholesale")notifications.push({id:"business:verification-required:v1",kind:"businessRequired",detail:"",href:"/account"});
  if(documents.data?.submitted_at)notifications.push({id:`business:${documents.data.submitted_at}:${profile?.role}`,kind:profile?.role==="wholesale"?"approved":"review",detail:"",href:"/account"});
  else if(profile?.role==="wholesale")notifications.push({id:"business:manual:approved",kind:"approved",detail:"",href:"/account"});
  for(const order of orders.data??[]){
