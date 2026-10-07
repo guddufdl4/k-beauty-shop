@@ -441,7 +441,7 @@ function HeroSlideFrame({
         <div className="relative z-10 flex min-w-0 items-center justify-center px-7 pb-10 pt-2 sm:pb-12 sm:pt-7 sm:pl-2 sm:pr-12 lg:pr-16">
           <div className="grid w-full min-w-0 max-w-[640px] grid-cols-6 items-end gap-3 sm:gap-4">
             {slide.products.map((product, index) => (
-              <Link key={product.id} href={product.href} tabIndex={isActive ? undefined : -1} aria-label={product.name}
+              <Link key={product.id} href={product.href} prefetch={false} tabIndex={isActive ? undefined : -1} aria-label={product.name}
                 className={`group relative col-span-2 min-w-0 overflow-hidden rounded-2xl border border-white/80 bg-white p-2 shadow-[0_16px_35px_-20px_rgba(110,35,75,0.4)] transition hover:-translate-y-1 ${index === 3 ? "col-start-2" : ""} ${index === 1 ? "-translate-y-3" : ""}`}>
                 <div className="relative aspect-square"><NextImage src={product.src} alt={product.name} fill sizes="(max-width: 640px) 110px, 180px" priority={priority} className="object-contain p-1 transition group-hover:scale-105" /></div>
                 <p className="truncate px-1 pb-1 text-center text-[10px] font-bold tracking-wide text-zinc-700 sm:text-xs">{product.brand}</p>
@@ -547,8 +547,10 @@ export function HeroBannerSlider({ slides, copy }: Props) {
 
       const index = Math.round(element.scrollLeft / width);
       const nextIndex = Math.min(Math.max(index, 0), slideCount - 1);
-      activeIndexRef.current = nextIndex;
-      setActiveIndex(nextIndex);
+      if (activeIndexRef.current !== nextIndex) {
+        activeIndexRef.current = nextIndex;
+        setActiveIndex(nextIndex);
+      }
     };
 
     element.addEventListener("scroll", onScroll, { passive: true });
@@ -584,6 +586,9 @@ export function HeroBannerSlider({ slides, copy }: Props) {
     }
 
     const timer = window.setInterval(() => {
+      if (document.hidden || !sectionRef.current) return;
+      const bounds = sectionRef.current.getBoundingClientRect();
+      if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return;
       const current = activeIndexRef.current;
       const nextIndex = current >= slideCount - 1 ? 0 : current + 1;
       scrollToIndex(nextIndex);

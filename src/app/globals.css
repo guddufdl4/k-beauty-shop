@@ -190,3 +190,5 @@ html.view-mode-mobile .store-product-grid { grid-template-columns: repeat(2, min
 html.view-mode-mobile .storefront-view-root input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 html.view-mode-mobile .storefront-view-root textarea,
 html.view-mode-mobile .storefront-view-root select:not(.locale-select) { font-size: 16px; min-height: 44px; }
+
+html.view-mode-mobile .mobile-quick-nav { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }

@@ -79,6 +79,7 @@ export function ProductCard({
   return (
     <Link
       href={`/products/${product.slug}`}
+      prefetch={false}
       className={cn(
         "group flex h-full min-w-0 max-w-full flex-col",
         isTrending && "rounded-xl border border-zinc-200 bg-white p-2.5 sm:p-3 transition-shadow hover:shadow-md",

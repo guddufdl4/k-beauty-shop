@@ -2144,7 +2144,7 @@ export async function getPriorityBrandProducts(options?: {
         products: toStorefrontProducts(result.products, "guest"),
       };
     },
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", "trending-fill-v1", String(limit), storefrontCacheAudienceKey("guest")],
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", "trending-list-v2", String(limit), storefrontCacheAudienceKey("guest")],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],
@@ -2157,7 +2157,7 @@ async function fetchHomepageProductsFromDatabase(
   limit: number,
   audience: StorefrontAudience,
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
-  const { select: productSelect } = resolveProductSelect(audience);
+  const { select: productSelect } = resolveProductSelect(audience, { listSelect: true });
   let query = supabase
     .from("products")
     .select(productSelect)
@@ -2198,7 +2198,7 @@ async function fetchPriorityBrandProductsFromSource(
   limit: number,
   audience: StorefrontAudience = "guest",
 ): Promise<{ products: ProductWithRelations[]; totalCount: number; meta: FetchMeta }> {
-  const { select: productSelect } = resolveProductSelect(audience);
+  const { select: productSelect } = resolveProductSelect(audience, { listSelect: true });
   const configured = isSupabaseConfigured();
 
   if (!configured) {
