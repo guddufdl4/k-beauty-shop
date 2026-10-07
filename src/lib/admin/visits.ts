@@ -26,6 +26,8 @@ export type StorefrontVisitStats = {
   last7Days: VisitDayStat[];
   last24Hours: VisitChartPoint[];
   last7DaysChart: VisitChartPoint[];
+  last30DaysChart: VisitChartPoint[];
+  totals: Record<"24h" | "7d" | "30d", { visitors: number; views: number }>;
   available: boolean;
 };
 
@@ -176,6 +178,8 @@ function emptyStats(available: boolean): StorefrontVisitStats {
     last7Days: [],
     last24Hours: [],
     last7DaysChart: [],
+    last30DaysChart: [],
+    totals: { "24h": { visitors: 0, views: 0 }, "7d": { visitors: 0, views: 0 }, "30d": { visitors: 0, views: 0 } },
     available,
   };
 }
@@ -187,7 +191,7 @@ export async function getStorefrontVisitStats(): Promise<StorefrontVisitStats> {
   }
 
   const today = seoulYmd();
-  const start = shiftSeoulYmd(today, -6);
+  const start = shiftSeoulYmd(today, -29);
   const data: { visited_at: string; visitor_key: string }[] = [];
   const end = seoulDayStartIso(shiftSeoulYmd(today, 1));
   for (let offset = 0; ; offset += 1000) {
@@ -202,7 +206,7 @@ export async function getStorefrontVisitStats(): Promise<StorefrontVisitStats> {
   }
 
   const byDay = new Map<string, { visitors: Set<string>; views: number }>();
-  for (let offset = 0; offset < 7; offset += 1) {
+  for (let offset = 0; offset < 30; offset += 1) {
     const date = shiftSeoulYmd(start, offset);
     byDay.set(date, { visitors: new Set(), views: 0 });
   }
@@ -225,7 +229,7 @@ export async function getStorefrontVisitStats(): Promise<StorefrontVisitStats> {
   const yesterday = shiftSeoulYmd(today, -1);
   const last7Days: VisitDayStat[] = [];
   for (let offset = 0; offset < 7; offset += 1) {
-    const date = shiftSeoulYmd(start, offset);
+    const date = shiftSeoulYmd(today, offset - 6);
     const bucket = byDay.get(date)!;
     last7Days.push({
       date,
@@ -242,6 +246,10 @@ export async function getStorefrontVisitStats(): Promise<StorefrontVisitStats> {
     views: day.views,
   }));
 
+  const last30DaysChart: VisitChartPoint[] = [...byDay].map(([date, bucket]) => ({
+    key: date, label: formatVisitChartDate(date), dateLabel: null,
+    visitors: bucket.visitors.size, views: bucket.views,
+  }));
   last7Days.reverse();
 
   const byHour = new Map<string, { visitors: Set<string>; views: number; ymd: string; hour: number }>();
@@ -279,6 +287,15 @@ export async function getStorefrontVisitStats(): Promise<StorefrontVisitStats> {
     previousYmd = bucket.ymd;
   }
 
+  const summarize = (buckets: Iterable<{ visitors: Set<string>; views: number }>) => {
+    const visitors = new Set<string>();
+    let views = 0;
+    for (const bucket of buckets) {
+      views += bucket.views;
+      for (const visitor of bucket.visitors) visitors.add(visitor);
+    }
+    return { visitors: visitors.size, views };
+  };
   return {
     todayVisitors: byDay.get(today)?.visitors.size ?? 0,
     todayViews: byDay.get(today)?.views ?? 0,
@@ -286,6 +303,12 @@ export async function getStorefrontVisitStats(): Promise<StorefrontVisitStats> {
     last7Days,
     last24Hours,
     last7DaysChart,
+    last30DaysChart,
+    totals: {
+      "24h": summarize(byHour.values()),
+      "7d": summarize([...byDay].filter(([date]) => date >= shiftSeoulYmd(today, -6)).map(([, bucket]) => bucket)),
+      "30d": summarize(byDay.values()),
+    },
     available: true,
   };
 }

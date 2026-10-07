@@ -84,6 +84,8 @@ export default async function AdminDashboardPage() {
           <VisitTrendChart
             last24Hours={visitStats.last24Hours}
             last7Days={visitStats.last7DaysChart}
+            last30Days={visitStats.last30DaysChart}
+            totals={visitStats.totals}
           />
         ) : null}
         {!visitStats.available ? (
