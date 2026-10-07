@@ -1,3 +1,4 @@
+import { BusinessDocumentPreview } from "@/components/admin/business-document-preview";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canManageMembers, canManageMemberTarget, memberGradeLabel } from "@/lib/auth/member-access";
 import { MemberApprovalForm } from "./member-approval-form";
@@ -29,7 +30,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
     requestedPage,
   );
   const service = createServiceClient();
-  const evidenceResult = service && members.length && canManageMembers(profile) ? await service.from("business_documents").select("user_id,file_path,business_number,submitted_at").in("user_id",members.map(m=>m.id)) : null;
+  const evidenceResult = service && members.length && canManageMembers(profile) ? await service.from("business_documents").select("user_id,file_path,file_name,business_number,submitted_at").in("user_id",members.map(m=>m.id)) : null;
   const evidence = new Map((evidenceResult?.data || []).map(row=>[row.user_id,row]));
   const countryNames = new Intl.DisplayNames(["ko"], { type: "region" });
   const countryLabel = (code: string | null) => { if (!code) return "미등록"; const normalized = code.toUpperCase(); if (!/^[A-Z]{2}$/.test(normalized)) return code; return `${({ KR: "대한민국", HK: "홍콩", MO: "마카오", TW: "대만" } as Record<string,string>)[normalized] || countryNames.of(normalized) || normalized} (${normalized})`; };
@@ -92,7 +93,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
 
       <MemberApprovalForm key={`${query}:${page}`} canAssignStaff={profile?.role === "admin"} adminId={user?.id ?? "unconfigured"} selectableCount={members.filter((member) => canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope })).length}>
       <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
-        <table className="min-w-full text-left text-sm">
+        <table className="min-w-[1400px] text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="px-4 py-3">선택</th><th className="px-4 py-3">아이디</th>
@@ -120,12 +121,12 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-700">{member.phoneNumber ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}{canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope})?<Link href={`/admin/members/${member.id}`} className="mt-1 block text-xs text-violet-700 underline">정보 수정</Link>:null}</td>
                   <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td><td className="whitespace-nowrap px-4 py-3 text-zinc-700">{countryLabel(member.countryCode)}</td>
-                  <td className="px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
+                  <td className="min-w-36 whitespace-nowrap px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
                   <td className="min-w-44 px-4 py-3 text-xs">
                     {evidenceResult?.error ? <span className="inline-flex whitespace-nowrap rounded-full bg-red-50 px-3 py-1.5 font-semibold text-red-700">확인 오류</span> : evidence.get(member.id)?.file_path ? <div className="space-y-2">
                       <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 font-semibold ${member.role === "wholesale" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>{member.role === "wholesale" ? "제출 완료 · 승인 완료" : "제출 완료 · 승인 대기"}</span>
                       <p className="text-zinc-500">제출: {formatMemberJoinedAt(evidence.get(member.id)?.submitted_at || null)}</p>
-                      {canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope}) ? <a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="block font-medium text-violet-700 underline">증빙 열람 · {evidence.get(member.id)?.business_number}</a> : null}
+                      {canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope}) ? <><BusinessDocumentPreview userId={member.id} fileName={evidence.get(member.id)?.file_name || "business-document"} /><a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="block font-medium text-violet-700 underline">원본 다운로드 · {evidence.get(member.id)?.business_number}</a></> : null}
                     </div> : <div><span className="inline-flex whitespace-nowrap rounded-full bg-zinc-100 px-3 py-1.5 font-semibold text-zinc-600">증빙 미제출</span>{member.role === "wholesale" ? <p className="mt-2 text-emerald-700">관리자 별도 승인</p> : null}</div>}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-500">

@@ -80,7 +80,7 @@ export async function GET(request:Request){
  }
  const {data,error}=await service.from("business_documents").select("file_path,file_name").eq("user_id",id).maybeSingle();
  if(error)return response(503);if(!data?.file_path)return response(404);
- const signed=await service.storage.from("business-documents").createSignedUrl(data.file_path,60,{download:data.file_name||"business-document"});
+ const signed=await service.storage.from("business-documents").createSignedUrl(data.file_path,60,new URL(request.url).searchParams.get("preview")==="1" ? {} : {download:data.file_name||"business-document"});
  if(signed.error)return response(503);
  return new Response(null,{status:302,headers:{Location:signed.data.signedUrl,"Cache-Control":"private, no-store"}});
 }
