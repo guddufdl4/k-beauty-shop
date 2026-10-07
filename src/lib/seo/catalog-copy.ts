@@ -1,3 +1,7 @@
+import vi from "../../../messages/vi.json";
+import id from "../../../messages/id.json";
+import th from "../../../messages/th.json";
+const asianMessages = (locale: string) => ({ vi, id, th }[locale as "vi" | "id" | "th"]);
 import type { AppLocale } from "@/i18n/routing";
 import { SEO_BRAND_NAME } from "@/lib/seo/constants";
 
@@ -8,7 +12,7 @@ export type SeoCopy = {
   intro?: string;
 };
 
-const HOME_SEO: Record<AppLocale, SeoCopy> = {
+const HOME_SEO: Partial<Record<AppLocale, SeoCopy>> = {
   en: {
     title: `Korean Cosmetics Wholesale & K-Beauty Supplier | ${SEO_BRAND_NAME}`,
     description:
@@ -95,7 +99,7 @@ const CATEGORY_LANDING_EN: Record<string, CategoryLanding> = {
   },
 };
 
-const CATEGORY_H1_LOCAL: Record<AppLocale, Record<string, string>> = {
+const CATEGORY_H1_LOCAL: Partial<Record<AppLocale, Record<string, string>>> = {
   en: {},
   ko: {
     skincare: "한국 스킨케어 도매",
@@ -124,10 +128,14 @@ const CATEGORY_H1_LOCAL: Record<AppLocale, Record<string, string>> = {
 };
 
 export function getHomeSeo(locale: AppLocale): SeoCopy {
-  return HOME_SEO[locale] ?? HOME_SEO.en;
+  const m = asianMessages(locale);
+  if (m) return { title: `${m.home.hero.title} | ${SEO_BRAND_NAME}`, h1: m.home.hero.title, description: m.home.description, intro: m.home.description };
+  return HOME_SEO[locale] ?? HOME_SEO.en!;
 }
 
 export function getCategoriesIndexSeo(locale: AppLocale): SeoCopy {
+  const m = asianMessages(locale);
+  if (m) return { title: `${m.categories.title} | ${SEO_BRAND_NAME}`, h1: m.categories.title, description: m.home.description };
   if (locale === "ko") {
     return {
       title: `K-뷰티 카테고리 도매 | ${SEO_BRAND_NAME}`,
@@ -161,6 +169,8 @@ export function getCategoriesIndexSeo(locale: AppLocale): SeoCopy {
 }
 
 export function getBrandsIndexSeo(locale: AppLocale): SeoCopy {
+  const m = asianMessages(locale);
+  if (m) return { title: `${m.brands.title} | ${SEO_BRAND_NAME}`, h1: m.brands.title, description: m.home.description };
   if (locale === "ko") {
     return {
       title: `K-뷰티 브랜드 도매 | ${SEO_BRAND_NAME}`,
@@ -191,6 +201,8 @@ export function getBrandsIndexSeo(locale: AppLocale): SeoCopy {
 }
 
 export function getProductsIndexSeo(locale: AppLocale): SeoCopy {
+  const m = asianMessages(locale);
+  if (m) return { title: `${m.products.catalog} | ${SEO_BRAND_NAME}`, h1: m.products.catalog, description: m.home.description };
   if (locale === "ko") {
     return {
       title: `한국 화장품 도매 카탈로그 | ${SEO_BRAND_NAME}`,
@@ -225,6 +237,8 @@ export function getCategorySeo(
   locale: AppLocale,
   fallbackName: string,
 ): CategoryLanding {
+  const m = asianMessages(locale);
+  if (m) return { title: `${fallbackName} | ${SEO_BRAND_NAME}`, h1: fallbackName, description: m.home.description, body: m.home.description };
   const landing = CATEGORY_LANDING_EN[slug];
   const localizedH1 = CATEGORY_H1_LOCAL[locale]?.[slug];
 
@@ -257,6 +271,8 @@ export function getCategorySeo(
 
 export function getBrandSeo(brand: string, locale: AppLocale): SeoCopy & { intro: string } {
   const name = brand.trim();
+  const m = asianMessages(locale);
+  if (m) return { title: `${m.brands.metaTitle.replace("{brand}", name)} | ${SEO_BRAND_NAME}`, h1: m.brands.metaTitle.replace("{brand}", name), description: m.brands.metaDescription.replace("{brand}", name), intro: m.home.description };
   if (locale === "ko") {
     return {
       title: `${name} 도매 | 한국 화장품 공급 | ${SEO_BRAND_NAME}`,

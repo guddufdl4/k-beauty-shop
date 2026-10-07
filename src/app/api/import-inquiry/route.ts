@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   if (!service) return new Response(null, { status: 503 });
   // Server-only storage separates overseas supplier proposals from wholesale buyer inquiries.
   const text = fields.map(key => `${key}: ${data[key]}`).join("\n");
-  const stored = await service.from("import_inquiries").insert({ ...data, locale: ["en","ko","ja","zh"].includes(String(body.locale)) ? body.locale : "en" });
+  const stored = await service.from("import_inquiries").insert({ ...data, locale: ["en","ko","ja","zh","vi","id","th"].includes(String(body.locale)) ? body.locale : "en" });
   if (stored.error) return new Response(null, { status: 503 });
   await sendQuoteInquiryEmail({ subject: `[HMT] Import to Korea proposal · ${data.company_name}`, text, html: `<h2>Import to Korea proposal</h2><p>${escapeHtml(text).replaceAll("\n","<br/>")}</p>`, replyTo: data.email });
   return Response.json({ success: true });

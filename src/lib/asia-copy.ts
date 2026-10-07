@@ -1,0 +1,77 @@
+/** Shared copy for the new Southeast Asian locales, including non-next-intl forms. */
+const localeIndex: Record<string, number> = { vi: 0, id: 1, th: 2 };
+const phrases = {
+  quoteRequest: ["Yêu cầu báo giá trong khi chờ xác minh", "Minta penawaran selama verifikasi tertunda", "ขอใบเสนอราคาระหว่างรอการตรวจสอบ"],
+  businessNumber: ["Mã đăng ký doanh nghiệp / mã địa phương", "Nomor registrasi usaha / lokal", "เลขทะเบียนธุรกิจ / ท้องถิ่น"],
+  businessNumberError: ["Nhập mã đăng ký doanh nghiệp hợp lệ.", "Masukkan nomor registrasi usaha yang valid.", "โปรดกรอกเลขทะเบียนธุรกิจที่ถูกต้อง"],
+  title: ["Thông báo của tôi", "Notifikasi saya", "การแจ้งเตือนของฉัน"],
+  intro: ["Xem thông tin duyệt doanh nghiệp, đơn hàng và báo giá.", "Baca pembaruan persetujuan usaha, pesanan dan penawaran.", "อ่านข่าวการอนุมัติธุรกิจ คำสั่งซื้อและใบเสนอราคา"],
+  all: ["Đánh dấu tất cả đã đọc", "Tandai semua dibaca", "ทำเครื่องหมายว่าอ่านทั้งหมด"],
+  empty: ["Chưa có thông báo.", "Belum ada notifikasi.", "ยังไม่มีการแจ้งเตือน"],
+  error: ["Không tải được thông báo.", "Gagal memuat notifikasi.", "โหลดการแจ้งเตือนไม่ได้"],
+  retry: ["Thử lại", "Coba lagi", "ลองอีกครั้ง"],
+  action: ["Mở trang liên quan", "Buka halaman terkait", "เปิดหน้าที่เกี่ยวข้อง"],
+  account: ["Tài khoản của tôi", "Akun saya", "บัญชีของฉัน"],
+  loading: ["Đang tải thông báo…", "Memuat notifikasi…", "กำลังโหลดการแจ้งเตือน…"],
+  read: ["Đã đọc", "Dibaca", "อ่านแล้ว"],
+  unread: ["Mới", "Baru", "ใหม่"],
+  viewAll: ["Xem tất cả thông báo", "Lihat semua notifikasi", "ดูการแจ้งเตือนทั้งหมด"],
+  businessRequired: ["Cần chứng từ doanh nghiệp để xem giá", "Bukti usaha diperlukan untuk melihat harga", "ต้องมีหลักฐานธุรกิจเพื่อดูราคา"],
+  businessRequiredBody: ["Gửi giấy đăng ký, giấy phép hoặc chứng từ hoạt động doanh nghiệp trong tài khoản và chờ quản trị viên duyệt để xem giá và hóa đơn. Trước khi duyệt vẫn có thể đăng nhập, thêm sản phẩm và yêu cầu báo giá không có giá. Che thông tin cá nhân nhạy cảm không cần thiết.", "Kirim registrasi, izin atau bukti kegiatan usaha di akun dan tunggu persetujuan admin untuk harga dan faktur. Anda tetap dapat masuk, menambah produk dan meminta penawaran tanpa harga sebelum persetujuan. Tutupi data pribadi sensitif yang tidak diperlukan.", "ส่งทะเบียน ใบอนุญาตหรือหลักฐานประกอบธุรกิจในบัญชีและรอผู้ดูแลอนุมัติเพื่อดูราคาและใบแจ้งหนี้ ก่อนอนุมัติยังเข้าสู่ระบบ เพิ่มสินค้าและขอใบเสนอราคาแบบไม่มีราคาได้ ปิดข้อมูลส่วนบุคคลที่ไม่จำเป็น"],
+  approved: ["Doanh nghiệp được duyệt · Có thể xem giá", "Usaha disetujui · Harga tersedia", "ธุรกิจอนุมัติแล้ว · ดูราคาได้"],
+  approvedBody: ["Bạn có thể xem giá cung ứng, báo giá có giá và hóa đơn.", "Anda dapat melihat harga, penawaran dengan harga dan faktur.", "คุณดูราคา ใบเสนอราคาที่มีราคา และใบแจ้งหนี้ได้"],
+  review: ["Đã nhận chứng từ · Chờ xem xét", "Bukti diterima · Menunggu tinjauan", "รับหลักฐานแล้ว · รอตรวจสอบ"],
+  reviewBody: ["Quản trị viên đang xem xét. Giá hiển thị sau khi duyệt; có thể hỏi hàng trong lúc chờ.", "Admin meninjau bukti. Harga tersedia setelah persetujuan; Anda dapat bertanya sambil menunggu.", "ผู้ดูแลกำลังตรวจหลักฐาน ดูราคาได้หลังอนุมัติ ระหว่างรอสอบถามได้"],
+  quoteRead: ["Yêu cầu báo giá đã được xem", "Permintaan penawaran telah dilihat", "อ่านคำขอใบเสนอราคาแล้ว"],
+  quoteReadBody: ["Đội ngũ đã mở yêu cầu của bạn. Xem chi tiết ở trang liên quan.", "Tim telah membuka permintaan Anda. Lihat rincian di halaman terkait.", "ทีมงานเปิดคำขอแล้ว ดูรายละเอียดในหน้าที่เกี่ยวข้อง"],
+  order: ["Cập nhật đơn hàng / báo giá", "Pembaruan pesanan / penawaran", "อัปเดตคำสั่งซื้อ / ใบเสนอราคา"],
+  orderBody: ["Xem số yêu cầu và trạng thái xử lý trên trang liên quan.", "Periksa nomor permintaan dan status di halaman terkait.", "ดูเลขคำขอและสถานะในหน้าที่เกี่ยวข้อง"],
+} as const;
+
+export function asianCopy(locale: string) {
+  const index = localeIndex[locale];
+  if (index === undefined) return null;
+  return Object.fromEntries(Object.entries(phrases).map(([key, values]) => [key, values[index]])) as Record<keyof typeof phrases, string>;
+}
+
+const business = {
+ title: ["Xác minh doanh nghiệp", "Verifikasi usaha", "ยืนยันธุรกิจ"],
+ help: phrases.businessRequiredBody,
+ file: ["Chứng từ doanh nghiệp", "Dokumen usaha", "เอกสารธุรกิจ"],
+ website: ["Website công ty (không bắt buộc)", "Situs perusahaan (opsional)", "เว็บไซต์บริษัท (ไม่บังคับ)"],
+ consent: ["Tôi gửi chứng từ để xác minh và đồng ý đội ngũ quản lý thành viên được ủy quyền xem xét.", "Saya mengirim bukti untuk verifikasi dan menyetujui tinjauan tim pengelola anggota yang berwenang.", "ฉันส่งหลักฐานเพื่อยืนยันธุรกิจและยินยอมให้ทีมจัดการสมาชิกที่ได้รับอนุญาตตรวจสอบ"],
+ upload: ["Gửi chứng từ", "Kirim dokumen", "ส่งเอกสาร"],
+ pending: ["Đang tải lên…", "Mengunggah…", "กำลังอัปโหลด…"],
+ saved: ["Đã nhận chứng từ. Cần quản trị viên duyệt.", "Dokumen diterima. Persetujuan admin diperlukan.", "ได้รับเอกสารแล้ว ต้องรอผู้ดูแลอนุมัติ"],
+ error: ["Tải lên thất bại. Dùng PDF, JPG hoặc PNG và thử lại.", "Unggah gagal. Gunakan PDF, JPG atau PNG dan coba lagi.", "อัปโหลดไม่สำเร็จ ใช้ PDF, JPG หรือ PNG แล้วลองอีกครั้ง"],
+ view: ["Xem chứng từ đã gửi", "Lihat dokumen terkirim", "ดูเอกสารที่ส่ง"],
+ none: ["Chưa gửi chứng từ.", "Belum ada dokumen.", "ยังไม่ได้ส่งเอกสาร"],
+ format: ["PDF · JPG · PNG", "PDF · JPG · PNG", "PDF · JPG · PNG"],
+} as const;
+export function asianBusinessCopy(locale: string) {
+ const index = localeIndex[locale];
+ if (index === undefined) return null;
+ return Object.fromEntries(Object.entries(business).map(([key, values]) => [key, values[index]])) as Record<keyof typeof business, string>;
+}
+
+const support = {
+ title: ["Liên hệ hỗ trợ khách hàng", "Hubungi layanan pelanggan", "ติดต่อบริการลูกค้า"],
+ intro: ["Hỏi về tài khoản, sản phẩm hoặc báo giá. Chúng tôi trả lời qua email bạn cung cấp.", "Tanyakan akun, produk atau penawaran. Tim membalas melalui email Anda.", "สอบถามบัญชี สินค้าหรือใบเสนอราคา ทีมงานตอบทางอีเมลที่คุณให้"],
+ name: ["Họ tên", "Nama", "ชื่อ"], email: ["Email nhận phản hồi", "Email balasan", "อีเมลรับคำตอบ"],
+ category: ["Loại yêu cầu", "Jenis pertanyaan", "ประเภทคำถาม"], subject: ["Tiêu đề", "Subjek", "หัวข้อ"], message: ["Nội dung", "Pesan", "ข้อความ"],
+ order: ["Số đơn / báo giá (không bắt buộc)", "Nomor pesanan / penawaran (opsional)", "เลขคำสั่งซื้อ / ใบเสนอราคา (ไม่บังคับ)"],
+ consent: ["Tôi đồng ý thu thập và sử dụng tên, email và nội dung để xử lý yêu cầu.", "Saya setuju nama, email dan pesan digunakan untuk menangani pertanyaan.", "ฉันยินยอมให้เก็บและใช้ชื่อ อีเมลและข้อความเพื่อดำเนินการคำถาม"],
+ privacy: ["Chính sách bảo mật", "Kebijakan privasi", "นโยบายความเป็นส่วนตัว"],
+ submit: ["Gửi yêu cầu", "Kirim pertanyaan", "ส่งคำถาม"], sending: ["Đang gửi…", "Mengirim…", "กำลังส่ง…"],
+ success: ["Đã nhận yêu cầu. Lưu số tham chiếu; chúng tôi sẽ phản hồi qua email.", "Pertanyaan diterima. Simpan nomor referensi; kami membalas melalui email.", "ได้รับคำถามแล้ว เก็บเลขอ้างอิง เราจะตอบทางอีเมล"],
+ reference: ["Số tham chiếu", "Nomor referensi", "เลขอ้างอิง"],
+ failed: ["Không gửi được. Nội dung được giữ lại; thử lại sau.", "Gagal mengirim. Teks tetap tersimpan; coba lagi nanti.", "ส่งไม่สำเร็จ ข้อความยังอยู่ โปรดลองภายหลัง"],
+ limited: ["Bạn gửi nhiều yêu cầu gần đây. Thử lại sau 5 phút.", "Terlalu banyak pertanyaan. Coba lagi dalam 5 menit.", "ส่งคำถามหลายครั้ง โปรดลองในอีก 5 นาที"],
+ general: ["Câu hỏi chung", "Pertanyaan umum", "คำถามทั่วไป"], account: ["Tài khoản", "Akun", "บัญชี"], quotation: ["Đơn hàng / báo giá", "Pesanan / penawaran", "คำสั่งซื้อ / ใบเสนอราคา"], product: ["Sản phẩm", "Produk", "สินค้า"], other: ["Khác", "Lainnya", "อื่นๆ"],
+ cta: ["Liên hệ hỗ trợ", "Hubungi layanan pelanggan", "ติดต่อบริการลูกค้า"], resolved: ["Đã xử lý", "Selesai", "ดำเนินการแล้ว"],
+} as const;
+export function asianSupportCopy(locale: string) {
+ const index = localeIndex[locale];
+ if (index === undefined) return null;
+ return Object.fromEntries(Object.entries(support).map(([key, values]) => [key, values[index]])) as Record<keyof typeof support, string>;
+}

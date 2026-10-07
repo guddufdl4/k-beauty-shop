@@ -9,6 +9,9 @@ const OG_LOCALE: Record<AppLocale, string> = {
   ko: "ko_KR",
   ja: "ja_JP",
   zh: "zh_CN",
+  vi: "vi_VN",
+  id: "id_ID",
+  th: "th_TH",
 };
 
 /** Legacy alias used by older call sites; homepage English listing copy. */
@@ -22,6 +25,9 @@ export const STOREFRONT_SEO: Record<AppLocale, { title: string; description: str
   ko: { title: getHomeSeo("ko").title, description: getHomeSeo("ko").description },
   ja: { title: getHomeSeo("ja").title, description: getHomeSeo("ja").description },
   zh: { title: getHomeSeo("zh").title, description: getHomeSeo("zh").description },
+  vi: { title: getHomeSeo("vi").title, description: getHomeSeo("vi").description },
+  id: { title: getHomeSeo("id").title, description: getHomeSeo("id").description },
+  th: { title: getHomeSeo("th").title, description: getHomeSeo("th").description },
 };
 
 function resolveLocale(value: string): AppLocale {

@@ -21,7 +21,9 @@ export function LocaleSwitcher({
         className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700"
         value={locale}
         onChange={(event) => {
-          router.replace(pathname, { locale: event.target.value });
+          const query = window.location.search;
+          const hash = window.location.hash;
+          router.replace(`${pathname}${query}${hash}`, { locale: event.target.value });
           router.refresh();
         }}
         aria-label={t("label")}

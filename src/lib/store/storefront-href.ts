@@ -188,7 +188,7 @@ export function normalizeHeroHref(raw: string | null | undefined, fallback: stri
     return trimmed;
   }
 
-  const localePrefixed = trimmed.match(/^\/(en|ko|ja|zh)(\/.*)?$/);
+  const localePrefixed = trimmed.match(/^\/(en|ko|ja|zh|vi|id|th)(\/.*)?$/);
   if (localePrefixed) {
     return localePrefixed[2] || "/";
   }

@@ -58,7 +58,10 @@
     "en": "English",
     "ko": "한국어",
     "ja": "日本語",
-    "zh": "中文"
+    "zh": "中文",
+    "vi": "Tiếng Việt",
+    "id": "Bahasa Indonesia",
+    "th": "ไทย"
   },
   "viewMode": {
     "label": "表示モード",

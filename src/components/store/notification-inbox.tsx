@@ -1,12 +1,15 @@
 "use client";
 import {useEffect,useState} from "react";
 import Link from "next/link";
+import { asianCopy } from "@/lib/asia-copy";
 type Item={id:string;kind:string;detail:string;href:string;status?:string};
 type Feed={userId:string;notifications:Item[]};
 export function NotificationInbox({locale}:{locale:string}){
  const ko=locale==="ko",ja=locale==="ja",zh=locale==="zh";
- const ui=ko?{title:"내 알림",intro:"회원 승인과 주문·견적 소식을 자세히 확인하세요.",all:"모두 읽음",empty:"아직 알림이 없습니다.",error:"알림을 불러오지 못했습니다.",retry:"다시 시도",action:"관련 화면으로 이동",account:"마이페이지",loading:"알림을 불러오는 중…",read:"읽음",unread:"새 알림"}:ja?{title:"お知らせ",intro:"承認・注文・見積のお知らせを確認できます。",all:"すべて既読",empty:"お知らせはありません。",error:"読み込めませんでした。",retry:"再試行",action:"関連ページへ",account:"マイページ",loading:"読み込み中…",read:"既読",unread:"未読"}:zh?{title:"我的通知",intro:"查看企业审核、订单和报价通知。",all:"全部已读",empty:"暂无通知。",error:"无法加载通知。",retry:"重试",action:"查看相关页面",account:"我的账户",loading:"正在加载…",read:"已读",unread:"未读"}:{title:"My notifications",intro:"Read updates about business approval, orders and quotations.",all:"Mark all read",empty:"No notifications yet.",error:"Unable to load notifications.",retry:"Try again",action:"Open related page",account:"My account",loading:"Loading notifications…",read:"Read",unread:"New"};
+ const asian = asianCopy(locale);
+ const ui=asian ?? (ko?{title:"내 알림",intro:"회원 승인과 주문·견적 소식을 자세히 확인하세요.",all:"모두 읽음",empty:"아직 알림이 없습니다.",error:"알림을 불러오지 못했습니다.",retry:"다시 시도",action:"관련 화면으로 이동",account:"마이페이지",loading:"알림을 불러오는 중…",read:"읽음",unread:"새 알림"}:ja?{title:"お知らせ",intro:"承認・注文・見積のお知らせを確認できます。",all:"すべて既読",empty:"お知らせはありません。",error:"読み込めませんでした。",retry:"再試行",action:"関連ページへ",account:"マイページ",loading:"読み込み中…",read:"既読",unread:"未読"}:zh?{title:"我的通知",intro:"查看企业审核、订单和报价通知。",all:"全部已读",empty:"暂无通知。",error:"无法加载通知。",retry:"重试",action:"查看相关页面",account:"我的账户",loading:"正在加载…",read:"已读",unread:"未读"}:{title:"My notifications",intro:"Read updates about business approval, orders and quotations.",all:"Mark all read",empty:"No notifications yet.",error:"Unable to load notifications.",retry:"Try again",action:"Open related page",account:"My account",loading:"Loading notifications…",read:"Read",unread:"New"});
  const text=(kind:string)=>{
+  if (asian) { const entries: Record<string, [string,string]> = { businessRequired: [asian.businessRequired, asian.businessRequiredBody], approved: [asian.approved,asian.approvedBody], review:[asian.review,asian.reviewBody], quoteRead:[asian.quoteRead,asian.quoteReadBody], order:[asian.order,asian.orderBody] }; return entries[kind] ?? entries.order; }
   const content:Record<string,[string,string]>=ko?{
    businessRequired:["가격 조회를 위한 사업자 증빙 안내","공급가와 가격이 포함된 견적·인보이스를 이용하려면 사업자등록증, 해외 사업자등록·사업허가증 또는 사업 운영을 확인할 수 있는 증빙자료를 제출하고 관리자 승인을 받아 주세요. 로그인과 가격 없는 도매 문의는 승인 전에도 가능합니다. 마이페이지의 사업자 증빙에서 사업자 번호와 자료를 제출해 주세요. 불필요한 주민번호 등 민감정보는 가려 주세요."],
    approved:["사업자 승인이 완료되었습니다","이제 공급가를 확인하고 가격이 포함된 견적과 인보이스를 이용할 수 있습니다. 상품을 선택하여 견적 요청을 준비해 주세요."],

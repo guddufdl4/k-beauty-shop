@@ -153,6 +153,7 @@ function resolveSlideBrandLabel(
 function mapStoredHeroSlideToBannerSlide(
   slide: HeroSlide,
   index: number,
+  locale: string,
   siteSettings: Awaited<ReturnType<typeof loadSiteSettingsSafely>>,
   t: Awaited<ReturnType<typeof getTranslations>>,
 ): HeroBannerSlide | null {
@@ -164,7 +165,8 @@ function mapStoredHeroSlideToBannerSlide(
   const isLeadSlide = slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID;
   const brand = resolveHeroSlideBrand(slide.id, index);
   const brandHubHref = buildBrandHref(brandNameToSlug(brand));
-  const adminCopy = mapHeroSlideCopyToBannerCopy(slide.copy);
+  const isAsianLocale = ["vi", "id", "th"].includes(locale);
+  const adminCopy = isAsianLocale ? undefined : mapHeroSlideCopyToBannerCopy(slide.copy);
   const brandCopy = isLeadSlide ? undefined : brandHeroCopyFallback(brand, t, brandHubHref);
 
   const primaryHref = normalizeHeroHref(
@@ -193,11 +195,11 @@ function mapStoredHeroSlideToBannerSlide(
     ...(slide.layout ? { layout: slide.layout } : {}),
     copy: isLeadSlide
       ? {
-          badge: adminCopy?.badge?.trim() || HOMEPAGE_LEAD_HERO_COPY.badge,
-          title: adminCopy?.title?.trim() || HOMEPAGE_LEAD_HERO_COPY.title,
-          description: (adminCopy?.description?.trim() || HOMEPAGE_LEAD_HERO_COPY.subtitle).replace(/worldwide shipping/gi, "Export-ready supply"),
+          badge: adminCopy?.badge?.trim() || (isAsianLocale ? t("heroWholesale") : HOMEPAGE_LEAD_HERO_COPY.badge),
+          title: adminCopy?.title?.trim() || (isAsianLocale ? t("hero.title") : HOMEPAGE_LEAD_HERO_COPY.title),
+          description: (adminCopy?.description?.trim() || (isAsianLocale ? t("hero.description") : HOMEPAGE_LEAD_HERO_COPY.subtitle)).replace(/worldwide shipping/gi, "Export-ready supply"),
           shopBestSellersLabel:
-            adminCopy?.shopBestSellersLabel?.trim() || HOMEPAGE_LEAD_HERO_COPY.button_text,
+            adminCopy?.shopBestSellersLabel?.trim() || (isAsianLocale ? t("hero.orderGuide") : HOMEPAGE_LEAD_HERO_COPY.button_text),
           shopBestSellersHref:
             adminCopy?.shopBestSellersHref?.trim() || DEFAULT_ORDER_GUIDE_HREF,
           wholesaleInquiryLabel: "",
@@ -239,7 +241,7 @@ export default async function HomePage() {
   ));
 
   const heroSlides = getHeroSlides(siteSettings)
-    .map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, siteSettings, t))
+    .map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, locale, siteSettings, t))
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
   const trendingProducts = {

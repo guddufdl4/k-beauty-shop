@@ -1,4 +1,6 @@
+
 "use server";
+import { asianCopy } from "@/lib/asia-copy";
 import { validBusinessNumber } from "@/lib/auth/business-number";
 
 import { maintenanceActionError } from "@/lib/maintenance-server";
@@ -113,7 +115,7 @@ export async function signUp(
   const t = await getTranslations("auth");
   const locale = await getLocale();
   const businessNumber = String(formData.get("business_number") || "").trim();
-  if (!validBusinessNumber(businessNumber)) return { error: locale === "ko" ? "사업자 번호를 올바르게 입력해 주세요." : "Please enter a valid business registration number." };
+  if (!validBusinessNumber(businessNumber)) return { error: asianCopy(locale)?.businessNumberError ?? (locale === "ko" ? "사업자 번호를 올바르게 입력해 주세요." : "Please enter a valid business registration number.") };
   const parsed = parseSignupForm(formData);
 
   if ("errorKey" in parsed) {
