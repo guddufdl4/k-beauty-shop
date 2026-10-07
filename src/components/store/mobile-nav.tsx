@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import NextLink from "next/link";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { buildBrandHref } from "@/lib/store/brand-url";
 import { buildProductsHref, MAIN_NAV_LINKS } from "@/lib/store/products-url";
 import type { FeaturedNavBrand } from "@/lib/supabase/brand-hub";
@@ -183,7 +183,28 @@ export function MobileNavRoot({
 }
 
 const iconButtonClass =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition-colors hover:border-accent-soft hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
+  "flex h-11 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition-colors hover:border-accent-soft hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
+
+export function MobileQuickNav() {
+  const { labels, cartCount, isLoggedIn, closeAll } = useMobileNav();
+  const pathname = usePathname();
+  const links = [
+    { href: "/products", label: labels.products, path: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
+    { href: "/brands", label: labels.brands, path: "M3 3h8l10 10-8 8L3 11V3zM7 7h.01" },
+    { href: "/cart", label: labels.cart, path: "M3 3h2l3 12h11l2-9H6M9 20h.01M18 20h.01" },
+    { href: isLoggedIn ? "/account" : "/login", label: isLoggedIn ? labels.account : labels.login, path: "M16 7a4 4 0 11-8 0 4 4 0 018 0M4 21v-2a8 8 0 0116 0v2" },
+  ];
+  return <nav aria-label={labels.menu} className="mobile-quick-nav fixed inset-x-0 bottom-0 z-50 mx-auto grid grid-cols-4 border-t border-zinc-200 bg-white/95 px-2 pt-1 backdrop-blur lg:hidden" style={{paddingBottom:"max(0.25rem, env(safe-area-inset-bottom))"}}>
+    {links.map(item => {
+      const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+      return <Link key={item.href} href={item.href} onClick={closeAll} aria-current={active ? "page" : undefined} className={`relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[11px] font-semibold ${active ? "bg-pink-50 text-accent" : "text-zinc-600"}`}>
+        <span className="relative"><svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={item.path}/></svg>
+          {item.href === "/cart" && cartCount > 0 ? <span className="absolute -right-3 -top-1 rounded-full bg-accent px-1 text-[9px] leading-4 text-white">{cartCount > 99 ? "99+" : cartCount}</span> : null}
+        </span><span className="max-w-full truncate">{item.label}</span>
+      </Link>;
+    })}
+  </nav>;
+}
 
 export function MobileNavActions() {
   const { cartCount, labels, menuOpen, searchOpen, toggleMenu, toggleSearch } = useMobileNav();
@@ -286,7 +307,7 @@ export function MobileNavPanels() {
     <div
       ref={panelRef}
       data-mobile-nav-panel=""
-      className="border-b border-zinc-200 bg-white lg:hidden"
+      className="max-h-[calc(100dvh-10rem)] overflow-y-auto overscroll-y-contain border-b border-zinc-200 bg-white px-2 lg:hidden"
     >
       {searchOpen ? (
         <div className="min-w-0 px-4 py-3">

@@ -53,7 +53,7 @@ export function MoqQuantityInput({
         aria-label={productName ? `${t("decreaseQuantity")} ${productName}` : t("decreaseQuantity")}
         disabled={disabled || value <= step}
         onClick={() => commit(stepMoqQuantity(value, step, -1, max))}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-lg leading-none text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-lg leading-none text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
         −
       </button>
@@ -62,6 +62,7 @@ export function MoqQuantityInput({
         id={id}
         name={name}
         type="number"
+        inputMode="numeric"
         min={step}
         max={max}
         step={step}
@@ -76,7 +77,7 @@ export function MoqQuantityInput({
         aria-label={productName ? `${t("increaseQuantity")} ${productName}` : t("increaseQuantity")}
         disabled={disabled || value + step > max}
         onClick={() => commit(stepMoqQuantity(value, step, 1, max))}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-lg leading-none text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-lg leading-none text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
         +
       </button>

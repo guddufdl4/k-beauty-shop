@@ -230,8 +230,8 @@ export async function StoreFooter({
       </div>
 
       <div className="border-t border-zinc-100 bg-surface-muted px-4 py-5 text-center text-xs text-zinc-500">
-        {process.env.NODE_ENV === "development" ? <ViewModeToggle /> : null}
-        <p className={process.env.NODE_ENV === "development" ? "mt-4" : undefined}>
+        <ViewModeToggle />
+        <p className="mt-4">
           {t("copyright", { brand })}
         </p>
       </div>

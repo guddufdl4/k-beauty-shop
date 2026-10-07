@@ -35,16 +35,25 @@ export async function SupportPageShell({ title, subtitle, activeHref, children, 
       </header>
       <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
         <aside className="min-w-0 lg:self-start">
-          <div className="flex gap-5 overflow-x-auto rounded-2xl border border-zinc-200 bg-white p-5 lg:flex-col">
-            {groups.map(group => <nav key={group.title} aria-label={group.title} className="min-w-[180px] lg:min-w-0">
+          <details className="rounded-2xl border border-zinc-200 bg-white lg:hidden">
+            <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-zinc-800"><span>{footer("supportTitle")}</span><span className="text-accent">+</span></summary>
+            <div className="grid max-h-[55dvh] gap-4 overflow-y-auto border-t border-zinc-100 p-4">{groups.map(group => <nav key={group.title} aria-label={group.title} className="min-w-[180px] lg:min-w-0">
               <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">{group.title}</p>
               <ul className="space-y-1">{group.links.map(([href, key]) => <li key={href}>
                 <Link href={href} aria-current={activeHref === href ? "page" : undefined} className={`flex min-h-10 items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${activeHref === href ? "bg-violet-50 font-semibold text-accent" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"}`}>
                   {footer(key)}{activeHref === href ? <span aria-hidden>↗</span> : null}
                 </Link>
               </li>)}</ul>
-            </nav>)}
-          </div>
+            </nav>)}</div>
+          </details>
+          <div className="hidden flex-col gap-5 rounded-2xl border border-zinc-200 bg-white p-5 lg:flex">{groups.map(group => <nav key={group.title} aria-label={group.title} className="min-w-[180px] lg:min-w-0">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">{group.title}</p>
+              <ul className="space-y-1">{group.links.map(([href, key]) => <li key={href}>
+                <Link href={href} aria-current={activeHref === href ? "page" : undefined} className={`flex min-h-10 items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${activeHref === href ? "bg-violet-50 font-semibold text-accent" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"}`}>
+                  {footer(key)}{activeHref === href ? <span aria-hidden>↗</span> : null}
+                </Link>
+              </li>)}</ul>
+            </nav>)}</div>
         </aside>
         <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-9 [&_h2]:scroll-mt-24 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:text-zinc-900 [&_p]:leading-7 [&_section]:rounded-xl [&_section]:border [&_section]:border-zinc-100 [&_section]:p-5">
           {children}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
 
@@ -43,9 +43,11 @@ export const metadata: Metadata = {
   ...(googleVerification ? { verification: { google: googleVerification } } : {}),
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  userScalable: true,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({

@@ -1,3 +1,4 @@
+import { ViewModeToggle } from "./view-mode";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AdminNotifications } from "@/components/admin/admin-notifications";
 import { CustomerNotifications } from "@/components/store/customer-notifications";
@@ -23,7 +24,7 @@ import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { LocaleSwitcher } from "./locale-switcher";
 import { AccountMenu } from "./account-menu";
 
-import { MobileNavActions, MobileNavPanels, MobileNavRoot } from "./mobile-nav";
+import { MobileNavActions, MobileNavPanels, MobileNavRoot, MobileQuickNav } from "./mobile-nav";
 
 import { StoreSearchBar } from "./store-search-bar";
 import { BrandsMegaMenu } from "./brands-mega-menu";
@@ -56,7 +57,7 @@ function StoreBrandLogo({ brandLabel }: { brandLabel: string }) {
   const isAcronym = acronym.length <= 5 && !raw.includes(" ");
 
   const wordmarkClass =
-    "block font-black italic leading-none tracking-[-0.03em] text-[1.75rem] sm:text-3xl lg:text-[2.125rem]";
+    "store-wordmark block font-black italic leading-none tracking-[-0.03em] text-[clamp(1.05rem,5.3vw,1.5rem)] sm:text-3xl lg:text-[2.125rem]";
 
   if (isAcronym) {
     return (
@@ -120,9 +121,9 @@ export async function StoreHeader({ storeName }: Props) {
 
       <div className="border-b border-zinc-100 bg-surface-muted">
 
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 text-xs text-zinc-600 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-3 py-1.5 text-xs text-zinc-600 sm:px-6">
 
-          <p className="hidden min-w-0 items-center gap-2 truncate sm:flex">
+          <p className="hidden min-w-0 items-center gap-2 truncate lg:flex">
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-zinc-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" strokeLinecap="round" />
@@ -130,6 +131,7 @@ export async function StoreHeader({ storeName }: Props) {
             <span className="truncate">{tNav("utilityTagline")}</span>
           </p>
 
+          <ViewModeToggle compact />
           <LocaleSwitcher className="ml-auto inline-flex items-center" />
 
         </div>
@@ -172,8 +174,8 @@ export async function StoreHeader({ storeName }: Props) {
           searchButton: tNav("searchButton"),
         }}
       >
-        <div className="relative mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2 py-3.5 sm:gap-5 sm:py-4 lg:gap-10 lg:py-5">
+        <div className="relative mx-auto w-full min-w-0 max-w-7xl px-3 sm:px-6">
+          <div className="store-header-row flex min-w-0 items-center gap-2 py-3.5 sm:gap-5 sm:py-4 lg:gap-10 lg:py-5">
 
           <Link
             href="/"
@@ -194,7 +196,7 @@ export async function StoreHeader({ storeName }: Props) {
 
 
 
-          <div className="ml-auto flex items-center gap-2 sm:gap-4">
+          <div className="store-header-actions ml-auto flex items-center gap-2 sm:gap-4">
             {user && profile?.role === "admin" ? <AdminNotifications /> : null}
             {user && profile?.role !== "admin" ? <CustomerNotifications locale={locale} /> : null}
 
@@ -249,6 +251,7 @@ export async function StoreHeader({ storeName }: Props) {
         />
 
         </div>
+        <MobileQuickNav />
       </MobileNavRoot>
 
     </header>

@@ -635,7 +635,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
         return;
       }
 
-      element.releasePointerCapture(pointerId);
+      if (element.hasPointerCapture(pointerId)) element.releasePointerCapture(pointerId);
       element.style.cursor = showControls ? "grab" : "";
 
       const width = element.clientWidth;
@@ -718,11 +718,11 @@ export function HeroBannerSlider({ slides, copy }: Props) {
               ? "relative z-0 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "relative z-0 w-full"
           }
-          style={showControls ? { cursor: "grab", touchAction: "pan-x" } : undefined}
+          style={showControls ? { cursor: "grab", touchAction: "pan-x pan-y pinch-zoom" } : undefined}
           onPointerDown={
             showControls
               ? (event) => {
-                  if (isCarouselInteractiveTarget(event.target)) {
+                  if (event.pointerType !== "mouse" || isCarouselInteractiveTarget(event.target)) {
                     return;
                   }
 

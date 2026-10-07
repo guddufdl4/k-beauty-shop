@@ -57,6 +57,10 @@ function applyViewModeClass(mode: ViewMode) {
   const root = document.documentElement;
   root.classList.remove("view-mode-auto", "view-mode-mobile", "view-mode-desktop");
   root.classList.add(`view-mode-${mode}`);
+  const viewport = document.querySelector('meta[name="viewport"]');
+  viewport?.setAttribute("content", mode === "desktop"
+    ? "width=1280, user-scalable=yes, viewport-fit=cover"
+    : "width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover");
 }
 
 export function useViewMode() {
@@ -69,16 +73,13 @@ export function useViewMode() {
 
 export function ViewModeProvider({ children }: { children: ReactNode }) {
   const storedMode = useSyncExternalStore(subscribeViewMode, readStoredMode, (): ViewMode => "auto");
-  const mode = process.env.NODE_ENV === "production" ? "auto" : storedMode;
+  const mode = storedMode;
 
   useEffect(() => {
     applyViewModeClass(mode);
   }, [mode]);
 
   function setMode(next: ViewMode) {
-    if (process.env.NODE_ENV === "production") {
-      return;
-    }
     window.localStorage.setItem(STORAGE_KEY, next);
     applyViewModeClass(next);
     window.dispatchEvent(new Event(MODE_EVENT));
@@ -91,13 +92,12 @@ function ViewModeExitBar() {
   const t = useTranslations("viewMode");
   const { mode, setMode } = useViewMode();
 
+  if (process.env.NODE_ENV === "production") return null;
+
   if (mode === "auto") {
     return null;
   }
 
-  if (process.env.NODE_ENV === "production") {
-    return null;
-  }
 
   return (
     <div className="sticky top-0 z-[70] flex flex-wrap items-center justify-center gap-2 border-b border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white">
@@ -140,10 +140,10 @@ export function StorefrontViewShell({ children }: { children: ReactNode }) {
 
   if (mode === "desktop") {
     return (
-      <div className="min-h-screen overflow-x-hidden bg-zinc-100">
+      <div className="min-h-screen overflow-x-auto bg-zinc-100">
         <ViewModeExitBar />
         <div className="view-mode-shell">
-          <div className="storefront-view-root mx-auto min-h-screen min-w-0 w-full max-w-7xl bg-white shadow-sm">
+          <div className="storefront-view-root mx-auto min-h-screen min-w-[1280px] w-full max-w-7xl bg-white shadow-sm">
             {children}
           </div>
         </div>
@@ -161,13 +161,10 @@ export function StorefrontViewShell({ children }: { children: ReactNode }) {
 const toggleButtonBase =
   "min-h-9 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
-export function ViewModeToggle() {
+export function ViewModeToggle({ compact = false }: { compact?: boolean }) {
   const t = useTranslations("viewMode");
   const { mode, setMode } = useViewMode();
 
-  if (process.env.NODE_ENV === "production") {
-    return null;
-  }
 
   const options: { value: ViewMode; label: string }[] = [
     { value: "auto", label: t("auto") },
@@ -177,11 +174,11 @@ export function ViewModeToggle() {
 
   return (
     <div
-      className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-center sm:gap-3"
+      className={compact ? "inline-flex min-w-0 shrink-0 items-center" : "flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-center sm:gap-3"}
       role="group"
       aria-label={t("label")}
     >
-      <span className="text-xs font-medium text-zinc-600">{t("label")}</span>
+      <span className={compact ? "sr-only" : "text-xs font-medium text-zinc-600"}>{t("label")}</span>
       <div className="inline-flex rounded-full border border-zinc-200 bg-white p-0.5 shadow-sm">
         {options.map((option) => {
           const active = mode === option.value;
@@ -189,7 +186,7 @@ export function ViewModeToggle() {
             <button
               key={option.value}
               type="button"
-              className={`${toggleButtonBase} ${
+              className={`${compact ? "min-h-9 rounded-full px-2 py-1.5 text-xs font-medium" : toggleButtonBase} ${
                 active
                   ? "bg-accent text-white shadow-sm hover:bg-accent-hover"
                   : "text-zinc-600 hover:bg-accent-soft hover:text-accent"

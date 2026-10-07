@@ -55,7 +55,7 @@ export default async function AccountPage({
   const name = profile?.full_name || profile?.company_name || t("title");
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-14">
       <section className="relative overflow-hidden rounded-3xl border border-pink-100 bg-gradient-to-br from-rose-50 via-white to-violet-50 p-6 sm:p-10">
         <div aria-hidden className="absolute -right-14 -top-20 h-72 w-72 rounded-full border-[45px] border-pink-100/50" />
         <div className="relative flex flex-wrap items-center gap-5">
@@ -72,12 +72,12 @@ export default async function AccountPage({
           <div className="mt-6 rounded-2xl bg-zinc-50 p-4 text-sm leading-6 text-zinc-600">{approved ? ui("approvedHelp") : ui("pendingHelp")}</div>
         </section>
         <div className="space-y-6">
-          <section className="grid gap-4 sm:grid-cols-2">{[
+          <section className="account-shortcuts grid grid-cols-2 gap-3 sm:gap-4">{[
             {href:"/account/orders",title:ui("history"),description:ui("historyHelp"),icon:"↗"},
             {href:"/cart",title:ui("quotes"),description:ui("quotesHelp"),icon:"＋"},
             {href:"/products",title:ui("catalog"),description:ui("catalogHelp"),icon:"▦"},
             {href:memberStaff ? "/admin" : "/contact",title:memberStaff ? ui("dashboard") : ui("support"),description:memberStaff ? ui("dashboardHelp") : ui("supportHelp"),icon:"↗"},
-          ].map((item)=>{ const ItemLink = item.href === "/admin" ? NextLink : Link; return <ItemLink key={item.href} href={item.href} className="group rounded-3xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-lg hover:shadow-pink-100/40"><span aria-hidden className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-xl text-accent">{item.icon}</span><h2 className="font-bold text-zinc-900">{item.title}</h2><p className="mt-2 text-sm leading-6 text-zinc-500">{item.description}</p></ItemLink>; })}</section>
+          ].map((item)=>{ const ItemLink = item.href === "/admin" ? NextLink : Link; return <ItemLink key={item.href} href={item.href} className="group rounded-3xl border border-zinc-200 bg-white p-4 sm:p-6 transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-lg hover:shadow-pink-100/40"><span aria-hidden className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-xl text-accent">{item.icon}</span><h2 className="font-bold text-zinc-900">{item.title}</h2><p className="mt-2 text-sm leading-6 text-zinc-500">{item.description}</p></ItemLink>; })}</section>
 
         </div>
       </div>

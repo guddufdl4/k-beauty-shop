@@ -31,6 +31,39 @@ body {
   overflow-x: hidden;
 }
 
+/* Keep mobile inputs readable without iOS focus zoom; pinch zoom stays available. */
+@media (max-width: 639px) {
+  .storefront-view-root input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  .storefront-view-root textarea,
+  .storefront-view-root select:not(.locale-select) {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .storefront-view-root {
+    padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+  }
+}
+
+html.view-mode-mobile .storefront-view-root {
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+}
+
+html.view-mode-mobile .mobile-quick-nav {
+  display: grid !important;
+  max-width: 430px;
+}
+
+html.view-mode-desktop {
+  overflow-x: auto;
+}
+
+html.view-mode-desktop body {
+  overflow-x: auto;
+}
+
 :focus:not(:focus-visible) {
   outline: none;
 }
@@ -148,3 +181,12 @@ html.view-mode-desktop .sm\:items-center {
 html.view-mode-desktop .sm\:justify-between {
   justify-content: space-between !important;
 }
+
+/* The optional mobile preview must use mobile proportions on a large monitor too. */
+html.view-mode-mobile .store-wordmark { font-size: 1.3rem !important; }
+html.view-mode-mobile .store-header-row { gap: 0.5rem !important; padding-block: 0.875rem !important; }
+html.view-mode-mobile .store-header-actions { gap: 0.375rem !important; }
+html.view-mode-mobile .store-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.75rem !important; }
+html.view-mode-mobile .storefront-view-root input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+html.view-mode-mobile .storefront-view-root textarea,
+html.view-mode-mobile .storefront-view-root select:not(.locale-select) { font-size: 16px; min-height: 44px; }

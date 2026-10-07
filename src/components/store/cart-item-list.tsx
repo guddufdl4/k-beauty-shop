@@ -46,14 +46,14 @@ function CartItemRow({
           ) : null}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium uppercase tracking-wide text-violet-700">{item.brand}</p>
-            <Link href={`/products/${item.slug}`} className="mt-1 block font-semibold text-zinc-900 hover:text-violet-700">
+            <Link href={`/products/${item.slug}`} className="mt-1 block break-words font-semibold text-zinc-900 hover:text-violet-700">
               {item.name}
             </Link>
             {item.productCode ? (
-              <p className="mt-1 font-mono text-xs text-zinc-500">{t("productCode", { code: item.productCode })}</p>
+              <p className="mt-1 break-all font-mono text-xs text-zinc-500">{t("productCode", { code: item.productCode })}</p>
             ) : null}
             {item.barcode ? (
-              <p className="font-mono text-xs text-zinc-500">{t("barcode", { code: item.barcode })}</p>
+              <p className="break-all font-mono text-xs text-zinc-500">{t("barcode", { code: item.barcode })}</p>
             ) : null}
             <p className="mt-1 text-sm text-zinc-500">
               {t("boxQuantity", { count: step })} · {t("orderQuantity", { count: item.quantity })} ·{" "}
@@ -70,7 +70,7 @@ function CartItemRow({
           <form
             action={updateAction}
             noValidate
-            className="flex items-center gap-2"
+            className="flex max-w-full flex-wrap items-center gap-2"
             onSubmit={(event) => snapMoqFormQuantity(event.currentTarget, step)}
           >
             <input type="hidden" name="productId" value={item.productId} />

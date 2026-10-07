@@ -81,7 +81,7 @@ export function ProductCard({
       href={`/products/${product.slug}`}
       className={cn(
         "group flex h-full min-w-0 max-w-full flex-col",
-        isTrending && "rounded-xl border border-zinc-200 bg-white p-3 transition-shadow hover:shadow-md",
+        isTrending && "rounded-xl border border-zinc-200 bg-white p-2.5 sm:p-3 transition-shadow hover:shadow-md",
       )}
     >
       <div className="relative">
@@ -90,7 +90,7 @@ export function ProductCard({
             className={cn(
               "relative w-full max-w-full overflow-hidden bg-zinc-50",
               isTrending
-                ? "mb-3 h-[170px] rounded-lg sm:aspect-square sm:h-auto"
+                ? "mb-3 aspect-square rounded-lg"
                 : compact
                   ? "mb-3"
                   : "mb-4 rounded-sm border border-zinc-100 aspect-square",
@@ -119,7 +119,7 @@ export function ProductCard({
             className={cn(
               "flex w-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden bg-zinc-50 p-4 text-center",
               isTrending
-                ? "mb-3 h-[170px] rounded-lg sm:aspect-square sm:h-auto"
+                ? "mb-3 aspect-square rounded-lg"
                 : compact
                   ? "mb-3"
                   : "mb-4 rounded-sm border border-zinc-100 aspect-square",
@@ -168,7 +168,7 @@ export function ProductCard({
           <p className="font-mono text-[11px] tracking-wide text-zinc-500">{product.product_code}</p>
         ) : null}
         {barcode ? (
-          <p className="font-mono text-[11px] tracking-wide text-zinc-400">{barcode}</p>
+          <p className="hidden font-mono text-[11px] tracking-wide text-zinc-400 sm:block">{barcode}</p>
         ) : null}
         <div className={cn("mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-2")}>
           <div className="min-w-0 flex-1">

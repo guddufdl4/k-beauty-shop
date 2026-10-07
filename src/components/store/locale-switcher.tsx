@@ -18,7 +18,7 @@ export function LocaleSwitcher({
     <label className={className}>
       <span className="sr-only">{t("label")}</span>
       <select
-        className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700"
+        className="locale-select min-h-9 max-w-[8rem] rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-700"
         value={locale}
         onChange={(event) => {
           const query = window.location.search;
