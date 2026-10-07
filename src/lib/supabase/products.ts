@@ -2600,7 +2600,9 @@ export type PublicProductSitemapRow = {
   updated_at: string | null;
 };
 
-export const SITEMAP_PRODUCTS_PER_FILE = 4000;
+// Every product emits all locale URLs and hreflang alternatives. Keep XML below
+// Vercel's 19.07 MB prerendered-response limit as the language set grows.
+export const SITEMAP_PRODUCTS_PER_FILE = 1000;
 
 export async function getPublicProductSitemapCount(): Promise<number> {
   return unstable_cache(
