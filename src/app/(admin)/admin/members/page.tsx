@@ -1,4 +1,4 @@
-import { MemberTableScroll } from "@/components/admin/member-table-scroll";
+import { MemberDetailPanel } from "@/components/admin/member-detail-panel";
 import { BusinessDocumentPreview } from "@/components/admin/business-document-preview";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canManageMembers, canManageMemberTarget, memberGradeLabel } from "@/lib/auth/member-access";
@@ -18,17 +18,19 @@ import { storefrontHref } from "@/lib/store/storefront-href";
 export const dynamic = "force-dynamic";
 
 type AdminMembersPageProps = {
-  searchParams: Promise<{ q?: string; page?: string | string[] }>;
+  searchParams: Promise<{ q?: string; page?: string | string[]; evidence?: string }>;
 };
 
 export default async function AdminMembersPage({ searchParams }: AdminMembersPageProps) {
   const { configured, user, profile } = await getSessionProfile();
   const params = await searchParams;
   const query = String(params.q ?? "").trim();
+  const evidenceFilter = params.evidence === "submitted" || params.evidence === "missing" ? params.evidence : "all";
   const requestedPage = parseAdminMembersPage(params.page);
-  const { members, total, page, totalPages, available, error } = await listAdminMembers(
+  const { members, total, page, totalPages, available, error, evidenceCounts } = await listAdminMembers(
     query,
     requestedPage,
+    evidenceFilter,
   );
   const service = createServiceClient();
   const evidenceResult = service && members.length && canManageMembers(profile) ? await service.from("business_documents").select("user_id,file_path,file_name,business_number,submitted_at").in("user_id",members.map(m=>m.id)) : null;
@@ -54,12 +56,12 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
   }
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-10 sm:px-6">
+    <main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 pb-56 md:py-10 md:pb-10 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">관리자 · 회원</h1>
           <p className="mt-2 text-sm font-medium text-violet-700">증빙 제출·승인 대기 회원 우선 · 다음은 증빙 제출 회원 · 최근 제출순</p>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 hidden text-sm text-zinc-500 md:block">
             회원가입한 아이디와 이메일을 확인합니다. 비밀번호는 표시하지 않습니다.
           </p>
         </div>
@@ -68,13 +70,18 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
         </Link>
       </div>
 
+      <div className="mt-6 hidden grid-cols-4 gap-4 md:grid" aria-label="회원 현황">
+        {([['전체 회원',evidenceCounts.all],['증빙 제출',evidenceCounts.submitted],['승인 대기',evidenceCounts.pending],['VIP',evidenceCounts.vip]] as const).map(([label,count]) => <div key={label} className="rounded-2xl border border-zinc-200 bg-white p-5"><p className="text-sm text-zinc-500">{label}</p><p className="mt-2 text-2xl font-bold text-zinc-900">{count}<span className="ml-1 text-sm font-normal text-zinc-400">명</span></p></div>)}
+      </div>
+
       <form className="mt-6 flex flex-wrap gap-2" action="/admin/members" method="get">
+        <input type="hidden" name="evidence" value={evidenceFilter} />
         <input
           type="search"
           name="q"
           defaultValue={query}
           placeholder="아이디, 이메일, 이름, 회사"
-          className="min-w-[16rem] flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="min-w-0 min-h-11 flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
         />
         <button
           type="submit"
@@ -92,60 +99,66 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           : (error ?? "회원 목록을 불러오지 못했습니다.")}
       </p>
 
-      <MemberApprovalForm key={`${query}:${page}`} canAssignStaff={profile?.role === "admin"} adminId={user?.id ?? "unconfigured"} selectableCount={members.filter((member) => canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope })).length}>
-      <MemberTableScroll>
-        <table className="min-w-[1400px] text-left text-sm">
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            <tr>
-              <th className="px-4 py-3">선택</th><th className="px-4 py-3">아이디</th>
-              <th className="px-4 py-3">이메일</th>
-              <th className="px-4 py-3">휴대폰</th>
-              <th className="px-4 py-3">이름</th>
-              <th className="px-4 py-3">회사</th><th className="px-4 py-3">국가</th>
-              <th className="px-4 py-3">역할</th>
-              <th className="px-4 py-3">사업자 증빙</th><th className="px-4 py-3">가입일</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.length === 0 ? (
-              <tr>
-                <td className="px-4 py-8 text-center text-zinc-500" colSpan={10}>
-                  {available ? "가입한 회원이 없습니다." : "profiles 테이블을 조회할 수 없습니다."}
-                </td>
-              </tr>
-            ) : (
-              members.map((member) => (
-                <tr key={member.id} className="border-t border-zinc-100">
-                  <td className="px-4 py-3">{canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope }) ? <input type="checkbox" data-member-id={member.id} aria-label={`${member.email} 선택`} /> : null}</td>
-                  <td className="px-4 py-3 font-semibold text-zinc-900">{member.username ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-700">{member.email || "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-zinc-700">{member.phoneNumber ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-700">{member.fullName ?? "—"}{canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope})?<Link href={`/admin/members/${member.id}`} className="mt-1 block text-xs text-violet-700 underline">정보 수정</Link>:null}</td>
-                  <td className="px-4 py-3 text-zinc-700">{member.companyName ?? "—"}</td><td className="whitespace-nowrap px-4 py-3 text-zinc-700">{countryLabel(member.countryCode)}</td>
-                  <td className="min-w-36 whitespace-nowrap px-4 py-3 text-zinc-700">{memberGradeLabel({role: member.role, staff_scope: member.staffScope, member_grade: member.memberGrade})}<span className="mt-1 block text-xs text-zinc-500">{memberRoleLabel(member.role)}</span></td>
-                  <td className="min-w-44 px-4 py-3 text-xs">
-                    {evidenceResult?.error ? <span className="inline-flex whitespace-nowrap rounded-full bg-red-50 px-3 py-1.5 font-semibold text-red-700">확인 오류</span> : evidence.get(member.id)?.file_path ? <div className="space-y-2">
-                      <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 font-semibold ${member.role === "wholesale" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>{member.role === "wholesale" ? "제출 완료 · 승인 완료" : "제출 완료 · 승인 대기"}</span>
-                      <p className="text-zinc-500">제출: {formatMemberJoinedAt(evidence.get(member.id)?.submitted_at || null)}</p>
-                      {canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope}) ? <><BusinessDocumentPreview userId={member.id} fileName={evidence.get(member.id)?.file_name || "business-document"} /><a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="block font-medium text-violet-700 underline">원본 다운로드 · {evidence.get(member.id)?.business_number}</a></> : null}
-                    </div> : <div><span className="inline-flex whitespace-nowrap rounded-full bg-zinc-100 px-3 py-1.5 font-semibold text-zinc-600">증빙 미제출</span>{member.role === "wholesale" ? <p className="mt-2 text-emerald-700">관리자 별도 승인</p> : null}</div>}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
-                    {formatMemberJoinedAt(member.createdAt)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
+      <div className="mt-4 flex gap-2 md:max-w-lg" aria-label="사업자 증빙 필터">
+        {([['all', '전체'], ['submitted', '증빙 제출'], ['missing', '미제출']] as const).map(([value,label]) => <Link key={value} href={buildAdminMembersHref(query,1,value)} aria-current={evidenceFilter === value ? 'page' : undefined} className={`flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl px-2 text-sm font-semibold ${evidenceFilter === value ? 'bg-violet-700 text-white' : 'bg-white text-zinc-600 ring-1 ring-zinc-200'}`}>{label}<span className="text-xs opacity-80">{evidenceCounts[value]}</span></Link>)}
+      </div>
+
+      <MemberApprovalForm key={`${query}:${page}:${evidenceFilter}`} canAssignStaff={profile?.role === "admin"} adminId={user?.id ?? "unconfigured"} selectableCount={members.filter((member) => canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope })).length}>
+      <div className="space-y-3 md:hidden" aria-label="모바일 회원 목록">
+        {members.length === 0 ? <p className="rounded-2xl bg-white p-6 text-center text-sm text-zinc-500">{available ? "해당하는 회원이 없습니다." : "회원 목록을 불러오지 못했습니다."}</p> : members.map(member => {
+          const manageable = canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope });
+          const document = evidence.get(member.id);
+          return <article key={member.id} className="rounded-2xl border border-zinc-200 bg-white p-4 has-[input:checked]:border-violet-500 has-[input:checked]:bg-violet-50/50">
+            <div className="flex items-start gap-3">
+              {manageable ? <label className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-50"><input type="checkbox" data-member-id={member.id} aria-label={`${member.email} 모바일 선택`} className="h-6 w-6 accent-violet-700" /></label> : null}
+              <div className="min-w-0 flex-1"><h2 className="break-words text-base font-bold text-zinc-900">{member.fullName || member.username || member.email}</h2><p className="mt-1 break-words text-sm text-zinc-600">{member.companyName || '회사 미등록'}</p><p className="mt-1 text-xs text-zinc-500">{countryLabel(member.countryCode)}</p></div>
+              <span className={`shrink-0 rounded-full px-2.5 py-1.5 text-xs font-semibold ${evidenceResult?.error ? 'bg-red-50 text-red-700' : document?.file_path ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-600'}`}>{evidenceResult?.error ? '확인 오류' : document?.file_path ? '증빙 제출' : '미제출'}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs"><span className="rounded-md bg-zinc-100 px-2 py-1 font-medium text-zinc-700">{memberGradeLabel({role:member.role,staff_scope:member.staffScope,member_grade:member.memberGrade})}</span><span className={member.role === 'wholesale' ? 'text-emerald-700' : 'text-zinc-500'}>{memberRoleLabel(member.role)}</span></div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-3">
+              {manageable && document?.file_path ? <BusinessDocumentPreview userId={member.id} fileName={document.file_name || 'business-document'} compact /> : <span className="text-xs text-zinc-400">{formatMemberJoinedAt(member.createdAt)}</span>}
+              {manageable ? <Link href={`/admin/members/${member.id}`} prefetch={false} className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-violet-700">회원 상세 · 수정 →</Link> : null}
+            </div>
+          </article>;
+        })}
+      </div>
+      <div className="hidden overflow-x-auto rounded-2xl border border-zinc-200 bg-white md:block" aria-label="PC 회원 목록">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-500"><tr><th className="w-14 px-4 py-4">선택</th><th className="px-4 py-4">회원 / 회사</th><th className="px-3 py-4">국가</th><th className="px-3 py-4">회원 등급</th><th className="px-3 py-4">사업자 증빙</th><th className="px-3 py-4">가입일</th><th className="px-3 py-4">관리</th></tr></thead>
+          <tbody>{members.length === 0 ? <tr><td colSpan={7} className="px-4 py-10 text-center text-zinc-500">{available ? '해당하는 회원이 없습니다.' : '회원 목록을 불러오지 못했습니다.'}</td></tr> : members.map(member => {
+            const manageable = canManageMemberTarget(profile,{role:member.role,staff_scope:member.staffScope});
+            const document = evidence.get(member.id);
+            const name = member.fullName || member.username || member.email;
+            return <tr key={member.id} className="border-t border-zinc-100 has-[input:checked]:bg-violet-50/60">
+              <td className="px-4 py-4">{manageable ? <input type="checkbox" data-member-id={member.id} aria-label={`${member.email} 선택`} className="h-5 w-5 accent-violet-700" /> : null}</td>
+              <td className="max-w-64 px-4 py-4"><p className="break-words font-semibold text-zinc-900">{name}</p><p className="mt-1 break-words text-xs text-zinc-600">{member.companyName || '회사 미등록'}</p><p className="mt-1 break-all text-xs text-zinc-400">{member.email}</p></td>
+              <td className="px-3 py-4 text-xs text-zinc-600">{countryLabel(member.countryCode)}</td>
+              <td className="px-3 py-4"><span className="inline-flex whitespace-nowrap rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700">{memberGradeLabel({role:member.role,staff_scope:member.staffScope,member_grade:member.memberGrade})}</span><p className="mt-1 text-xs text-zinc-500">{memberRoleLabel(member.role)}</p></td>
+              <td className="px-3 py-4"><span className={`inline-flex whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold ${evidenceResult?.error ? 'bg-red-50 text-red-700' : document?.file_path ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-600'}`}>{evidenceResult?.error ? '확인 오류' : document?.file_path ? '제출 완료' : '미제출'}</span>{manageable && document?.file_path ? <div className="mt-2"><BusinessDocumentPreview userId={member.id} fileName={document.file_name || 'business-document'} compact /></div> : null}</td>
+              <td className="px-3 py-4 text-xs text-zinc-500">{formatMemberJoinedAt(member.createdAt)}</td>
+              <td className="px-3 py-4">{manageable ? <MemberDetailPanel name={name}>
+                <div><h3 className="break-words text-xl font-bold">{name}</h3><p className="mt-1 text-sm text-zinc-600">{member.companyName || '회사 미등록'}</p><p className="mt-2 break-all text-sm text-zinc-500">{member.email}</p></div>
+                <dl className="space-y-3 rounded-xl bg-zinc-50 p-4 text-sm">{([['아이디',member.username || '미등록'],['휴대폰',member.phoneNumber || '미등록'],['국가',countryLabel(member.countryCode)],['등급',memberGradeLabel({role:member.role,staff_scope:member.staffScope,member_grade:member.memberGrade})],['사업자 승인',memberRoleLabel(member.role)],['가입일',formatMemberJoinedAt(member.createdAt)]] as const).map(([label,value])=><div key={label} className="flex justify-between gap-3"><dt className="shrink-0 text-zinc-500">{label}</dt><dd className="break-words text-right font-medium">{value}</dd></div>)}</dl>
+                <section><h4 className="mb-3 font-semibold">사업자 증빙 서류</h4>{document?.file_path ? <><BusinessDocumentPreview userId={member.id} fileName={document.file_name || 'business-document'} /><p className="mt-3 text-xs text-zinc-500">제출: {formatMemberJoinedAt(document.submitted_at || null)}</p><a href={`/api/account/business-document?user=${member.id}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center text-sm text-violet-700 underline">원본 다운로드</a></> : <p className="text-sm text-zinc-500">증빙 미제출</p>}</section>
+                <Link href={`/admin/members/${member.id}`} prefetch={false} className="flex min-h-12 items-center justify-center rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white">회원 정보 수정</Link>
+              </MemberDetailPanel> : <span className="text-xs text-zinc-400">권한 없음</span>}</td>
+            </tr>;
+          })}</tbody>
         </table>
-      </MemberTableScroll>
+      </div>
       </MemberApprovalForm>
+
+      <nav aria-label="모바일 관리자 메뉴" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-zinc-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+        <Link href="/admin" prefetch={false} className="flex h-16 flex-col items-center justify-center gap-1 text-xs text-zinc-500"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 10 12 3l9 7v10H3Z"/><path d="M9 20v-7h6v7"/></svg>대시보드</Link>
+        <Link href="/admin/members" prefetch={false} aria-current="page" className="flex h-16 flex-col items-center justify-center gap-1 text-xs font-semibold text-violet-700"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-3a8 8 0 0 1 16 0v3"/></svg>회원</Link>
+        <Link href="/admin/inquiries" prefetch={false} className="flex h-16 flex-col items-center justify-center gap-1 text-xs text-zinc-500"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 3h16v14H9l-5 4Z"/><path d="M8 8h8M8 12h5"/></svg>문의</Link>
+      </nav>
 
       {available && totalPages > 1 ? (
         <nav className="mt-6 flex flex-wrap items-center justify-center gap-2" aria-label="회원 목록 페이지">
           {page > 1 ? (
             <Link
-              href={buildAdminMembersHref(query, page - 1)}
+              href={buildAdminMembersHref(query, page - 1, evidenceFilter)}
               className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
             >
               ← 이전
@@ -165,7 +178,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
             ) : (
               <Link
                 key={item}
-                href={buildAdminMembersHref(query, item)}
+                href={buildAdminMembersHref(query, item, evidenceFilter)}
                 className="min-w-9 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-center text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
               >
                 {item}
@@ -174,7 +187,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
           )}
           {page < totalPages ? (
             <Link
-              href={buildAdminMembersHref(query, page + 1)}
+              href={buildAdminMembersHref(query, page + 1, evidenceFilter)}
               className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
             >
               다음 →

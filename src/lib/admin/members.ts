@@ -27,6 +27,7 @@ export type AdminMemberList = {
   totalPages: number;
   available: boolean;
   error: string | null;
+  evidenceCounts: { all: number; submitted: number; missing: number; pending: number; vip: number };
 };
 
 export function parseAdminMembersPage(raw: string | string[] | undefined): number {
@@ -38,7 +39,7 @@ export function parseAdminMembersPage(raw: string | string[] | undefined): numbe
   return parsed;
 }
 
-export function buildAdminMembersHref(query: string, page: number): string {
+export function buildAdminMembersHref(query: string, page: number, evidence = "all"): string {
   const params = new URLSearchParams();
   const trimmed = query.trim();
   if (trimmed) {
@@ -47,6 +48,7 @@ export function buildAdminMembersHref(query: string, page: number): string {
   if (page > 1) {
     params.set("page", String(page));
   }
+  if (evidence === "submitted" || evidence === "missing") params.set("evidence", evidence);
   const qs = params.toString();
   return qs ? `/admin/members?${qs}` : "/admin/members";
 }
@@ -65,12 +67,14 @@ function emptyList(available: boolean, error: string | null): AdminMemberList {
     totalPages: 1,
     available,
     error,
+    evidenceCounts: { all: 0, submitted: 0, missing: 0, pending: 0, vip: 0 },
   };
 }
 
 export async function listAdminMembers(
   query = "",
   page = 1,
+  evidenceFilter = "all",
 ): Promise<AdminMemberList> {
   if (!canManageMembers((await getSessionProfile()).profile)) return emptyList(false, "Admin access required");
   const supabase = createServiceClient();
@@ -115,13 +119,18 @@ export async function listAdminMembers(
     createdAt: textOrNull((row as { created_at?: string }).created_at),
   }));
 
-  const filtered = q
+  const searched = q
     ? members.filter((member) =>
         [member.username, member.email, member.fullName, member.companyName]
           .filter(Boolean)
           .some((value) => String(value).toLowerCase().includes(q)),
       )
     : members;
+
+  const submittedCount = searched.filter(member => submitted.has(member.id)).length;
+  const evidenceCounts = { all: searched.length, submitted: submittedCount, missing: searched.length - submittedCount, pending: searched.filter(member => member.role === "customer").length, vip: searched.filter(member => member.memberGrade === "vip").length };
+  const filtered = evidenceFilter === "submitted" ? searched.filter(member => submitted.has(member.id))
+    : evidenceFilter === "missing" ? searched.filter(member => !submitted.has(member.id)) : searched;
 
   // Sort the complete search result before pagination so older submissions
   // appear on page one, rather than only moving within their existing page.
@@ -150,6 +159,7 @@ export async function listAdminMembers(
     page: safePage,
     pageSize: ADMIN_MEMBERS_PAGE_SIZE,
     totalPages,
+    evidenceCounts,
     available: true,
     error: null,
   };
