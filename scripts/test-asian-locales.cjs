@@ -35,3 +35,15 @@ for (const locale of ['vi', 'id', 'th']) {
 }
 const routing = fs.readFileSync('src/i18n/routing.ts', 'utf8');
 for (const locale of ['vi', 'id', 'th']) assert.ok(routing.includes(`"${locale}"`));
+const indonesian = JSON.parse(fs.readFileSync('messages/id.json', 'utf8'));
+const thai = JSON.parse(fs.readFileSync('messages/th.json', 'utf8'));
+assert.ok(!indonesian.quoteRead.failed.includes('tanda baca'), 'read receipt must not mean punctuation');
+assert.ok(indonesian.checkout.quoteNumberPending.includes('permintaan'), 'reference is assigned after request submission, not shipment');
+assert.ok(!JSON.stringify(thai).includes('ผู้ซื้อส่ง'), 'use the complete Thai wholesale buyer term');
+assert.ok(!thai.cart.errors.moqMultiple.includes('ทวีคูณ'), 'MOQ uses integer multiples, not exponential growth');
+for (const locale of ['vi', 'id', 'th']) {
+  const messages = JSON.parse(fs.readFileSync(`messages/${locale}.json`, 'utf8'));
+  assert.ok(!messages.wholesaleInquiry.subtitle.includes('1–2'), 'do not promise a fixed response time');
+  assert.notEqual(messages.checkout.loginRequired, messages.auth.signupSubtitle);
+}
+console.log('PASS reviewed terminology, login/request states and response-time copy');
