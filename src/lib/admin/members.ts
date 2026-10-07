@@ -148,10 +148,9 @@ export async function listAdminMembers(
   const totalPages = Math.max(1, Math.ceil(total / ADMIN_MEMBERS_PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = (safePage - 1) * ADMIN_MEMBERS_PAGE_SIZE;
-  const paged = await Promise.all(filtered.slice(start, start + ADMIN_MEMBERS_PAGE_SIZE).map(async (member) => {
-    const { data } = await supabase.auth.admin.getUserById(member.id);
-    return { ...member, phoneNumber: member.phoneNumber ?? textOrNull(data.user?.user_metadata?.phone_number) };
-  }));
+  // The list renders profile fields only. Legacy Auth metadata is resolved
+  // by the individual edit page, rather than issuing up to 20 Auth requests.
+  const paged = filtered.slice(start, start + ADMIN_MEMBERS_PAGE_SIZE);
 
   return {
     members: paged,

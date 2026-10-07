@@ -148,6 +148,7 @@ function HeroNavLink({
 
   return (
     <Link
+      prefetch={false}
       href={href}
       tabIndex={tabIndex}
       aria-label={ariaLabel}

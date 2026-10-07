@@ -178,6 +178,7 @@ export async function StoreHeader({ storeName }: Props) {
           <div className="store-header-row flex min-w-0 items-center gap-2 py-3.5 sm:gap-5 sm:py-4 lg:gap-10 lg:py-5">
 
           <Link
+            prefetch={false}
             href="/"
             locale={locale}
             className="group shrink-0 py-1 pr-2 transition-opacity hover:opacity-85 sm:pr-4 lg:pr-6"
@@ -214,6 +215,7 @@ export async function StoreHeader({ storeName }: Props) {
               />
 
               <Link
+            prefetch={false}
                 href="/cart"
                 aria-label={tNav("cart")}
                 className="group relative flex flex-col items-center gap-1 text-zinc-600 hover:text-accent-hover"
@@ -281,6 +283,7 @@ export async function StoreMainNav({
       <div className="mx-auto flex w-full max-w-7xl items-stretch px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-stretch overflow-visible">
           <Link
+            prefetch={false}
             href="/products"
             className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
@@ -293,6 +296,7 @@ export async function StoreMainNav({
           />
           {standardLinks.map((item) => (
             <Link
+            prefetch={false}
               key={item.key}
               href={item.href}
               className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -302,6 +306,7 @@ export async function StoreMainNav({
           ))}
           {wholesaleLink ? (
             <Link
+            prefetch={false}
               href={wholesaleLink.href}
               className="ml-auto flex shrink-0 items-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-accent transition-colors hover:text-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
@@ -458,6 +463,7 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
             {t("title")}
           </h2>
           <Link
+            prefetch={false}
             href="/categories"
             className="shrink-0 text-sm font-semibold text-accent-hover transition-colors hover:text-accent"
           >
@@ -468,6 +474,7 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
         <div className="grid min-w-0 grid-cols-3 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
           {items.map((item) => (
             <Link
+            prefetch={false}
               key={item.slug}
               href={item.href}
               className="group flex min-w-0 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
@@ -512,6 +519,7 @@ type HomeFeaturedBrandsSectionProps = {
 function FeaturedBrandCard({ brand }: { brand: FeaturedBrand }) {
   return (
     <Link
+            prefetch={false}
       href={buildBrandHref(brandNameToSlug(brand.displayName))}
       className="group flex min-h-[88px] min-w-[140px] shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-6 transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:min-h-[96px] lg:min-w-0"
     >
@@ -552,6 +560,7 @@ export async function HomeFeaturedBrandsSection({ products }: HomeFeaturedBrands
             {t("title")}
           </h2>
           <Link
+            prefetch={false}
             href="/brands"
             className="shrink-0 text-sm font-semibold text-accent-hover transition-colors hover:text-accent"
           >
