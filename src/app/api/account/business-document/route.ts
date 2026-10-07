@@ -7,7 +7,7 @@ export const runtime="nodejs";
 const response=(status:number)=>Response.json({ok:status===200},{status,headers:{"Cache-Control":"private, no-store"}});
 export async function POST(request:Request) {
  if(request.headers.get("origin")!==new URL(request.url).origin) return response(403);
- const {user}=await getSessionProfile(); if(!user) return response(401);
+ const {user,profile}=await getSessionProfile(); if(!user) return response(401);
  if(request.headers.get("content-type")?.includes("application/json")) {
   if(Number(request.headers.get("content-length"))>8192)return response(413);
   let input;try{
@@ -17,6 +17,12 @@ export async function POST(request:Request) {
    input=JSON.parse(text+decoder.decode());if(!input||typeof input!=="object")return response(400);
   }catch{return response(400);}
   if(typeof input.business_number!=="string"||!validBusinessNumber(input.business_number.trim()))return Response.json({error:"business_number"},{status:400});
+  if(input.stage==="number") {
+   const service=createServiceClient();if(!service)return response(503);
+   const result=await service.from("profiles").update({business_number:input.business_number.trim(),...(profile?.role==="customer"?{role:"wholesale"}:{})}).eq("id",user.id).eq("role",profile?.role||"customer").select("id");
+   if(result.error||!result.data?.length)return Response.json({error:"save"},{status:503});
+   revalidatePath("/admin/members");revalidatePath("/","layout");return response(200);
+  }
   if(input.consent!==true)return Response.json({error:"consent"},{status:400});
   const website=String(input.website||"").trim();
   if(website){try{const url=new URL(website);if(!["https:","http:"].includes(url.protocol)||website.length>500||url.username||url.password)return Response.json({error:"website"},{status:400});}catch{return Response.json({error:"website"},{status:400});}}

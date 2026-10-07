@@ -1,10 +1,11 @@
+import { businessAccessCopy } from "@/lib/auth/business-access-copy";
 import { asianBusinessCopy } from "@/lib/asia-copy";
 export function businessDocumentCopy(locale:string) {
- const asian = asianBusinessCopy(locale); if (asian) return asian;
+ const asian = asianBusinessCopy(locale); if (asian) return {...asian,help:businessAccessCopy(locale).help,saved:businessAccessCopy(locale).saved};
  const copies = {
  ko:{title:"사업자 증빙",help:"사업자등록증, 해외 사업자등록·사업허가증 또는 사업 운영을 확인할 수 있는 증빙자료를 제출해 주세요. 제출 후 관리자 승인을 받아야 공급가격·가격이 포함된 견적·Invoice를 이용할 수 있습니다. 불필요한 주민번호 등 민감정보는 가려 주세요.",file:"사업자 증빙 파일",website:"회사 홈페이지 (선택)",consent:"사업자 확인을 위해 증빙을 제출하며, 담당 관리자가 열람하는 것에 동의합니다.",upload:"증빙 제출",pending:"제출 중…",saved:"증빙이 접수됐습니다. 관리자 검토 후 승인됩니다.",error:"제출하지 못했습니다. PDF·JPG·PNG 파일을 확인하고 다시 시도해 주세요.",view:"제출한 증빙 확인",none:"아직 제출된 증빙이 없습니다.",format:"PDF · JPG · PNG"},
  en:{title:"Business verification",help:"Submit a business registration certificate, local business licence or other evidence of business operations. Wholesale prices, priced quotations and invoices require administrator approval after submission. Mask unnecessary personal identifiers.",file:"Business document",website:"Company website (optional)",consent:"I submit this evidence for business verification and agree to review by the authorized member-management team.",upload:"Submit document",pending:"Uploading…",saved:"Document received. Administrator review is required for approval.",error:"Upload failed. Please use a PDF, JPG or PNG and try again.",view:"View submitted document",none:"No document submitted yet.",format:"PDF · JPG · PNG / "},
  ja:{title:"事業者確認書類",help:"法人登録証明書や現地の営業許可証を提出してください。卸価格・見積・Invoiceは提出後の管理者承認で利用できます。不要な個人番号は隠してください。",file:"確認書類",website:"会社ウェブサイト（任意）",consent:"事業者確認のため書類を提出し、担当管理者の閲覧に同意します。",upload:"書類を提出",pending:"送信中…",saved:"書類を受け付けました。管理者が確認します。",error:"送信できませんでした。のPDF・JPG・PNGをご確認ください。",view:"提出書類を確認",none:"書類は未提出です。",format:"PDF · JPG · PNG"},
  zh:{title:"企业资质认证",help:"请提交企业注册证明或当地营业执照。提交并经管理员批准后才能查看批发价格、报价和Invoice。请遮盖不必要的个人身份信息。",file:"企业证明文件",website:"公司网站（可选）",consent:"我提交此文件用于企业验证，并同意授权管理人员查看。",upload:"提交文件",pending:"上传中…",saved:"文件已收到，等待管理员审核。",error:"上传失败。请使用PDF、JPG或PNG重试。",view:"查看已提交文件",none:"尚未提交文件。",format:"PDF · JPG · PNG"}
- }; return copies[locale as keyof typeof copies] || copies.en;
+ }; const copy=copies[locale as keyof typeof copies] || copies.en; return {...copy,help:businessAccessCopy(locale).help,saved:businessAccessCopy(locale).saved};
 }

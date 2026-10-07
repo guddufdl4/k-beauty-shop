@@ -1,0 +1,2 @@
+-- Only future submissions change approval. Existing membership rows are untouched.
+CREATE OR REPLACE FUNCTION public.reset_business_review() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$ BEGIN UPDATE public.profiles SET role=CASE WHEN role='customer' THEN 'wholesale' ELSE role END,business_number=NEW.business_number WHERE id=NEW.user_id AND role <> 'admin'; RETURN NEW; END; $$; REVOKE EXECUTE ON FUNCTION public.reset_business_review() FROM PUBLIC, anon, authenticated; NOTIFY pgrst,'reload schema';
