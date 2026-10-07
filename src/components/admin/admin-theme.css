@@ -15,6 +15,18 @@
 .hmt-admin .admin-data-table tbody tr:hover { background-color: #faf8ff; }
 .hmt-admin [aria-label="회원 상세 패널"] button[class~="w-40"] { width: 100%; }
 .hmt-admin [aria-label="회원 상세 패널"] button img { height: 180px; }
+@media (min-width: 1280px) {
+  .hmt-admin .member-manager-form { display: grid; grid-template-columns: minmax(0,1fr) 280px; column-gap: 20px; align-items: start; }
+  .hmt-admin .member-manager-form > fieldset, .hmt-admin .member-workspace { display: contents; }
+  .hmt-admin .member-workspace > div { grid-column: 1; grid-row: 1; }
+  .hmt-admin .member-workspace > aside { grid-column: 2; grid-row: 1 / span 4; }
+  .hmt-admin .member-bulk-toolbar { grid-column: 1; grid-row: 2; margin-top: 16px; gap: 8px; padding: 12px; }
+  .hmt-admin .member-bulk-toolbar button { padding-left: 10px; padding-right: 10px; font-size: 12px; }
+  .hmt-admin .member-note { grid-column: 1; }
+  .hmt-admin .member-note:nth-of-type(1) { grid-row: 3; }
+  .hmt-admin .member-note:nth-of-type(2) { grid-row: 4; }
+  .hmt-admin .member-manager-form > p[role] { grid-column: 1 / -1; grid-row: 5; }
+}
 @media (max-width: 767px) {
   .hmt-admin main { padding-left: 16px; padding-right: 16px; padding-top: 24px; }
   .hmt-admin :is(button,select,input:not([type=checkbox]):not([type=radio]):not([type=hidden])) { min-height: 44px; }

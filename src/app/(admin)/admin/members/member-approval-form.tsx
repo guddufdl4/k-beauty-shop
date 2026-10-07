@@ -67,7 +67,7 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
   }
 
   return (
-    <form ref={formRef} action={formAction} className="mt-4 flex min-w-0 max-w-full flex-col" onChange={(event) => {
+    <form ref={formRef} action={formAction} className="member-manager-form mt-4 flex min-w-0 max-w-full flex-col" onChange={(event) => {
       const box = event.target;
       if (!(box instanceof HTMLInputElement) || !box.dataset.memberId) return;
       const selected = new Set(parseSelection(readSelection(storageKey)));
@@ -75,7 +75,7 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
       saveSelection(storageKey, [...selected]);
     }}>
       {selectedIds.map((id) => <input key={id} type="hidden" name="member_id" value={id} />)}
-      <div className="mb-3 hidden flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 md:order-2 md:flex">
+      <div className="member-bulk-toolbar mb-3 hidden flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 md:order-2 md:flex">
         <button type="button" disabled={pending || selectableCount === 0} onClick={() => updateSelection(true)} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40">현재 페이지 전체 선택</button>
         <button type="button" disabled={pending || selectedCount === 0} onClick={() => saveSelection(storageKey, [])} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40">전체 선택 해제</button>
         <span className="text-sm text-zinc-500" aria-live="polite">전체 페이지에서 {selectedCount}명 선택</span>
@@ -89,8 +89,8 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
         </label>
         <button name="decision" value="grade" disabled={pending || selectedCount === 0} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-40">선택 회원 등급 변경</button>
       </div>
-      <p className="mb-3 hidden text-xs text-zinc-500 md:order-3 md:block">VIP 등급과 사업자 승인은 별도입니다. 회원관리 담당자는 대시보드 조회·회원관리·문의관리가 가능하며, 담당자 지정·해제는 관리자만 가능합니다.</p>
-      <p className="mb-3 hidden text-xs text-zinc-500 md:order-3 md:block">페이지 이동·검색 후에도 선택이 유지됩니다. 승인 버튼은 모든 페이지에서 선택한 회원에게 적용됩니다.</p>
+      <p className="member-note mb-3 hidden text-xs text-zinc-500 md:order-3 md:block">VIP 등급과 사업자 승인은 별도입니다. 회원관리 담당자는 대시보드 조회·회원관리·문의관리가 가능하며, 담당자 지정·해제는 관리자만 가능합니다.</p>
+      <p className="member-note mb-3 hidden text-xs text-zinc-500 md:order-3 md:block">페이지 이동·검색 후에도 선택이 유지됩니다. 승인 버튼은 모든 페이지에서 선택한 회원에게 적용됩니다.</p>
       {state.error ? <p role="alert" className="mb-3 text-sm text-red-700">{state.error}</p> : null}
       {state.success ? <p role="status" className="mb-3 text-sm text-green-700">{state.success}</p> : null}
       <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
