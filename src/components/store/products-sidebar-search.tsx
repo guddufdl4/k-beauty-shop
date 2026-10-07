@@ -130,6 +130,7 @@ function CategoryLink({
 
   return (
     <Link
+              prefetch={false}
       href={href}
       className={linkClassName}
       aria-current={isActive ? "page" : undefined}
@@ -173,6 +174,7 @@ function CategoryNavList({
       <ul className="space-y-0.5">
         <li>
           <Link
+              prefetch={false}
             href={buildProductsHref({ q: searchQuery, brand: brandFilter, sort })}
             className={allLinkClassName}
             aria-current={isAllActive ? "page" : undefined}
@@ -308,6 +310,7 @@ export function ProductCatalogSidebar({
         <div className="mt-4 -mx-4 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max min-w-full gap-2">
             <Link
+              prefetch={false}
               href={buildProductsHref({ q: searchQuery, brand: brandFilter, sort })}
               className={chipClassName(!activeCategorySlug)}
               aria-current={!activeCategorySlug ? "page" : undefined}
@@ -318,6 +321,7 @@ export function ProductCatalogSidebar({
               const isActive = activeCategorySlug === category.slug;
               return (
                 <Link
+              prefetch={false}
                   key={category.id}
                   href={buildProductsHref({
                     category: category.slug,
@@ -457,6 +461,7 @@ export function BrandsDirectory({ brands }: BrandsDirectoryProps) {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filteredBrands.map((brand) => (
             <Link
+              prefetch={false}
               key={brand.slug}
               href={buildBrandHref(brand.slug)}
               aria-label={t("viewBrandLink", { brand: brand.displayName })}

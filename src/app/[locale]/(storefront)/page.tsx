@@ -1,3 +1,4 @@
+import { Suspense, type ComponentProps } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { resolveProductImageUrl } from "@/lib/product-images";
 import { HomeTrendingSection } from "@/components/store/home-product-tabs";
@@ -222,9 +223,27 @@ function mapStoredHeroSlideToBannerSlide(
         },
   };
 }
+type TrendingSectionProps = ComponentProps<typeof HomeTrendingSection>;
+async function DeferredHomeTrending({ rows, all, ...props }: Omit<TrendingSectionProps, "productsByFilter"> & {
+  rows: Promise<Awaited<ReturnType<typeof getProducts>>[]>;
+  all: TrendingSectionProps["productsByFilter"]["all"];
+}) {
+  const categories = await rows;
+  return <HomeTrendingSection {...props} productsByFilter={{
+    all,
+    skincare: localizeStorefrontProducts(categories[0].products, props.locale),
+    makeup: localizeStorefrontProducts(categories[1].products, props.locale),
+    haircare: localizeStorefrontProducts(categories[2].products, props.locale),
+  }}/>;
+}
+
 export default async function HomePage() {
   const audience = await resolveStorefrontAudience();
-  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings, categoryRows] = await Promise.all([
+  // Fetch lower-page tabs concurrently, without blocking the first banner.
+  const categoryRows = Promise.all(["skincare", "makeup", "haircare"].map((categorySlug) =>
+    getProducts({ categorySlug, limit: 8, requireRealImage: true, audience, sort: "trending" }),
+  ));
+  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings] = await Promise.all([
     getTranslations("home"),
     getTranslations("products"),
     getPriorityBrandProducts({ limit: 48, audience }),
@@ -232,9 +251,6 @@ export default async function HomePage() {
     getUsdKrwRate(),
     getStorefrontCategories(),
     loadSiteSettingsSafely(),
-    Promise.all(["skincare", "makeup", "haircare"].map((categorySlug) =>
-      getProducts({ categorySlug, limit: 8, requireRealImage: true, audience, sort: "trending" }),
-    )),
   ]);
 
   const heroCopy = buildDefaultHeroCopy(siteSettings, t);
@@ -243,14 +259,8 @@ export default async function HomePage() {
     .map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, locale, siteSettings, t))
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
-  const trendingProducts = {
-    all: localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories), locale),
-    skincare: localizeStorefrontProducts(categoryRows[0].products, locale),
-    makeup: localizeStorefrontProducts(categoryRows[1].products, locale),
-    haircare: localizeStorefrontProducts(categoryRows[2].products, locale),
-  } as const;
-
-  const heroPool = [...trendingProducts.all, ...trendingProducts.skincare, ...trendingProducts.makeup, ...trendingProducts.haircare];
+  const trendingAll = localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories), locale);
+  const heroPool = trendingAll.length ? trendingAll : (await categoryRows).flatMap(row => localizeStorefrontProducts(row.products, locale));
   const heroProducts = [...new Map(heroPool.filter((product) => !product.sold_out).map((product) => [product.id, product])).values()].slice(0, 5);
   const leadSlide = heroSlides.find((slide) => slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID);
   if (leadSlide && heroProducts.length) {
@@ -287,11 +297,13 @@ export default async function HomePage() {
 
       <section className="border-b border-zinc-200 bg-white py-10 sm:py-12">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-          <HomeTrendingSection
+          <Suspense fallback={<div className="min-h-96 animate-pulse rounded-2xl bg-zinc-50" aria-label={t("trending.title")} />}>
+          <DeferredHomeTrending
             title={t("trending.title")}
             viewAllLabel={t("trending.viewAll")}
             emptyMessage={t("trending.empty")}
-            productsByFilter={trendingProducts}
+            rows={categoryRows}
+            all={trendingAll}
             filterLabels={{
               all: t("trending.all"),
               skincare: t("trending.skincare"),
@@ -309,6 +321,7 @@ export default async function HomePage() {
             usdKrwRate={usdKrwRate}
             signInToViewPriceLabel={tProducts("signInToViewPrice")}
           />
+          </Suspense>
         </div>
       </section>
 

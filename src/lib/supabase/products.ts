@@ -2234,15 +2234,17 @@ async function fetchPriorityBrandProductsFromSource(
     const maxKeys = Math.min(priorityKeys.length, Math.max(240, limit * 5));
     const keysToFetch = priorityKeys.slice(0, maxKeys);
 
-    for (let index = 0; index < keysToFetch.length; index += PRIORITY_SKU_QUERY_BATCH) {
-      const batch = keysToFetch.slice(index, index + PRIORITY_SKU_QUERY_BATCH);
-      const batchRows = await fetchProductsByIdentifierBatch(
-        supabase,
-        batch,
-        productSelect,
-        null,
-        false,
-      );
+    // Keep source order deterministic while overlapping at most three reads.
+    // Homepage's 240 identifiers no longer wait for each batch sequentially.
+    const groupSize = PRIORITY_SKU_QUERY_BATCH * 3;
+    for (let index = 0; index < keysToFetch.length; index += groupSize) {
+      const batches: string[][] = [];
+      for (let offset = index; offset < Math.min(index + groupSize, keysToFetch.length); offset += PRIORITY_SKU_QUERY_BATCH) {
+        batches.push(keysToFetch.slice(offset, offset + PRIORITY_SKU_QUERY_BATCH));
+      }
+      const batchRows = (await Promise.all(batches.map(batch =>
+        fetchProductsByIdentifierBatch(supabase, batch, productSelect, null, false),
+      ))).flat();
 
       for (const row of batchRows) {
         const id = String(row.id);

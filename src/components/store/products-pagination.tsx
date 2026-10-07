@@ -60,6 +60,7 @@ export function ProductsPagination({
       <div className="flex flex-wrap items-center justify-center gap-2">
         {currentPage > 1 ? (
           <Link
+              prefetch={false}
             href={buildProductsHref({ ...listHrefOptions, page: currentPage - 1 })}
             className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
             aria-label={t("prevPage")}
@@ -95,6 +96,7 @@ export function ProductsPagination({
               </span>
             ) : (
               <Link
+              prefetch={false}
                 key={item}
                 href={buildProductsHref({ ...listHrefOptions, page: item })}
                 className="min-w-9 rounded-lg border border-zinc-200 px-2.5 py-2 text-center text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
@@ -138,6 +140,7 @@ export function ProductsPagination({
 
         {currentPage < totalPages ? (
           <Link
+              prefetch={false}
             href={buildProductsHref({ ...listHrefOptions, page: currentPage + 1 })}
             className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
             aria-label={t("nextPage")}

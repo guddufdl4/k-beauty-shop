@@ -51,8 +51,8 @@ export async function StoreFooter({
         <div className="flex flex-col gap-5 rounded-2xl border border-violet-100 bg-gradient-to-r from-violet-50 to-rose-50 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div><p className="text-xl font-semibold tracking-tight text-zinc-950">{design("footerTitle")}</p><p className="mt-2 text-sm leading-6 text-zinc-600">{design("footerBody")}</p></div>
           <div className="flex flex-wrap gap-3">
-          <Link href="/contact#inquiry" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-violet-200 bg-white px-6 text-sm font-semibold text-violet-700 hover:bg-violet-50">{support.cta}</Link>
-          <Link href="/products" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-accent px-6 text-sm font-semibold text-white hover:bg-accent-hover">{design("footerCta")}<span aria-hidden className="ml-3">↗</span></Link>
+          <Link prefetch={false} href="/contact#inquiry" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-violet-200 bg-white px-6 text-sm font-semibold text-violet-700 hover:bg-violet-50">{support.cta}</Link>
+          <Link prefetch={false} href="/products" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-accent px-6 text-sm font-semibold text-white hover:bg-accent-hover">{design("footerCta")}<span aria-hidden className="ml-3">↗</span></Link>
           </div>
         </div>
       </div>
@@ -138,36 +138,36 @@ export async function StoreFooter({
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-zinc-900">{t("infoTitle")}</h3>
           <ul className="space-y-1 text-sm text-zinc-500 sm:space-y-2">
             <li>
-              <Link href="/shipping" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/shipping" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("shipping")}
               </Link>
             </li>
             <li>
-              <Link href="/cart" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/cart" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("quoteList")}
               </Link>
             </li>
             <li>
-              <Link href="/payment" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/payment" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("payment")}
               </Link>
             </li>
             <li>
-              <Link href="/returns" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/returns" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("returns")}
               </Link>
             </li>
             <li>
-              <Link href="/faq" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/faq" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("faq")}
               </Link>
             </li>
             <li>
-              <Link href="/wholesale-inquiry" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/wholesale-inquiry" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("wholesale")}
               </Link>
             </li>
-            <li><Link href="/import-inquiry" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">{t("importInquiry")}</Link></li>
+            <li><Link prefetch={false} href="/import-inquiry" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">{t("importInquiry")}</Link></li>
           </ul>
         </div>
 
@@ -175,22 +175,22 @@ export async function StoreFooter({
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-zinc-900">{t("supportTitle")}</h3>
           <ul className="space-y-2 text-sm text-zinc-500">
             <li>
-              <Link href="/categories" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/categories" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("categories")}
               </Link>
             </li>
             <li>
-              <Link href="/products" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/products" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("catalog")}
               </Link>
             </li>
             <li>
-              <Link href="/order-guide" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/order-guide" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("orderGuide")}
               </Link>
             </li>
             <li>
-              <Link href="/contact" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/contact" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("contact")}
               </Link>
             </li>
@@ -201,27 +201,27 @@ export async function StoreFooter({
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-zinc-900">{t("aboutTitle")}</h3>
           <ul className="space-y-2 text-sm text-zinc-500">
             <li>
-              <Link href="/about" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/about" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("about")}
               </Link>
             </li>
             <li>
-              <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/terms" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("terms")}
               </Link>
             </li>
             <li>
-              <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/privacy" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("privacy")}
               </Link>
             </li>
             <li>
-              <Link href="/signup" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/signup" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("membership")}
               </Link>
             </li>
             <li>
-              <Link href="/sitemap" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
+              <Link prefetch={false} href="/sitemap" className="inline-flex min-h-11 items-center hover:text-accent hover:underline">
                 {t("sitemap")}
               </Link>
             </li>
