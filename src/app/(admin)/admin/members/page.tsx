@@ -1,3 +1,4 @@
+import { MemberTableScroll } from "@/components/admin/member-table-scroll";
 import { BusinessDocumentPreview } from "@/components/admin/business-document-preview";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canManageMembers, canManageMemberTarget, memberGradeLabel } from "@/lib/auth/member-access";
@@ -53,7 +54,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">관리자 · 회원</h1>
@@ -92,7 +93,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
       </p>
 
       <MemberApprovalForm key={`${query}:${page}`} canAssignStaff={profile?.role === "admin"} adminId={user?.id ?? "unconfigured"} selectableCount={members.filter((member) => canManageMemberTarget(profile, { role: member.role, staff_scope: member.staffScope })).length}>
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
+      <MemberTableScroll>
         <table className="min-w-[1400px] text-left text-sm">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-500">
             <tr>
@@ -137,7 +138,7 @@ export default async function AdminMembersPage({ searchParams }: AdminMembersPag
             )}
           </tbody>
         </table>
-      </div>
+      </MemberTableScroll>
       </MemberApprovalForm>
 
       {available && totalPages > 1 ? (

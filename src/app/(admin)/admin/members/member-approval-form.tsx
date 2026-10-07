@@ -65,7 +65,7 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
   }
 
   return (
-    <form ref={formRef} action={formAction} className="mt-4" onChange={() => updateSelection()}>
+    <form ref={formRef} action={formAction} className="mt-4 min-w-0 max-w-full" onChange={() => updateSelection()}>
       {selectedIds.map((id) => <input key={id} type="hidden" name="member_id" value={id} />)}
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <button type="button" disabled={pending || selectableCount === 0} onClick={() => updateSelection(true)} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40">현재 페이지 전체 선택</button>
@@ -85,7 +85,7 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
       <p className="mb-3 text-xs text-zinc-500">페이지 이동·검색 후에도 선택이 유지됩니다. 승인 버튼은 모든 페이지에서 선택한 회원에게 적용됩니다.</p>
       {state.error ? <p role="alert" className="mb-3 text-sm text-red-700">{state.error}</p> : null}
       {state.success ? <p role="status" className="mb-3 text-sm text-green-700">{state.success}</p> : null}
-      <fieldset disabled={pending}>{children}</fieldset>
+      <fieldset disabled={pending} className="min-w-0 max-w-full">{children}</fieldset>
     </form>
   );
 }
