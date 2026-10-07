@@ -260,7 +260,7 @@ function OrdersTable({
 
   return (
     <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-      <table className="w-full min-w-[1100px] text-left text-sm">
+      <table className="admin-data-table w-full min-w-[1100px] text-left text-sm">
         <thead className="border-b border-zinc-100 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
           <tr>
             <th className="px-4 py-3">번호</th>
@@ -278,7 +278,7 @@ function OrdersTable({
         <tbody className="divide-y divide-zinc-100">
           {orders.map((order) => (
             <tr key={order.order_number} className="hover:bg-rose-50/40">
-              <td className="px-4 py-3">
+              <td data-label="주문 번호" className="px-4 py-3">
                 <Link
                   href={storefrontHref(`/orders/${order.order_number}`)}
                   className="font-mono font-medium text-rose-700 hover:underline"
@@ -286,25 +286,25 @@ function OrdersTable({
                   {order.order_number}
                 </Link>
               </td>
-              <td className="px-4 py-3">{statusBadge(order.status, order.payment_provider)}</td>
-              <td className="px-4 py-3">
+              <td data-label="상태" className="px-4 py-3">{statusBadge(order.status, order.payment_provider)}</td>
+              <td data-label="회사 / 담당자" className="px-4 py-3">
                 <p className="font-medium text-zinc-900">{order.company_name || "—"}</p>
                 <p className="text-xs text-zinc-500">{order.contact_name || "—"}</p>
               </td>
-              <td className="px-4 py-3 text-zinc-600">{order.email || "—"}</td>
-              <td className="px-4 py-3 text-zinc-600">
+              <td data-label="이메일" className="px-4 py-3 text-zinc-600">{order.email || "—"}</td>
+              <td data-label="운송 조건" className="px-4 py-3 text-zinc-600">
                 <p>{order.trade_terms || "—"}</p>
                 <p className="text-xs text-zinc-500">
                   {[order.consignee, order.notify_party, order.shipping_address_text].filter(Boolean).join(" · ")}
                 </p>
               </td>
-              <td className="px-4 py-3 text-zinc-600">{order.shipping_method || "—"}</td>
-              <td className="px-4 py-3 text-zinc-600">{paymentLabel(order)}</td>
-              <td className="px-4 py-3 font-medium">{formatKRW(order.total)}</td>
-              <td className="px-4 py-3 text-zinc-600">
+              <td data-label="배송" className="px-4 py-3 text-zinc-600">{order.shipping_method || "—"}</td>
+              <td data-label="유형" className="px-4 py-3 text-zinc-600">{paymentLabel(order)}</td>
+              <td data-label="합계" className="px-4 py-3 font-medium">{formatKRW(order.total)}</td>
+              <td data-label="접수일" className="px-4 py-3 text-zinc-600">
                 {new Date(order.created_at).toLocaleString("ko-KR")}
               </td>
-              <td className="px-4 py-3">
+              <td data-label="관리" className="px-4 py-3">
                 {view === "deleted" ? (
                   <AdminOrderRestoreButton orderNumber={order.order_number} />
                 ) : (

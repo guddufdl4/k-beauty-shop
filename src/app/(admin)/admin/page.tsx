@@ -6,7 +6,6 @@ import { getAdminOrderStats } from "@/lib/admin/orders";
 import { getStorefrontVisitStats } from "@/lib/admin/visits";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { storefrontHref } from "@/lib/store/storefront-href";
-import { getTossStatusMessage, isTossConfigured } from "@/lib/toss";
 
 export const dynamic = "force-dynamic";
 
@@ -125,10 +124,6 @@ export default async function AdminDashboardPage() {
         </> : null}
       </nav>
 
-      <p className="mt-8 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
-        {getTossStatusMessage()}
-        {isTossConfigured() ? "" : " (Phase 6b)"}
-      </p>
 
       {!configured ? (
         <p className="mt-4 text-sm text-amber-700">

@@ -1,0 +1,32 @@
+.hmt-admin { color: #202433; }
+.hmt-admin main { width: 100%; min-width: 0; }
+.hmt-admin h1 { letter-spacing: -.035em; }
+.hmt-admin :is(button, a, input, select, textarea):focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
+.hmt-admin :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea) { background-color: white; border-color: #e4e4eb; border-radius: 12px; }
+.hmt-admin :is(button,select,input:not([type=checkbox]):not([type=radio]):not([type=hidden])) { min-height: 40px; }
+.hmt-admin [class~="bg-rose-600"], .hmt-admin [class~="bg-zinc-900"] { background-color: #6d28d9; }
+.hmt-admin [class~="text-rose-600"], .hmt-admin [class~="text-rose-700"], .hmt-admin [class~="text-rose-500"] { color: #6d28d9; }
+.hmt-admin [class~="border-rose-100"], .hmt-admin [class~="border-rose-200"] { border-color: #ede9fe; }
+.hmt-admin [class~="bg-rose-50"] { background-color: #f5f3ff; }
+.hmt-admin main > nav:not([class*="fixed"]) a { display: inline-flex; align-items: center; min-height: 44px; border-radius: 12px; padding: 8px 14px; background: white; border: 1px solid #e4e4eb; }
+.hmt-admin main > nav a[aria-current=page] { background: #6d28d9; color: white; border-color: #6d28d9; }
+.hmt-admin table thead { background-color: #fafafd; color: #72778b; }
+.hmt-admin table th { text-transform: none; letter-spacing: 0; }
+.hmt-admin .admin-data-table tbody tr:hover { background-color: #faf8ff; }
+.hmt-admin [aria-label="회원 상세 패널"] button[class~="w-40"] { width: 100%; }
+.hmt-admin [aria-label="회원 상세 패널"] button img { height: 180px; }
+@media (max-width: 767px) {
+  .hmt-admin main { padding-left: 16px; padding-right: 16px; padding-top: 24px; }
+  .hmt-admin :is(button,select,input:not([type=checkbox]):not([type=radio]):not([type=hidden])) { min-height: 44px; }
+  .hmt-admin :is(input:not([type=checkbox]):not([type=radio]),select,textarea) { font-size: 16px; }
+  .hmt-admin .admin-data-table { display: block; min-width: 0; width: 100%; }
+  .hmt-admin .admin-data-table thead { display: none; }
+  .hmt-admin .admin-data-table tbody { display: grid; gap: 12px; width: 100%; background: #f6f7fb; }
+  .hmt-admin .admin-data-table tbody tr { display: block; min-width: 0; border: 1px solid #e4e4eb; border-radius: 16px; background: white; padding: 12px; }
+  .hmt-admin .admin-data-table tbody td { display: flex; width: 100%; min-width: 0; max-width: none; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 8px 4px; overflow-wrap: anywhere; white-space: normal; }
+  .hmt-admin .admin-data-table tbody td[data-label]::before { content: attr(data-label); flex: 0 0 72px; color: #818596; font-size: 12px; padding-top: 3px; }
+  .hmt-admin .admin-data-table td[colspan] { display: block; text-align: center; }
+  .hmt-admin .admin-data-table tfoot, .hmt-admin .admin-data-table tfoot tr { display: block; }
+  .hmt-admin .admin-data-table tfoot tr { display: flex; justify-content: space-between; padding: 12px; }
+  .hmt-admin .admin-data-table tfoot td:empty { display: none; }
+}

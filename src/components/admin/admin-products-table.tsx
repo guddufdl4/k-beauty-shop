@@ -229,7 +229,7 @@ const ProductTableRow = memo(function ProductTableRow({
         isEven ? "bg-white" : "bg-zinc-50/70"
       } hover:bg-rose-50/50`}
     >
-      <td className="px-3 py-2.5">
+      <td data-label="이미지" className="px-3 py-2.5">
         <div className="relative h-10 w-10 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -240,7 +240,7 @@ const ProductTableRow = memo(function ProductTableRow({
           />
         </div>
       </td>
-      <td className="px-3 py-2.5 align-top">
+      <td data-label="SKU" className="px-3 py-2.5 align-top">
         {product.product_code ? (
           <p className="font-mono text-xs font-semibold text-violet-700">
             {product.product_code}
@@ -255,7 +255,7 @@ const ProductTableRow = memo(function ProductTableRow({
           </p>
         ) : null}
       </td>
-      <td className="max-w-[14rem] px-3 py-2.5 align-top">
+      <td data-label="상품명" className="max-w-[14rem] px-3 py-2.5 align-top">
         <ProductNameWithCopy
           name={product.name}
           brand={product.brand}
@@ -291,7 +291,7 @@ const ProductTableRow = memo(function ProductTableRow({
           </button>
         </div>
       </td>
-      <td className="px-3 py-2.5 align-top">
+      <td data-label="가격" className="px-3 py-2.5 align-top">
         <p
           className={`text-xs font-semibold ${
             shownPrice <= 1 ? "text-amber-700" : "text-zinc-900"
@@ -300,7 +300,7 @@ const ProductTableRow = memo(function ProductTableRow({
           {formatProductPrice(shownPrice)}
         </p>
       </td>
-      <td className="px-3 py-2.5 align-top">
+      <td data-label="재고" className="px-3 py-2.5 align-top">
         {stockEditingId === product.id ? (
           <div className="flex items-center gap-1">
             <input
@@ -352,7 +352,7 @@ const ProductTableRow = memo(function ProductTableRow({
           </button>
         )}
       </td>
-      <td className="px-3 py-2.5 align-top">
+      <td data-label="품절" className="px-3 py-2.5 align-top">
         <button
           type="button"
           onClick={() => void onToggleSoldOut(product)}
@@ -370,10 +370,10 @@ const ProductTableRow = memo(function ProductTableRow({
               : "판매중"}
         </button>
       </td>
-      <td className="px-3 py-2.5 align-top text-xs text-zinc-600">
+      <td data-label="카테고리" className="px-3 py-2.5 align-top text-xs text-zinc-600">
         {product.category?.name ?? "—"}
       </td>
-      <td className="max-w-[10rem] px-3 py-2.5 align-top">
+      <td data-label="출처 엑셀" className="max-w-[10rem] px-3 py-2.5 align-top">
         {product.import_batch?.filename ? (
           <p
             className="truncate text-[11px] text-zinc-700"
@@ -385,8 +385,8 @@ const ProductTableRow = memo(function ProductTableRow({
           <span className="text-xs text-zinc-400">—</span>
         )}
       </td>
-      <td className="px-3 py-2.5 align-top">{statusBadge(product.status)}</td>
-      <td className="px-3 py-2.5 align-top">
+      <td data-label="상태" className="px-3 py-2.5 align-top">{statusBadge(product.status)}</td>
+      <td data-label="업로드 / 수정" className="px-3 py-2.5 align-top">
         <p className="whitespace-nowrap text-[11px] text-zinc-700">
           {timestamp.primary}
         </p>
@@ -396,7 +396,7 @@ const ProductTableRow = memo(function ProductTableRow({
           </p>
         ) : null}
       </td>
-      <td className="px-3 py-2.5 align-top">
+      <td data-label="편집" className="px-3 py-2.5 align-top">
         {viewMode === "deleted" ? (
           <button
             type="button"
@@ -1177,7 +1177,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
         </p>
       ) : null}
       <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-left text-sm">
+        <table className="admin-data-table min-w-full border-collapse text-left text-sm">
           <thead className="sticky top-0 z-10 border-b border-rose-100 bg-zinc-50 text-[11px] uppercase tracking-wide text-zinc-500 shadow-sm">
             <tr>
               <th className="w-14 px-3 py-2.5 font-semibold">이미지</th>
