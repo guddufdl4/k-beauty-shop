@@ -224,21 +224,20 @@ function mapStoredHeroSlideToBannerSlide(
 }
 export default async function HomePage() {
   const audience = await resolveStorefrontAudience();
-  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }] = await Promise.all([
+  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings, categoryRows] = await Promise.all([
     getTranslations("home"),
     getTranslations("products"),
     getPriorityBrandProducts({ limit: 48, audience }),
     getLocale(),
     getUsdKrwRate(),
     getStorefrontCategories(),
+    loadSiteSettingsSafely(),
+    Promise.all(["skincare", "makeup", "haircare"].map((categorySlug) =>
+      getProducts({ categorySlug, limit: 8, requireRealImage: true, audience, sort: "trending" }),
+    )),
   ]);
 
-  const siteSettings = await loadSiteSettingsSafely();
   const heroCopy = buildDefaultHeroCopy(siteSettings, t);
-
-  const categoryRows = await Promise.all(["skincare", "makeup", "haircare"].map((categorySlug) =>
-    getProducts({ categorySlug, limit: 8, requireRealImage: true, audience, sort: "trending" }),
-  ));
 
   const heroSlides = getHeroSlides(siteSettings)
     .map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, locale, siteSettings, t))

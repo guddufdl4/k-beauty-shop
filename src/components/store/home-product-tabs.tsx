@@ -141,12 +141,11 @@ export function HomeTrendingSection({
 
       {visibleProducts.length > 0 ? (
         <div className="store-product-grid grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-          {visibleProducts.map((product, index) => (
+          {visibleProducts.map((product) => (
             <div key={product.id} className="h-full">
               <ProductCard
                 product={product}
                 variant="trending"
-                priority={index < 4}
                 locale={locale}
                 usdKrwRate={usdKrwRate}
                 moqBadge={tProducts(getMoqBadgeKey(product), { count: product.moq })}

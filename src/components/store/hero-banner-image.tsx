@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import type { HeroImageFocus } from "@/lib/admin/hero-image-spec";
@@ -99,8 +101,7 @@ export function HeroBannerImage({
           aria-hidden
         />
       ) : null}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         ref={handleImgRef}
         src={src}
         alt={alt}

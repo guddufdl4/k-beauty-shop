@@ -100,11 +100,6 @@ function mergeSlideCopy(defaultCopy: HeroCopy, slide: HeroBannerSlide): HeroCopy
   };
 }
 
-function preloadImage(url: string) {
-  const img = new Image();
-  img.src = url;
-}
-
 function stopCarouselPointer(event: PointerEvent<HTMLElement>) {
   event.stopPropagation();
 }
@@ -529,32 +524,6 @@ export function HeroBannerSlider({ slides, copy }: Props) {
 
   const slideCount = slides.length;
   const showControls = slideCount > 1;
-
-  useEffect(() => {
-    slides.slice(0, 1).forEach((slide) => {
-      preloadImage(slide.src);
-      if (slide.mobileSrc) {
-        preloadImage(slide.mobileSrc);
-      }
-    });
-  }, [slides]);
-
-  useEffect(() => {
-    if (slideCount <= 1) {
-      return;
-    }
-
-    const nextIndex = (activeIndex + 1) % slideCount;
-    const nextSlide = slides[nextIndex];
-    if (!nextSlide) {
-      return;
-    }
-
-    preloadImage(nextSlide.src);
-    if (nextSlide.mobileSrc) {
-      preloadImage(nextSlide.mobileSrc);
-    }
-  }, [activeIndex, slideCount, slides]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
