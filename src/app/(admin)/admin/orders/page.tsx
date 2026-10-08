@@ -262,16 +262,14 @@ function OrdersTable({
 
   return (
     <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-      <table className="admin-data-table w-full min-w-[1100px] text-left text-sm">
+      <table className="admin-data-table w-full min-w-[1050px] text-left text-sm">
         <thead className="border-b border-zinc-100 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
           <tr>
             <th className="px-4 py-3">번호</th>
             <th className="px-4 py-3">상태</th>
             <th className="px-4 py-3">회사 / 담당자</th>
-            <th className="px-4 py-3">이메일</th>
             <th className="px-4 py-3">운송조건</th>
             <th className="px-4 py-3">배송</th>
-            <th className="px-4 py-3">유형</th>
             <th className="px-4 py-3">합계</th>
             <th className="px-4 py-3">일시</th>
             <th className="px-4 py-3">관리</th>
@@ -283,19 +281,25 @@ function OrdersTable({
               <td data-label="주문 번호" className="px-4 py-3">
                 <Link
                   href={storefrontHref(`/orders/${order.order_number}`)}
-                  className="font-mono font-medium text-rose-700 hover:underline"
+                  prefetch={false}
+                  className="whitespace-nowrap font-mono font-medium text-rose-700 hover:underline"
                 >
                   {order.order_number}
                 </Link>
               </td>
-              <td data-label="상태" className="px-4 py-3">{statusBadge(order.status, order.payment_provider)}</td>
+              <td data-label="상태" className="px-4 py-3">
+                <div className="whitespace-nowrap">
+                  {statusBadge(order.status, order.payment_provider)}
+                  <p className="mt-1 text-xs text-zinc-500">{paymentLabel(order)}</p>
+                </div>
+              </td>
               <td data-label="회사 / 담당자" className="px-4 py-3">
                 <div className="min-w-0">
                   <p className="font-medium text-zinc-900">{order.company_name || "—"}</p>
                   <p className="text-xs text-zinc-500">{order.contact_name || "—"}</p>
+                  <p className="mt-1 break-all text-xs text-zinc-500">{order.email || "—"}</p>
                 </div>
               </td>
-              <td data-label="이메일" className="px-4 py-3 text-zinc-600">{order.email || "—"}</td>
               <td data-label="운송 조건" className="px-4 py-3 text-zinc-600">
                 <div className="min-w-0">
                   <p>{order.trade_terms || "—"}</p>
@@ -305,8 +309,7 @@ function OrdersTable({
                 </div>
               </td>
               <td data-label="배송" className="px-4 py-3 text-zinc-600">{order.shipping_method || "—"}</td>
-              <td data-label="유형" className="px-4 py-3 text-zinc-600">{paymentLabel(order)}</td>
-              <td data-label="합계" className="px-4 py-3 font-medium">{formatKRW(order.total)}</td>
+              <td data-label="합계" className="whitespace-nowrap px-4 py-3 font-medium">{formatKRW(order.total)}</td>
               <td data-label="접수일" className="px-4 py-3 text-zinc-600">
                 <time dateTime={order.created_at} className="whitespace-nowrap">{formatAdminOrderDate(order.created_at)}</time>
               </td>
@@ -322,14 +325,14 @@ function OrdersTable({
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-zinc-200 bg-zinc-50">
-            <td className="px-4 py-3 text-sm font-semibold text-zinc-700" colSpan={7}>
+            <td className="px-4 py-3 text-sm font-semibold text-zinc-700" colSpan={5}>
               이 페이지 합계
             </td>
             <td className="px-4 py-3 text-sm font-semibold text-zinc-900">{formatKRW(pageAmountTotal)}</td>
             <td colSpan={2} />
           </tr>
           <tr className="bg-zinc-100">
-            <td className="px-4 py-3 text-sm font-bold text-zinc-800" colSpan={7}>
+            <td className="px-4 py-3 text-sm font-bold text-zinc-800" colSpan={5}>
               {view === "deleted" ? "삭제된 주문 총합계" : "전체 총합계"} ({total}건)
             </td>
             <td className="px-4 py-3 text-base font-bold text-zinc-900">{formatKRW(amountTotal)}</td>
