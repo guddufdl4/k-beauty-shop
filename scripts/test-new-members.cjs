@@ -1,0 +1,27 @@
+const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript'),assert=require('node:assert/strict');
+const now=new Date('2026-10-08T01:00:00Z');
+let allowed=true,reads=0;
+const rows=Array.from({length:30},(_,i)=>({id:String(i),email:`buyer${i}@example.invalid`,company_name:i===1?'Lotus':'Demo',role:'customer',created_at:new Date(now.getTime()-i*86400000).toISOString()}));
+rows.push({id:'old',created_at:'2025-01-01T00:00:00Z'},{id:'future',created_at:'2026-10-09T00:00:00Z'},{id:'unknown',created_at:null});
+const docs=[{user_id:'1',file_path:'1/proof'},{user_id:'28',file_path:'28/proof'}];
+const service={from(table){reads++;const q={select(){return q},order(){return q},async limit(){return {data:table==='profiles'?rows:docs,error:null}}};return q}};
+const out={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/lib/admin/members.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:out,require:name=>({'@/lib/auth/member-access':{canManageMembers:()=>allowed},'@/lib/supabase/auth-helpers':{getSessionProfile:async()=>({profile:{role:'admin'}})},'@/lib/supabase/service':{createServiceClient:()=>service}})[name],URLSearchParams,Intl,Date});
+(async()=>{
+ assert.equal(out.memberPeriodStart(1,now),Date.parse('2026-10-07T15:00:00Z'));
+ assert.ok(out.isRecentMember('2026-10-07T15:00:00Z',1,now));
+ assert.ok(!out.isRecentMember('2026-10-07T14:59:59Z',1,now));
+ assert.ok(!out.isRecentMember('2026-10-09T00:00:00Z',7,now));
+ assert.ok(!out.isRecentMember(null,7,now));
+ const week=await out.listAdminMembers('',1,'all',{view:'new',days:7,now});
+ assert.equal(week.total,7);assert.deepEqual(Array.from(week.members,m=>m.id),['0','1','2','3','4','5','6']);
+ assert.deepEqual({...week.newCounts},{today:1,week:7,month:30});assert.equal(week.evidenceCounts.submitted,1);assert.equal(week.evidenceCounts.missing,6);
+ const submitted=await out.listAdminMembers('',1,'submitted',{view:'new',days:7,now});assert.equal(submitted.total,1);assert.equal(submitted.members[0].id,'1');
+ const searched=await out.listAdminMembers('Lotus',1,'missing',{view:'new',days:7,now});assert.equal(searched.total,0);assert.equal(searched.evidenceCounts.submitted,1);
+ const month=await out.listAdminMembers('',2,'all',{view:'new',days:30,now});assert.equal(month.total,30);assert.equal(month.page,2);assert.equal(month.members[0].id,'20');
+ const today=await out.listAdminMembers('',9,'all',{view:'new',days:1,now});assert.equal(today.total,1);assert.equal(today.page,1);
+ const href=out.buildAdminMembersHref('Lotus',2,'missing',{view:'new',days:30,sort:'latest'});
+ const params=new URL(href,'https://example.invalid').searchParams;
+ assert.equal(params.get('view'),'new');assert.equal(params.get('days'),'30');assert.equal(params.get('evidence'),'missing');assert.equal(params.get('q'),'Lotus');assert.equal(params.get('page'),'2');assert.equal(params.get('sort'),'latest');
+ allowed=false;const before=reads;assert.equal((await out.listAdminMembers('',1,'all',{view:'new',now})).available,false);assert.equal(reads,before);
+ console.log('PASS KST boundaries, future/null dates excluded, period counts, combined search/evidence, newest order before pagination, filter links, unauthorized denial');
+})().catch(error=>{console.error(error);process.exitCode=1});

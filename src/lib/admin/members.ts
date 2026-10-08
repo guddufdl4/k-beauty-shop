@@ -6,6 +6,7 @@ export type AdminMemberRow = {
   memberGrade: string;
   staffScope: string;
   phoneNumber?: string | null;
+  businessNumber?: string | null;
   id: string;
   username: string | null;
   email: string;
@@ -19,6 +20,18 @@ export type AdminMemberRow = {
 
 export const ADMIN_MEMBERS_PAGE_SIZE = 20;
 
+export type NewMemberOptions = { view?: "all" | "new"; days?: 1 | 7 | 30; sort?: "priority" | "latest"; now?: Date };
+const DAY_MS = 86_400_000;
+export function memberPeriodStart(days: 1 | 7 | 30, now = new Date()): number {
+  // Calendar days in Korea, including today; not a rolling UTC-day cutoff.
+  const koreaDay = Math.floor((now.getTime() + 9 * 3_600_000) / DAY_MS);
+  return (koreaDay - days + 1) * DAY_MS - 9 * 3_600_000;
+}
+export function isRecentMember(createdAt: string | null, days: 1 | 7 | 30 = 7, now = new Date()): boolean {
+  const joined = createdAt ? Date.parse(createdAt) : NaN;
+  return Number.isFinite(joined) && joined >= memberPeriodStart(days, now) && joined <= now.getTime();
+}
+
 export type AdminMemberList = {
   members: AdminMemberRow[];
   total: number;
@@ -27,6 +40,7 @@ export type AdminMemberList = {
   totalPages: number;
   available: boolean;
   error: string | null;
+  newCounts: { today: number; week: number; month: number };
   evidenceCounts: { all: number; submitted: number; missing: number; pending: number; vip: number };
 };
 
@@ -39,7 +53,7 @@ export function parseAdminMembersPage(raw: string | string[] | undefined): numbe
   return parsed;
 }
 
-export function buildAdminMembersHref(query: string, page: number, evidence = "all"): string {
+export function buildAdminMembersHref(query: string, page: number, evidence = "all", options: NewMemberOptions = {}): string {
   const params = new URLSearchParams();
   const trimmed = query.trim();
   if (trimmed) {
@@ -49,6 +63,11 @@ export function buildAdminMembersHref(query: string, page: number, evidence = "a
     params.set("page", String(page));
   }
   if (evidence === "submitted" || evidence === "missing") params.set("evidence", evidence);
+  if (options.view === "new") {
+    params.set("view", "new");
+    params.set("days", String(options.days ?? 7));
+  }
+  if (options.sort === "latest") params.set("sort", "latest");
   const qs = params.toString();
   return qs ? `/admin/members?${qs}` : "/admin/members";
 }
@@ -67,6 +86,7 @@ function emptyList(available: boolean, error: string | null): AdminMemberList {
     totalPages: 1,
     available,
     error,
+    newCounts: { today: 0, week: 0, month: 0 },
     evidenceCounts: { all: 0, submitted: 0, missing: 0, pending: 0, vip: 0 },
   };
 }
@@ -75,6 +95,7 @@ export async function listAdminMembers(
   query = "",
   page = 1,
   evidenceFilter = "all",
+  options: NewMemberOptions = {},
 ): Promise<AdminMemberList> {
   if (!canManageMembers((await getSessionProfile()).profile)) return emptyList(false, "Admin access required");
   const supabase = createServiceClient();
@@ -86,7 +107,7 @@ export async function listAdminMembers(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, email, username, full_name, company_name, country_code, phone, role, preferred_currency, created_at, member_grade, staff_scope",
+      "id, email, username, full_name, company_name, country_code, phone, business_number, role, preferred_currency, created_at, member_grade, staff_scope",
     )
     .order("created_at", { ascending: false })
     .limit(2000);
@@ -111,6 +132,7 @@ export async function listAdminMembers(
     username: textOrNull((row as { username?: string }).username),
     email: String((row as { email?: string }).email ?? ""),
     phoneNumber: textOrNull((row as { phone?: string }).phone),
+    businessNumber: textOrNull((row as { business_number?: string }).business_number),
     fullName: textOrNull((row as { full_name?: string }).full_name),
     companyName: textOrNull((row as { company_name?: string }).company_name),
     countryCode: textOrNull((row as { country_code?: string }).country_code),
@@ -127,14 +149,18 @@ export async function listAdminMembers(
       )
     : members;
 
-  const submittedCount = searched.filter(member => submitted.has(member.id)).length;
-  const evidenceCounts = { all: searched.length, submitted: submittedCount, missing: searched.length - submittedCount, pending: searched.filter(member => member.role === "customer").length, vip: searched.filter(member => member.memberGrade === "vip").length };
-  const filtered = evidenceFilter === "submitted" ? searched.filter(member => submitted.has(member.id))
-    : evidenceFilter === "missing" ? searched.filter(member => !submitted.has(member.id)) : searched;
+  const now = options.now ?? new Date();
+  const newCounts = { today: searched.filter(m=>isRecentMember(m.createdAt,1,now)).length, week: searched.filter(m=>isRecentMember(m.createdAt,7,now)).length, month: searched.filter(m=>isRecentMember(m.createdAt,30,now)).length };
+  const scoped = options.view === "new" ? searched.filter(m=>isRecentMember(m.createdAt,options.days ?? 7,now)) : searched;
+  const submittedCount = scoped.filter(member => submitted.has(member.id)).length;
+  const evidenceCounts = { all: scoped.length, submitted: submittedCount, missing: scoped.length - submittedCount, pending: scoped.filter(member => member.role === "customer").length, vip: scoped.filter(member => member.memberGrade === "vip").length };
+  const filtered = evidenceFilter === "submitted" ? scoped.filter(member => submitted.has(member.id))
+    : evidenceFilter === "missing" ? scoped.filter(member => !submitted.has(member.id)) : scoped;
 
   // Sort the complete search result before pagination so older submissions
   // appear on page one, rather than only moving within their existing page.
   filtered.sort((a,b)=>{
+    if (options.view === "new" || options.sort === "latest") return (b.createdAt || "").localeCompare(a.createdAt || "") || a.id.localeCompare(b.id);
     const rank=(member:AdminMemberRow)=>submitted.has(member.id)
       ? member.role === "customer" ? 0 : 1 : 2;
     const priority=rank(a)-rank(b);
@@ -159,6 +185,7 @@ export async function listAdminMembers(
     pageSize: ADMIN_MEMBERS_PAGE_SIZE,
     totalPages,
     evidenceCounts,
+    newCounts,
     available: true,
     error: null,
   };
