@@ -5,6 +5,7 @@ import { AdminOrderRestoreButton } from "@/components/admin/admin-order-restore-
 import {
   ADMIN_ORDERS_PAGE_SIZE,
   buildAdminOrdersHref,
+  formatAdminOrderDate,
   listAdminOrders,
   parseAdminOrdersPage,
   parseAdminOrdersView,
@@ -165,6 +166,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
           : `총 ${total}건 · ${from}–${to}번째 · ${page}/${totalPages}페이지`}
       </p>
       <AdminOrderPeriodTotals totals={periodTotals} view={view} />
+      <p className="mt-3 text-xs text-zinc-500">견적 요청 금액이 포함된 접수 기준 합계입니다. 결제 완료 매출과는 다릅니다. 접수일은 한국시간(KST)으로 표시합니다.</p>
       <OrdersTable
         orders={orders}
         view={view}
@@ -288,21 +290,25 @@ function OrdersTable({
               </td>
               <td data-label="상태" className="px-4 py-3">{statusBadge(order.status, order.payment_provider)}</td>
               <td data-label="회사 / 담당자" className="px-4 py-3">
-                <p className="font-medium text-zinc-900">{order.company_name || "—"}</p>
-                <p className="text-xs text-zinc-500">{order.contact_name || "—"}</p>
+                <div className="min-w-0">
+                  <p className="font-medium text-zinc-900">{order.company_name || "—"}</p>
+                  <p className="text-xs text-zinc-500">{order.contact_name || "—"}</p>
+                </div>
               </td>
               <td data-label="이메일" className="px-4 py-3 text-zinc-600">{order.email || "—"}</td>
               <td data-label="운송 조건" className="px-4 py-3 text-zinc-600">
-                <p>{order.trade_terms || "—"}</p>
-                <p className="text-xs text-zinc-500">
-                  {[order.consignee, order.notify_party, order.shipping_address_text].filter(Boolean).join(" · ")}
-                </p>
+                <div className="min-w-0">
+                  <p>{order.trade_terms || "—"}</p>
+                  <p className="text-xs text-zinc-500">
+                    {[order.consignee, order.notify_party, order.shipping_address_text].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
               </td>
               <td data-label="배송" className="px-4 py-3 text-zinc-600">{order.shipping_method || "—"}</td>
               <td data-label="유형" className="px-4 py-3 text-zinc-600">{paymentLabel(order)}</td>
               <td data-label="합계" className="px-4 py-3 font-medium">{formatKRW(order.total)}</td>
               <td data-label="접수일" className="px-4 py-3 text-zinc-600">
-                {new Date(order.created_at).toLocaleString("ko-KR")}
+                <time dateTime={order.created_at} className="whitespace-nowrap">{formatAdminOrderDate(order.created_at)}</time>
               </td>
               <td data-label="관리" className="px-4 py-3">
                 {view === "deleted" ? (

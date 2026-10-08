@@ -50,7 +50,7 @@ export function AdminOrderPeriodTotals({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <PeriodHighlightCard label="오늘" amount={totals.today.amount} count={totals.today.count} />
         <PeriodHighlightCard label="어제" amount={totals.yesterday.amount} count={totals.yesterday.count} />
         <PeriodHighlightCard label="이번 주" amount={totals.thisWeek.amount} count={totals.thisWeek.count} />
@@ -92,9 +92,9 @@ function PeriodHighlightCard({
   count: number;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5">
+    <div className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
       <p className="text-sm text-zinc-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-zinc-900">{formatKRW(amount)}</p>
+      <p className="mt-2 break-all text-base font-semibold text-zinc-900 sm:text-lg xl:text-2xl">{formatKRW(amount)}</p>
       <p className="mt-1 text-xs text-zinc-500">{count}건</p>
     </div>
   );

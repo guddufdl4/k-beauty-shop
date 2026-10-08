@@ -97,13 +97,16 @@ export function isDemoProductId(productId: string): boolean {
 
 export function generateOrderNumber(prefix = "KB"): string {
   const now = new Date();
-  const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  const ymd = quoteDateStamp(now);
   const suffix = String(Math.floor(1000 + Math.random() * 9000));
   return `${prefix}-${ymd}-${suffix}`;
 }
 
 function quoteDateStamp(now = new Date()): string {
-  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  return ["year", "month", "day"].map(type => parts.find(part => part.type === type)?.value).join("");
 }
 
 export async function generateSequentialQuoteNumber(

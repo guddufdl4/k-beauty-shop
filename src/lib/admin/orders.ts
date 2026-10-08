@@ -6,6 +6,16 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 export const ADMIN_ORDERS_PAGE_SIZE = 10;
 
+/** Use the same Seoul calendar as the order totals, independent of server timezone. */
+export function formatAdminOrderDate(createdAt: string): string {
+  const date = new Date(createdAt);
+  if (!Number.isFinite(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).format(date);
+}
+
 export function parseAdminOrdersPage(raw: string | string[] | undefined): number {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const parsed = Number.parseInt(String(value ?? "1"), 10);
