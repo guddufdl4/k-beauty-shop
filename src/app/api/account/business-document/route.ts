@@ -19,7 +19,7 @@ export async function POST(request:Request) {
   if(typeof input.business_number!=="string"||!validBusinessNumber(input.business_number.trim()))return Response.json({error:"business_number"},{status:400});
   if(input.stage==="number") {
    const service=createServiceClient();if(!service)return response(503);
-   const result=await service.from("profiles").update({business_number:input.business_number.trim(),...(profile?.role==="customer"?{role:"wholesale"}:{})}).eq("id",user.id).eq("role",profile?.role||"customer").select("id");
+   const result=await service.from("profiles").update({business_number:input.business_number.trim()}).eq("id",user.id).eq("role",profile?.role||"customer").select("id");
    if(result.error||!result.data?.length)return Response.json({error:"save"},{status:503});
    revalidatePath("/admin/members");revalidatePath("/","layout");return response(200);
   }
@@ -45,6 +45,8 @@ export async function POST(request:Request) {
   if(!valid){await bucket.remove([input.path]);return Response.json({error:"file_type"},{status:400});}
   const result=await service.from("business_documents").upsert({user_id:user.id,file_path:input.path,file_name:String(input.file_name||"document").replace(/[\/\r\n<>]/g,"_").slice(0,160),submitted_at:new Date().toISOString(),website:website||null,business_number:input.business_number.trim(),consent_at:new Date().toISOString(),ai_consent_at:null,ai_result:null,ai_file_path:null,ai_reviewed_at:null,ai_started_at:null},{onConflict:"user_id"});
   if(result.error)return Response.json({error:"save"},{status:503});
+  const approved=await service.from("profiles").update({business_number:input.business_number.trim(),role:"wholesale"}).eq("id",user.id).eq("role","customer");
+  if(approved.error)return Response.json({error:"save"},{status:503});
   revalidatePath("/admin/members");revalidatePath("/","layout");return response(200);
  }
  if(Number(request.headers.get("content-length"))>11*1024*1024) return response(413);
@@ -71,6 +73,8 @@ export async function POST(request:Request) {
  const fileName=file.name.replace(/[\/\r\n<>]/g,"_").slice(0,160);
  const result=await service.from("business_documents").upsert({user_id:user.id,file_path:path,file_name:fileName,submitted_at:new Date().toISOString(),website:website||null,business_number:businessNumber,consent_at:new Date().toISOString(),ai_consent_at:null,ai_result:null,ai_file_path:null,ai_reviewed_at:null,ai_started_at:null},{onConflict:"user_id"});
  if(result.error){await service.storage.from("business-documents").remove([path]);return response(503);}
+ const approved=await service.from("profiles").update({business_number:businessNumber,role:"wholesale"}).eq("id",user.id).eq("role","customer");
+ if(approved.error)return response(503);
  revalidatePath("/admin/members");revalidatePath("/","layout");return response(200);
 }
 export async function GET(request:Request){

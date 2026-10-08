@@ -25,7 +25,7 @@ async function request(value,origin='https://hmt.test'){
  assert.equal((await request('dddd')).status,400);
  assert.equal((await request('123-45-67890','https://other.test')).status,403);
  assert.equal((await request('123-45-67890')).status,200);
- assert.equal(saved.role,'wholesale');
+ assert.ok(!('role' in saved), 'number alone must never approve prices');
  for(role of ['admin','wholesale']){assert.equal((await request('AB-12345')).status,200);assert.ok(!('role' in saved));}
  let profileSaved;
  const authService={from:()=>({upsert:async values=>{profileSaved=values;return {error:null}}}),auth:{admin:{generateLink:async()=>({data:{user:{id:'new-test'},properties:{hashed_token:'test-only',verification_type:'signup'}},error:null})}}};
@@ -39,9 +39,11 @@ async function request(value,origin='https://hmt.test'){
  '@/lib/auth/return-to':{safeStorefrontReturnTo:()=>'/account'},'@/lib/email':{sendCustomerEmail:async()=>({ok:true})},'@/lib/site-url':{resolveAuthEmailBaseUrl:()=>'https://hmt.test'},
  '@/lib/supabase/server':{createClient:async()=>({})},'@/lib/supabase/service':{createServiceClient:()=>authService},
  });
- for(const [value,expected] of [['','customer'],['123-45-67890','wholesale']]){
+ for(const value of ['', 'dddd']){
   const form=new FormData();form.set('business_number',value);
-  assert.ok((await auth.signUp({},form)).success);assert.equal(profileSaved.role,expected);assert.equal(profileSaved.business_number,value||null);
+  assert.ok((await auth.signUp({},form)).error);assert.equal(profileSaved,undefined);
  }
- console.log('PASS optional signup, automatic number approval, invalid values/origin, existing admin/approved roles preserved');
+ const form=new FormData();form.set('business_number','123-45-67890');
+ assert.ok((await auth.signUp({},form)).success);assert.equal(profileSaved.role,'customer');assert.equal(profileSaved.business_number,'123-45-67890');
+ console.log('PASS required signup number, number-only pricing denied, invalid values/origin, existing roles preserved');
 })().catch(error=>{console.error(error);process.exit(1)});

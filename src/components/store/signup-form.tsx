@@ -97,7 +97,7 @@ export function SignupForm({ action, returnTo, labels, footer, policies }: Props
             </select>
           </div>
           <div>
-            <label htmlFor="business_number" className="block text-sm font-medium">{asianCopy(locale)?.businessNumber ?? (locale === "ko" ? "사업자 번호 / 현지 사업자 등록번호" : locale === "ja" ? "事業者登録番号" : locale === "zh" ? "企业注册号" : "Business / local registration number")} ({businessAccessCopy(locale).optional})</label><input id="business_number" name="business_number" minLength={3} maxLength={50} className={fieldClass} /><p className="mt-1 text-xs text-zinc-500">{businessAccessCopy(locale).hint}</p><label htmlFor="company_name" className="block text-sm font-medium">
+            <label htmlFor="business_number" className="block text-sm font-medium">{asianCopy(locale)?.businessNumber ?? (locale === "ko" ? "사업자 번호 / 현지 사업자 등록번호" : locale === "ja" ? "事業者登録番号" : locale === "zh" ? "企业注册号" : "Business / local registration number")} <span className="text-violet-700">*</span></label><input id="business_number" name="business_number" required minLength={3} maxLength={50} className={fieldClass} /><p className="mt-1 text-xs text-zinc-500">{businessAccessCopy(locale).hint}</p><label htmlFor="company_name" className="block text-sm font-medium">
               {labels.company} <span className="text-violet-700">*</span>
             </label>
             <p id="company_name-hint" className="mt-1 text-xs text-zinc-500">

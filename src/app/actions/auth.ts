@@ -71,7 +71,7 @@ async function persistSignupProfile(
     company_name: input.companyName,
     country_code: input.countryCode,
     preferred_currency: input.preferredCurrency,
-    role: input.businessNumber ? "wholesale" as const : "customer" as const,
+    role: "customer" as const,
     business_number: input.businessNumber || null,
     terms_accepted_at: acceptedAt,
     privacy_accepted_at: acceptedAt,
@@ -92,7 +92,7 @@ async function persistSignupProfile(
       company_name: input.companyName,
       country_code: input.countryCode,
       preferred_currency: input.preferredCurrency,
-      role: input.businessNumber ? "wholesale" : "customer",
+      role: "customer",
       business_number: input.businessNumber || null,
     },
     { onConflict: "id" },
@@ -116,7 +116,7 @@ export async function signUp(
   const t = await getTranslations("auth");
   const locale = await getLocale();
   const businessNumber = String(formData.get("business_number") || "").trim();
-  if (businessNumber && !validBusinessNumber(businessNumber)) return { error: asianCopy(locale)?.businessNumberError ?? (locale === "ko" ? "사업자 번호를 올바르게 입력해 주세요." : "Please enter a valid business registration number.") };
+  if (!validBusinessNumber(businessNumber)) return { error: asianCopy(locale)?.businessNumberError ?? (locale === "ko" ? "사업자 번호를 올바르게 입력해 주세요." : "Please enter a valid business registration number.") };
   const parsed = parseSignupForm(formData);
 
   if ("errorKey" in parsed) {
