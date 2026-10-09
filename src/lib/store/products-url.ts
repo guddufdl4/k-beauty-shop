@@ -453,11 +453,11 @@ export type HomeCategoryItem = {
 /** Homepage category row — set `enabled: false` to hide a category without DB changes. */
 export const HOME_CATEGORY_SLUGS: HomeCategoryItem[] = [
   { slug: "skincare", enabled: true },
+  { slug: "suncare", enabled: true },
   { slug: "makeup", enabled: true },
   { slug: "mask-pack", enabled: true },
-  { slug: "suncare", enabled: true },
-  { slug: "haircare", enabled: true },
-  { slug: "bodycare", enabled: true },
+  { slug: "haircare", enabled: false },
+  { slug: "bodycare", enabled: false },
 ];
 
 export type HomeFeaturedBrandItem = {
@@ -467,12 +467,10 @@ export type HomeFeaturedBrandItem = {
 
 /** Homepage featured brands row — order preserved; set `enabled: false` to hide without DB changes. */
 export const HOME_FEATURED_BRANDS: HomeFeaturedBrandItem[] = [
-  { displayName: "VT", enabled: true },
-  { displayName: "SKINFOOD", enabled: true },
-  { displayName: "Torriden", enabled: true },
-  { displayName: "COSRX", enabled: true },
+  { displayName: "Beauty of Joseon", enabled: true },
+  { displayName: "Dr.Althea", enabled: true },
   { displayName: "ANUA", enabled: true },
-  { displayName: "ROUND LAB", enabled: true },
+  { displayName: "SKIN1004", enabled: true },
 ];
 
 export type ResolvedFeaturedBrand = {

@@ -369,7 +369,7 @@ export async function HomeTrustBar() {
 
   return (
     <section className="border-b border-zinc-200 bg-white" aria-label={t("sectionLabel")}>
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-8 sm:px-6 lg:grid-cols-4 lg:gap-x-8 lg:py-10">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-x-6 gap-y-5 px-4 py-6 sm:px-6 lg:grid-cols-4 lg:gap-x-8 lg:py-7">
         {items.map((item) => (
           <div key={item.key} className="flex items-start gap-3">
             <TrustIcon name={item.key} />
@@ -475,15 +475,15 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
           </Link>
         </div>
 
-        <div className="grid min-w-0 grid-cols-3 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {items.map((item) => (
             <Link
             prefetch={false}
               key={item.slug}
               href={item.href}
-              className="group flex min-w-0 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-[#faf8f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
-              <div className="relative mx-auto aspect-square w-full min-h-[90px] max-w-[120px] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 transition-colors group-hover:border-accent sm:max-w-none">
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-white sm:aspect-[16/10]">
                 {item.imageUrl.endsWith(".svg") ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -496,8 +496,8 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
                     src={item.imageUrl}
                     alt={item.label}
                     fill
-                    sizes="(max-width: 640px) 33vw, (max-width: 1024px) 33vw, 16vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-zinc-400">
@@ -505,8 +505,8 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
                   </div>
                 )}
               </div>
-              <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-center text-xs font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-accent sm:mt-3 sm:text-sm">
-                {item.label}
+              <p className="flex min-h-12 items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-zinc-900 transition-colors group-hover:text-accent sm:px-5 sm:text-base">
+                {item.label}<span aria-hidden>↗</span>
               </p>
             </Link>
           ))}
@@ -572,7 +572,7 @@ export async function HomeFeaturedBrandsSection({ products }: HomeFeaturedBrands
           </Link>
         </div>
 
-        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0 lg:snap-none">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
           {brands.map((brand) => (
             <FeaturedBrandCard key={brand.displayName} brand={brand} />
           ))}

@@ -42,6 +42,10 @@ export function createHomepageLeadHeroSlide(): HeroSlide {
 }
 
 export function withHomepageLeadHeroSlide(slides: HeroSlide[]): HeroSlide[] {
+  // Configured campaigns are authoritative so admins can replace them monthly.
+  if (slides.length > 0) {
+    return [...slides].sort((a, b) => a.order - b.order).map((slide, order) => ({ ...slide, order }));
+  }
   const lead = createHomepageLeadHeroSlide();
   const rest = slides.filter((slide) => slide.id !== lead.id);
   return [lead, ...rest].map((slide, index) => ({ ...slide, order: index }));

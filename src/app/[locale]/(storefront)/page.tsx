@@ -167,7 +167,8 @@ function mapStoredHeroSlideToBannerSlide(
   const brand = resolveHeroSlideBrand(slide.id, index);
   const brandHubHref = buildBrandHref(brandNameToSlug(brand));
   const isAsianLocale = ["vi", "id", "th"].includes(locale);
-  const adminCopy = isAsianLocale ? undefined : mapHeroSlideCopyToBannerCopy(slide.copy);
+  const isSeasonalSlide = slide.id.startsWith("seasonal-");
+  const adminCopy = isAsianLocale && !isSeasonalSlide ? undefined : mapHeroSlideCopyToBannerCopy(slide.copy);
   const brandCopy = isLeadSlide ? undefined : brandHeroCopyFallback(brand, t, brandHubHref);
 
   const primaryHref = normalizeHeroHref(
@@ -215,10 +216,10 @@ function mapStoredHeroSlideToBannerSlide(
             adminCopy?.shopBestSellersLabel?.trim() || brandCopy?.shopBestSellersLabel,
           shopBestSellersHref: adminCopy?.shopBestSellersHref?.trim() || brandHubHref,
           wholesaleInquiryLabel:
-            adminCopy?.wholesaleInquiryLabel?.trim() || t("hero.wholesaleInquiry"),
+            isSeasonalSlide ? "" : adminCopy?.wholesaleInquiryLabel?.trim() || t("hero.wholesaleInquiry"),
           wholesaleInquiryHref:
             adminCopy?.wholesaleInquiryHref?.trim() || DEFAULT_WHOLESALE_INQUIRY_HREF,
-          orderGuideLabel: adminCopy?.orderGuideLabel?.trim() || t("hero.orderGuide"),
+          orderGuideLabel: isSeasonalSlide ? "" : adminCopy?.orderGuideLabel?.trim() || t("hero.orderGuide"),
           orderGuideHref: adminCopy?.orderGuideHref?.trim() || DEFAULT_ORDER_GUIDE_HREF,
         },
   };
@@ -293,9 +294,7 @@ export default async function HomePage() {
         </div>
       ) : null}
 
-      <HomeCategorySection products={products} />
-
-      <section className="border-b border-zinc-200 bg-white py-10 sm:py-12">
+      <section className="border-b border-zinc-100 bg-white py-10 sm:py-14">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
           <Suspense fallback={<div className="min-h-96 animate-pulse rounded-2xl bg-zinc-50" aria-label={t("trending.title")} />}>
           <DeferredHomeTrending
@@ -324,6 +323,8 @@ export default async function HomePage() {
           </Suspense>
         </div>
       </section>
+
+      <HomeCategorySection products={products} />
 
       <HomeFeaturedBrandsSection products={products} />
 

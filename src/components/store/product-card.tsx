@@ -82,7 +82,7 @@ export function ProductCard({
       prefetch={false}
       className={cn(
         "group flex h-full min-w-0 max-w-full flex-col",
-        isTrending && "rounded-xl border border-zinc-200 bg-white p-2.5 sm:p-3 transition-shadow hover:shadow-md",
+        isTrending && "rounded-2xl border border-zinc-100 bg-white p-3 sm:p-4 transition-shadow hover:shadow-md",
       )}
     >
       <div className="relative">
@@ -165,10 +165,10 @@ export function ProductCard({
         {volume ? (
           <p className="text-xs text-zinc-500">{volume}</p>
         ) : null}
-        {product.product_code ? (
+        {product.product_code && !isTrending ? (
           <p className="font-mono text-[11px] tracking-wide text-zinc-500">{product.product_code}</p>
         ) : null}
-        {barcode ? (
+        {barcode && !isTrending ? (
           <p className="hidden font-mono text-[11px] tracking-wide text-zinc-400 sm:block">{barcode}</p>
         ) : null}
         <div className={cn("mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-2")}>

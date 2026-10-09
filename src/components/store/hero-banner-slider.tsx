@@ -456,6 +456,16 @@ function HeroSlideFrame({
 
   return (
     <div className="relative w-full h-[530px] bg-[#f4f2ef] sm:h-[370px] lg:h-[470px]">
+      {slide.id.startsWith("seasonal-") && slide.mobileSrc ? (
+        <picture>
+          <source media="(min-width: 640px)" srcSet={slide.src} />
+          {/* Campaign assets are already optimized WebP; picture downloads only the matching device image. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={slide.mobileSrc} alt={imageAlt} width={750} height={938}
+            loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        </picture>
+      ) : <>
       <HeroBannerImage
         src={slide.src}
         alt={imageAlt}
@@ -478,6 +488,7 @@ function HeroSlideFrame({
         height={slide.imageHeight}
         className="pointer-events-none sm:hidden"
       />
+      </>}
       <HeroNavLink
         href={slide.href}
         aria-label={slide.brandLabel}
@@ -813,6 +824,17 @@ export function HeroBannerSlider({ slides, copy }: Props) {
           </>
         ) : null}
         </div>
+        {showControls && slides.some((slide) => slide.id.startsWith("seasonal-")) ? (
+          <div className="grid grid-cols-2 gap-1 border-t border-zinc-100 pt-2 sm:grid-cols-4 sm:gap-3" aria-label="Campaign brands">
+            {slides.map((slide, index) => (
+              <button key={slide.id} type="button" aria-pressed={index === activeIndex}
+                onClick={() => { pauseAutoplay(); scrollToIndex(index); }}
+                className={`min-h-11 rounded-lg px-2 py-2 text-xs font-semibold transition-colors sm:text-sm ${index === activeIndex ? "bg-rose-50 text-accent" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"}`}>
+                {slide.copy?.badge || slide.brandLabel}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );

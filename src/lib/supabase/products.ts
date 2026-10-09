@@ -1525,6 +1525,9 @@ export async function getProducts(
     }
 
     if (withOrder) {
+      if (sort === "trending") {
+        filtered = filtered.order("is_best_seller", { ascending: false });
+      }
       if (imageFirst && includePriceColumns) {
         filtered = filtered.order("needs_image", { ascending: true });
       }
@@ -1918,7 +1921,8 @@ function finalizeHomepageProducts(
   products: ProductWithRelations[],
   limit: number,
 ): ProductWithRelations[] {
-  const sorted = sortHomepagePriorityProducts(products.filter((product) => productHasRealImage(product)));
+  const sorted = sortHomepagePriorityProducts(products.filter((product) => productHasRealImage(product)))
+    .sort((a, b) => Number(b.is_best_seller) - Number(a.is_best_seller));
   return [...new Map([...interleaveByBrand(sorted, 2), ...sorted].map((product) => [product.id, product])).values()].slice(0, limit);
 }
 
@@ -1992,6 +1996,12 @@ export function selectDiverseTrendingProducts(
   const picked: StorefrontProduct[] = [];
   const usedIds = new Set<string>();
 
+  for (const product of interleaveByBrand([...visible].filter((product) => product.is_best_seller).sort(compareBestSellers), 1)) {
+    picked.push(product);
+    usedIds.add(product.id);
+    if (picked.length >= limit) return picked;
+  }
+
   for (const brandTarget of TRENDING_BRAND_PRIORITY) {
     const match = visible.find(
       (product) => !usedIds.has(product.id) && brandMatchesTarget(product.brand, brandTarget),
@@ -2013,6 +2023,9 @@ export function selectDiverseTrendingProducts(
 }
 
 function compareBestSellers(a: StorefrontProduct, b: StorefrontProduct): number {
+  if (Boolean(b.is_best_seller) !== Boolean(a.is_best_seller)) {
+    return Number(Boolean(b.is_best_seller)) - Number(Boolean(a.is_best_seller));
+  }
   const aHasImage = productHasRealImage(a) ? 1 : 0;
   const bHasImage = productHasRealImage(b) ? 1 : 0;
   if (bHasImage !== aHasImage) {
@@ -2144,7 +2157,7 @@ export async function getPriorityBrandProducts(options?: {
         products: toStorefrontProducts(result.products, "guest"),
       };
     },
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", "trending-list-v2", String(limit), storefrontCacheAudienceKey("guest")],
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", "trending-list-v3", String(limit), storefrontCacheAudienceKey("guest")],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],
@@ -2225,6 +2238,12 @@ async function fetchPriorityBrandProductsFromSource(
 
   const priorityKeys = [...getBrandPriorityKeySet()];
   let dbProducts: ProductWithRelations[] = [];
+  // Start the small best-product read alongside supplier-list reads.
+  let bestQuery = supabase.from("products").select(productSelect)
+    .eq("status", "active").eq("is_best_seller", true)
+    .not("image_url", "is", null).order("created_at", { ascending: false }).limit(limit);
+  if (isSoftDeleteColumnAvailable()) bestQuery = bestQuery.is("deleted_at", null);
+  const bestPending = Promise.resolve(bestQuery);
 
   if (priorityKeys.length === 0) {
     const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit, audience);
@@ -2265,6 +2284,14 @@ async function fetchPriorityBrandProductsFromSource(
       const homepageResult = await fetchHomepageProductsFromDatabase(supabase, limit, audience);
       dbProducts = homepageResult.products;
     }
+  }
+
+  // Admin-selected best products must not disappear behind the supplier priority list.
+  const bestResult = await bestPending;
+  if (!bestResult.error && bestResult.data?.length) {
+    const bestProducts = await hydrateProductLocaleNames(supabase,
+      (bestResult.data as unknown as Record<string, unknown>[]).map(mapProductWithRelations));
+    dbProducts = [...new Map([...bestProducts, ...dbProducts].map((product) => [product.id, product])).values()];
   }
 
   if (dbProducts.length > 0) {
