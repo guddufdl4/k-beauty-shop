@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
+import { getDisplayBrandName } from "@/lib/store/products-url";
 import { HomeCampaignProduct } from "./home-campaign-product";
 import type { StorefrontProduct, TrendingCategorySlug } from "@/lib/supabase/products";
 
@@ -47,7 +48,7 @@ export function HomeTrendingSection({
   const [mobileProductLimit, setMobileProductLimit] = useState<number | null>(null);
   const [campaignBrand, setCampaignBrand] = useState("Beauty of Joseon");
   useEffect(() => { const update = (event:Event) => setCampaignBrand((event as CustomEvent<string>).detail); window.addEventListener("hmt:campaign-brand",update); return () => window.removeEventListener("hmt:campaign-brand",update); }, []);
-  const products = (productsByFilter[activeFilter] ?? []).filter(product => activeFilter !== "all" || product.brand?.toLowerCase() === campaignBrand.toLowerCase());
+  const products = (productsByFilter[activeFilter] ?? []).filter(product => activeFilter !== "all" || getDisplayBrandName(product.brand ?? "").toLowerCase() === campaignBrand.toLowerCase());
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 639px)");
