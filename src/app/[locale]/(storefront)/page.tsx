@@ -15,7 +15,7 @@ import {
   mapHeroSlideCopyToBannerCopy,
   normalizeHeroHref,
 } from "@/lib/store/storefront-href";
-import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettings } from "@/lib/site-settings";
+import { DEFAULT_SITE_SETTINGS, getHeroSlides, getSiteSettings, getHomeSettings } from "@/lib/site-settings";
 import {
   HOMEPAGE_LEAD_HERO_COPY,
   HOMEPAGE_LEAD_HERO_IMAGE,
@@ -244,7 +244,7 @@ export default async function HomePage() {
   const categoryRows = Promise.all(["skincare", "makeup", "haircare"].map((categorySlug) =>
     getProducts({ categorySlug, limit: 8, requireRealImage: true, audience, sort: "trending" }),
   ));
-  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings] = await Promise.all([
+  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings, homeSettings] = await Promise.all([
     getTranslations("home"),
     getTranslations("products"),
     getPriorityBrandProducts({ limit: 48, audience }),
@@ -252,6 +252,7 @@ export default async function HomePage() {
     getUsdKrwRate(),
     getStorefrontCategories(),
     loadSiteSettingsSafely(),
+    getHomeSettings(),
   ]);
 
   const heroCopy = buildDefaultHeroCopy(siteSettings, t);
@@ -260,7 +261,7 @@ export default async function HomePage() {
     .map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, locale, siteSettings, t))
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
-  const trendingAll = localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories), locale);
+  const trendingAll = localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories, 8, homeSettings.trending_skus), locale);
   const heroPool = trendingAll.length ? trendingAll : (await categoryRows).flatMap(row => localizeStorefrontProducts(row.products, locale));
   const heroProducts = [...new Map(heroPool.filter((product) => !product.sold_out).map((product) => [product.id, product])).values()].slice(0, 5);
   const leadSlide = heroSlides.find((slide) => slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID);

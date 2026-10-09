@@ -1,3 +1,4 @@
+import { getHomeSettings } from "@/lib/site-settings";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { unstable_cache } from "next/cache";
@@ -1990,7 +1991,7 @@ export function selectDiverseTrendingProducts(
       }
     }
 
-    return [...new Map([...interleaveByBrand(picked, 2), ...picked].map((product) => [product.id, product])).values()].slice(0, limit);
+    return [...new Map([...interleaveByBrand(picked, 1), ...picked].map((product) => [product.id, product])).values()].slice(0, limit);
   }
 
   const picked: StorefrontProduct[] = [];
@@ -2157,7 +2158,7 @@ export async function getPriorityBrandProducts(options?: {
         products: toStorefrontProducts(result.products, "guest"),
       };
     },
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", "trending-list-v3", String(limit), storefrontCacheAudienceKey("guest")],
+    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", "trending-list-v4", String(limit), storefrontCacheAudienceKey("guest")],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],
@@ -2239,9 +2240,11 @@ async function fetchPriorityBrandProductsFromSource(
   const priorityKeys = [...getBrandPriorityKeySet()];
   let dbProducts: ProductWithRelations[] = [];
   // Start the small best-product read alongside supplier-list reads.
+  const homeSettings = await getHomeSettings();
   let bestQuery = supabase.from("products").select(productSelect)
     .eq("status", "active").eq("is_best_seller", true)
     .not("image_url", "is", null).order("created_at", { ascending: false }).limit(limit);
+  if (homeSettings.trending_skus.length) bestQuery = bestQuery.in("sku", homeSettings.trending_skus);
   if (isSoftDeleteColumnAvailable()) bestQuery = bestQuery.is("deleted_at", null);
   const bestPending = Promise.resolve(bestQuery);
 
@@ -2295,7 +2298,8 @@ async function fetchPriorityBrandProductsFromSource(
   }
 
   if (dbProducts.length > 0) {
-    const products = finalizeHomepageProducts(dbProducts, limit);
+    const curated = new Set(homeSettings.trending_skus.map(sku => sku.toUpperCase()));
+    const products = [...new Map([...dbProducts.filter(p => curated.has(p.sku.toUpperCase())), ...finalizeHomepageProducts(dbProducts, limit)].map(p => [p.id, p])).values()].slice(0, limit);
     return {
       products,
       totalCount: products.length,
