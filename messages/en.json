@@ -571,7 +571,7 @@
     "orderQuantity": "Order qty {count}",
     "totalUnits": "{count} units",
     "boxCount": "{count} boxes",
-    "boxesAndUnits": "{boxes} boxes · {units} units",
+    "boxesAndUnits": "{boxes, plural, one {# box} other {# boxes}} · {units, plural, one {# unit} other {# units}}",
     "addedSuccess": "Added to quote list.",
     "quantityUpdated": "Quantity updated.",
     "itemRemoved": "Item removed.",

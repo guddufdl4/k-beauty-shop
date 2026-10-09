@@ -37,7 +37,7 @@ import { getDisplayBrandName } from "@/lib/store/products-url";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { getUsdKrwRate } from "@/lib/currency-rate";
-import { formatKRW, formatLocaleProductPrice } from "@/lib/utils";
+import { formatLocaleProductPrice } from "@/lib/utils";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getProductBySlug, getProducts } from "@/lib/supabase/products";
@@ -372,7 +372,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   {retailAmount != null ? (
                     <InfoRow
                       label={t("retailPrice")}
-                      value={formatKRW(retailAmount)}
+                      value={formatLocaleProductPrice(retailAmount, locale, usdKrwRate)}
                     />
                   ) : null}
                   <InfoRow

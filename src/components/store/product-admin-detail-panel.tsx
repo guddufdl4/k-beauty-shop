@@ -17,7 +17,7 @@ import {
   usesBoxQuantityField,
   usableShopPrice,
 } from "@/lib/store/products-url";
-import { formatKRW, formatLocaleProductPrice } from "@/lib/utils";
+import { formatLocaleProductPrice } from "@/lib/utils";
 import type { Category, ProductWithRelations } from "@/lib/supabase/products";
 
 type ProductAdminDetailPanelProps = {
@@ -510,7 +510,7 @@ export function ProductAdminDetailPanel({
                       {t("retailPrice")}
                     </p>
                     <p className="text-xl font-bold text-rose-700">
-                      {formatKRW(retailAmount)}
+                      {formatLocaleProductPrice(retailAmount, locale, usdKrwRate)}
                     </p>
                   </div>
                 ) : null}
@@ -556,6 +556,7 @@ export function ProductAdminDetailPanel({
           )}
         </div>
 
+        {!isEditing ? <VerifiedPackingInfo sku={initialProduct.sku} locale={locale} /> : null}
         <AddToCartForm
           productId={product.id}
           productSlug={product.slug}
@@ -594,8 +595,6 @@ export function ProductAdminDetailPanel({
             </p>
           </section>
         ) : null}
-
-        {!isEditing ? <VerifiedPackingInfo sku={initialProduct.sku} locale={locale} /> : null}
 
         {!isEditing && initialProduct.ingredients ? (
           <section className="mt-8 min-w-0">
