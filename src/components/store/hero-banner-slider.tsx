@@ -774,7 +774,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
               type="button"
               aria-label="Previous banner"
               onClick={goToPrevious}
-              className="absolute left-2 bottom-3 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-sm transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:left-4"
+              className="absolute left-2 bottom-3 z-30 hidden sm:flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-sm transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:left-4"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden>
                 <path
@@ -788,7 +788,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
               type="button"
               aria-label="Next banner"
               onClick={goToNext}
-              className="absolute right-2 bottom-3 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-sm transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:right-4"
+              className="absolute right-2 bottom-3 z-30 hidden sm:flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-sm transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:right-4"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden>
                 <path
@@ -799,7 +799,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
               </svg>
             </button>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center gap-1 sm:bottom-4 sm:gap-2">
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 hidden justify-center sm:flex gap-1 sm:bottom-4 sm:gap-2">
               {slides.map((slide, index) => (
                 <button
                   key={slide.id}
