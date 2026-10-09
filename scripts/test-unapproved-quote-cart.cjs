@@ -16,6 +16,7 @@ const mocks={
  '@/lib/supabase/products':{FALLBACK_PRODUCTS:[]},'@/lib/product-images':{enrichProductImages:p=>p},
  '@/lib/store/products-url':{getEffectiveProductPrice:p=>p.wholesale_price||p.price},
  '@/lib/store/localized-product-name':{getLocalizedProductName:p=>p.name},
+ '@/lib/currency-rate':{getUsdKrwRate:async()=>1400},
  '@/lib/currency':{getUsdKrwRate:async()=>1400,MIN_ORDER_USD:1000,cartMeetsMinOrderUsd:n=>n>=1400000},
  '@/lib/store/moq-quantity':{getMoqStep:n=>n,isValidMoqQuantity:(n,step)=>n%step===0},
 };
