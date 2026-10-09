@@ -149,7 +149,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
           : `총 ${total}건 · ${from}–${to}번째 · ${page}/${totalPages}페이지`}
       </p>
       <details className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold text-zinc-700">기간별 건수·합계 펼치기</summary><AdminOrderPeriodTotals key={`${range.start}:${range.end}:${view}`} totals={periodTotals} view={view} /></details>
-      <p className="mt-3 text-xs text-zinc-500">견적 요청 금액이 포함된 접수 기준 합계입니다. 결제 완료 매출과는 다릅니다. 접수일은 한국시간(KST)으로 표시합니다.</p>
+      <p className="mt-3 text-xs text-zinc-500">최신 접수순으로 표시합니다. 견적 요청 금액이 포함된 접수 기준 합계입니다. 결제 완료 매출과는 다릅니다. 접수일은 한국시간(KST)으로 표시합니다.</p>
       <OrderWorkspace admins={admins}
         orders={orders}
         view={view}

@@ -468,8 +468,7 @@ export async function listAdminOrders(
 ): Promise<AdminOrderList> {
   const loaded = await fetchAdminOrderRows(view);
   const filtered = filterAdminOrdersByDate(loaded.orders, range).filter(order => matchesOrderFilters(order, normalizeOrderFilters(filters), adminId));
-  const priority = (order: AdminOrderRow) => !order.reviewed_at && order.workflow?.stage === "new" ? 0 : ["new", "reviewing"].includes(order.workflow?.stage ?? "new") ? 1 : 2;
-  filtered.sort((a, b) => priority(a) - priority(b) || b.created_at.localeCompare(a.created_at));
+  filtered.sort((a, b) => b.created_at.localeCompare(a.created_at) || b.order_number.localeCompare(a.order_number));
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / ADMIN_ORDERS_PAGE_SIZE) || 1);
   const safePage = Math.min(Math.max(1, page), totalPages);
