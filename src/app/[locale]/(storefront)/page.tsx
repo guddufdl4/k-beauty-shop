@@ -245,6 +245,16 @@ export default async function HomePage() {
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
   const trendingAll = localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories, 8, homeSettings.trending_skus), locale);
+  // Keep the curated lead products, then complete each brand row with real catalog items.
+  const campaignBrands = [...new Set(heroSlides.filter(slide => slide.id.startsWith("seasonal-")).map(slide => slide.copy?.badge).filter((brand): brand is string => Boolean(brand)))];
+  const campaignCatalog = await Promise.all(campaignBrands.map(brand => getProducts({
+    brand, brandExact: true, requireRealImage: true, sort: "trending", limit: 6, audience,
+  })));
+  const campaignTrending = campaignBrands.flatMap((brand, index) => {
+    const candidates = [...trendingAll, ...localizeStorefrontProducts(campaignCatalog[index].products, locale)]
+      .filter(product => getDisplayBrandName(product.brand).toLowerCase() === brand.toLowerCase());
+    return [...new Map(candidates.map(product => [product.id, product])).values()].slice(0, 3);
+  });
   for (const slide of heroSlides.filter((item) => item.id.startsWith("seasonal-"))) {
     const matched = trendingAll.filter((product) => getDisplayBrandName(product.brand) === slide.copy?.badge);
     slide.products = matched.map((product) => ({ id: product.id, name: product.name,
@@ -290,7 +300,7 @@ export default async function HomePage() {
             title={t("trending.title")}
             viewAllLabel={t("trending.viewAll")}
             emptyMessage={t("trending.empty")}
-            productsByFilter={{all:trendingAll,skincare:[],makeup:[],haircare:[]}}
+            productsByFilter={{all:campaignTrending.length ? campaignTrending : trendingAll,skincare:[],makeup:[],haircare:[]}}
             filterLabels={{
               all: t("trending.all"),
               skincare: t("trending.skincare"),

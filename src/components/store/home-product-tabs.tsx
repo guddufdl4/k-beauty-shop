@@ -45,24 +45,14 @@ export function HomeTrendingSection({
   signInToViewPriceLabel,
 }: Props) {
   const [activeFilter, setActiveFilter] = useState<TrendingFilterKey>("all");
-  const [mobileProductLimit, setMobileProductLimit] = useState<number | null>(null);
   const [campaignBrand, setCampaignBrand] = useState("Beauty of Joseon");
   useEffect(() => { const update = (event:Event) => setCampaignBrand((event as CustomEvent<string>).detail); window.addEventListener("hmt:campaign-brand",update); return () => window.removeEventListener("hmt:campaign-brand",update); }, []);
   const products = (productsByFilter[activeFilter] ?? []).filter(product => activeFilter !== "all" || getDisplayBrandName(product.brand ?? "").toLowerCase() === campaignBrand.toLowerCase());
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 639px)");
-    const update = () => setMobileProductLimit(mediaQuery.matches ? 6 : null);
-    update();
-    mediaQuery.addEventListener("change", update);
-    return () => mediaQuery.removeEventListener("change", update);
-  }, []);
-
-  const visibleProducts =
-    mobileProductLimit !== null ? products.slice(0, mobileProductLimit) : products;
+  const visibleProducts = products.slice(0, 3);
   const viewAllHref =
     activeFilter === "all"
-      ? "/products?sort=trending"
+      ? `/products?brand=${encodeURIComponent(campaignBrand)}&sort=trending`
       : `/products?category=${activeFilter}&sort=trending`;
 
   return (
