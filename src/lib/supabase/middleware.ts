@@ -36,7 +36,8 @@ export async function updateSession(
     },
   });
 
-  await supabase.auth.getUser();
+  // Verify the signature and refresh expired tokens; sensitive routes still fetch the current user and DB role.
+  await supabase.auth.getClaims();
   return supabaseResponse;
 }
 

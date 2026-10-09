@@ -13,16 +13,33 @@ export function parseMaintenanceSettings(value: unknown): MaintenanceSettings | 
   return { enabled: data.enabled, message: data.message.trim(), expectedEnd: data.expectedEnd === null ? null : new Date(data.expectedEnd as string).toISOString() };
 }
 
-export async function getMaintenanceSettings(): Promise<MaintenanceSettings> {
+const MAINTENANCE_CACHE_MS = 5000;
+let maintenanceGeneration = 0;
+let maintenanceCache: { url: string; settings: MaintenanceSettings; expiresAt: number } | null = null;
+let maintenancePending: { url: string; promise: Promise<MaintenanceSettings> } | null = null;
+
+export function invalidateMaintenanceCache(): void { maintenanceGeneration++; maintenanceCache = null; maintenancePending = null; }
+
+export async function getMaintenanceSettings(options?: { fresh?: boolean }): Promise<MaintenanceSettings> {
   const config = getPublicSupabaseConfig();
   if (!config) return DEFAULT_MAINTENANCE;
+  if (!options?.fresh && maintenanceCache?.url === config.url && maintenanceCache.expiresAt > Date.now()) return maintenanceCache.settings;
+  if (!options?.fresh && maintenancePending?.url === config.url) return maintenancePending.promise;
+  const promise = fetchMaintenanceSettings(config.url, maintenanceGeneration);
+  maintenancePending = { url: config.url, promise };
+  try { return await promise; }
+  finally { if (maintenancePending?.promise === promise) maintenancePending = null; }
+}
+
+async function fetchMaintenanceSettings(url: string, generation: number): Promise<MaintenanceSettings> {
   try {
-    // Bypass both Next's data cache and the storage CDN so OFF takes effect immediately.
-    const response = await fetch(`${config.url}/storage/v1/object/public/${MAINTENANCE_BUCKET}/${MAINTENANCE_PATH}?v=${Date.now()}`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
-    if (response.status === 404 || response.status === 400) return DEFAULT_MAINTENANCE;
+    // Public settings only: at most five seconds stale, shared by concurrent requests.
+    const response = await fetch(`${url}/storage/v1/object/public/${MAINTENANCE_BUCKET}/${MAINTENANCE_PATH}?v=${Date.now()}`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+    if (response.status === 404 || response.status === 400) { if (generation === maintenanceGeneration) maintenanceCache = { url, settings: DEFAULT_MAINTENANCE, expiresAt: Date.now() + MAINTENANCE_CACHE_MS }; return DEFAULT_MAINTENANCE; }
     if (!response.ok) throw new Error("Maintenance settings unavailable");
     const settings = parseMaintenanceSettings(await response.json());
     if (!settings) throw new Error("Invalid maintenance settings");
+    if (generation === maintenanceGeneration) maintenanceCache = { url, settings, expiresAt: Date.now() + MAINTENANCE_CACHE_MS };
     return settings;
   } catch {
     // Do not accidentally close the store if the configuration service is unavailable.
