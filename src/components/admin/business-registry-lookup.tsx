@@ -7,6 +7,9 @@ const registries: Record<string, { label: string; url: string }> = {
   AU: { label: "호주 ABN Lookup", url: "https://abr.business.gov.au/" },
   GB: { label: "영국 Companies House", url: "https://find-and-update.company-information.service.gov.uk/" },
   JP: { label: "일본 Gビズインフォ", url: "https://info.gbiz.go.jp/hojin/Top" },
+  MO: { label: "마카오 상업등록 정보", url: "https://online-service.rn.dsaj.gov.mo/commercial/commercial-info/company" },
+  HK: { label: "홍콩 Companies Registry", url: "https://www.cr.gov.hk/en/electronic/e-servicesportal/e-search.htm" },
+  SG: { label: "싱가포르 ACRA Bizfile", url: "https://www.bizfile.gov.sg/" },
 };
 
 export function BusinessRegistryLookup({ country, number, company }: { country: string | null; number: string | null; company: string | null }) {
