@@ -1,3 +1,5 @@
+import { canManageMembers } from "@/lib/auth/member-access";
+import NextLink from "next/link";
 import { ViewModeToggle } from "./view-mode";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AdminNotifications } from "@/components/admin/admin-notifications";
@@ -143,6 +145,7 @@ export async function StoreHeader({ storeName }: Props) {
       <MobileNavRoot
         cartCount={cartCount}
         isLoggedIn={Boolean(user)}
+        canAccessAdmin={canManageMembers(profile)}
         profileRole={profile?.role ?? null}
         profileFullName={profile?.full_name ?? null}
         featuredBrands={navBrandGroups.featured}
@@ -198,6 +201,7 @@ export async function StoreHeader({ storeName }: Props) {
 
 
           <div className="store-header-actions ml-auto flex items-center gap-2 sm:gap-4">
+            {user && canManageMembers(profile) ? <NextLink href="/admin" prefetch={false} className="mobile-admin-entry rounded-lg border border-pink-200 px-2 py-2 text-xs font-semibold text-accent">{tNav("admin")}</NextLink> : null}
             {user && profile?.role === "admin" ? <AdminNotifications /> : null}
             {user && profile?.role !== "admin" ? <CustomerNotifications locale={locale} /> : null}
 

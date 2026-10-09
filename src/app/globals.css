@@ -191,4 +191,18 @@ html.view-mode-mobile .storefront-view-root input:not([type="checkbox"]):not([ty
 html.view-mode-mobile .storefront-view-root textarea,
 html.view-mode-mobile .storefront-view-root select:not(.locale-select) { font-size: 16px; min-height: 44px; }
 
-html.view-mode-mobile .mobile-quick-nav { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+/* Keep the bottom bar independent of generic forced-view display overrides. */
+.mobile-quick-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+}
+.mobile-quick-nav[data-admin-access="true"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mobile-quick-nav > a { min-height: 56px; max-height: 64px; min-width: 0; }
+.mobile-admin-entry { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }
+@media (min-width: 1024px) {
+  .mobile-quick-nav, .mobile-admin-entry { display: none; }
+}
+html.view-mode-mobile .mobile-quick-nav { display: grid !important; }
+html.view-mode-mobile .mobile-admin-entry { display: inline-flex !important; }
+html.view-mode-desktop .mobile-quick-nav, html.view-mode-desktop .mobile-admin-entry { display: none !important; }

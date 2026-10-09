@@ -56,6 +56,7 @@ export default async function AccountPage({
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-14">
+      {memberStaff ? <NextLink href="/admin" prefetch={false} className="mb-4 inline-flex min-h-11 items-center rounded-xl bg-violet-700 px-5 py-3 text-sm font-bold text-white">{ui("dashboard")} ↗</NextLink> : null}
       <section className="relative overflow-hidden rounded-3xl border border-pink-100 bg-gradient-to-br from-rose-50 via-white to-violet-50 p-6 sm:p-10">
         <div aria-hidden className="absolute -right-14 -top-20 h-72 w-72 rounded-full border-[45px] border-pink-100/50" />
         <div className="relative flex flex-wrap items-center gap-5">

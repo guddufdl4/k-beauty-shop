@@ -44,6 +44,7 @@ type MobileNavContextValue = {
   isLoggedIn: boolean;
   profileRole?: "customer" | "admin" | "wholesale" | null;
   profileFullName?: string | null;
+  canAccessAdmin?: boolean;
   featuredBrands: FeaturedNavBrand[];
   labels: MobileNavLabels;
   menuOpen: boolean;
@@ -71,6 +72,7 @@ type RootProps = {
   isLoggedIn: boolean;
   profileRole?: "customer" | "admin" | "wholesale" | null;
   profileFullName?: string | null;
+  canAccessAdmin?: boolean;
   featuredBrands: FeaturedNavBrand[];
   labels: MobileNavLabels;
   children: ReactNode;
@@ -81,6 +83,7 @@ export function MobileNavRoot({
   isLoggedIn,
   profileRole,
   profileFullName,
+  canAccessAdmin = false,
   featuredBrands,
   labels,
   children,
@@ -165,6 +168,7 @@ export function MobileNavRoot({
         isLoggedIn,
         profileRole,
         profileFullName,
+        canAccessAdmin,
         featuredBrands,
         labels,
         menuOpen,
@@ -186,7 +190,7 @@ const iconButtonClass =
   "flex h-11 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition-colors hover:border-accent-soft hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
 export function MobileQuickNav() {
-  const { labels, cartCount, isLoggedIn, closeAll } = useMobileNav();
+  const { labels, cartCount, isLoggedIn, canAccessAdmin, closeAll } = useMobileNav();
   const pathname = usePathname();
   const links = [
     { href: "/products", label: labels.products, path: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
@@ -194,14 +198,16 @@ export function MobileQuickNav() {
     { href: "/cart", label: labels.cart, path: "M3 3h2l3 12h11l2-9H6M9 20h.01M18 20h.01" },
     { href: isLoggedIn ? "/account" : "/login", label: isLoggedIn ? labels.account : labels.login, path: "M16 7a4 4 0 11-8 0 4 4 0 018 0M4 21v-2a8 8 0 0116 0v2" },
   ];
-  return <nav aria-label={labels.menu} className="mobile-quick-nav fixed inset-x-0 bottom-0 z-50 mx-auto grid grid-cols-4 border-t border-zinc-200 bg-white/95 px-2 pt-1 backdrop-blur lg:hidden" style={{paddingBottom:"max(0.25rem, env(safe-area-inset-bottom))"}}>
+  if (isLoggedIn && canAccessAdmin) links.push({ href: "/admin", label: labels.admin, path: "M12 3l8 4v6c0 4-8 8-8 8s-8-4-8-8V7l8-4z" });
+  return <nav data-admin-access={isLoggedIn && canAccessAdmin ? "true" : "false"} aria-label={labels.menu} className="mobile-quick-nav fixed inset-x-0 bottom-0 z-50 mx-auto border-t border-zinc-200 bg-white/95 px-2 pt-1 backdrop-blur" style={{paddingBottom:"max(0.25rem, env(safe-area-inset-bottom))"}}>
     {links.map(item => {
       const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-      return <Link key={item.href} href={item.href} onClick={closeAll} aria-current={active ? "page" : undefined} className={`relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[11px] font-semibold ${active ? "bg-pink-50 text-accent" : "text-zinc-600"}`}>
+      const ItemLink = item.href === "/admin" ? NextLink : Link;
+      return <ItemLink prefetch={false} key={item.href} href={item.href} onClick={closeAll} aria-current={active ? "page" : undefined} className={`relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[11px] font-semibold ${active ? "bg-pink-50 text-accent" : "text-zinc-600"}`}>
         <span className="relative"><svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={item.path}/></svg>
           {item.href === "/cart" && cartCount > 0 ? <span className="absolute -right-3 -top-1 rounded-full bg-accent px-1 text-[9px] leading-4 text-white">{cartCount > 99 ? "99+" : cartCount}</span> : null}
         </span><span className="max-w-full truncate">{item.label}</span>
-      </Link>;
+      </ItemLink>;
     })}
   </nav>;
 }
@@ -262,7 +268,7 @@ export function MobileNavPanels() {
   const {
     cartCount,
     isLoggedIn,
-    profileRole,
+    canAccessAdmin,
     featuredBrands,
     labels,
     menuOpen,
@@ -421,7 +427,7 @@ export function MobileNavPanels() {
               ))
             )}
 
-            {profileRole === "admin" ? (
+            {canAccessAdmin ? (
               <NextLink href="/admin" className={`${mobileLinkClass} py-3`} onClick={closeAll}>
                 <span>{labels.admin}</span>
               </NextLink>
