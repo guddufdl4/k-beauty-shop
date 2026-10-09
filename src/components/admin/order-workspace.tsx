@@ -35,8 +35,10 @@ export function OrderWorkspace({ orders, admins, view, amountTotal, pageAmountTo
   useEffect(() => {
     if (!selected) return;
     const previous = document.body.style.overflow;
+    const previousRoot = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
+    document.documentElement.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; document.documentElement.style.overflow = previousRoot; };
   }, [selected]);
   function close() {
     if (saving || (dirty && !window.confirm("저장하지 않은 변경을 닫을까요?"))) return;
