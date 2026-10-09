@@ -368,7 +368,7 @@ export async function HomeTrustBar() {
   }
 
   return (
-    <section className="border-b border-zinc-200 bg-white" aria-label={t("sectionLabel")}>
+    <section className="home-trust border-b border-zinc-200 bg-white" aria-label={t("sectionLabel")}>
       <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-x-6 gap-y-5 px-4 py-6 sm:px-6 lg:grid-cols-4 lg:gap-x-8 lg:py-7">
         {items.map((item) => (
           <div key={item.key} className="flex items-start gap-3">
@@ -481,7 +481,8 @@ export async function HomeCategorySection({ products }: HomeCategorySectionProps
             prefetch={false}
               key={item.slug}
               href={item.href}
-              className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-[#faf8f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              data-category={item.slug}
+              className="home-category-tile group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-[#faf8f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-white sm:aspect-[16/10]">
                 {item.imageUrl.endsWith(".svg") ? (

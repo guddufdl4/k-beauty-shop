@@ -46,7 +46,8 @@ export async function StoreFooter({
   const showWhatsApp = Boolean(public_whatsapp?.trim());
 
   return (
-    <footer className="border-t border-zinc-200 bg-white">
+    <footer className="store-footer border-t border-zinc-200 bg-white">
+      <div className="home-compact-footer"><div><Link href="/"><strong><span>HMT</span> KOREA</strong></Link><p>K-Beauty Wholesale</p></div><nav aria-label="Footer"><Link href="/about">{t("about")}</Link><Link href="/contact">{t("contact")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/privacy">{t("privacy")}</Link></nav><p>{t("copyright",{brand})}</p></div>
       <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
         <div className="flex flex-col gap-5 rounded-2xl border border-violet-100 bg-gradient-to-r from-violet-50 to-rose-50 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div><p className="text-xl font-semibold tracking-tight text-zinc-950">{design("footerTitle")}</p><p className="mt-2 text-sm leading-6 text-zinc-600">{design("footerBody")}</p></div>

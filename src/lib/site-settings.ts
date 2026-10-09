@@ -492,7 +492,7 @@ function normalizeSettings(row: Partial<SiteSettings> | null): SiteSettings {
 export async function getSiteSettings(): Promise<SiteSettings> {
   return unstable_cache(
     fetchSiteSettingsFromSource,
-    [SITE_SETTINGS_CACHE_TAG, "monthly-campaigns-v2"],
+    [SITE_SETTINGS_CACHE_TAG, "monthly-campaigns-v3"],
     { revalidate: CACHE_REVALIDATE_SECONDS, tags: [SITE_SETTINGS_CACHE_TAG] },
   )();
 }

@@ -206,3 +206,124 @@ html.view-mode-mobile .storefront-view-root select:not(.locale-select) { font-si
 html.view-mode-mobile .mobile-quick-nav { display: grid !important; }
 html.view-mode-mobile .mobile-admin-entry { display: inline-flex !important; }
 html.view-mode-desktop .mobile-quick-nav, html.view-mode-desktop .mobile-admin-entry { display: none !important; }
+/* Seasonal storefront: matches the approved full-page brand concept. */
+body:has(.seasonal-home){--accent:#ff0068;--accent-hover:#dc0058;}
+body:has(.seasonal-home) > * {min-width:0}
+body:has(.seasonal-home) header{position:relative;box-shadow:none}
+body:has(.seasonal-home) header > div:first-child{background:#191919;color:white}
+body:has(.seasonal-home) header > div:first-child > div{color:white}
+body:has(.seasonal-home) header > div:first-child select{color:#222}
+body:has(.seasonal-home) header nav[aria-label="Main navigation"]{border-top:0}
+body:has(.seasonal-home) header nav[aria-label="Main navigation"] > div > div{justify-content:center}
+body:has(.seasonal-home) header nav[aria-label="Main navigation"] a{border:0;text-transform:none;font-weight:500;padding-top:10px;padding-bottom:10px}
+.seasonal-home .campaign-hero{border:0}
+.seasonal-home .campaign-hero > div{max-width:none;padding:0}
+.seasonal-home .campaign-hero [aria-label="Featured brand products"] > div > div{height:560px}
+.seasonal-home .campaign-hero [class*="copyPanel"]{max-width:540px}
+.seasonal-home .campaign-wordmark{width:300px;height:85px;object-fit:contain;object-position:left center;margin-bottom:28px;mix-blend-mode:multiply}
+.seasonal-home .campaign-hero [class*="copyTitle"]{font-size:50px;font-weight:700;letter-spacing:-1.8px;line-height:1.12}
+.seasonal-home .campaign-hero [class*="copyDescription"]{font-size:18px;max-width:365px;line-height:1.5;margin-top:18px}
+.seasonal-home .campaign-hero [class*="copyCtaRow"] a{border-radius:5px;text-transform:none;font-weight:600;letter-spacing:0;font-size:16px;min-height:48px;margin-top:5px}
+.seasonal-home .campaign-hero [class*="copyOverlay"]{padding-left:max(7vw,32px)}
+.seasonal-home [aria-label="Campaign brands"]{display:flex;justify-content:center;gap:0;background:#faf7f3;padding:0;min-height:56px;border:0}
+.seasonal-home [aria-label="Campaign brands"] button{position:relative;border-radius:0;min-width:150px;background:none;font-weight:400;color:#333}
+.seasonal-home [aria-label="Campaign brands"] button + button:before{content:"";position:absolute;left:0;top:20px;height:16px;border-left:1px solid #b8b3ae}
+.seasonal-home [aria-label="Campaign brands"] button[aria-pressed="true"]{color:var(--accent)}
+.seasonal-home [aria-label="Campaign brands"] button[aria-pressed="true"]:after{content:"";position:absolute;bottom:12px;left:30%;right:30%;height:2px;background:var(--accent)}
+.seasonal-home .campaign-hero button[aria-label="Previous banner"],.seasonal-home .campaign-hero button[aria-label="Next banner"]{display:none}
+.seasonal-home .campaign-hero div:has(> button[aria-label="Banner 1"]){justify-content:flex-start;left:6.7vw;bottom:12px;gap:0}
+.seasonal-home .home-trust > div{display:flex;justify-content:center;gap:0;padding:23px 24px}
+.seasonal-home .home-trust > div > div{align-items:center;justify-content:center;flex:1;color:#111}
+.seasonal-home .home-trust > div > div + div{border-left:1px solid #ddd}
+.seasonal-home .home-trust > div > div:nth-child(3){display:none}
+.seasonal-home .home-trust svg{color:#111;width:30px;height:30px}
+.seasonal-home .home-trust p + p{display:none}
+.seasonal-home > section:not(.campaign-hero):not(.home-trust){padding:20px 0 0;border:0}
+.seasonal-home > section:not(.campaign-hero) > .max-w-7xl{max-width:1208px;padding-left:28px;padding-right:28px}
+.seasonal-home h2{font-size:27px;letter-spacing:-.7px}
+.seasonal-home .home-campaign-products > div:first-child{margin-bottom:14px;flex-direction:row;align-items:center}
+.seasonal-home .home-campaign-products > div:first-child > a{font-size:12px;font-weight:400;color:#111}
+.seasonal-home .home-category-filters{display:none}
+.seasonal-home .home-campaign-products .store-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.home-campaign-product{display:grid;grid-template-columns:43% 57%;min-height:242px;border:1px solid #e8e8e8;border-radius:6px;padding:18px 22px;background:linear-gradient(120deg,#fff,#fdfdfd)}
+.home-campaign-product-image{position:relative;min-height:200px;margin-right:20px}
+.home-campaign-product-info{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.home-campaign-product-info > p{font-size:12px;color:#666;margin-bottom:4px}
+.home-campaign-product h3{font-size:15px;line-height:1.35;font-weight:500;min-height:40px}
+.home-campaign-price{display:flex;align-items:center;gap:12px;padding:13px 18px;margin:10px 0;font-size:14px;background:#f4f4f5;border-radius:5px;min-height:52px}
+.home-campaign-product form button{border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-size:13px;min-height:35px;width:100%;cursor:pointer}
+.home-campaign-product form button:hover{background:#fff0f5}
+.home-campaign-product form p{font-size:11px;line-height:1.4;margin-top:4px}
+.home-campaign-product form button:disabled{opacity:.5;cursor:default}
+.seasonal-home section[aria-labelledby="home-category-heading"] .mb-6,.seasonal-home section[aria-labelledby="home-featured-brands-heading"] .mb-6{margin-bottom:14px}
+.seasonal-home section[aria-labelledby="home-category-heading"] a[href$="/categories"]{display:none}
+.seasonal-home .home-category-tile{position:relative;aspect-ratio:2/1;border:0;border-radius:5px;background:#f5ede5;overflow:hidden}
+.seasonal-home .home-category-tile > div{position:absolute;inset:0;aspect-ratio:auto;background:none}
+.seasonal-home .home-category-tile img{display:none}
+.seasonal-home .home-category-tile p{position:relative;margin-top:auto;padding:16px 20px;font-size:18px;justify-content:flex-start;gap:9px;z-index:1}
+.seasonal-home .home-category-tile:hover{filter:brightness(.97)}
+.seasonal-home section[aria-labelledby="home-featured-brands-heading"] > div > div:last-child{gap:0;padding:6px 0 16px}
+.seasonal-home section[aria-labelledby="home-featured-brands-heading"] > div > div:last-child a{border:0;border-radius:0;min-height:82px;padding:12px 22px;position:relative}
+.seasonal-home section[aria-labelledby="home-featured-brands-heading"] > div > div:last-child a + a:before{content:"";position:absolute;left:0;height:34px;border-left:1px solid #ddd}
+.seasonal-home section[aria-labelledby="home-featured-brands-heading"] > div > div:first-child > a{display:none}
+.seasonal-home .home-about-details{max-width:1152px;margin:0 auto;font-size:12px;color:#777;padding:0 28px}
+.seasonal-home .home-about-details summary{cursor:pointer;width:fit-content;margin-left:auto;min-height:32px}
+.seasonal-home > .home-quote-banner{max-width:1200px;margin:12px auto 18px;padding:30px 44px!important;display:flex;align-items:center;justify-content:space-between;gap:24px;background:linear-gradient(120deg,#f9ecef,#fff7f7 65%,#e9dcd2);border-radius:5px}
+.home-quote-banner h2{font-size:25px;font-weight:650}
+.home-quote-banner p{font-size:16px;color:#626262;margin-top:5px}
+.home-quote-banner > a{background:var(--accent);color:white;padding:14px 24px;min-width:185px;border-radius:4px;text-align:center;font-size:15px;font-weight:600}
+.home-quote-banner > a span{margin-left:18px}
+.home-compact-footer{display:none}
+body:has(.seasonal-home) .store-footer > div:not(.home-compact-footer){display:none}
+body:has(.seasonal-home) .home-compact-footer{display:flex;max-width:1208px;margin:auto;padding:24px 28px 34px;align-items:center;justify-content:space-between;gap:24px}
+.home-compact-footer strong{font-size:26px;letter-spacing:-.8px}.home-compact-footer strong span{color:var(--accent)}
+.home-compact-footer p{font-size:11px;color:#777;margin-top:5px}.home-compact-footer nav{display:flex;gap:24px;font-size:12px}
+@media(max-width:639px){
+ .seasonal-home .campaign-hero [aria-label="Featured brand products"] > div > div{height:550px}
+ .seasonal-home .campaign-wordmark{height:48px;width:190px;margin-bottom:12px}
+ .seasonal-home .campaign-hero [class*="copyOverlay"]{padding-left:20px;padding-bottom:25px}
+ .seasonal-home .campaign-hero [class*="copyTitle"]{font-size:29px;letter-spacing:-.9px}
+ .seasonal-home .campaign-hero [class*="copyDescription"]{font-size:13px;max-width:285px;margin-top:8px}
+ .seasonal-home .campaign-hero [class*="copyCtaRow"] a{font-size:13px;min-height:40px;padding:9px 18px;margin:0}
+ .seasonal-home [aria-label="Campaign brands"]{display:grid;grid-template-columns:repeat(2,1fr)}
+ .seasonal-home [aria-label="Campaign brands"] button{min-width:0;font-size:12px}
+ .seasonal-home [aria-label="Campaign brands"] button + button:before{display:none}
+ .seasonal-home [aria-label="Campaign brands"] button[aria-pressed="true"]:after{bottom:5px}
+ .seasonal-home .home-trust > div{padding:18px 8px}
+ .seasonal-home .home-trust > div > div{flex-direction:column;gap:7px;text-align:center}
+ .seasonal-home .home-trust p{font-size:11px}
+ .seasonal-home .home-trust svg{height:24px;width:24px}
+ .seasonal-home > section:not(.campaign-hero) > .max-w-7xl{padding-left:16px;padding-right:16px}
+ .seasonal-home h2{font-size:21px}
+ .seasonal-home .home-campaign-products .store-product-grid{grid-template-columns:1fr;gap:10px}
+ .home-campaign-product{min-height:205px;padding:14px 16px;grid-template-columns:39% 61%}
+ .home-campaign-product-image{min-height:170px;margin-right:14px}
+ .home-campaign-product h3{font-size:14px}
+ .home-campaign-price{font-size:12px;padding:10px;margin:8px 0;min-height:44px}
+ .seasonal-home .home-category-tile{aspect-ratio:1.6/1}
+ .seasonal-home .home-category-tile p{font-size:15px;padding:12px}
+ .seasonal-home section[aria-labelledby="home-featured-brands-heading"] > div > div:last-child a{padding:12px;min-width:0;min-height:65px}
+ .seasonal-home > .home-quote-banner{margin:12px 16px 18px;padding:24px!important;flex-direction:column;align-items:flex-start;gap:16px}
+ .home-quote-banner h2{font-size:22px}.home-quote-banner p{font-size:13px}
+ body:has(.seasonal-home) .home-compact-footer{flex-wrap:wrap;padding:20px 16px 95px;gap:18px}
+ .home-compact-footer nav{gap:16px}.home-compact-footer > p{width:100%}
+}
+.seasonal-home .home-category-tile{background-image:url('/home/category-textures-v1.webp');background-size:400% 100%}
+.seasonal-home .home-category-tile[data-category="skincare"]{background-position:0% center}
+.seasonal-home .home-category-tile[data-category="suncare"]{background-position:33.333% center}
+.seasonal-home .home-category-tile[data-category="makeup"]{background-position:66.666% center}
+.seasonal-home .home-category-tile[data-category="mask-pack"]{background-position:100% center}
+.seasonal-home .campaign-hero [class*="copyPanel"]:has(img[alt="Beauty of Joseon"]) [class*="copyTitle"]{font-family:Georgia,'Times New Roman',serif;font-weight:600}
+
+.seasonal-home .campaign-hero picture img{object-position:right center}
+body:has(.seasonal-home) header .store-header-row{padding-top:12px;padding-bottom:12px}
+body:has(.seasonal-home) header > div:first-child{max-height:40px}
+body:has(.seasonal-home) header > div:first-child button{min-height:28px;padding-top:4px;padding-bottom:4px}
+.seasonal-home .campaign-wordmark-text{font-size:44px;font-family:'Segoe Script',cursive;color:#111;line-height:1.3;margin-bottom:22px}
+.seasonal-home .campaign-wordmark-text[data-brand="Beauty of Joseon"]{font-family:Arial,sans-serif;font-size:12px;letter-spacing:5px;text-transform:uppercase;margin-bottom:24px}
+.seasonal-home .campaign-wordmark-text[data-brand="ANUA"]{font-family:Arial,sans-serif;font-size:50px;letter-spacing:-2px}
+.seasonal-home .campaign-wordmark-text[data-brand="SKIN1004"]{font-family:Arial,sans-serif;font-size:26px;letter-spacing:9px}
+@media(max-width:639px){.seasonal-home .campaign-wordmark-text{font-size:28px;margin-bottom:10px}.seasonal-home .campaign-wordmark-text[data-brand="Beauty of Joseon"]{font-size:9px;letter-spacing:3px;margin-bottom:12px}.seasonal-home .campaign-wordmark-text[data-brand="ANUA"]{font-size:32px}.seasonal-home .campaign-wordmark-text[data-brand="SKIN1004"]{font-size:18px;letter-spacing:5px}}
+.seasonal-home .campaign-hero [class*="copyPanel"]:has([data-brand="Beauty of Joseon"]) [class*="copyTitle"]{font-family:Georgia,'Times New Roman',serif;font-weight:600;letter-spacing:-1px}
+body:has(.seasonal-home) header > div:first-child{background:#fafafa;color:#222}
+body:has(.seasonal-home) header > div:first-child > div{color:#555}

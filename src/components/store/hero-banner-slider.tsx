@@ -342,6 +342,7 @@ function HeroCopyPanel({
   isPrimaryHeading: boolean;
   hidden?: boolean;
 }) {
+  const campaignLogo = ({"Dr.Althea":"dralthea-verified.png", "Beauty of Joseon":"beauty-of-joseon-verified.png", "ANUA":"anua.svg", "SKIN1004":"skin1004-verified.png"} as Record<string,string>)[copy.badge ?? ""];
   const HeadingTag = isPrimaryHeading ? "h1" : "h2";
 
   return (
@@ -350,7 +351,7 @@ function HeroCopyPanel({
       aria-hidden={hidden || undefined}
       onPointerDown={stopCarouselPointer}
     >
-      {copy.badge ? (
+      {campaignLogo ? <p className="campaign-wordmark-text" data-brand={copy.badge}>{copy.badge}</p> : copy.badge ? (
         <p className={`${styles.copyBadge} mb-2 text-[13px] font-extrabold uppercase tracking-wide sm:text-[17px] sm:mb-3`}>
           {copy.badge}
         </p>
@@ -528,8 +529,13 @@ export function HeroBannerSlider({ slides, copy }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  useEffect(() => {
+    const brand = slides[activeIndex]?.copy?.badge;
+    if (brand) window.dispatchEvent(new CustomEvent("hmt:campaign-brand", {detail:brand}));
+  }, [activeIndex, slides]);
   const activeIndexRef = useRef(0);
   const [autoplayPaused, setAutoplayPaused] = useState(false);
+  useEffect(() => { const pause = () => setAutoplayPaused(true); window.addEventListener("hmt:pause-campaign",pause); return () => window.removeEventListener("hmt:pause-campaign",pause); }, []);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, scrollLeft: 0 });
@@ -687,7 +693,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       ref={sectionRef}
       tabIndex={showControls ? 0 : undefined}
       onKeyDown={showControls ? handleKeyDown : undefined}
-      className="border-b border-zinc-200 bg-white outline-none"
+      className="campaign-hero border-b border-zinc-200 bg-white outline-none"
     >
       <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         <div

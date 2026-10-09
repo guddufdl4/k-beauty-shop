@@ -1,4 +1,5 @@
-import { Suspense, type ComponentProps } from "react";
+import { Link } from "@/i18n/navigation";
+import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { resolveProductImageUrl } from "@/lib/product-images";
 import { HomeTrendingSection } from "@/components/store/home-product-tabs";
@@ -224,26 +225,8 @@ function mapStoredHeroSlideToBannerSlide(
         },
   };
 }
-type TrendingSectionProps = ComponentProps<typeof HomeTrendingSection>;
-async function DeferredHomeTrending({ rows, all, ...props }: Omit<TrendingSectionProps, "productsByFilter"> & {
-  rows: Promise<Awaited<ReturnType<typeof getProducts>>[]>;
-  all: TrendingSectionProps["productsByFilter"]["all"];
-}) {
-  const categories = await rows;
-  return <HomeTrendingSection {...props} productsByFilter={{
-    all,
-    skincare: localizeStorefrontProducts(categories[0].products, props.locale),
-    makeup: localizeStorefrontProducts(categories[1].products, props.locale),
-    haircare: localizeStorefrontProducts(categories[2].products, props.locale),
-  }}/>;
-}
-
 export default async function HomePage() {
   const audience = await resolveStorefrontAudience();
-  // Fetch lower-page tabs concurrently, without blocking the first banner.
-  const categoryRows = Promise.all(["skincare", "makeup", "haircare"].map((categorySlug) =>
-    getProducts({ categorySlug, limit: 8, requireRealImage: true, audience, sort: "trending" }),
-  ));
   const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings, homeSettings] = await Promise.all([
     getTranslations("home"),
     getTranslations("products"),
@@ -262,7 +245,7 @@ export default async function HomePage() {
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
   const trendingAll = localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories, 8, homeSettings.trending_skus), locale);
-  const heroPool = trendingAll.length ? trendingAll : (await categoryRows).flatMap(row => localizeStorefrontProducts(row.products, locale));
+  const heroPool = trendingAll.length ? trendingAll : [];
   const heroProducts = [...new Map(heroPool.filter((product) => !product.sold_out).map((product) => [product.id, product])).values()].slice(0, 5);
   const leadSlide = heroSlides.find((slide) => slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID);
   if (leadSlide && heroProducts.length) {
@@ -282,7 +265,7 @@ export default async function HomePage() {
       : [homeSeo.intro ?? ""];
 
   return (
-    <main>
+    <main className="seasonal-home">
       <HeroBannerSlider slides={heroSlides} copy={heroCopy} />
 
       <HomeTrustBar />
@@ -298,12 +281,11 @@ export default async function HomePage() {
       <section className="border-b border-zinc-100 bg-white py-10 sm:py-14">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
           <Suspense fallback={<div className="min-h-96 animate-pulse rounded-2xl bg-zinc-50" aria-label={t("trending.title")} />}>
-          <DeferredHomeTrending
+          <HomeTrendingSection
             title={t("trending.title")}
             viewAllLabel={t("trending.viewAll")}
             emptyMessage={t("trending.empty")}
-            rows={categoryRows}
-            all={trendingAll}
+            productsByFilter={{all:trendingAll,skincare:[],makeup:[],haircare:[]}}
             filterLabels={{
               all: t("trending.all"),
               skincare: t("trending.skincare"),
@@ -329,7 +311,7 @@ export default async function HomePage() {
 
       <HomeFeaturedBrandsSection products={products} />
 
-      <CatalogSeoCopy
+      <details className="home-about-details"><summary>{t("whyHmtKorea")}</summary><CatalogSeoCopy
         heading={t("whyHmtKorea")}
         headingLevel="h2"
         paragraphs={homeSeoParagraphs}
@@ -346,7 +328,8 @@ export default async function HomePage() {
             };
           }),
         ]}
-      />
+      /></details>
+      <section className="home-quote-banner"><div><h2>{locale === "ko" ? "다음 도매 주문을 준비하세요." : "Build your next wholesale selection."}</h2><p>{locale === "ko" ? "HMT KOREA와 함께 정품 K-Beauty 브랜드를 만나보세요." : "Partner with HMT KOREA for authentic K-Beauty brands."}</p></div><Link href="/cart">{locale === "ko" ? "견적 요청하기" : "Request a quote"} <span aria-hidden>→</span></Link></section>
     </main>
   );
 }
