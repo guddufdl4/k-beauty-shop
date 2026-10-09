@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminOrderDeleteButton } from "@/components/admin/admin-order-delete-button";
 import { AdminOrderPeriodTotals } from "@/components/admin/order-period-totals";
 import { AdminOrderRestoreButton } from "@/components/admin/admin-order-restore-button";
+import { OrderDateFilters } from "@/components/admin/order-date-filters";
 import {
   ADMIN_ORDERS_PAGE_SIZE,
   buildAdminOrdersHref,
@@ -9,6 +10,8 @@ import {
   listAdminOrders,
   parseAdminOrdersPage,
   parseAdminOrdersView,
+  normalizeAdminOrderDateRange,
+  type AdminOrderDateRange,
   type AdminOrderRow,
 } from "@/lib/admin/orders";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
@@ -54,7 +57,7 @@ function statusBadge(status: string, paymentProvider: string | null) {
 }
 
 type AdminOrdersPageProps = {
-  searchParams: Promise<{ page?: string | string[]; view?: string | string[] }>;
+  searchParams: Promise<{ page?: string | string[]; view?: string | string[]; start?: string | string[]; end?: string | string[] }>;
 };
 
 export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
@@ -62,6 +65,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
   const params = await searchParams;
   const view = parseAdminOrdersView(params.view);
   const requestedPage = parseAdminOrdersPage(params.page);
+  const range = normalizeAdminOrderDateRange({ start: Array.isArray(params.start) ? params.start[0] : params.start, end: Array.isArray(params.end) ? params.end[0] : params.end });
   const {
     orders,
     demoNote,
@@ -72,7 +76,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
     pageAmountTotal,
     periodTotals,
     deletedCount,
-  } = await listAdminOrders(requestedPage, view);
+  } = await listAdminOrders(requestedPage, view, range);
   const from = total === 0 ? 0 : (page - 1) * ADMIN_ORDERS_PAGE_SIZE + 1;
   const to = Math.min(page * ADMIN_ORDERS_PAGE_SIZE, total);
 
@@ -93,7 +97,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
           pageAmountTotal={pageAmountTotal}
           total={total}
         />
-        <OrdersPagination page={page} totalPages={totalPages} view={view} />
+        <OrdersPagination page={page} totalPages={totalPages} view={view} range={range} />
         <Link href="/admin" className="mt-8 inline-block text-sm text-rose-600 hover:underline">
           ← 대시보드
         </Link>
@@ -138,7 +142,8 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
-          href={buildAdminOrdersHref(1, "active")}
+          href={buildAdminOrdersHref(1, "active", range)}
+          prefetch={false}
           className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
             view === "active"
               ? "bg-zinc-900 text-white"
@@ -148,7 +153,8 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
           주문 목록
         </Link>
         <Link
-          href={buildAdminOrdersHref(1, "deleted")}
+          href={buildAdminOrdersHref(1, "deleted", range)}
+          prefetch={false}
           className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
             view === "deleted"
               ? "bg-zinc-900 text-white"
@@ -158,6 +164,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
           삭제됨{deletedCount > 0 ? ` (${deletedCount})` : ""}
         </Link>
       </div>
+      <OrderDateFilters key={`${range.start}:${range.end}:${view}`} range={range} view={view} />
       <p className="mt-2 text-sm text-zinc-500">
         {total === 0
           ? view === "deleted"
@@ -165,7 +172,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
             : "장바구니 견적과 주문이 함께 표시됩니다"
           : `총 ${total}건 · ${from}–${to}번째 · ${page}/${totalPages}페이지`}
       </p>
-      <AdminOrderPeriodTotals totals={periodTotals} view={view} />
+      <AdminOrderPeriodTotals key={`${range.start}:${range.end}:${view}`} totals={periodTotals} view={view} />
       <p className="mt-3 text-xs text-zinc-500">견적 요청 금액이 포함된 접수 기준 합계입니다. 결제 완료 매출과는 다릅니다. 접수일은 한국시간(KST)으로 표시합니다.</p>
       <OrdersTable
         orders={orders}
@@ -174,7 +181,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
         pageAmountTotal={pageAmountTotal}
         total={total}
       />
-      <OrdersPagination page={page} totalPages={totalPages} view={view} />
+      <OrdersPagination page={page} totalPages={totalPages} view={view} range={range} />
     </main>
   );
 }
@@ -183,10 +190,12 @@ function OrdersPagination({
   page,
   totalPages,
   view,
+  range,
 }: {
   page: number;
   totalPages: number;
   view: "active" | "deleted";
+  range: AdminOrderDateRange;
 }) {
   if (totalPages <= 1) {
     return null;
@@ -196,7 +205,8 @@ function OrdersPagination({
     <nav className="mt-6 flex flex-wrap items-center justify-center gap-2" aria-label="주문 목록 페이지">
       {page > 1 ? (
         <Link
-          href={buildAdminOrdersHref(page - 1, view)}
+          href={buildAdminOrdersHref(page - 1, view, range)}
+          prefetch={false}
           className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
         >
           ← 이전
@@ -216,7 +226,8 @@ function OrdersPagination({
         ) : (
           <Link
             key={item}
-            href={buildAdminOrdersHref(item, view)}
+            href={buildAdminOrdersHref(item, view, range)}
+            prefetch={false}
             className="min-w-9 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-center text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
           >
             {item}
@@ -225,7 +236,8 @@ function OrdersPagination({
       )}
       {page < totalPages ? (
         <Link
-          href={buildAdminOrdersHref(page + 1, view)}
+          href={buildAdminOrdersHref(page + 1, view, range)}
+          prefetch={false}
           className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-rose-200 hover:text-rose-700"
         >
           다음 →

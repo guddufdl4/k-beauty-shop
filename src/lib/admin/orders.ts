@@ -25,7 +25,30 @@ export function parseAdminOrdersPage(raw: string | string[] | undefined): number
   return parsed;
 }
 
-export function buildAdminOrdersHref(page: number, view: "active" | "deleted" = "active"): string {
+export type AdminOrderDateRange = { start?: string; end?: string };
+
+export function parseAdminOrderDate(raw: string | string[] | undefined): string | undefined {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : undefined;
+}
+
+export function normalizeAdminOrderDateRange(range: AdminOrderDateRange): AdminOrderDateRange {
+  const start = parseAdminOrderDate(range.start), end = parseAdminOrderDate(range.end);
+  return start && end && start > end ? { start: end, end: start } : { start, end };
+}
+
+export function filterAdminOrdersByDate<T extends { created_at: string }>(orders: T[], range: AdminOrderDateRange): T[] {
+  const { start, end } = normalizeAdminOrderDateRange(range);
+  if (!start && !end) return orders;
+  return orders.filter(order => {
+    const day = seoulOrderYmd(order.created_at);
+    return day !== null && (!start || day >= start) && (!end || day <= end);
+  });
+}
+
+export function buildAdminOrdersHref(page: number, view: "active" | "deleted" = "active", range: AdminOrderDateRange = {}): string {
   const params = new URLSearchParams();
   if (view === "deleted") {
     params.set("view", "deleted");
@@ -33,6 +56,9 @@ export function buildAdminOrdersHref(page: number, view: "active" | "deleted" = 
   if (page > 1) {
     params.set("page", String(page));
   }
+  const dates = normalizeAdminOrderDateRange(range);
+  if (dates.start) params.set("start", dates.start);
+  if (dates.end) params.set("end", dates.end);
   const qs = params.toString();
   return qs ? `/admin/orders?${qs}` : "/admin/orders";
 }
@@ -90,6 +116,7 @@ export type AdminOrderPeriodBucket = {
 };
 
 export type AdminOrderPeriodTotals = {
+  byDate: AdminOrderPeriodBucket[];
   today: { amount: number; count: number };
   yesterday: { amount: number; count: number };
   thisWeek: { amount: number; count: number };
@@ -171,6 +198,7 @@ function formatMonthLabel(ym: string, currentYm: string): string {
 
 function emptyPeriodTotals(): AdminOrderPeriodTotals {
   return {
+    byDate: [],
     today: { amount: 0, count: 0 },
     yesterday: { amount: 0, count: 0 },
     thisWeek: { amount: 0, count: 0 },
@@ -194,6 +222,7 @@ export function buildAdminOrderPeriodTotals(
   const monthStart = seoulMonthStartYmd(today);
   const currentYm = today.slice(0, 7);
   const totals = emptyPeriodTotals();
+  const allDates = new Map<string, { amount: number; count: number }>();
 
   const dailyMap = new Map<string, { amount: number; count: number }>();
   for (let offset = 0; offset < 7; offset += 1) {
@@ -216,6 +245,10 @@ export function buildAdminOrderPeriodTotals(
       continue;
     }
     const amount = orderAmount(order.total);
+    const dateTotal = allDates.get(ymd) ?? { amount: 0, count: 0 };
+    dateTotal.amount += amount;
+    dateTotal.count += 1;
+    allDates.set(ymd, dateTotal);
 
     if (ymd === today) {
       totals.today.amount += amount;
@@ -257,6 +290,9 @@ export function buildAdminOrderPeriodTotals(
     }
   }
 
+  totals.byDate = [...allDates.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([key, bucket]) => ({
+    key, label: key, ...bucket, current: key === today,
+  }));
   totals.daily = [...dailyMap.entries()].map(([key, bucket]) => ({
     key,
     label: formatVisitDayLabel(key, today),
@@ -332,13 +368,15 @@ async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promi
   if (isSupabaseConfigured()) {
     const supabase = createServiceClient() ?? (await createSafeClient());
     if (supabase) {
+      let hasDeletedAt = true;
       let { data, error } = await supabase
         .from("orders")
         .select(
           "order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes, deleted_at",
         )
         .order("created_at", { ascending: false })
-        .limit(500);
+        .order("order_number", { ascending: false })
+        .range(0, 499);
 
       if (error) {
         const retry = await supabase
@@ -347,14 +385,32 @@ async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promi
             "order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes",
           )
           .order("created_at", { ascending: false })
-          .limit(500);
+          .order("order_number", { ascending: false })
+          .range(0, 499);
         if (!retry.error && retry.data) {
+          hasDeletedAt = false;
           data = retry.data.map((row) => ({ ...row, deleted_at: null }));
           error = null;
         }
       }
 
       if (!error && data) {
+        // Read subsequent batches too: "all dates" must not drop orders older than the first 500.
+        let offset = 500;
+        let fullBatch = data.length === 500;
+        while (fullBatch) {
+          const nextQuery = hasDeletedAt
+            ? supabase.from("orders").select("order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes, deleted_at")
+            : supabase.from("orders").select("order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes");
+          const next = await nextQuery
+            .order("created_at", { ascending: false }).order("order_number", { ascending: false })
+            .range(offset, offset + 499);
+          if (next.error) throw new Error("주문 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+          const batch = (next.data ?? []).map(row => ({ ...row, deleted_at: "deleted_at" in row ? row.deleted_at : null }));
+          data.push(...batch);
+          fullBatch = batch.length === 500;
+          offset += 500;
+        }
         const mapped = data.map((row) => mapOrderRow(row));
         const deletedCount = mapped.filter((order) => order.deleted_at).length;
         const orders =
@@ -398,16 +454,18 @@ async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promi
 export async function listAdminOrders(
   page = 1,
   view: "active" | "deleted" = "active",
+  range: AdminOrderDateRange = {},
 ): Promise<AdminOrderList> {
   const loaded = await fetchAdminOrderRows(view);
-  const total = loaded.orders.length;
+  const filtered = filterAdminOrdersByDate(loaded.orders, range);
+  const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / ADMIN_ORDERS_PAGE_SIZE) || 1);
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = (safePage - 1) * ADMIN_ORDERS_PAGE_SIZE;
-  const orders = loaded.orders.slice(start, start + ADMIN_ORDERS_PAGE_SIZE);
-  const amountTotal = loaded.orders.reduce((sum, order) => sum + orderAmount(order.total), 0);
+  const orders = filtered.slice(start, start + ADMIN_ORDERS_PAGE_SIZE);
+  const amountTotal = filtered.reduce((sum, order) => sum + orderAmount(order.total), 0);
   const pageAmountTotal = orders.reduce((sum, order) => sum + orderAmount(order.total), 0);
-  const periodTotals = buildAdminOrderPeriodTotals(loaded.orders);
+  const periodTotals = buildAdminOrderPeriodTotals(filtered);
 
   return {
     ...loaded,

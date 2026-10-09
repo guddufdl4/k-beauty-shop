@@ -4,9 +4,10 @@ import { useState } from "react";
 import type { AdminOrderPeriodTotals } from "@/lib/admin/orders";
 import { formatKRW } from "@/lib/utils";
 
-type PeriodTab = "daily" | "weekly" | "monthly";
+type PeriodTab = "all" | "daily" | "weekly" | "monthly";
 
 const TABS: { id: PeriodTab; label: string }[] = [
+  { id: "all", label: "전체 날짜" },
   { id: "daily", label: "일간" },
   { id: "weekly", label: "주간" },
   { id: "monthly", label: "월간" },
@@ -19,8 +20,8 @@ export function AdminOrderPeriodTotals({
   totals: AdminOrderPeriodTotals;
   view: "active" | "deleted";
 }) {
-  const [tab, setTab] = useState<PeriodTab>("daily");
-  const rows = tab === "daily" ? totals.daily : tab === "weekly" ? totals.weekly : totals.monthly;
+  const [tab, setTab] = useState<PeriodTab>("all");
+  const rows = tab === "all" ? totals.byDate : tab === "daily" ? totals.daily : tab === "weekly" ? totals.weekly : totals.monthly;
 
   return (
     <section className="mt-6" aria-labelledby="order-period-totals-heading">
@@ -39,6 +40,7 @@ export function AdminOrderPeriodTotals({
             <button
               key={item.id}
               type="button"
+              aria-pressed={tab === item.id}
               onClick={() => setTab(item.id)}
               className={`rounded-md px-3 py-1.5 ${
                 tab === item.id ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-50"
@@ -58,9 +60,9 @@ export function AdminOrderPeriodTotals({
         <PeriodHighlightCard label="이번 달" amount={totals.thisMonth.amount} count={totals.thisMonth.count} />
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+      <div className="mt-4 max-h-[420px] overflow-auto rounded-xl border border-zinc-200 bg-white">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-zinc-100 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
+          <thead className="sticky top-0 border-b border-zinc-100 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="px-4 py-3">기간</th>
               <th className="px-4 py-3">건수</th>
@@ -68,6 +70,7 @@ export function AdminOrderPeriodTotals({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
+            {rows.length === 0 ? <tr><td colSpan={3} className="px-4 py-8 text-center text-zinc-500">선택한 기간에 접수된 주문이 없습니다.</td></tr> : null}
             {rows.map((row) => (
               <tr key={row.key} className={row.current ? "bg-rose-50/70" : undefined}>
                 <td className="px-4 py-3 font-medium text-zinc-900">{row.label}</td>
