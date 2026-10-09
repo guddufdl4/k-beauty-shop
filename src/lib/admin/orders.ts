@@ -1,3 +1,5 @@
+import { enrichOrderRows } from "./order-workflow";
+import { matchesOrderFilters, normalizeOrderFilters, type OrderFilters, type OrderWorkflow } from "./order-workflow-policy";
 import { formatVisitDayLabel, seoulYmd, shiftSeoulYmd } from "@/lib/admin/visits";
 import { readDemoOrders, writeDemoOrders } from "@/lib/cart";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -48,7 +50,7 @@ export function filterAdminOrdersByDate<T extends { created_at: string }>(orders
   });
 }
 
-export function buildAdminOrdersHref(page: number, view: "active" | "deleted" = "active", range: AdminOrderDateRange = {}): string {
+export function buildAdminOrdersHref(page: number, view: "active" | "deleted" = "active", range: AdminOrderDateRange = {}, filters: OrderFilters = {}): string {
   const params = new URLSearchParams();
   if (view === "deleted") {
     params.set("view", "deleted");
@@ -59,6 +61,7 @@ export function buildAdminOrdersHref(page: number, view: "active" | "deleted" = 
   const dates = normalizeAdminOrderDateRange(range);
   if (dates.start) params.set("start", dates.start);
   if (dates.end) params.set("end", dates.end);
+  for (const [key, value] of Object.entries(normalizeOrderFilters(filters))) if (value) params.set(key, value);
   const qs = params.toString();
   return qs ? `/admin/orders?${qs}` : "/admin/orders";
 }
@@ -73,6 +76,8 @@ function isOrderNumber(value: string): boolean {
 }
 
 export type AdminOrderRow = {
+  id?: string; user_id?: string | null; country_code?: string | null; reviewed_at?: string | null;
+  member_grade?: string | null; customer_requests?: number; workflow?: OrderWorkflow;
   order_number: string;
   status: string;
   total: number;
@@ -319,6 +324,7 @@ export function buildAdminOrderPeriodTotals(
 }
 
 function mapOrderRow(row: {
+  id?: unknown; user_id?: unknown;
   order_number?: unknown;
   status?: unknown;
   total?: unknown;
@@ -334,6 +340,8 @@ function mapOrderRow(row: {
       ? (row.shipping_address as Record<string, unknown>)
       : null;
   return {
+    id: row.id ? String(row.id) : undefined, user_id: row.user_id ? String(row.user_id) : null,
+    country_code: snapshotField(address, "country_code"), reviewed_at: snapshotField(address, "quote_reviewed_at"),
     order_number: String(row.order_number),
     status: String(row.status),
     total: Number(row.total),
@@ -359,7 +367,7 @@ function mapOrderRow(row: {
   };
 }
 
-async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promise<{
+async function fetchAdminOrderRows(view: "active" | "deleted" = "active", enrich = true): Promise<{
   configured: boolean;
   orders: AdminOrderRow[];
   deletedCount: number;
@@ -372,7 +380,7 @@ async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promi
       let { data, error } = await supabase
         .from("orders")
         .select(
-          "order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes, deleted_at",
+          "id, user_id, order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes, deleted_at",
         )
         .order("created_at", { ascending: false })
         .order("order_number", { ascending: false })
@@ -382,7 +390,7 @@ async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promi
         const retry = await supabase
           .from("orders")
           .select(
-            "order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes",
+            "id, user_id, order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes",
           )
           .order("created_at", { ascending: false })
           .order("order_number", { ascending: false })
@@ -400,8 +408,8 @@ async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promi
         let fullBatch = data.length === 500;
         while (fullBatch) {
           const nextQuery = hasDeletedAt
-            ? supabase.from("orders").select("order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes, deleted_at")
-            : supabase.from("orders").select("order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes");
+            ? supabase.from("orders").select("id, user_id, order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes, deleted_at")
+            : supabase.from("orders").select("id, user_id, order_number, status, total, payment_provider, paid_at, created_at, shipping_address, notes");
           const next = await nextQuery
             .order("created_at", { ascending: false }).order("order_number", { ascending: false })
             .range(offset, offset + 499);
@@ -411,7 +419,8 @@ async function fetchAdminOrderRows(view: "active" | "deleted" = "active"): Promi
           fullBatch = batch.length === 500;
           offset += 500;
         }
-        const mapped = data.map((row) => mapOrderRow(row));
+        const base = data.map((row) => mapOrderRow(row));
+        const mapped = enrich ? await enrichOrderRows(base) : base;
         const deletedCount = mapped.filter((order) => order.deleted_at).length;
         const orders =
           view === "deleted"
@@ -455,9 +464,12 @@ export async function listAdminOrders(
   page = 1,
   view: "active" | "deleted" = "active",
   range: AdminOrderDateRange = {},
+  filters: OrderFilters = {}, adminId?: string,
 ): Promise<AdminOrderList> {
   const loaded = await fetchAdminOrderRows(view);
-  const filtered = filterAdminOrdersByDate(loaded.orders, range);
+  const filtered = filterAdminOrdersByDate(loaded.orders, range).filter(order => matchesOrderFilters(order, normalizeOrderFilters(filters), adminId));
+  const priority = (order: AdminOrderRow) => !order.reviewed_at && order.workflow?.stage === "new" ? 0 : ["new", "reviewing"].includes(order.workflow?.stage ?? "new") ? 1 : 2;
+  filtered.sort((a, b) => priority(a) - priority(b) || b.created_at.localeCompare(a.created_at));
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / ADMIN_ORDERS_PAGE_SIZE) || 1);
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -540,7 +552,7 @@ export async function restoreAdminOrder(orderNumber: string): Promise<{ ok: bool
 }
 
 export async function getAdminOrderStats(): Promise<AdminOrderStats> {
-  const { orders } = await fetchAdminOrderRows("active");
+  const { orders } = await fetchAdminOrderRows("active", false);
 
   return {
     total: orders.length,

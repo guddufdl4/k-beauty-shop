@@ -4,7 +4,7 @@ const visits=load('src/lib/admin/visits.ts');
 const rows=Array.from({length:620},(_,i)=>({order_number:`QT-${String(620-i).padStart(8,'0')}`,status:'pending',total:100,payment_provider:'quote',created_at:new Date(Date.parse('2026-10-08T15:00:00Z')-i*86400000).toISOString(),shipping_address:{},deleted_at:null}));
 let reads=0,failLater=false,legacy=false;
 const service={from(){let columns;const q={select(s){columns=s;return q},order(){return q},async range(start,end){reads++;if(legacy&&columns.includes('deleted_at'))return {data:null,error:{message:'deleted_at missing'}};if(failLater&&start>0)return {data:null,error:{message:'unavailable'}};return {data:rows.slice(start,end+1).map(row=>legacy?Object.fromEntries(Object.entries(row).filter(([key])=>key!=='deleted_at')):row),error:null};}};return q;}};
-const orders=load('src/lib/admin/orders.ts',{'@/lib/admin/visits':visits,'@/lib/supabase/config':{isSupabaseConfigured:()=>true},'@/lib/supabase/service':{createServiceClient:()=>service}});
+const orders=load('src/lib/admin/orders.ts',{'./order-workflow':{enrichOrderRows:async rows=>rows},'./order-workflow-policy':load('src/lib/admin/order-workflow-policy.ts'),'@/lib/admin/visits':visits,'@/lib/supabase/config':{isSupabaseConfigured:()=>true},'@/lib/supabase/service':{createServiceClient:()=>service}});
 (async()=>{
  assert.equal(orders.parseAdminOrderDate('2026-02-30'),undefined);
  assert.equal(orders.parseAdminOrderDate('2024-02-29'),'2024-02-29');

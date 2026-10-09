@@ -6,7 +6,7 @@ function load(file, imports = {}, DateClass = Date) {
   return exports;
 }
 const visits = load('src/lib/admin/visits.ts');
-const orders = load('src/lib/admin/orders.ts', {'@/lib/admin/visits': visits});
+const orders = load('src/lib/admin/orders.ts', {'@/lib/admin/visits': visits,'./order-workflow-policy':load('src/lib/admin/order-workflow-policy.ts')});
 const before = '2026-10-07T14:59:59Z', after = '2026-10-07T15:00:00Z';
 assert.match(orders.formatAdminOrderDate(before), /2026\. 10\. 07\. 23:59/);
 assert.match(orders.formatAdminOrderDate(after), /2026\. 10\. 08\. 00:00/);

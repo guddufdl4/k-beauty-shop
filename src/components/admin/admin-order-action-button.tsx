@@ -3,9 +3,9 @@ import { useActionState } from "react";
 import { deleteAdminOrderAction, restoreAdminOrderAction } from "@/app/actions/orders";
 
 type ActionState = { error?: string; success?: string };
-export function AdminOrderActionButton({ orderNumber, restore = false }: { orderNumber: string; restore?: boolean }) {
+export function AdminOrderActionButton({ orderNumber, restore = false, onSuccess }: { orderNumber: string; restore?: boolean; onSuccess?: () => void }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(async (_previous, data) => {
-    try { return await (restore ? restoreAdminOrderAction(data) : deleteAdminOrderAction(data)); }
+    try { const result = await (restore ? restoreAdminOrderAction(data) : deleteAdminOrderAction(data)); if (result.success) onSuccess?.(); return result; }
     catch { return { error: "처리하지 못했습니다. 잠시 후 다시 시도해 주세요." }; }
   }, {});
   return <form action={action} onSubmit={(event) => {

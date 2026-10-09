@@ -1,8 +1,9 @@
+import type { OrderFilters } from "@/lib/admin/order-workflow-policy";
 import Link from "next/link";
 import { buildAdminOrdersHref, type AdminOrderDateRange } from "@/lib/admin/orders";
 import { seoulYmd, shiftSeoulYmd } from "@/lib/admin/visits";
 
-export function OrderDateFilters({ range, view }: { range: AdminOrderDateRange; view: "active" | "deleted" }) {
+export function OrderDateFilters({ range, view, filters = {} }: { range: AdminOrderDateRange; view: "active" | "deleted"; filters?: OrderFilters }) {
   const today = seoulYmd();
   const presets = [
     { label: "전체 기간", range: {} },
@@ -14,11 +15,12 @@ export function OrderDateFilters({ range, view }: { range: AdminOrderDateRange; 
     <nav aria-label="주문 조회 기간" className="flex flex-wrap gap-2">
       {presets.map(preset => {
         const active = range.start === preset.range.start && range.end === preset.range.end;
-        return <Link key={preset.label} prefetch={false} href={buildAdminOrdersHref(1, view, preset.range)} aria-current={active ? "page" : undefined}
+        return <Link key={preset.label} prefetch={false} href={buildAdminOrdersHref(1, view, preset.range, filters)} aria-current={active ? "page" : undefined}
           className={`rounded-lg px-3 py-2 text-sm font-semibold ${active ? "bg-violet-700 text-white" : "bg-zinc-100 text-zinc-600"}`}>{preset.label}</Link>;
       })}
     </nav>
     <form action="/admin/orders" method="get" className="mt-4 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+      {Object.entries(filters).map(([key,value]) => value ? <input key={key} type="hidden" name={key} value={value} /> : null)}
       {view === "deleted" ? <input type="hidden" name="view" value="deleted" /> : null}
       <label className="min-w-0 text-xs text-zinc-500">시작일
         <input aria-label="주문 시작일" name="start" type="date" defaultValue={range.start ?? ""} className="mt-1 block w-full min-w-0 rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900" />
