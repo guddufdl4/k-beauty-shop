@@ -1,4 +1,6 @@
 import { MaintenanceSettingsForm } from "@/components/admin/maintenance-settings-form";
+import { ExchangeRatePanel } from "@/components/admin/exchange-rate-panel";
+import { readExchangeRate } from "@/lib/exchange-rate";
 import { getMaintenanceSettings } from "@/lib/maintenance";
 import Link from "next/link";
 import { AdminHomeSettingsForm } from "@/components/admin/home-settings-form";
@@ -61,6 +63,7 @@ export default async function AdminSettingsPage() {
       </div>
 
       <AdminSettingsNav />
+      <ExchangeRatePanel initial={await readExchangeRate().catch(() => null)} />
       <MaintenanceSettingsForm initialSettings={await getMaintenanceSettings()} />
       <AdminSettingsForm initialSettings={settings} />
       <div className="mt-8">

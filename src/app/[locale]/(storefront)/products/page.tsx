@@ -15,7 +15,7 @@ import { getMoqBadgeKey, parseProductListSort } from "@/lib/store/products-url";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName, localizeCategories } from "@/lib/store/localized-category";
 import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
-import { getUsdKrwRate } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import {
   getStorefrontCategories,
   getProducts,

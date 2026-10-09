@@ -5,7 +5,7 @@ import { HomeTrendingSection } from "@/components/store/home-product-tabs";
 import { HeroBannerSlider, type HeroBannerSlide } from "@/components/store/hero-banner-slider";
 import { HomeTrustBar, HomeCategorySection, HomeFeaturedBrandsSection } from "@/components/store/header";
 import { resolveHeroImageSrc } from "@/lib/admin/product-image-upload";
-import { getUsdKrwRate } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import { getDisplayBrandName } from "@/lib/store/products-url";
 import { buildProductsHref } from "@/lib/store/products-url";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";

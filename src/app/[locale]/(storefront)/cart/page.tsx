@@ -3,7 +3,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { CartItemList } from "@/components/store/cart-item-list";
 import { CheckoutForm } from "@/components/store/checkout-form";
-import { getUsdKrwRate } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import { formatLocalePrice } from "@/lib/utils";
 import { getCart } from "@/lib/cart";
 import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";

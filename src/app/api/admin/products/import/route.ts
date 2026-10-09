@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from "node:fs";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import { resolve } from "node:path";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
@@ -258,7 +259,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = parseHanmiWorkbook(await file.arrayBuffer());
+  const parsed = parseHanmiWorkbook(await file.arrayBuffer(), { usdKrwRate: await getUsdKrwRate() });
   const hanmiCategoryLookup = loadHanmiCategoryLookup();
   const rows = enrichImportRowsWithCategories(parsed.rows, hanmiCategoryLookup);
   const { sheetStats } = parsed;

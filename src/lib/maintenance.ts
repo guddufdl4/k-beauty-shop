@@ -63,7 +63,7 @@ export function maintenanceLocale(path: string): MaintenanceLocale {
 }
 export function maintenanceExempt(path: string): boolean {
   return path === "/admin" || path.startsWith("/admin/") || path.startsWith("/api/admin/")
-    || path === "/auth" || path.startsWith("/auth/") || path === "/api/stripe/webhook" || path === "/api/visits"
+    || path === "/auth" || path.startsWith("/auth/") || path === "/api/stripe/webhook" || path === "/api/visits" || path === "/api/cron/exchange-rate"
     || /^\/(?:en|ko|ja|zh|vi|id|th)\/login\/?$/.test(path) || path === "/login";
 }
 function escape(value: string) { return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]!)); }

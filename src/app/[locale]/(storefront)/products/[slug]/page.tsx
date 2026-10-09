@@ -35,7 +35,7 @@ import {
 import { getDisplayBrandName } from "@/lib/store/products-url";
 import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
-import { getUsdKrwRate } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import { formatKRW, formatLocaleProductPrice } from "@/lib/utils";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";

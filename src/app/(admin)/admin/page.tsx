@@ -1,4 +1,6 @@
 import { canManageMembers } from "@/lib/auth/member-access";
+import { ExchangeRatePanel } from "@/components/admin/exchange-rate-panel";
+import { readExchangeRate } from "@/lib/exchange-rate";
 import Link from "next/link";
 import { AdminStatCard } from "@/components/admin/stat-card";
 import { VisitTrendChart } from "@/components/admin/visit-trend-chart";
@@ -54,6 +56,7 @@ export default async function AdminDashboardPage() {
         K-Beauty Shop 주문·상품을 관리합니다.
       </p>
 
+      {profile?.role === "admin" ? <ExchangeRatePanel initial={await readExchangeRate().catch(() => null)} /> : null}
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <AdminStatCard label="전체 주문" value={String(stats.total)} />
         <AdminStatCard label="견적 요청" value={String(stats.quotes)} />

@@ -24,7 +24,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { formatKRW } from "@/lib/utils";
 import { verifyCheckoutSession, isStripeConfigured } from "@/lib/stripe";
-import { cartMeetsMinOrderUsd, getUsdKrwRate, MIN_ORDER_USD } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
+import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
 import { getMoqStep, isValidMoqQuantity } from "@/lib/store/moq-quantity";
 import { QUOTE_CONFIRM_HREF } from "@/lib/store/quote-list";
 

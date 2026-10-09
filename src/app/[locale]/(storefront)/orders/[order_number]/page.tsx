@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { confirmOrderPayment } from "@/app/actions/checkout";
-import { getUsdKrwRate } from "@/lib/currency";
 import { formatLocalePrice } from "@/lib/utils";
 import { getOrderByNumber } from "@/lib/cart";
 
@@ -20,10 +19,9 @@ export const dynamic = "force-dynamic";
 export default async function OrderConfirmationPage({ params, searchParams }: Props) {
   const { order_number } = await params;
   const { session_id: sessionId } = await searchParams;
-  const [t, locale, usdKrwRate] = await Promise.all([
+  const [t, locale] = await Promise.all([
     getTranslations("orderConfirmation"),
     getLocale(),
-    getUsdKrwRate(),
   ]);
 
   if (sessionId) {
@@ -35,6 +33,9 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
   if (!order) {
     notFound();
   }
+  // Historical documents retain the rate captured on submission; legacy documents used 1300.
+  const savedRate = order.shipping_address?.usd_krw_rate;
+  const usdKrwRate = typeof savedRate === "number" && Number.isFinite(savedRate) && savedRate > 0 ? savedRate : 1300;
 
   const session = await getSessionProfile();
   const isQuote = order.order_number.startsWith("QT-");

@@ -193,7 +193,7 @@ export function parseNumber(input: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-const DEFAULT_IMPORT_USD_KRW_RATE = 1300;
+const DEFAULT_IMPORT_USD_KRW_RATE = 1350;
 let importUsdKrwRate = DEFAULT_IMPORT_USD_KRW_RATE;
 
 function looksLikeUsdPrice(raw: string): boolean {

@@ -26,13 +26,15 @@ import {
 import { enrichProductImages } from "@/lib/product-images";
 import { getEffectiveProductPrice } from "@/lib/store/products-url";
 import { getLocalizedProductName } from "@/lib/store/localized-product-name";
-import { cartMeetsMinOrderUsd, getUsdKrwRate, MIN_ORDER_USD } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
+import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
 import { getMoqStep, isValidMoqQuantity } from "@/lib/store/moq-quantity";
 
 export const DEMO_CART_COOKIE = "kb_demo_cart";
 export const DEMO_ORDERS_COOKIE = "kb_demo_orders";
 
 export type ShippingAddress = {
+  usd_krw_rate?: number;
   quote_reviewed_at?: string;
   recipient_name: string;
   phone: string;
@@ -239,7 +241,7 @@ export async function createQuoteOrderFromCart(
     shipping_cost: 0,
     total: cart.subtotal,
     currency: "KRW",
-    shipping_address: shippingAddress,
+    shipping_address: { ...shippingAddress, usd_krw_rate: usdKrwRate },
     notes,
     payment_provider: "quote",
   };
@@ -963,7 +965,7 @@ export async function createOrder(
       shipping_cost: shippingCost,
       total,
       currency: "KRW",
-      shipping_address: shippingAddress,
+      shipping_address: { ...shippingAddress, usd_krw_rate: usdKrwRate },
     })
     .select("id")
     .single();

@@ -12,7 +12,7 @@ import {
 } from "@/components/store/brand-hub-seo-sections";
 import { EmptyState } from "@/components/store/empty-state";
 import { ProductCard } from "@/components/store/product-card";
-import { getUsdKrwRate } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
 import { buildProductsHref, getMoqBadgeKey } from "@/lib/store/products-url";

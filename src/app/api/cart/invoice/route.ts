@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { getCart } from "@/lib/cart";
-import { getUsdKrwRate } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import { createServiceClient } from "@/lib/supabase/service";
 import { buildInvoiceExcel, buildInvoicePdf } from "@/lib/invoice/build";
 

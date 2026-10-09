@@ -1,7 +1,7 @@
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { getTranslations, getLocale } from "next-intl/server";
 import { CheckoutForm } from "@/components/store/checkout-form";
-import { getUsdKrwRate } from "@/lib/currency";
+import { getUsdKrwRate } from "@/lib/currency-rate";
 import { getCart } from "@/lib/cart";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
