@@ -56,6 +56,14 @@ type Props = {
 
 const AUTOPLAY_MS = 5500;
 
+// Scope the artwork to this campaign so future admin-uploaded slides remain editable.
+const CAMPAIGN_SCENES: Record<string, string> = {
+  "seasonal-2026-10-beauty-of-joseon": "joseon",
+  "seasonal-2026-10-dr-althea": "althea",
+  "seasonal-2026-10-anua": "anua",
+  "seasonal-2026-10-skin1004": "skin1004",
+};
+
 function mergeCopyLabel(override: string | undefined, fallback: string): string {
   return override !== undefined ? override.trim() : fallback;
 }
@@ -424,6 +432,22 @@ function HeroSlideFrame({
   const { desktop, mobile } = resolveHeroSlideLayout(slide.layout);
   const mobileImageSrc = slide.mobileSrc ?? slide.src;
   const imageAlt = slide.brandLabel.trim() || "HMT KOREA";
+
+  const scene = CAMPAIGN_SCENES[slide.id];
+  if (scene) {
+    return <div className="campaign-photo-scene" data-brand={copy.badge ?? slide.brandLabel}>
+      <HeroNavLink href={slide.href} tabIndex={isActive ? undefined : -1} className="campaign-photo-art" aria-label={imageAlt}>
+        <NextImage src={`/campaigns/october-2026-v2/${scene}.webp`} alt={slide.products?.map(product => product.name).join(" and ") || imageAlt}
+          fill unoptimized priority={priority} />
+      </HeroNavLink>
+      <div className="campaign-photo-copy">
+        <p className="campaign-photo-brand">{copy.badge ?? slide.brandLabel}</p>
+        {isPrimaryHeading ? <h1>{copy.title}</h1> : <h2>{copy.title}</h2>}
+        <p className="campaign-photo-description">{copy.description}</p>
+        <HeroNavLink href={slide.href} tabIndex={isActive ? undefined : -1} className="authentic-campaign-cta">{copy.shopBestSellersLabel}</HeroNavLink>
+      </div>
+    </div>;
+  }
 
   if (slide.products?.length) {
     if (slide.id.startsWith("seasonal-")) {
