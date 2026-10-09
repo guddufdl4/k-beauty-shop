@@ -13,10 +13,11 @@ export function isOrderStage(value: unknown): value is OrderStage {
   return typeof value === "string" && Object.hasOwn(ORDER_STAGES, value);
 }
 export function normalizeOrderFilters(input: OrderFilters): OrderFilters {
+  const country = typeof input.country === "string" ? input.country.toUpperCase() : "";
   return {
-    q: input.q?.trim().slice(0, 120) || undefined,
+    q: typeof input.q === "string" ? input.q.trim().slice(0, 120) || undefined : undefined,
     stage: isOrderStage(input.stage) ? input.stage : undefined,
-    country: /^[A-Z]{2}$/.test(input.country?.toUpperCase() ?? "") ? input.country?.toUpperCase() : undefined,
+    country: /^[A-Z]{2}$/.test(country) ? country : undefined,
     focus: ["unread", "unanswered", "mine"].includes(input.focus ?? "") ? input.focus : undefined,
   };
 }

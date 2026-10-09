@@ -98,7 +98,7 @@ export function OrderWorkspace({ orders, admins, view, amountTotal, pageAmountTo
           {!order.reviewed_at && order.workflow?.stage === "new" && <p className="mt-2 text-xs font-semibold text-rose-600">미확인</p>}
           <p className="mt-2 text-xs text-zinc-500">담당: {admins.find(a => a.id === order.workflow?.assignee_id)?.label || "미지정"}</p>
         </div>
-        <div className="min-w-0"><p className="font-semibold">{formatKRW(order.total)}</p><time className="mt-1 block text-xs text-zinc-500" dateTime={order.created_at}>{date(order.created_at)} KST</time><p className="mt-2 text-xs text-zinc-500">{order.trade_terms || "거래조건 미정"}</p></div>
+        <div className="min-w-0"><p className="font-semibold">{formatKRW(order.total)}</p><p className="mt-1 text-xs text-zinc-500">{order.payment_provider === "quote" ? "견적 요청" : order.status === "paid" ? "결제 완료" : "결제 대기"}</p><time className="mt-1 block text-xs text-zinc-500" dateTime={order.created_at}>{date(order.created_at)} KST</time><p className="mt-2 text-xs text-zinc-500">{order.trade_terms || "거래조건 미정"}</p></div>
         <button className={styles.button} onClick={() => open(order.order_number)}>상세 보기</button>
       </article>)}
     </div>
