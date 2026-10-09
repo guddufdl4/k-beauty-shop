@@ -245,6 +245,11 @@ export default async function HomePage() {
     .filter((slide): slide is HeroBannerSlide => slide !== null);
 
   const trendingAll = localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories, 8, homeSettings.trending_skus), locale);
+  for (const slide of heroSlides.filter((item) => item.id.startsWith("seasonal-"))) {
+    const matched = trendingAll.filter((product) => getDisplayBrandName(product.brand) === slide.copy?.badge);
+    slide.products = matched.map((product) => ({ id: product.id, name: product.name,
+      brand: getDisplayBrandName(product.brand), src: resolveProductImageUrl(product), href: `/products/${product.slug}` }));
+  }
   const heroPool = trendingAll.length ? trendingAll : [];
   const heroProducts = [...new Map(heroPool.filter((product) => !product.sold_out).map((product) => [product.id, product])).values()].slice(0, 5);
   const leadSlide = heroSlides.find((slide) => slide.id === HOMEPAGE_LEAD_HERO_SLIDE_ID);

@@ -1,3 +1,4 @@
+import { VerifiedPackingInfo } from "@/components/store/verified-packing-info";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getTranslations, getLocale } from "next-intl/server";
@@ -412,6 +413,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   </div>
                 )}
 
+                <VerifiedPackingInfo sku={product.sku} locale={locale} />
                 <AddToCartForm
                   productId={product.id}
                   productSlug={product.slug}

@@ -1,5 +1,6 @@
 "use client";
 
+import { VerifiedPackingInfo } from "@/components/store/verified-packing-info";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
@@ -267,7 +268,7 @@ export function ProductAdminDetailPanel({
     !localizedDescription ||
     isRedundantProductDescription(localizedDescription, displayName, initialProduct.brand) ||
     isRedundantProductDescription(localizedDescription, initialProduct.name, initialProduct.brand)
-      ? t("descriptionFallback")
+      ? null
       : localizedDescription;
 
   return (
@@ -585,14 +586,16 @@ export function ProductAdminDetailPanel({
               className="mt-3 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm leading-relaxed"
             />
           </section>
-        ) : (
+        ) : descriptionText ? (
           <section className="mt-10 min-w-0">
             <h2 className="text-lg font-semibold text-zinc-900">{t("description")}</h2>
             <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">
               {descriptionText}
             </p>
           </section>
-        )}
+        ) : null}
+
+        {!isEditing ? <VerifiedPackingInfo sku={initialProduct.sku} locale={locale} /> : null}
 
         {!isEditing && initialProduct.ingredients ? (
           <section className="mt-8 min-w-0">

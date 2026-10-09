@@ -63,7 +63,8 @@ export function getProductPriceColumns(product: ProductPriceFields): {
 } {
   return {
     primary: { amount: getEffectiveProductPrice(product), labelKey: "wholesalePrice" },
-    secondary: null,
+    secondary: usableShopPrice(product.compare_at_price) != null
+      ? { amount: product.compare_at_price!, labelKey: "retailPrice" } : null,
     compareAt: null,
   };
 }

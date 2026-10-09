@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useLocale } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { formatLocaleProductPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,7 @@ export function ProductCard({
   signInToViewPriceLabel,
   priority = false,
 }: Props) {
+  const labels = useTranslations("products");
   const localeFromApp = useLocale();
   const activeLocale = locale || localeFromApp;
   const isTrending = variant === "trending";
@@ -175,8 +176,9 @@ export function ProductCard({
           <div className="min-w-0 flex-1">
             {showPrices && displayPrice != null ? (
               <>
+                {isPricedStorefrontProduct(product) && product.compare_at_price && product.compare_at_price > 1 ? <p className="text-xs text-zinc-500">{labels("retailPrice")} {formatLocaleProductPrice(product.compare_at_price, activeLocale, usdKrwRate)}</p> : null}
                 <p className={cn("font-bold text-zinc-900", isTrending || compact ? "text-sm" : "text-base")}>
-                {formatLocaleProductPrice(displayPrice, activeLocale, usdKrwRate)}
+                {labels("wholesalePrice")} {formatLocaleProductPrice(displayPrice, activeLocale, usdKrwRate)}
                 </p>
               </>
             ) : (

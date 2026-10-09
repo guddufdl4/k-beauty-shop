@@ -426,6 +426,21 @@ function HeroSlideFrame({
   const imageAlt = slide.brandLabel.trim() || "HMT KOREA";
 
   if (slide.products?.length) {
+    if (slide.id.startsWith("seasonal-")) {
+      return <div className="authentic-campaign" data-brand={copy.badge ?? slide.brandLabel}>
+        <div className="authentic-campaign-copy">
+          <p className="authentic-campaign-brand">{copy.badge ?? slide.brandLabel}</p>
+          {isPrimaryHeading ? <h1>{copy.title}</h1> : <h2>{copy.title}</h2>}
+          <p className="authentic-campaign-description">{copy.description}</p>
+          <HeroNavLink href={slide.href} tabIndex={isActive ? undefined : -1} className="authentic-campaign-cta">{copy.shopBestSellersLabel}</HeroNavLink>
+        </div>
+        <div className="authentic-campaign-products">
+          {slide.products.map((product) => <Link key={product.id} href={product.href} prefetch={false} tabIndex={isActive ? undefined : -1} aria-label={product.name}>
+            <NextImage src={product.src} alt={product.name} fill sizes="(max-width:640px) 42vw, (max-width:1280px) 26vw, 360px" priority={priority} quality={75} className="object-contain" />
+          </Link>)}
+        </div>
+      </div>;
+    }
     return (
       <div className="relative isolate grid w-full min-w-0 h-[530px] grid-rows-[270px_260px] overflow-hidden bg-gradient-to-br from-[#fff7fa] via-[#fbe5ee] to-[#f5e9ff] sm:h-[370px] sm:grid-rows-1 sm:grid-cols-[44%_56%] lg:h-[470px]">
         <NextImage src="/hero/pink-world-blossom-v1.webp" alt="" fill sizes="(max-width: 1280px) 100vw, 1280px" priority={priority} className="pointer-events-none object-cover object-right" />
@@ -541,6 +556,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
   const dragStart = useRef({ x: 0, scrollLeft: 0 });
 
   const slideCount = slides.length;
+  const seasonal = slides.every((slide) => slide.id.startsWith("seasonal-"));
   const showControls = slideCount > 1;
 
   useEffect(() => {
@@ -553,7 +569,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
 
   useEffect(() => {
     const element = containerRef.current;
-    if (!element || !showControls) {
+    if (!element || !showControls || seasonal) {
       return;
     }
 
@@ -573,10 +589,16 @@ export function HeroBannerSlider({ slides, copy }: Props) {
 
     element.addEventListener("scroll", onScroll, { passive: true });
     return () => element.removeEventListener("scroll", onScroll);
-  }, [showControls, slideCount]);
+  }, [showControls, slideCount, seasonal]);
 
   const scrollToIndex = useCallback(
     (index: number) => {
+      if (seasonal) {
+        const nextIndex = Math.min(Math.max(index, 0), slideCount - 1);
+        activeIndexRef.current = nextIndex;
+        setActiveIndex(nextIndex);
+        return;
+      }
       const element = containerRef.current;
       if (!element) {
         return;
@@ -590,12 +612,12 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       const nextIndex = Math.min(Math.max(index, 0), slideCount - 1);
       element.scrollTo({
         left: nextIndex * width,
-        behavior: prefersReducedMotion ? "auto" : "smooth",
+        behavior: "instant",
       });
       activeIndexRef.current = nextIndex;
       setActiveIndex(nextIndex);
     },
-    [prefersReducedMotion, slideCount],
+    [slideCount, seasonal],
   );
 
   useEffect(() => {
@@ -707,7 +729,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
           ref={showControls ? containerRef : undefined}
           className={
             showControls
-              ? "relative z-0 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              ? seasonal ? "seasonal-slider relative z-0 flex overflow-hidden" : "relative z-0 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "relative z-0 w-full"
           }
           style={showControls ? { cursor: "grab", touchAction: "pan-x pan-y pinch-zoom" } : undefined}

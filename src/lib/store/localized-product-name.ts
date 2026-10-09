@@ -1,4 +1,5 @@
-import { collapseRepeatedBrandPrefix, formatStorefrontDisplayTitle } from "@/lib/store/product-copy";
+import { collapseRepeatedBrandPrefix, formatStorefrontDisplayTitle, isRedundantProductDescription } from "@/lib/store/product-copy";
+import { getVerifiedProductDescription } from "@/lib/store/verified-product-descriptions";
 import { hangulProductNameToEnglish } from "@/lib/store/hangul-product-english";
 
 type NamedProduct = {
@@ -190,7 +191,7 @@ export function getLocalizedProductName(product: NamedProduct, locale: string): 
   const raw = isKoreanLocale(locale)
     ? ko || product.name
     : en || latinNameFallback(product);
-  return formatStorefrontDisplayTitle(raw, product.brand, extractProductVolume(product));
+  return formatStorefrontDisplayTitle(raw.replace(/Niacinmade/gi, "Niacinamide"), product.brand, extractProductVolume(product));
 }
 
 export function getKoreanProductSubtitle(product: NamedProduct, englishName: string): string | null {
@@ -303,7 +304,9 @@ export function extractProductVolume(product: NamedProduct): string | null {
 }
 
 export function getLocalizedProductDescription(product: NamedProduct, locale: string): string | null {
-  return storefrontTextForLocale(product.description, locale);
+  const existing = storefrontTextForLocale(product.description, locale);
+  return existing && !isRedundantProductDescription(existing, product.name, product.brand ?? "")
+    ? existing : getVerifiedProductDescription(product, locale) ?? existing;
 }
 
 export function withLocalizedNameFields<T extends NamedProduct>(
