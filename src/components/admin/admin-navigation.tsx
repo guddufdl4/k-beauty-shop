@@ -5,6 +5,7 @@ import { useRef } from "react";
 export type AdminNavItem = { href: string; label: string };
 const paths: Record<string,string> = {
   '/admin': 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+  '/admin/business-lookup': 'M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM15 15l6 6M7 8h6M7 11h4',
   '/admin/members': 'M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM4 21v-3a8 8 0 0 1 16 0v3',
   '/admin/inquiries': 'M4 3h16v14H9l-5 4ZM8 8h8M8 12h5',
   '/admin/orders': 'M3 4h2l3 13h11l2-9H6M10 21h.01M18 21h.01',

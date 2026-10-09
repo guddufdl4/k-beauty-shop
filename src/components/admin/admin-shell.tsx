@@ -9,6 +9,7 @@ import "./admin-theme.css";
 const navLinks = [
   { href: "/admin", label: "대시보드" },
   { href: "/admin/members", label: "회원 관리" },
+  { href: "/admin/business-lookup", label: "사업자 조회" },
   { href: "/admin/inquiries", label: "문의 관리" },
   { href: "/admin/orders", label: "주문 관리" },
   { href: "/admin/products", label: "상품 관리" },
@@ -17,7 +18,7 @@ const navLinks = [
 export async function AdminShell({ children }: { children: React.ReactNode }) {
   const { profile } = await getSessionProfile();
   const isAdmin = profile?.role === "admin";
-  const items = navLinks.filter(item => isAdmin || item.href === "/admin" || item.href === "/admin/members" || (item.href === "/admin/inquiries" && canManageInquiries(profile)));
+  const items = navLinks.filter(item => isAdmin || item.href === "/admin" || item.href === "/admin/members" || (item.href === "/admin/business-lookup" && canManageInquiries(profile)) || (item.href === "/admin/inquiries" && canManageInquiries(profile)));
   return <div className="hmt-admin min-h-screen bg-[#f6f7fb] lg:pl-52">
     <header className="flex min-h-20 items-center justify-between gap-3 border-b border-zinc-100 bg-white px-4 lg:justify-end lg:bg-transparent lg:px-8">
       <AdminNavigation items={items}/>

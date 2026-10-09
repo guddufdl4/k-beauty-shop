@@ -57,7 +57,7 @@ export default async function AboutPage() {
         <p className="mt-3 text-sm text-zinc-600">{design("awardBody")}</p>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <figure><Image src="/company/trade-day.webp" alt={design("photoAltTrade")} width={1050} height={1400} sizes="(max-width: 640px) 100vw, 400px" className="h-auto w-full rounded-xl" /><figcaption className="mt-2 text-xs text-zinc-500">{design("tradeEvent")}</figcaption></figure>
-          <figure><a href="/company/export-award.webp" target="_blank" rel="noopener noreferrer" aria-label={design("awardCertificate")}><Image src="/company/export-award.webp" alt={design("awardCertificate")} width={1080} height={1528} sizes="(max-width: 640px) 100vw, 400px" className="h-auto w-full rounded-xl border border-zinc-100 bg-white" /></a><figcaption className="mt-2 text-xs text-zinc-500">{design("awardCertificate")}</figcaption></figure>
+          <figure><a href="/company/export-award-public.webp" target="_blank" rel="noopener noreferrer" aria-label={design("awardCertificate")}><Image src="/company/export-award-public.webp" alt={design("awardCertificate")} width={1080} height={1528} sizes="(max-width: 640px) 100vw, 400px" className="h-auto w-full rounded-xl border border-zinc-100 bg-white" /></a><figcaption className="mt-2 text-xs text-zinc-500">{design("awardCertificate")}</figcaption></figure>
         </div>
       </section>
       <SupportCards items={[1, 2, 3].map(index => ({ title: design(`about${index}Title`), body: design(`about${index}Body`) }))} />

@@ -10,7 +10,33 @@ export function CustomerNotifications({locale}:{locale:string}){
  const asian = asianCopy(locale);
  const labels=asian ?? (ko?{title:"내 알림",all:"모두 읽음",empty:"새로운 알림이 없습니다.",error:"알림을 불러오지 못했습니다.",approved:"사업자 승인 완료 · 공급가 열람 가능",review:"사업자 증빙 제출 완료 · 검토 대기",order:"주문·견적 상태",quoteRead:"담당자가 견적 요청을 확인했습니다."}:ja?{title:"通知",all:"すべて既読",empty:"通知はありません。",error:"通知を読み込めませんでした。",approved:"事業者承認完了",review:"事業者書類の審査待ち",order:"注文・見積状況",quoteRead:"担当者が見積依頼を確認しました。"}:zh?{title:"我的通知",all:"全部已读",empty:"暂无通知。",error:"无法加载通知。",approved:"企业审核已通过",review:"企业资料等待审核",order:"订单与报价状态",quoteRead:"工作人员已查看报价请求。"}:{title:"My notifications",all:"Mark all read",empty:"No notifications yet.",error:"Unable to load notifications.",approved:"Business approved · wholesale prices available",review:"Business document received · awaiting review",order:"Order / quotation status",quoteRead:"Your quotation request has been reviewed."});
  const [feed,setFeed]=useState<Feed|null>(null),[read,setRead]=useState<string[]>([]),[open,setOpen]=useState(false),[error,setError]=useState(false);const panel=useRef<HTMLDivElement>(null);
- useEffect(()=>{let stopped=false;const controller=new AbortController();const refresh=async()=>{if(document.hidden)return;try{const res=await fetch("/api/account/notifications",{cache:"no-store",signal:controller.signal});if(!res.ok)throw Error();const data:Feed=await res.json();if(stopped)return;let ids:string[]=[];try{const saved=JSON.parse(localStorage.getItem(`hmt-customer-notifications:${data.userId}`)||"[]");if(Array.isArray(saved))ids=saved.filter(x=>typeof x==="string");}catch{}setFeed(data);setRead(ids);setError(false);}catch{if(!stopped)setError(true);}};void refresh();const timer=setInterval(()=>void refresh(),30000);window.addEventListener("focus",refresh);document.addEventListener("visibilitychange",refresh);window.addEventListener("hmt-notifications-read",refresh);window.addEventListener("hmt-notifications-read",refresh);return()=>{stopped=true;controller.abort();clearInterval(timer);window.removeEventListener("focus",refresh);document.removeEventListener("visibilitychange",refresh);window.removeEventListener("hmt-notifications-read",refresh);window.removeEventListener("hmt-notifications-read",refresh);};},[]);
+ useEffect(() => {
+   let stopped = false, active = false, lastRefresh = 0;
+   let userId = "";
+   const controller = new AbortController();
+   const refresh = async () => {
+     if (document.hidden || active || Date.now() - lastRefresh < 15000) return;
+     active = true; lastRefresh = Date.now();
+     try {
+       const response = await fetch("/api/account/notifications", {cache:"no-store",signal:controller.signal});
+       if (!response.ok) throw Error();
+       const data: Feed = await response.json();
+       if (stopped) return;
+       let ids: string[] = [];
+       try { const saved = JSON.parse(localStorage.getItem(`hmt-customer-notifications:${data.userId}`) || "[]"); if (Array.isArray(saved)) ids = saved.filter(x=>typeof x === "string"); } catch {}
+       userId = data.userId; setFeed(data); setRead(ids); setError(false);
+     } catch { if (!stopped) setError(true); }
+     finally { active = false; }
+   };
+   // A read event updates browser-local state without another server round trip.
+   const syncRead = () => {
+     if (userId) try { const saved = JSON.parse(localStorage.getItem(`hmt-customer-notifications:${userId}`) || "[]"); if (Array.isArray(saved)) setRead(saved.filter(x=>typeof x === "string")); } catch {}
+   };
+   void refresh();
+   const timer = setInterval(() => void refresh(), 30000);
+   window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh); window.addEventListener("hmt-notifications-read", syncRead);
+   return () => { stopped = true; controller.abort(); clearInterval(timer); window.removeEventListener("focus",refresh); document.removeEventListener("visibilitychange",refresh); window.removeEventListener("hmt-notifications-read",syncRead); };
+ }, []);
  useEffect(()=>{if(!open)return;const close=(event:PointerEvent)=>{if(!panel.current?.contains(event.target as Node))setOpen(false);};const escape=(event:KeyboardEvent)=>{if(event.key==="Escape")setOpen(false);};document.addEventListener("pointerdown",close);document.addEventListener("keydown",escape);return()=>{document.removeEventListener("pointerdown",close);document.removeEventListener("keydown",escape);};},[open]);
  const mark=(ids:string[])=>{const next=[...new Set([...read,...ids])].slice(-2000);setRead(next);try{localStorage.setItem(`hmt-customer-notifications:${feed?.userId}`,JSON.stringify(next));}catch{}};
  const unread=feed?.notifications.filter(x=>!read.includes(x.id)).length||0;

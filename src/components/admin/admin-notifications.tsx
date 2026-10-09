@@ -19,8 +19,10 @@ export function AdminNotifications() {
   useEffect(() => {
     let stopped = false;
     let active: AbortController | null = null;
+    let lastRefresh = 0;
     async function refresh() {
-      if (document.hidden || active) return;
+      if (document.hidden || active || Date.now() - lastRefresh < 15000) return;
+      lastRefresh = Date.now();
       active = new AbortController();
       try {
         const response = await fetch("/api/admin/notifications", { cache: "no-store", signal: active.signal });
