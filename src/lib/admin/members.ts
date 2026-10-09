@@ -215,7 +215,7 @@ export function memberRoleLabel(role: string): string {
     return "관리자";
   }
   if (role === "wholesale") {
-    return "사업자 승인 완료";
+    return "사업자회원";
   }
-  return "승인 대기";
+  return "일반회원";
 }

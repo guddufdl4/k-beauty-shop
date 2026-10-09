@@ -48,7 +48,7 @@ export async function setBusinessApproval(formData: FormData) {
   }
   const client = createServiceClient();
   if (!client) throw new Error("Service unavailable");
-  if (decision === "approve" && !isAdmin) {
+  if (decision === "approve") {
     const proof = await client.from("business_documents").select("user_id,file_path,business_number").in("user_id",ids);
     const targets = await client.from("profiles").select("id,business_number").in("id",ids);
     if(targets.error)return {error:"회원 정보를 확인할 수 없습니다."};
