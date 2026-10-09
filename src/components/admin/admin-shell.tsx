@@ -1,4 +1,4 @@
-import { canManageInquiries } from "@/lib/auth/member-access";
+import { isMasterAdmin, canManageInquiries } from "@/lib/auth/member-access";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import Link from "next/link";
 import { AdminNotifications } from "./admin-notifications";
@@ -21,7 +21,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
   return <div className="hmt-admin min-h-screen bg-[#f6f7fb] lg:pl-52">
     <header className="flex min-h-20 items-center justify-between gap-3 border-b border-zinc-100 bg-white px-4 lg:justify-end lg:bg-transparent lg:px-8">
       <AdminNavigation items={items}/>
-      <div className="flex items-center gap-3">{isAdmin ? <AdminNotifications/> : null}<span className="hidden text-sm font-medium text-zinc-600 sm:inline">{isAdmin ? '관리자' : '회원관리 담당자'}</span><Link href={storefrontHref()} className="inline-flex min-h-11 items-center rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600">스토어 홈 ↗</Link></div>
+      <div className="flex items-center gap-3">{isAdmin ? <AdminNotifications/> : null}<span className="hidden text-sm font-medium text-zinc-600 sm:inline">{isMasterAdmin(profile) ? '마스터 관리자' : isAdmin ? '관리자' : '회원관리 담당자'}</span><Link href={storefrontHref()} className="inline-flex min-h-11 items-center rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600">스토어 홈 ↗</Link></div>
     </header>
     <div className="min-w-0 pb-24 md:pb-0">{children}</div>
   </div>;

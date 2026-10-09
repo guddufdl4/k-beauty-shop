@@ -9,6 +9,7 @@ export function normalizeMemberDecision(data: FormData): string | null {
   }
   if (data.get("decision") === "mobile-grade") {
     data.set("decision", "grade");
+    data.set("admin_password", String(data.get("mobile_admin_password") || ""));
     data.set("grade", String(data.get("mobile_grade") || "normal"));
   }
   return null;

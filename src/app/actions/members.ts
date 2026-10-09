@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { canManageMembers } from "@/lib/auth/member-access";
+import { verifyAdminDesignationPassword } from "@/lib/auth/admin-designation";
+import { isMasterAdmin, MASTER_ADMIN_ID, canManageMembers } from "@/lib/auth/member-access";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 import {canManageMemberTarget} from "@/lib/auth/member-access";
@@ -39,7 +40,12 @@ export async function setBusinessApproval(formData: FormData) {
   if (!ids.length || ids.length > 2000 || !["approve", "revoke", "grade"].includes(decision)) throw new Error("Invalid member selection");
   const grade = String(formData.get("grade"));
   const isAdmin = session.profile?.role === "admin";
-  if (decision === "grade" && (!["normal", "vip", "members"].includes(grade) || (grade === "members" && !isAdmin))) throw new Error("Invalid grade");
+  if (decision === "grade" && (!["normal", "vip", "members", "admin"].includes(grade) || (grade === "members" && !isAdmin))) throw new Error("Invalid grade");
+  if (decision === "grade" && grade === "admin") {
+    if (!isMasterAdmin(session.profile) || session.user.id !== MASTER_ADMIN_ID) return { error: "관리자 지정은 마스터 관리자만 가능합니다." };
+    if (ids.includes(MASTER_ADMIN_ID)) return { error: "마스터 관리자 계정은 변경할 수 없습니다." };
+    if (!verifyAdminDesignationPassword(String(formData.get("admin_password") || ""))) return { error: "관리자 지정 비밀번호가 올바르지 않습니다." };
+  }
   const client = createServiceClient();
   if (!client) throw new Error("Service unavailable");
   if (decision === "approve" && !isAdmin) {
@@ -52,7 +58,7 @@ export async function setBusinessApproval(formData: FormData) {
     if (ids.some(id => !eligible.has(id))) return { error: "사업자 증빙을 제출하지 않은 회원이 포함돼 있습니다. 증빙 제출 회원만 선택해 주세요." };
   }
   const patch = decision === "grade"
-    ? grade === "members" ? { staff_scope: "members" } : { member_grade: grade, ...(isAdmin ? { staff_scope: "none" } : {}) }
+    ? grade === "admin" ? { role: "admin", staff_scope: "none" } : grade === "members" ? { staff_scope: "members" } : { member_grade: grade, ...(isAdmin ? { staff_scope: "none" } : {}) }
     : { role: decision === "approve" ? "wholesale" : "customer" };
   let query = client.from("profiles").update(patch).in("id", ids).neq("role", "admin");
   // Filter in the mutation itself: crafted requests cannot edit a staff or admin target.

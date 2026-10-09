@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useState, useActionState, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { normalizeMemberDecision } from "@/lib/admin/member-form-data";
 import { setBusinessApproval } from "@/app/actions/members";
 
@@ -31,7 +31,9 @@ function parseSelection(value: string): string[] {
   } catch { return []; }
 }
 
-export function MemberApprovalForm({ children, selectableCount, adminId, canAssignStaff }: { children: ReactNode; selectableCount: number; adminId: string; canAssignStaff: boolean }) {
+export function MemberApprovalForm({ children, selectableCount, adminId, canAssignStaff, canAssignAdmin }: { children: ReactNode; selectableCount: number; adminId: string; canAssignStaff: boolean; canAssignAdmin: boolean }) {
+  const [grade, setGrade] = useState("normal");
+  const [mobileGrade, setMobileGrade] = useState("normal");
   const formRef = useRef<HTMLFormElement>(null);
   const storageKey = `hmt-member-selection:${adminId}`;
   const snapshot = useSyncExternalStore(subscribe, () => readSelection(storageKey), () => "[]");
@@ -74,6 +76,7 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
       if (box.checked) selected.add(box.dataset.memberId); else selected.delete(box.dataset.memberId);
       saveSelection(storageKey, [...selected]);
     }}>
+      {canAssignAdmin && grade === "admin" ? <label className="mb-3 hidden rounded-xl border border-violet-200 bg-white p-4 text-sm md:order-2 md:block">관리자 지정 비밀번호<input name="admin_password" type="password" autoComplete="off" maxLength={128} className="mt-2 block min-h-11 w-full rounded-lg border border-zinc-200 px-3"/><span className="mt-2 block text-xs text-zinc-500">선택한 회원에게 주문·상품·사이트 설정을 포함한 관리자 권한을 부여합니다. 관리자 지정 권한은 마스터에게만 유지됩니다.</span></label> : null}
       {selectedIds.map((id) => <input key={id} type="hidden" name="member_id" value={id} />)}
       <div className="member-bulk-toolbar mb-3 hidden flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 md:order-2 md:flex">
         <button type="button" disabled={pending || selectableCount === 0} onClick={() => updateSelection(true)} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40">현재 페이지 전체 선택</button>
@@ -82,9 +85,9 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
         <button name="decision" value="approve" disabled={pending || selectedCount === 0} className="rounded-lg bg-violet-700 px-4 py-2 text-sm text-white disabled:opacity-40">{pending ? "처리 중…" : "선택 회원 승인"}</button>
         <button name="decision" value="revoke" disabled={pending || selectedCount === 0} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40">선택 회원 승인 취소</button>
         <label className="flex items-center gap-2 text-sm">회원 등급
-          <select name="grade" defaultValue="normal" disabled={pending} className="rounded-lg border bg-white px-3 py-2">
+          <select name="grade" value={grade} onChange={event=>setGrade(event.target.value)} disabled={pending} className="rounded-lg border bg-white px-3 py-2">
             <option value="normal">일반회원</option><option value="vip">VIP</option>
-            {canAssignStaff ? <option value="members">회원관리 담당자</option> : null}
+            {canAssignStaff ? <option value="members">회원관리 담당자</option> : null}{canAssignAdmin ? <option value="admin">관리자</option> : null}
           </select>
         </label>
         <button name="decision" value="grade" disabled={pending || selectedCount === 0} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-40">선택 회원 등급 변경</button>
@@ -102,7 +105,8 @@ export function MemberApprovalForm({ children, selectableCount, adminId, canAssi
         <div className="flex items-start gap-2">
           <button name="decision" value="approve" disabled={pending} className="min-h-12 flex-1 rounded-xl bg-violet-700 px-4 text-sm font-semibold text-white disabled:opacity-40">{pending ? '처리 중…' : '선택 회원 승인'}</button>
           <details className="flex-1 rounded-xl border border-violet-200 bg-white text-sm"><summary className="flex min-h-12 cursor-pointer items-center justify-center font-semibold text-violet-700">등급 변경 · 더보기</summary><div className="space-y-2 border-t border-zinc-100 p-3">
-            <label className="block text-xs text-zinc-500">회원 등급<select name="mobile_grade" defaultValue="normal" disabled={pending} className="mt-1 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-2 text-base"><option value="normal">일반회원</option><option value="vip">VIP</option>{canAssignStaff ? <option value="members">회원관리 담당자</option> : null}</select></label>
+            <label className="block text-xs text-zinc-500">회원 등급<select name="mobile_grade" value={mobileGrade} onChange={event=>setMobileGrade(event.target.value)} disabled={pending} className="mt-1 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-2 text-base"><option value="normal">일반회원</option><option value="vip">VIP</option>{canAssignStaff ? <option value="members">회원관리 담당자</option> : null}{canAssignAdmin ? <option value="admin">관리자</option> : null}</select></label>
+            {canAssignAdmin && mobileGrade === "admin" ? <label className="block text-xs text-zinc-500">관리자 지정 비밀번호<input name="mobile_admin_password" type="password" autoComplete="off" maxLength={128} className="mt-1 min-h-11 w-full rounded-lg border border-zinc-200 px-2 text-base"/></label> : null}
             <button name="decision" value="mobile-grade" disabled={pending} className="min-h-11 w-full rounded-lg bg-zinc-900 px-2 text-white">등급 적용</button>
             <button name="decision" value="revoke" disabled={pending} className="min-h-11 w-full rounded-lg border border-zinc-200 px-2 text-zinc-700">사업자 승인 취소</button>
           </div></details>
