@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { PUBLIC_CONTACT_EMAIL } from "@/lib/store/public-contact";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeServiceClientMisconfiguration } from "@/lib/supabase/config";
 import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
@@ -689,9 +690,9 @@ export type PublicSiteContact = {
 export function getPublicSiteContact(settings: SiteSettings): PublicSiteContact {
   return {
     store_name: displayPublicStoreName(settings.store_name?.trim() || DEFAULT_SITE_SETTINGS.store_name),
-    public_email: settings.public_email?.trim() || null,
-    public_phone: settings.public_phone?.trim() || null,
-    public_whatsapp: settings.public_whatsapp?.trim() || null,
+    public_email: PUBLIC_CONTACT_EMAIL,
+    public_phone: null,
+    public_whatsapp: null,
     company_address: settings.company_address?.trim() || null,
     business_hours: settings.business_hours?.trim() || null,
     avg_lead_time: settings.avg_lead_time?.trim() || null,

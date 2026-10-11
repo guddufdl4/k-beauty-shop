@@ -1,6 +1,7 @@
 import { canManageMembers } from "@/lib/auth/member-access";
 import NextLink from "next/link";
 import { ViewModeToggle } from "./view-mode";
+import { PUBLIC_CONTACT_EMAIL } from "@/lib/store/public-contact";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AdminNotifications } from "@/components/admin/admin-notifications";
 import { CustomerNotifications } from "@/components/store/customer-notifications";
@@ -123,7 +124,12 @@ export async function StoreHeader({ storeName }: Props) {
 
       <div className="border-b border-zinc-100 bg-surface-muted">
 
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-3 py-1.5 text-xs text-zinc-600 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-1.5 text-xs text-zinc-600 sm:px-6">
+
+          <a href={`mailto:${PUBLIC_CONTACT_EMAIL}`} className="flex basis-full items-center justify-center gap-2 py-1 text-sm font-semibold text-accent hover:underline sm:basis-auto sm:justify-start">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 6 9 7 9-7" /></svg>
+            {PUBLIC_CONTACT_EMAIL}
+          </a>
 
           <p className="hidden min-w-0 items-center gap-2 truncate lg:flex">
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-zinc-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>

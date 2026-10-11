@@ -3,6 +3,9 @@ function load(file,imports){const exports={};vm.runInNewContext(ts.transpileModu
 const validate=load('src/lib/support-inquiries.ts',{});
 const valid={id:'00000000-0000-0000-0000-000000000001',contact_name:'Test buyer',email:'TEST@example.com',category:'general',subject:'Support question',message:'A sufficiently detailed message.',locale:'en',privacy_consent:true};
 assert.equal(validate.validateSupportInquiry(valid).data.email,'test@example.com');
+assert.equal(validate.validateSupportInquiry({...valid,reply_contact:'WhatsApp +82 10 1234 5678'}).data.message,valid.message+'\n\n[Phone / WhatsApp / Viber / Line]\nWhatsApp +82 10 1234 5678');
+assert.equal(validate.validateSupportInquiry({...valid,reply_contact:'  '}).data.message,valid.message);
+for(const reply_contact of ['x'.repeat(301),'first\nsecond',123])assert.equal(validate.validateSupportInquiry({...valid,reply_contact}),null);
 for(const value of [null,[],1,{}, {...valid,privacy_consent:false},{...valid,category:'invalid'},{...valid,email:'bad'},{...valid,message:'tiny'},{...valid,id:'invalid'},{...valid,order_number:'a!'}, {...valid,locale:'invalid'},{...valid,message:'x'.repeat(5001)}])assert.equal(validate.validateSupportInquiry(value),null);
 let mode='normal',databaseCalls=0,emailCalls=0,saved,actor,updates=[];
 const chain={select(){databaseCalls++;return this},eq(){return this},gte(){return this},is(){return this},maybeSingle(){return Promise.resolve(mode==='queryError'?{error:{}}:{data:mode==='duplicate'?{id:valid.id}:null,error:null})},insert(data){saved=data;return Promise.resolve({error:mode==='insertError'?{code:'XX'}:mode==='raceDuplicate'?{code:'23505'}:null})},then(resolve){resolve({count:mode==='limited'?3:0,error:null,data:[{id:valid.id}]})},update(data){updates.push(data);return this}};
@@ -16,6 +19,7 @@ function request(body=valid,origin='https://hmt.test'){return new Request('https
  for(const [m,status] of [['unavailable',503],['queryError',503],['limited',429],['insertError',503],['duplicate',200],['raceDuplicate',200]]){mode=m;emailCalls=0;r=await api.POST(request());assert.equal(r.status,status);assert.equal(emailCalls,0);}
  for(const m of ['normal','mailError']){mode=m;emailCalls=0;r=await api.POST(request());assert.equal(r.status,200);assert.equal((await r.json()).reference,valid.id);assert.equal(saved.email,'test@example.com');assert.equal(emailCalls,1);}
  const actions=load('src/app/actions/support-inquiries.ts',{'@/lib/auth/member-access':{canManageInquiries:p=>p?.role==='admin'||p?.staff_scope==='members'},'@/lib/supabase/auth-helpers':{getSessionProfile:async()=>actor},'@/lib/supabase/service':imports['@/lib/supabase/service'],'next/cache':{revalidatePath(){}}});
+ mode='normal';r=await api.POST(request({...valid,reply_contact:'Line buyer-id'}));assert.equal(r.status,200);assert(saved.message.includes('Line buyer-id'));
  const form=new FormData();form.set('id',valid.id);form.set('decision','resolve');mode='normal';
  for(const role of ['customer','wholesale']){actor={user:{id:'u'},profile:{role,staff_scope:'none'}};updates=[];assert((await actions.updateSupportInquiry(form)).error);assert.equal(updates.length,0);}
  actor={user:{id:'staff'},profile:{role:'customer',staff_scope:'members'}};assert((await actions.updateSupportInquiry(form)).success);actor={user:{id:'a'},profile:{role:'admin'}};assert((await actions.updateSupportInquiry(form)).success);assert(updates[0].resolved_at);
