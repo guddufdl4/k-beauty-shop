@@ -164,7 +164,7 @@ export async function submitQuoteRequest(
   const lineText = verified.items
     .map(
       (item) =>
-        `${item.productCode || item.sku} | ${item.brand} | ${item.name} | qty ${item.quantity} | ${formatKRW(item.unitPrice)} | ${formatKRW(item.lineTotal)}`,
+        `${item.productCode || item.sku} | Barcode: ${item.barcode || "Not provided"} | ${item.brand} | ${item.name} | qty ${item.quantity} | ${formatKRW(item.unitPrice)} | ${formatKRW(item.lineTotal)}`,
     )
     .join("\n");
 
@@ -195,6 +195,7 @@ export async function submitQuoteRequest(
       .map(
         (item) => `<tr>
         <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.productCode || item.sku)}</td>
+        <td style="padding:8px;border:1px solid #e4e4e7;white-space:nowrap">${escapeHtml(item.barcode || "Not provided")}</td>
         <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.brand)}</td>
         <td style="padding:8px;border:1px solid #e4e4e7">${escapeHtml(item.name)}</td>
         <td style="padding:8px;border:1px solid #e4e4e7;text-align:right">${item.quantity}</td>
@@ -203,7 +204,7 @@ export async function submitQuoteRequest(
       .join("");
     const sent = await sendQuoteInquiryEmail({
       subject: `[HMT Korea] Quote request · ${created.orderNumber} · ${companyName}`,
-      html: `<div style="font-family:Arial,sans-serif"><h2>HMT Korea wholesale quote request</h2><p>${escapeHtml(created.orderNumber)}</p><table>${rows}</table></div>`,
+      html: `<div style="font-family:Arial,sans-serif"><h2>HMT Korea wholesale quote request</h2><p>${escapeHtml(created.orderNumber)}</p><table style="border-collapse:collapse"><thead><tr><th>Product code</th><th>Barcode</th><th>Brand</th><th>Product name</th><th>Quantity</th></tr></thead><tbody>${rows}</tbody></table></div>`,
       text: `HMT Korea wholesale quote request\n${created.orderNumber}\n${lineText}`,
       replyTo: email,
     });
