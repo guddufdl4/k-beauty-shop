@@ -122,7 +122,7 @@ export async function StoreHeader({ storeName }: Props) {
 
     <header className="sticky top-0 z-50 overflow-visible border-b border-zinc-200 bg-white shadow-sm">
 
-      <div className="border-b border-zinc-100 bg-surface-muted">
+      <div className="store-utility-bar border-b border-zinc-100 bg-surface-muted">
 
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-1.5 text-xs text-zinc-600 sm:px-6">
 
@@ -207,7 +207,7 @@ export async function StoreHeader({ storeName }: Props) {
 
 
           <div className="store-header-actions ml-auto flex items-center gap-2 sm:gap-4">
-            {user && canManageMembers(profile) ? <NextLink href="/admin" prefetch={false} className="mobile-admin-entry rounded-lg border border-pink-200 px-2 py-2 text-xs font-semibold text-accent">{tNav("admin")}</NextLink> : null}
+            {user && canManageMembers(profile) ? <NextLink href="/admin" prefetch={false} className="mobile-admin-entry store-header-admin-entry rounded-lg border border-pink-200 px-2 py-2 text-xs font-semibold text-accent">{tNav("admin")}</NextLink> : null}
             {user && profile?.role === "admin" ? <AdminNotifications /> : null}
             {user && profile?.role !== "admin" ? <CustomerNotifications locale={locale} /> : null}
 

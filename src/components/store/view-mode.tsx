@@ -130,7 +130,7 @@ export function StorefrontViewShell({ children }: { children: ReactNode }) {
       <div className="min-h-screen bg-zinc-100">
         <ViewModeExitBar />
         <div className="view-mode-shell py-3 sm:py-4">
-          <div className="mx-auto w-full max-w-[430px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg ring-1 ring-zinc-900/5">
+          <div className="mobile-preview-frame mx-auto w-full max-w-[430px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg ring-1 ring-zinc-900/5">
             <div className="storefront-view-root">{children}</div>
           </div>
         </div>
