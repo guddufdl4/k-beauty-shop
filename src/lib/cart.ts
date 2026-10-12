@@ -373,6 +373,7 @@ async function getDatabaseCart(userId: string, locale: string, showPrices: boole
       product:products (
         id,
         name,
+        source_row,
         slug,
         brand,
         sku,
@@ -636,6 +637,10 @@ async function resolveProductForCart(
     id: String(record.id),
     category_id: record.category_id ? String(record.category_id) : null,
     name: String(record.name),
+    source_row:
+      record.source_row && typeof record.source_row === "object"
+        ? (record.source_row as Record<string, unknown>)
+        : null,
     slug: String(record.slug),
     description: record.description ? String(record.description) : null,
     short_description: record.short_description
