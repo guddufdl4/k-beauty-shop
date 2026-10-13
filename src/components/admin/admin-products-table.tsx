@@ -19,6 +19,7 @@ type Props = {
   categories?: Category[];
   emptyMessage?: string;
   viewMode?: "active" | "deleted";
+  reviewMode?: boolean;
 };
 
 const UNDO_DELETE_MS = 30_000;
@@ -422,6 +423,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   categories = [],
   emptyMessage = "등록된 상품이 없습니다. seed SQL을 실행하거나 폼으로 추가하세요.",
   viewMode = "active",
+  reviewMode = false,
 }: Props) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
@@ -1180,11 +1182,11 @@ export const AdminProductsTable = memo(function AdminProductsTable({
         </p>
       ) : null}
       <div className="overflow-x-auto">
-        <table className="admin-data-table min-w-full border-collapse text-left text-sm">
+        <table className={`admin-data-table min-w-full border-collapse text-left text-sm ${reviewMode ? "[&_tr>*:nth-child(5)]:hidden [&_tr>*:nth-child(6)]:hidden [&_tr>*:nth-child(7)]:hidden [&_tr>*:nth-child(8)]:hidden [&_tr>*:nth-child(10)]:hidden [&_td[data-label=상품명]_button[title]]:whitespace-normal [&_td[data-label=상품명]_button[title]]:overflow-visible" : ""}`}>
           <thead className="sticky top-0 z-10 border-b border-rose-100 bg-zinc-50 text-[11px] uppercase tracking-wide text-zinc-500 shadow-sm">
             <tr>
               <th className="w-14 px-3 py-2.5 font-semibold">이미지</th>
-              <th className="min-w-[7rem] px-3 py-2.5 font-semibold">SKU</th>
+              <th className="min-w-[7rem] px-3 py-2.5 font-semibold">SKU / 바코드</th>
               <th className="min-w-[12rem] px-3 py-2.5 font-semibold">상품명</th>
               <th className="min-w-[5rem] px-3 py-2.5 font-semibold">가격</th>
               <th className="min-w-[4rem] px-3 py-2.5 font-semibold">재고</th>

@@ -434,6 +434,7 @@ export default async function AdminProductsPage({
             <div className="min-h-0 flex-1 overflow-auto">
               <AdminProductsTable
                 key={`${activeTab}-${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${needsImageOnly ? "missing-image" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
+                reviewMode={activeTab !== "list"}
                 products={listProducts}
                 categories={categories}
                 emptyMessage={emptyMessage}
