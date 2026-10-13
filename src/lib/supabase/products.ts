@@ -1,3 +1,4 @@
+import { buildProductSearchFilter } from "./product-search-filter";
 import { getHomeSettings } from "@/lib/site-settings";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -1306,7 +1307,7 @@ export async function getProducts(
   if (guestProductsCacheable) {
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
-      "locale-names-v4",
+      "locale-names-search-v5",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -1471,21 +1472,7 @@ export async function getProducts(
     }
 
     if (searchTerm) {
-      const escaped = escapeIlikePattern(searchTerm);
-      const searchFields = [
-        `name.ilike.%${escaped}%`,
-        `sku.ilike.%${escaped}%`,
-        `brand.ilike.%${escaped}%`,
-        `barcode.ilike.%${escaped}%`,
-      ];
-      if (isProductCodeColumnAvailable()) {
-        searchFields.push(`product_code.ilike.%${escaped}%`);
-        const digits = searchTerm.replace(/\D/g, "");
-        if (digits) {
-          searchFields.push(`product_code.ilike.%${escapeIlikePattern(digits)}%`);
-        }
-      }
-      filtered = filtered.or(searchFields.join(","));
+      filtered = filtered.or(buildProductSearchFilter(searchTerm, isProductCodeColumnAvailable()));
     }
 
     if (brandFilter) {
