@@ -542,7 +542,10 @@
       "cancelled": "Cancelled",
       "refunded": "Refunded"
     },
-    "freightExcluded": "Not included"
+    "freightExcluded": "Not included",
+    "barcode": "Barcode",
+    "unitPrice": "Unit price",
+    "lineTotal": "Line total"
   },
   "cart": {
     "clearCart": "Empty quote list",

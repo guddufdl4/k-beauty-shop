@@ -42,27 +42,51 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
   const quote = await getTranslations("checkout");
   const statusLabel = t(`status.${order.status}` as "status.paid");
 
+  const address = order.shipping_address;
+  const senderFields = [
+    [quote("companyName"), address.company_name || order.sender?.company_name || (isQuote ? address.line1 : "")],
+    [quote("contactName"), address.recipient_name || order.sender?.full_name],
+    [quote("email"), address.email || order.sender?.email],
+    [quote("phone"), address.phone],
+    [quote("country"), address.country_code],
+  ];
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
-      {isQuote ? <QuoteReadStatus orderNumber={order.order_number} reviewedAt={order.shipping_address?.quote_reviewed_at} admin={session.profile?.role === "admin"} /> : null}
       <section className="rounded-2xl border border-zinc-200 bg-white px-6 py-5">
         <p className="text-sm text-zinc-500">{isQuote ? quote("quoteNumber") : t("orderReceived")}</p>
         <h1 className="mt-1 text-2xl font-bold text-zinc-900">{order.order_number}</h1>
         <p className="mt-2 text-sm text-zinc-600">{t("statusLabel")}: {isQuote ? quote(`quoteStatus.${mapOrderStatusToQuoteDisplay(order.status)}`) : statusLabel}</p>
       </section>
 
+      <section className="mt-4 rounded-2xl border border-rose-100 bg-rose-50/40 p-6">
+        <h2 className="text-lg font-semibold">{quote("buyerTitle")}</h2>
+        <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {senderFields.map(([label, value]) => <div key={label} className="min-w-0">
+            <dt className="text-sm text-zinc-500">{label}</dt>
+            <dd className="mt-1 break-words font-medium">{value && value !== "-" ? value : "—"}</dd>
+          </div>)}
+          <div><dt className="text-sm text-zinc-500">{quote("submittedAt")}</dt>
+            <dd className="mt-1 text-sm">{new Date(order.created_at).toLocaleString(locale, { timeZone: "Asia/Seoul" })} (KST)</dd>
+          </div>
+        </dl>
+      </section>
+      {isQuote ? <QuoteReadStatus orderNumber={order.order_number} reviewedAt={order.shipping_address?.quote_reviewed_at} admin={session.profile?.role === "admin"} /> : null}
+
       <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("orderItemsTitle")}</h2>
         <ul className="mt-4 space-y-3">
           {order.items.map((item, index) => (
-            <li key={`${item.product_sku}-${index}`} className="flex justify-between gap-4 text-sm">
+            <li key={`${item.product_sku}-${index}`} className="flex flex-col justify-between gap-3 border-b border-zinc-100 pb-4 text-sm sm:flex-row sm:gap-4">
               <div>
                 <p className="font-medium">{item.product_name}</p>
                 <p className="text-zinc-500">
-                  {t("quantitySku", { quantity: item.quantity, sku: item.product_sku })}
+                  {quote("quantityOnly", { quantity: item.quantity })}
+                  {item.product_code ? <span className="ml-3">HMT: {item.product_code}</span> : null}
+                  {/^[0-9]{8,14}$/.test(item.product_sku) ? <span className="block">{t("barcode")}: {item.product_sku}</span> : null}
                 </p>
               </div>
-              {hasBusinessApproval(session.profile) ? <p className="font-medium">{formatLocalePrice(item.line_total, locale, usdKrwRate)}</p> : null}
+              {hasBusinessApproval(session.profile) ? <div className="shrink-0 sm:text-right"><p className="text-xs text-zinc-500">{t("unitPrice")}: {formatLocalePrice(item.unit_price, locale, usdKrwRate)}</p><p className="mt-1 font-medium">{t("lineTotal")}: {formatLocalePrice(item.line_total, locale, usdKrwRate)}</p></div> : null}
             </li>
           ))}
         </ul>

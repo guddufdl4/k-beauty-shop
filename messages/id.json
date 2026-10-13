@@ -542,7 +542,10 @@
       "cancelled": "Dibatalkan",
       "refunded": "Dikembalikan"
     },
-    "freightExcluded": "Tidak termasuk"
+    "freightExcluded": "Tidak termasuk",
+    "barcode": "Barcode",
+    "unitPrice": "Unit price",
+    "lineTotal": "Line total"
   },
   "cart": {
     "clearCart": "Kosongkan daftar penawaran",

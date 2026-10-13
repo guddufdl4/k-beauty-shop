@@ -542,7 +542,10 @@
       "cancelled": "ยกเลิกแล้ว",
       "refunded": "คืนเงินแล้ว"
     },
-    "freightExcluded": "ไม่รวม"
+    "freightExcluded": "ไม่รวม",
+    "barcode": "Barcode",
+    "unitPrice": "Unit price",
+    "lineTotal": "Line total"
   },
   "cart": {
     "clearCart": "ล้างรายการขอใบเสนอราคา",

@@ -547,7 +547,10 @@
       "cancelled": "취소됨",
       "refunded": "환불됨"
     },
-    "freightExcluded": "포함되지 않음"
+    "freightExcluded": "포함되지 않음",
+    "barcode": "바코드",
+    "unitPrice": "단가",
+    "lineTotal": "상품 합계"
   },
   "cart": {
     "clearCart": "장바구니 비우기",

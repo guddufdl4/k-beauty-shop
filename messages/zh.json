@@ -463,7 +463,10 @@
       "cancelled": "已取消",
       "refunded": "已退款"
     },
-    "freightExcluded": "不包含"
+    "freightExcluded": "不包含",
+    "barcode": "Barcode",
+    "unitPrice": "Unit price",
+    "lineTotal": "Line total"
   },
   "cart": {
     "clearCart": "清空询价清单",

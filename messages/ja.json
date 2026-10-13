@@ -463,7 +463,10 @@
       "cancelled": "キャンセル済み",
       "refunded": "返金済み"
     },
-    "freightExcluded": "含まれていません"
+    "freightExcluded": "含まれていません",
+    "barcode": "Barcode",
+    "unitPrice": "Unit price",
+    "lineTotal": "Line total"
   },
   "cart": {
     "clearCart": "カートを空にする",

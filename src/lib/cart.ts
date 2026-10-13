@@ -36,6 +36,10 @@ export const DEMO_ORDERS_COOKIE = "kb_demo_orders";
 export type ShippingAddress = {
   usd_krw_rate?: number;
   quote_reviewed_at?: string;
+  company_name?: string;
+  email?: string;
+  line2?: string;
+  shipping_address?: string;
   recipient_name: string;
   phone: string;
   line1: string;
@@ -68,7 +72,10 @@ export type CartView = {
   source: "database" | "cookie";
 };
 
+type OrderSender = { email: string | null; full_name: string | null; company_name: string | null };
+
 export type DemoOrder = {
+  sender?: OrderSender | null;
   order_number: string;
   status: "pending" | "paid";
   subtotal: number;
@@ -1011,6 +1018,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
   order:
     | (DemoOrder & { source: "cookie" })
     | ({
+        sender?: OrderSender | null;
         order_number: string;
         status: string;
         subtotal: number;
@@ -1083,8 +1091,16 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
         const record = data as Record<string, unknown>;
         const orderUserId = record.user_id ? String(record.user_id) : null;
 
-        if (!isAdmin && orderUserId !== userId) {
+        if (!isAdmin && (!userId || orderUserId !== userId)) {
           return { order: null };
+        }
+
+        // Resolve sender only after the owner/admin access check above.
+        let sender: OrderSender | null = null;
+        if (orderUserId) {
+          const { data: owner } = await supabase.from("profiles")
+            .select("email, full_name, company_name").eq("id", orderUserId).maybeSingle();
+          if (owner) sender = owner as OrderSender;
         }
 
         const items =
@@ -1115,6 +1131,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<{
 
         return {
           order: {
+            sender,
             order_number: String(record.order_number),
             status: String(record.status),
             subtotal: Number(record.subtotal),
