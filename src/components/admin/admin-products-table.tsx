@@ -418,7 +418,7 @@ const ProductTableRow = memo(function ProductTableRow({
           </button>
         )}
         {viewMode !== "deleted" ? (
-          <button type="button" onClick={() => onQuickEdit(product.id)} className="mt-2 block rounded-lg border border-violet-200 px-2 py-2 text-xs font-semibold text-violet-700">빠른 수정</button>
+          <button type="button" onClick={() => onQuickEdit(product.id)} className="mt-2 block whitespace-nowrap rounded-lg border border-violet-200 px-2 py-2 text-xs font-semibold text-violet-700">빠른 수정</button>
         ) : null}
       </td>
     </tr>
@@ -1212,7 +1212,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
               <th className="min-w-[7rem] px-3 py-2.5 font-semibold">출처 엑셀</th>
               <th className="min-w-[4rem] px-3 py-2.5 font-semibold">상태</th>
               <th className="min-w-[7rem] px-3 py-2.5 font-semibold">업로드/수정</th>
-              <th className="w-16 px-3 py-2.5 font-semibold">편집</th>
+              <th className="min-w-[7rem] px-3 py-2.5 font-semibold">편집</th>
             </tr>
           </thead>
           <tbody>
