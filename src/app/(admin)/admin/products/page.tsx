@@ -318,7 +318,7 @@ export default async function AdminProductsPage({
       </div>
 
       <ProductsTabNav activeTab={activeTab} filters={listFilters} />
-      {REVIEW_COPY[activeTab] ? <div className="mb-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900 sm:text-sm">{REVIEW_COPY[activeTab]}<p className="mt-1 text-xs text-violet-600">가격과 바코드가 모두 없으면 두 목록에 함께 표시됩니다.</p></div> : null}
+      {REVIEW_COPY[activeTab] ? <div className="mb-2 hidden rounded-xl border border-violet-200 sm:block bg-violet-50 px-3 py-2 text-xs text-violet-900 sm:text-sm">{REVIEW_COPY[activeTab]}<p className="mt-1 text-xs text-violet-600">가격과 바코드가 모두 없으면 두 목록에 함께 표시됩니다.</p></div> : null}
 
       {activeTab === "add" ? (
         <section className={CARD_CLASS} aria-label="상품 개별 등록">
@@ -354,7 +354,8 @@ export default async function AdminProductsPage({
                 priorityStats={priorityStats}
                 showNeedsImageToggle={activeTab === "list"}
               />
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs">
+              {activeBatch ? <div className="flex min-w-0 items-center gap-2 px-1 text-[10px] text-zinc-500 sm:hidden"><span className="min-w-0 flex-1 truncate">출처: {activeBatch.filename}</span><Link href={buildAdminProductsHref(clearAdminProductsBatch(listFilters))} className="shrink-0 text-violet-700">출처 해제</Link></div> : null}
+              <div className="hidden flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs sm:flex">
                 <div className="text-zinc-600">
                   {brandPriority ? (
                     <span>

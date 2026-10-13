@@ -234,7 +234,7 @@ const ProductTableRow = memo(function ProductTableRow({
       } hover:bg-rose-50/50`}
     >
       <td data-label="이미지" className="px-3 py-2.5">
-        <input type="checkbox" aria-label={`${product.product_code ?? product.name} 선택`} checked={selected} onChange={() => onSelect(product.id)} className="mb-2 h-4 w-4 accent-violet-700" />
+        <input type="checkbox" aria-label={`${product.product_code ?? product.name} 선택`} checked={selected} onChange={() => onSelect(product.id)} className="mb-2 hidden h-4 w-4 accent-violet-700 sm:block" />
         <div className="relative h-10 w-10 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -246,6 +246,7 @@ const ProductTableRow = memo(function ProductTableRow({
         </div>
       </td>
       <td data-label="SKU" className="px-3 py-2.5 align-top">
+        <input type="checkbox" aria-label={`${product.product_code ?? product.name} 선택`} checked={selected} onChange={() => onSelect(product.id)} className="mb-2 h-4 w-4 accent-violet-700 sm:hidden" />
         {product.product_code ? (
           <p className="font-mono text-xs font-semibold text-violet-700">
             {product.product_code}

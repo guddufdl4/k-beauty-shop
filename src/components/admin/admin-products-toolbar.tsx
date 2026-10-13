@@ -177,8 +177,8 @@ export function AdminProductsToolbar({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <p className="text-sm font-semibold text-zinc-900">
+      <div className="flex flex-wrap items-center justify-end gap-2 px-1 sm:justify-between">
+        <p className="hidden text-sm font-semibold text-zinc-900 sm:block">
           {filters.tab === "missing-price" ? "가격 미등록 상품" : filters.tab === "missing-barcode" ? "바코드 미등록 상품" : filters.tab === "name-review" ? "상품명 확인 필요" : filters.brandPriority
             ? "Brand 우선 순위 리스트"
             : filters.needsImageOnly || filters.tab === "missing-image"
@@ -202,7 +202,7 @@ export function AdminProductsToolbar({
         </label>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm">
+      <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 shadow-sm sm:px-4 sm:py-4">
       {filters.tab === "list" ?       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
