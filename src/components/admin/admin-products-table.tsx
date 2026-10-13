@@ -151,6 +151,7 @@ function displayPrice(product: Pick<ProductWithRelations, "wholesale_price" | "p
 }
 
 const ADMIN_TIMESTAMP_OPTIONS: Intl.DateTimeFormatOptions = {
+  timeZone: "Asia/Seoul",
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
@@ -247,7 +248,7 @@ const ProductTableRow = memo(function ProductTableRow({
           </p>
         ) : null}
         <p className="font-mono text-xs font-medium text-zinc-800">
-          {product.sku.startsWith("SRC-") ? "내부 관리 코드" : displayProductSku(product.barcode, product.sku)}
+          {/^(SRC-|REVIEW-)/.test(product.sku) ? "내부 관리 코드" : displayProductSku(product.barcode, product.sku)}
         </p>
         {!product.barcode ? <p className="mt-1 text-xs font-semibold text-amber-700">바코드 미등록</p> : null}
         {product.barcode ? (

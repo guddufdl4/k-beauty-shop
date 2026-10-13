@@ -36,6 +36,7 @@ export function AdminProductsToolbar({
   function formatBatchLabel(batch: ProductImportBatch): string {
     const count = (batch.product_count ?? 0).toLocaleString("ko-KR");
     const date = new Date(batch.created_at).toLocaleDateString("ko-KR", {
+      timeZone: "Asia/Seoul",
       month: "numeric",
       day: "numeric",
     });
@@ -198,7 +199,7 @@ export function AdminProductsToolbar({
       </div>
 
       <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
+      {filters.tab === "list" ?       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={handleBrandPriorityToggle}
@@ -229,7 +230,7 @@ export function AdminProductsToolbar({
             미등록 이미지
           </button>
         ) : null}
-      </div>
+      </div> : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-zinc-700">
           {totalCount.toLocaleString("ko-KR")}개 상품 찾음
