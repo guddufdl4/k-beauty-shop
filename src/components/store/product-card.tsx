@@ -1,6 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { useActionState } from "react";
+import { addToCart, type CartActionState } from "@/app/actions/cart";
+import { getMoqStep } from "@/lib/store/moq-quantity";
+import { withReturnTo } from "@/lib/auth/return-to";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { formatLocaleProductPrice } from "@/lib/utils";
@@ -59,6 +63,8 @@ export function ProductCard({
   priority = false,
 }: Props) {
   const labels = useTranslations("products");
+  const tCart = useTranslations("cart");
+  const [cartState, cartAction, cartPending] = useActionState(addToCart, {} as CartActionState);
   const localeFromApp = useLocale();
   const activeLocale = locale || localeFromApp;
   const isTrending = variant === "trending";
@@ -78,14 +84,13 @@ export function ProductCard({
   const showMoq = !compact || isTrending;
 
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      prefetch={false}
+    <article
       className={cn(
         "group flex h-full min-w-0 max-w-full flex-col",
         isTrending && "rounded-2xl border border-zinc-100 bg-white p-3 sm:p-4 transition-shadow hover:shadow-md",
       )}
     >
+      <Link href={`/products/${product.slug}`} prefetch={false} className="flex min-w-0 flex-1 flex-col">
       <div className="relative">
         {primaryImage ? (
           <div
@@ -194,6 +199,17 @@ export function ProductCard({
           ) : null}
         </div>
       </div>
-    </Link>
+      </Link>
+      <form action={cartAction} className="mt-3">
+        <input type="hidden" name="productId" value={product.id} />
+        <input type="hidden" name="quantity" value={getMoqStep(product.moq)} />
+        <button type="submit" disabled={cartPending || soldOut} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-accent bg-white px-2 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-white disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400">
+          <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3h2l3 12h10l3-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+          {cartPending ? tCart("adding") : soldOut ? soldOutLabel : tCart("addToQuote")}
+        </button>
+        {cartState.error ? <p role="alert" className="mt-2 text-xs text-red-700">{cartState.error}{cartState.error === tCart("errors.authRequired") ? <Link href={withReturnTo("/login", `/products/${product.slug}`)} className="ml-1 underline">{tCart("loginToQuote")}</Link> : null}</p> : null}
+        {cartState.success ? <p role="status" className="mt-2 text-xs text-green-700">{cartState.success}</p> : null}
+      </form>
+    </article>
   );
 }

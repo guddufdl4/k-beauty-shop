@@ -12,6 +12,7 @@ import {
   buildProductsHref,
   getBrandIndexLetter,
   normalizeBrandKey,
+  getDisplayBrandName,
   type ProductListSort,
 } from "@/lib/store/products-url";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
@@ -77,6 +78,7 @@ export function ProductsSidebarSearch({
 
 type CatalogSidebarProps = {
   categories: Category[];
+  brands?: string[];
   activeCategorySlug?: string;
   searchQuery?: string;
   brandFilter?: string;
@@ -264,14 +266,34 @@ function chipClassName(isActive: boolean): string {
     : `${base} border-zinc-200 bg-white text-zinc-700 hover:border-accent hover:text-accent`;
 }
 
+function CatalogBrandFilter({ brands, activeCategorySlug, searchQuery, brandFilter, sort }: CatalogSidebarProps & { brands: string[] }) {
+  const t = useTranslations("nav");
+  const tProducts = useTranslations("products");
+  const [query, setQuery] = useState("");
+  const visible = brands.filter(brand => getDisplayBrandName(brand).toLowerCase().includes(query.trim().toLowerCase()));
+  const href = (brand?: string) => buildProductsHref({ category: activeCategorySlug, q: searchQuery, brand, sort });
+  return <section className="mt-6 rounded-xl border border-pink-200 bg-pink-50/30 p-3" aria-label={t("brands")}>
+    <div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-bold uppercase tracking-widest text-zinc-600">{t("brands")}</h2>{brandFilter ? <Link prefetch={false} href={href()} className="text-xs text-accent underline">{tProducts("all")}</Link> : null}</div>
+    <input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label={t("searchBrands")} placeholder={t("searchBrands")} className="min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm" />
+    <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto overscroll-contain">
+      <li><Link prefetch={false} href={href()} aria-current={!brandFilter ? "page" : undefined} className={`flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm ${!brandFilter ? "font-semibold text-accent" : "text-zinc-700"}`}><span aria-hidden>{!brandFilter ? "☑" : "□"}</span>{tProducts("all")}</Link></li>
+      {visible.map(brand => { const selected = normalizeBrandKey(brand) === normalizeBrandKey(brandFilter || ""); return <li key={brand}><Link prefetch={false} href={href(brand)} aria-current={selected ? "page" : undefined} className={`flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm hover:bg-pink-50 ${selected ? "font-semibold text-accent" : "text-zinc-700"}`}><span aria-hidden>{selected ? "☑" : "□"}</span>{getDisplayBrandName(brand)}</Link></li>; })}
+    </ul>
+    {visible.length === 0 ? <p className="mt-3 text-sm text-zinc-500">{t("noBrandResults")}</p> : null}
+    <Link prefetch={false} href="/brands" className="mt-3 inline-flex min-h-11 items-center text-xs font-medium text-accent underline">{t("browseAllBrandsAZ")} →</Link>
+  </section>;
+}
+
 export function ProductCatalogSidebar({
   categories,
+  brands = [],
   activeCategorySlug,
   searchQuery,
   brandFilter,
   sort,
 }: CatalogSidebarProps) {
   const t = useTranslations("products");
+  const tNav = useTranslations("nav");
   const locale = useLocale();
   const navCategories = useMemo(
     () => buildCategoryTree(categories, locale).navCategories,
@@ -299,6 +321,7 @@ export function ProductCatalogSidebar({
             sort={sort}
           />
         </div>
+        <CatalogBrandFilter categories={categories} brands={brands} activeCategorySlug={activeCategorySlug} searchQuery={searchQuery} brandFilter={brandFilter} sort={sort} />
       </aside>
       <div className="lg:hidden">
         <ProductsSidebarSearch
@@ -338,6 +361,7 @@ export function ProductCatalogSidebar({
             })}
           </div>
         </div>
+        <details className="mt-4 rounded-xl border border-zinc-200 bg-white px-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">{tNav("brands")}{brandFilter ? ` · ${getDisplayBrandName(brandFilter)}` : ""}</summary><CatalogBrandFilter categories={categories} brands={brands} activeCategorySlug={activeCategorySlug} searchQuery={searchQuery} brandFilter={brandFilter} sort={sort} /></details>
       </div>
     </>
   );

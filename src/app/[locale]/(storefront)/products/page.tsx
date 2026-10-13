@@ -19,6 +19,7 @@ import { getUsdKrwRate } from "@/lib/currency-rate";
 import {
   getStorefrontCategories,
   getProducts,
+  getProductBrands,
   STOREFRONT_PRODUCTS_PAGE_SIZE,
 } from "@/lib/supabase/products";
 import { resolveStorefrontAudience } from "@/lib/store/product-visibility";
@@ -129,7 +130,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const currentPage = Math.max(1, Number.parseInt(pageQuery ?? "1", 10) || 1);
   const audience = await resolveStorefrontAudience();
 
-  const [{ products: fetchedProducts, totalCount, meta }, { categories }] = await Promise.all([
+  const [{ products: fetchedProducts, totalCount, meta }, { categories }, { brands }] = await Promise.all([
     getProducts({
       categorySlug,
       brand: brandFilter,
@@ -142,6 +143,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       audience,
     }),
     getStorefrontCategories(),
+    getProductBrands(),
   ]);
 
   const products = localizeStorefrontProducts(fetchedProducts, locale);
@@ -189,7 +191,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               : indexSeo.h1;
 
   const localizedCategories = localizeCategories(categories, locale);
-  const showSidebar = !brandFilter;
+  const showSidebar = true;
   const relatedBrandLinks = categorySeo
     ? [...new Set(products.map((product) => product.brand).filter(Boolean))]
         .slice(0, 8)
@@ -219,6 +221,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         {showSidebar ? (
           <ProductCatalogSidebar
             categories={localizedCategories}
+            brands={brands}
             activeCategorySlug={categorySlug}
             searchQuery={searchTerm}
             brandFilter={brandFilter}
@@ -247,7 +250,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     href="/brands"
                     className="mt-2 inline-flex text-sm font-medium text-accent hover:underline"
                   >
-                    {t("chooseBrandFirst")}
+                    {getDisplayBrandName(brandFilter || "") || t("brandCatalog")}
                   </Link>
                 ) : null}
               </div>
@@ -265,6 +268,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               ) : null}
             </div>
 
+            {brandFilter || categorySlug ? <div className="mt-4 flex flex-wrap gap-2">
+              {categorySlug ? <Link prefetch={false} href={buildProductsHref({ brand: brandFilter, q: searchTerm, sort })} className="rounded-full bg-pink-50 px-3 py-2 text-sm text-accent">{activeCategory ? getLocalizedCategoryName(activeCategory, locale) : categorySlug} ×</Link> : null}
+              {brandFilter ? <Link prefetch={false} href={buildProductsHref({ category: categorySlug, q: searchTerm, sort })} className="rounded-full bg-pink-50 px-3 py-2 text-sm text-accent">{getDisplayBrandName(brandFilter)} ×</Link> : null}
+              <Link prefetch={false} href={buildProductsHref({ q: searchTerm, sort })} className="px-3 py-2 text-sm text-zinc-500 underline">{t("all")}</Link>
+            </div> : null}
             {!meta.configured ? (
               <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 {t("sampleData")}
