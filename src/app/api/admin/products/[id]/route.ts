@@ -1,3 +1,4 @@
+import { catalogReviewMetadataPatch } from "@/lib/admin/catalog-review";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { parseProductInventoryPatch, parseProductPatch, parseOptionalInventoryFields, isInventoryOnlyBody, parseProductFlagsPatch, isFlagsOnlyBody } from "@/lib/admin/product-patch";
@@ -170,11 +171,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   const imageUrlProvided = parsed.patch.image_url !== undefined;
   let existingDescription: string | null = null;
   let existingName: string | null = null;
+  let existingRecord: Record<string, unknown> = {};
 
-  if (imageUrlProvided) {
+  {
     const { data: existing, error: fetchError } = await supabase
       .from("products")
-      .select("description, name")
+      .select("description, name, barcode, wholesale_price, compare_at_price, source_row")
       .eq("id", productId)
       .maybeSingle();
 
@@ -191,6 +193,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     existingDescription = existing.description;
     existingName = existing.name;
+    existingRecord = existing;
   }
 
   const updatePayload: Record<string, unknown> = {
@@ -198,6 +201,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     barcode: parsed.patch.barcode,
     wholesale_price: parsed.patch.wholesale_price,
   };
+
+  const metadata = catalogReviewMetadataPatch(existingRecord, parsed.patch);
+  if (metadata) updatePayload.source_row = metadata;
 
   if (parsed.patch.compare_at_price !== undefined) updatePayload.compare_at_price = parsed.patch.compare_at_price;
 

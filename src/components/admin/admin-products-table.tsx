@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useRef, useState, memo, Fragment } from "react";
 import {
   extractProductImageFileFromClipboard,
   validateClientProductImageFile,
@@ -12,6 +12,8 @@ import { resolveProductImageUrl } from "@/lib/product-images";
 import type { ProductWithRelations, Category } from "@/lib/supabase/products";
 import { ProductNameWithCopy } from "@/components/admin/product-name-with-copy";
 import { formatProductPrice } from "@/lib/utils";
+import { CatalogQuickEdit } from "@/components/admin/catalog-quick-edit";
+import { catalogReviewReasons, catalogReviewExportRows } from "@/lib/admin/catalog-review";
 import { displayProductSku } from "@/lib/admin/product-dedupe";
 
 type Props = {
@@ -142,13 +144,9 @@ function statusBadge(status: ProductWithRelations["status"]) {
     <span
       className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${styles}`}
     >
-      {status}
+      {status === "draft" ? "미공개" : status === "active" ? "공개 중" : status}
     </span>
   );
-}
-
-function displayPrice(product: Pick<ProductWithRelations, "wholesale_price" | "price">) {
-  return product.wholesale_price ?? product.price;
 }
 
 const ADMIN_TIMESTAMP_OPTIONS: Intl.DateTimeFormatOptions = {
@@ -199,6 +197,9 @@ type ProductTableRowProps = {
   onToggleBestSeller: (product: ProductWithRelations) => void;
   flagPendingId: string | null;
   onRestore: (product: ProductWithRelations) => void;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  onQuickEdit: (id: string) => void;
 };
 
 const ProductTableRow = memo(function ProductTableRow({
@@ -220,6 +221,7 @@ const ProductTableRow = memo(function ProductTableRow({
   onToggleBestSeller,
   flagPendingId,
   onRestore,
+  selected, onSelect, onQuickEdit,
 }: ProductTableRowProps) {
   const imageUrl = resolveProductImageUrl(product);
   const isEven = index % 2 === 0;
@@ -232,6 +234,7 @@ const ProductTableRow = memo(function ProductTableRow({
       } hover:bg-rose-50/50`}
     >
       <td data-label="이미지" className="px-3 py-2.5">
+        <input type="checkbox" aria-label={`${product.product_code ?? product.name} 선택`} checked={selected} onChange={() => onSelect(product.id)} className="mb-2 h-4 w-4 accent-violet-700" />
         <div className="relative h-10 w-10 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -265,6 +268,8 @@ const ProductTableRow = memo(function ProductTableRow({
           textClassName="truncate text-zinc-900"
         />
         <p className="mt-0.5 select-none text-[10px] text-zinc-400">MOQ {product.moq}</p>
+        <div className="mt-1 flex flex-wrap gap-1">{catalogReviewReasons(product).map(reason => <span key={reason} className="rounded bg-amber-50 px-1.5 py-1 text-[10px] font-semibold text-amber-800">{reason}</span>)}{catalogReviewReasons(product).length === 0 ? <span className="text-[10px] text-emerald-700">필수 정보 입력 완료</span> : null}{product.source_row?.__catalog_reviewed ? <span className="text-[10px] text-zinc-500">시트 대조 이력 있음</span> : null}</div>
+
         <div className="mt-1 flex flex-wrap gap-1">
           <button
             type="button"
@@ -410,9 +415,12 @@ const ProductTableRow = memo(function ProductTableRow({
             onClick={() => onOpenEdit(product)}
             className="rounded-md border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 hover:border-rose-200 hover:text-rose-700"
           >
-            편집
+            상세 편집
           </button>
         )}
+        {viewMode !== "deleted" ? (
+          <button type="button" onClick={() => onQuickEdit(product.id)} className="mt-2 block rounded-lg border border-violet-200 px-2 py-2 text-xs font-semibold text-violet-700">빠른 수정</button>
+        ) : null}
       </td>
     </tr>
   );
@@ -426,6 +434,13 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   reviewMode = false,
 }: Props) {
   const router = useRouter();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [quickEditingId, setQuickEditingId] = useState<string | null>(null);
+  const [exportPending, setExportPending] = useState(false);
+  const toggleSelected = useCallback((id: string) => setSelectedIds(previous => {
+    const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next;
+  }), []);
+
   const [products, setProducts] = useState(initialProducts);
   const [editing, setEditing] = useState<EditableProduct | null>(null);
   const [name, setName] = useState("");
@@ -595,7 +610,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
     setName(product.name);
     setBarcode(product.barcode ?? "");
     setRetailPrice(product.compare_at_price == null ? "" : String(product.compare_at_price));
-    setPrice(String(displayPrice(product)));
+    setPrice(product.wholesale_price && product.wholesale_price > 0 ? String(product.wholesale_price) : "");
     setCategoryId(product.category_id ?? "");
     setSoldOut(product.sold_out);
     setImageUrl(product.image_url ?? "");
@@ -1170,6 +1185,21 @@ export const AdminProductsTable = memo(function AdminProductsTable({
     );
   }
 
+  async function exportSelected() {
+    setExportPending(true);
+    try {
+      const XLSX = await import("xlsx");
+      const chosen = products.filter(product => selectedIds.has(product.id));
+      if (!chosen.length) return;
+      const sheet = XLSX.utils.json_to_sheet(catalogReviewExportRows(chosen));
+      sheet["!cols"] = [{wch:16},{wch:20},{wch:60},{wch:20},{wch:18},{wch:18},{wch:45},{wch:25},{wch:12}];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, sheet, "상품 확인 요청");
+      XLSX.writeFile(workbook, `HMT-상품확인-${new Date().toISOString().slice(0,10)}.xlsx`);
+    } catch { setTableMessage("엑셀을 만들지 못했습니다. 다시 시도해 주세요."); }
+    finally { setExportPending(false); }
+  }
+
   return (
     <>
       {error && !editing ? (
@@ -1181,8 +1211,12 @@ export const AdminProductsTable = memo(function AdminProductsTable({
           {tableMessage}
         </p>
       ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-white p-2">
+        <label className="flex items-center gap-2 text-xs"><input type="checkbox" aria-label="현재 페이지 전체 선택" checked={products.length > 0 && products.every(product => selectedIds.has(product.id))} onChange={event => setSelectedIds(event.target.checked ? new Set(products.map(product => product.id)) : new Set())} className="h-4 w-4 accent-violet-700" />현재 페이지 선택 · {products.filter(product => selectedIds.has(product.id)).length}개 선택</label>
+        <button type="button" onClick={exportSelected} disabled={exportPending || !products.some(product => selectedIds.has(product.id))} className="rounded-lg border border-violet-200 px-3 py-2 text-xs font-semibold text-violet-700 disabled:opacity-40">{exportPending ? "엑셀 만드는 중…" : "선택 상품 엑셀"}</button>
+      </div>
       <div className="overflow-x-auto">
-        <table className={`admin-data-table min-w-full border-collapse text-left text-sm ${reviewMode ? "[&_tr>*:nth-child(5)]:hidden [&_tr>*:nth-child(6)]:hidden [&_tr>*:nth-child(7)]:hidden [&_tr>*:nth-child(8)]:hidden [&_tr>*:nth-child(10)]:hidden [&_td[data-label=상품명]_button[title]]:whitespace-normal [&_td[data-label=상품명]_button[title]]:overflow-visible" : ""}`}>
+        <table className={`admin-data-table min-w-full border-collapse text-left text-sm ${reviewMode ? "catalog-review-table [&_tr>*:nth-child(5)]:hidden [&_tr>*:nth-child(6)]:hidden [&_tr>*:nth-child(7)]:hidden [&_tr>*:nth-child(8)]:hidden [&_tr>*:nth-child(10)]:hidden [&_td[data-label=상품명]_button[title]]:whitespace-normal [&_td[data-label=상품명]_button[title]]:overflow-visible" : ""}`}>
           <thead className="sticky top-0 z-10 border-b border-rose-100 bg-zinc-50 text-[11px] uppercase tracking-wide text-zinc-500 shadow-sm">
             <tr>
               <th className="w-14 px-3 py-2.5 font-semibold">이미지</th>
@@ -1200,7 +1234,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
           </thead>
           <tbody>
             {products.map((product, index) => (
-              <ProductTableRow
+              <Fragment key={product.id}><ProductTableRow
                 key={product.id}
                 product={product}
                 index={index}
@@ -1220,7 +1254,12 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                 onToggleBestSeller={toggleBestSeller}
                 flagPendingId={flagPendingId}
                 onRestore={restoreProduct}
+                selected={selectedIds.has(product.id)}
+                onSelect={toggleSelected}
+                onQuickEdit={setQuickEditingId}
               />
+              {quickEditingId === product.id ? <tr className="catalog-quick-row"><td colSpan={11} className="p-2"><CatalogQuickEdit product={product} onCancel={() => setQuickEditingId(null)} onSaved={() => {setQuickEditingId(null);setTableMessage("저장했습니다. 분류 목록을 갱신합니다.");router.refresh();}} /></td></tr> : null}
+              </Fragment>
             ))}
           </tbody>
         </table>

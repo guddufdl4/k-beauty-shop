@@ -29,6 +29,7 @@ export function AdminProductsToolbar({
   showNeedsImageToggle = false,
 }: Props) {
   const router = useRouter();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState(filters.q ?? "");
   const [brand, setBrand] = useState(filters.brand ?? "");
   const [category, setCategory] = useState(filters.category ?? "");
@@ -55,12 +56,14 @@ export function AdminProductsToolbar({
       buildAdminProductsHref({
         ...next,
         tab: next.tab ?? filters.tab ?? "list",
+        issue: next.issue === undefined ? next.tab && next.tab !== filters.tab ? null : filters.issue : next.issue,
       }, 1),
     );
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setFiltersOpen(false);
     navigate({
       batchId: filters.batchId,
       brandPriority: filters.brandPriority,
@@ -95,6 +98,7 @@ export function AdminProductsToolbar({
       batchId: filters.batchId,
       brandPriority: filters.brandPriority,
       needsImageOnly: filters.needsImageOnly,
+      issue: null,
       q: null,
       brand: null,
       category: null,
@@ -272,6 +276,8 @@ export function AdminProductsToolbar({
         </div>
       </div>
 
+      <button type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)} className="mt-2 w-full rounded-lg border border-violet-200 px-3 py-2 text-left text-xs font-semibold text-violet-700 sm:hidden">검색·필터 {filtersOpen ? "접기 ▴" : "펼치기 ▾"}{hasActiveFilters ? " · 검색 조건 적용 중" : ""}</button>
+      <div className={`${filtersOpen ? "block" : "hidden"} sm:block`}>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative min-w-0 flex-1">
@@ -349,6 +355,13 @@ export function AdminProductsToolbar({
           </label>
         </div>
       </form>
+      </div>
+      {(filters.tab === "missing-price" || filters.tab === "missing-barcode") ? <label className="mt-2 flex items-center gap-2 text-xs font-medium text-zinc-600">누락 사유
+        <select aria-label="누락 사유" value={filters.issue ?? ""} onChange={(event) => navigate({...filters, issue: event.target.value as AdminProductsFilters["issue"] || null})} className="min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2 py-2">
+          <option value="">전체 사유</option>
+          {filters.tab === "missing-price" ? <><option value="retail">소비자가 누락</option><option value="supply">공급가 누락</option><option value="both">가격 둘 다 누락</option><option value="conflict">시트 가격 충돌</option></> : <><option value="barcode-empty">바코드 없음</option><option value="barcode-format">바코드 형식 오류</option><option value="barcode-options">옵션별 바코드 매칭 필요</option></>}
+        </select>
+      </label> : null}
       </div>
     </div>
   );

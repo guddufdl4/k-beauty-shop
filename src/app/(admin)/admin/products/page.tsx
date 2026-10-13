@@ -5,6 +5,8 @@ import { AdminProductForm } from "@/components/admin/admin-product-form";
 import { AdminProductsToolbar } from "@/components/admin/admin-products-toolbar";
 import {
   buildAdminProductsHref,
+  clearAdminProductsBatch,
+  resolveAdminProductsIssue,
   resolveAdminProductsBrandPriority,
   resolveAdminProductsNeedsImageOnly,
   resolveAdminProductsTab,
@@ -13,8 +15,6 @@ import {
 } from "@/lib/admin/admin-products-url";
 import { AdminProductsPagination } from "@/components/admin/admin-products-pagination";
 import { AdminProductsTable } from "@/components/admin/admin-products-table";
-import { ProductImageBatchSection } from "@/components/admin/product-image-batch-section";
-import { getCachedProductImageBatchStats } from "@/lib/admin/product-image-batch";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getCachedBrandPriorityListStats, getProductImportBatches, getProducts } from "@/lib/supabase/products";
 
@@ -34,7 +34,7 @@ const PRODUCT_TABS: Array<{ id: AdminProductsTab; label: string }> = [
   { id: "add", label: "상품 개별 등록" },
 ];
 const REVIEW_COPY: Partial<Record<AdminProductsTab, string>> = {
-  "missing-image": "상품명·바코드·소비자가·공급가 확인 완료, 이미지만 없는 상품입니다.",
+  "missing-image": "필수 정보가 입력되어 있고 이미지만 없는 상품입니다. 실제 상품 정보와의 대조 여부는 별도로 확인하세요.",
   "missing-price": "소비자가 또는 공급가가 없는 상품입니다. 시트에 없는 가격은 추정하지 않습니다.",
   "missing-barcode": "실제 바코드가 없거나 형식을 확인해야 하는 상품입니다. 내부 코드는 바코드로 인정하지 않습니다.",
   "name-review": "상품명이 없거나 불명확한 상품입니다. 시트 원문 확인이 필요합니다.",
@@ -52,6 +52,7 @@ type AdminProductsPageProps = {
     tab?: string;
     priority?: string;
     image?: string;
+    issue?: string;
   }>;
 };
 
@@ -65,7 +66,7 @@ function ProductsTabNav({
   return (
     <nav
       aria-label="상품 관리 탭"
-      className="mb-3 flex shrink-0 flex-wrap gap-2"
+      className="mb-2 grid shrink-0 grid-cols-3 gap-1 sm:flex sm:flex-wrap sm:gap-2"
     >
       {PRODUCT_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -75,10 +76,11 @@ function ProductsTabNav({
             href={buildAdminProductsHref({
               ...filters,
               tab: tab.id,
+              issue: null,
               needsImageOnly: tab.id === "missing-image",
               brandPriority: tab.id === "list" ? filters.brandPriority : false,
             })}
-            className={`shrink-0 rounded-xl border px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
+            className={`shrink-0 rounded-xl border px-2 py-2 text-[11px] font-semibold transition-colors sm:px-4 sm:text-sm ${
               isActive
                 ? "border-violet-500 bg-violet-50 text-violet-700"
                 : "border-zinc-200 bg-white text-zinc-600 hover:border-violet-300"
@@ -107,6 +109,7 @@ export default async function AdminProductsPage({
     tab: tabQuery,
     priority: priorityQuery,
     image: imageQuery,
+    issue: issueQuery,
   } = await searchParams;
   const activeBatchId = batchQuery?.trim() || null;
   const searchTerm = searchQuery?.trim() || undefined;
@@ -117,6 +120,7 @@ export default async function AdminProductsPage({
   const brandPriority = resolveAdminProductsBrandPriority(priorityQuery);
   const imageFilterActive = resolveAdminProductsNeedsImageOnly(imageQuery);
   const activeTab = resolveAdminProductsTab(tabQuery);
+  const issue = resolveAdminProductsIssue(issueQuery);
   const needsImageOnly =
     activeTab === "missing-image" || imageFilterActive;
   const currentPage = Math.max(1, Number.parseInt(pageQuery ?? "1", 10) || 1);
@@ -130,18 +134,17 @@ export default async function AdminProductsPage({
     sort: sortRecent ? ("recent" as const) : null,
     view: showDeleted ? ("deleted" as const) : ("active" as const),
     tab: activeTab,
+    issue,
   };
   const needsCategories = true;
   const needsProducts = activeTab !== "add";
   const needsBatches = needsProducts;
-  const needsImageStats = false;
   const needsPriorityStats = activeTab === "list";
   const [
     { configured, user, profile },
     { categories },
     { products, totalCount },
     { batches },
-    imageStatsResult,
     priorityStats,
   ] = await Promise.all([
     getSessionProfile(),
@@ -157,6 +160,7 @@ export default async function AdminProductsPage({
           privileged: true,
           priorityBrandList: activeTab === "list" && brandPriority,
           adminReview: activeTab === "list" ? undefined : activeTab,
+          adminIssue: issue ?? undefined,
           importBatchId: activeBatchId ?? undefined,
           categorySlug: categoryFilter,
           search: searchTerm,
@@ -180,14 +184,10 @@ export default async function AdminProductsPage({
           batches: [],
           meta: { source: "database" as const, configured: true },
         }),
-    needsImageStats
-      ? getCachedProductImageBatchStats()
-      : Promise.resolve({ stats: null, error: null }),
     needsPriorityStats
       ? getCachedBrandPriorityListStats()
       : Promise.resolve({ targetCount: 0, matchedCount: 0 }),
   ]);
-  const imageStats = imageStatsResult.stats;
   const batchById = new Map(batches.map((batch) => [batch.id, batch]));
   const listProducts = products.flatMap((product) => {
     if (!("price" in product)) return [];
@@ -318,16 +318,7 @@ export default async function AdminProductsPage({
       </div>
 
       <ProductsTabNav activeTab={activeTab} filters={listFilters} />
-      {REVIEW_COPY[activeTab] ? <div className="mb-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">{REVIEW_COPY[activeTab]}<p className="mt-1 text-xs text-violet-600">가격과 바코드가 모두 없으면 두 목록에 함께 표시됩니다.</p></div> : null}
-
-      {false ? (
-        <div className="mb-2 shrink-0">
-          <ProductImageBatchSection
-            initialStats={imageStats}
-            variant="management"
-          />
-        </div>
-      ) : null}
+      {REVIEW_COPY[activeTab] ? <div className="mb-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900 sm:text-sm">{REVIEW_COPY[activeTab]}<p className="mt-1 text-xs text-violet-600">가격과 바코드가 모두 없으면 두 목록에 함께 표시됩니다.</p></div> : null}
 
       {activeTab === "add" ? (
         <section className={CARD_CLASS} aria-label="상품 개별 등록">
@@ -355,6 +346,7 @@ export default async function AdminProductsPage({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="shrink-0 space-y-2 border-b border-zinc-100 p-2">
               <AdminProductsToolbar
+                key={`${activeTab}-${issue ?? ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${activeBatchId ?? ""}`}
                 filters={listFilters}
                 categories={categories}
                 batches={batches}
@@ -411,13 +403,7 @@ export default async function AdminProductsPage({
                   </Link>
                   {brandPriority || activeBatchId || (needsImageOnly && activeTab === "list") ? (
                     <Link
-                      href={buildAdminProductsHref({
-                        ...listFilters,
-                        tab: activeTab === "missing-image" ? "missing-image" : "list",
-                        batchId: null,
-                        brandPriority: false,
-                        needsImageOnly: false,
-                      })}
+                      href={buildAdminProductsHref(clearAdminProductsBatch(listFilters))}
                       className="text-zinc-500 hover:underline"
                     >
                       {brandPriority
@@ -433,7 +419,7 @@ export default async function AdminProductsPage({
 
             <div className="min-h-0 flex-1 overflow-auto">
               <AdminProductsTable
-                key={`${activeTab}-${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${needsImageOnly ? "missing-image" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
+                key={`${issue ?? ""}-${activeTab}-${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${needsImageOnly ? "missing-image" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
                 reviewMode={activeTab !== "list"}
                 products={listProducts}
                 categories={categories}

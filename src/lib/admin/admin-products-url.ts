@@ -1,3 +1,12 @@
+export const ADMIN_PRODUCT_ISSUES = ["retail", "supply", "both", "conflict", "barcode-empty", "barcode-format", "barcode-options"] as const;
+export type AdminProductsIssue = typeof ADMIN_PRODUCT_ISSUES[number];
+export function resolveAdminProductsIssue(value?: string | null): AdminProductsIssue | null {
+  return ADMIN_PRODUCT_ISSUES.includes(value as AdminProductsIssue) ? value as AdminProductsIssue : null;
+}
+export function clearAdminProductsBatch(filters: AdminProductsFilters): AdminProductsFilters {
+  return { ...filters, batchId: null, brandPriority: false };
+}
+
 export type AdminProductsSort = "recent" | null;
 
 export type AdminProductsView = "active" | "deleted";
@@ -14,6 +23,7 @@ export type AdminProductsFilters = {
   sort: AdminProductsSort;
   view: AdminProductsView;
   tab?: AdminProductsTab | null;
+  issue?: AdminProductsIssue | null;
 };
 
 export function resolveAdminProductsNeedsImageOnly(
@@ -79,6 +89,7 @@ export function buildAdminProductsHref(
   page = 1,
 ): string {
   const params = new URLSearchParams();
+  if (filters.issue) params.set("issue", filters.issue);
   if (filters.batchId) {
     params.set("batch", filters.batchId);
   }

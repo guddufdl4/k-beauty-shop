@@ -1252,6 +1252,7 @@ export async function getProducts(
         /** Admin: show only products without a registered image. */
         needsImageOnly?: boolean;
         adminReview?: "missing-image" | "missing-price" | "missing-barcode" | "name-review";
+        adminIssue?: import("@/lib/admin/admin-products-url").AdminProductsIssue;
         /** Resolved storefront audience; defaults via session when omitted. */
         audience?: StorefrontAudience;
         /** Skip unstable_cache wrapper (internal). */
@@ -1512,6 +1513,24 @@ export async function getProducts(
         filtered = filtered.eq("needs_image", true).eq("admin_missing_price", false).eq("admin_missing_barcode", false).eq("admin_name_needs_review", false);
       } else {
         filtered = filtered.eq(review === "missing-price" ? "admin_missing_price" : review === "missing-barcode" ? "admin_missing_barcode" : "admin_name_needs_review", true);
+      }
+    }
+
+    if (privileged && options?.adminIssue) {
+      const issue = options.adminIssue;
+      if (issue === "retail" || issue === "both") filtered = filtered.or("compare_at_price.is.null,compare_at_price.lte.0");
+      if (issue === "supply" || issue === "both") filtered = filtered.or("wholesale_price.is.null,wholesale_price.lte.0");
+      if (issue === "conflict") filtered = filtered.eq("source_row->>__price_review", "conflicting_source_prices");
+      if (issue === "barcode-options") filtered = filtered.eq("source_row->>__barcode_review", "multiple_options_require_matching");
+      if (issue === "barcode-empty" || issue === "barcode-format") {
+        filtered = filtered.or("source_row->>__barcode_review.is.null,source_row->>__barcode_review.neq.multiple_options_require_matching");
+        if (issue === "barcode-empty") filtered = filtered.or("barcode.is.null,barcode.eq.");
+        else {
+          filtered = filtered.eq("admin_missing_barcode", true);
+          const nonempty = filtered as typeof filtered & { not: (column: string, op: string, value: string | null) => typeof filtered };
+          filtered = nonempty.not("barcode", "is", null);
+          filtered = (filtered as typeof nonempty).not("barcode", "eq", "");
+        }
       }
     }
 
