@@ -7,6 +7,9 @@
     "hint": "サイト上で担当者が見積内容を確認した状態です。メールの開封とは異なります。"
   },
   "nav": {
+    "brandCount": "取扱ブランド {count}件",
+    "searchBrands": "ブランドを検索",
+    "noBrandResults": "該当するブランドはありません。",
     "categories": "カテゴリー",
     "products": "商品",
     "cart": "見積リスト",
@@ -459,6 +462,11 @@
     "freightExcluded": "含まれていません"
   },
   "cart": {
+    "clearCart": "カートを空にする",
+    "clearConfirm": "すべての商品を削除しますか？送信済みの注文・見積依頼は保持されます。",
+    "clearCancel": "キャンセル",
+    "clearing": "削除中…",
+    "clearedSuccess": "カートを空にしました。",
     "title": "見積リスト",
     "loggedInHint": "ログイン中 — Supabase cart_itemsテーブルに保存されます。",
     "demoHint": "デモモード — クッキーベースのカートでサンプル商品IDをテストできます。",

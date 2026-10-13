@@ -7,6 +7,9 @@
     "hint": "显示负责人在本站查看报价的状态，与邮件已读状态无关。"
   },
   "nav": {
+    "brandCount": "浏览 {count} 个品牌",
+    "searchBrands": "搜索品牌",
+    "noBrandResults": "没有匹配的品牌。",
     "categories": "分类",
     "products": "商品",
     "cart": "询价清单",
@@ -459,6 +462,11 @@
     "freightExcluded": "不包含"
   },
   "cart": {
+    "clearCart": "清空询价清单",
+    "clearConfirm": "要移除所有商品吗？已提交的订单和询价记录将保留。",
+    "clearCancel": "取消",
+    "clearing": "正在清空…",
+    "clearedSuccess": "询价清单已清空。",
     "title": "询价清单",
     "loggedInHint": "已登录 — 商品保存在 Supabase cart_items 表中。",
     "demoHint": "演示模式 — 基于 Cookie 的购物车，可用示例商品 ID 测试。",

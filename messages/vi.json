@@ -7,6 +7,9 @@
     "hint": "Hiển thị khi bộ phận bán hàng mở yêu cầu báo giá trên website này. Trạng thái này không phải xác nhận đã đọc email."
   },
   "nav": {
+    "brandCount": "Khám phá {count} thương hiệu",
+    "searchBrands": "Tìm thương hiệu",
+    "noBrandResults": "Không tìm thấy thương hiệu.",
     "categories": "Danh mục",
     "products": "Sản phẩm",
     "cart": "Danh sách báo giá",
@@ -538,6 +541,11 @@
     "freightExcluded": "Chưa bao gồm"
   },
   "cart": {
+    "clearCart": "Xóa toàn bộ giỏ hàng",
+    "clearConfirm": "Xóa tất cả sản phẩm? Đơn hàng và yêu cầu báo giá đã gửi sẽ được giữ lại.",
+    "clearCancel": "Hủy",
+    "clearing": "Đang xóa…",
+    "clearedSuccess": "Đã xóa toàn bộ giỏ hàng.",
     "title": "Danh sách báo giá",
     "loggedInHint": "Danh sách đã lưu trong tài khoản.",
     "demoHint": "Chế độ thử nghiệm.",

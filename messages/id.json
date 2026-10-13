@@ -7,6 +7,9 @@
     "hint": "Menunjukkan kapan tim penjualan membuka permintaan penawaran di situs ini. Status ini berbeda dari konfirmasi email telah dibaca."
   },
   "nav": {
+    "brandCount": "Jelajahi {count} merek",
+    "searchBrands": "Cari merek",
+    "noBrandResults": "Tidak ada merek yang cocok.",
     "categories": "Kategori",
     "products": "Produk",
     "cart": "Daftar penawaran",
@@ -538,6 +541,11 @@
     "freightExcluded": "Tidak termasuk"
   },
   "cart": {
+    "clearCart": "Kosongkan daftar penawaran",
+    "clearConfirm": "Hapus semua produk? Pesanan dan permintaan penawaran yang sudah dikirim tetap tersimpan.",
+    "clearCancel": "Batal",
+    "clearing": "Mengosongkan…",
+    "clearedSuccess": "Daftar penawaran telah dikosongkan.",
     "title": "Daftar penawaran",
     "loggedInHint": "Daftar tersimpan di akun.",
     "demoHint": "Mode demo.",

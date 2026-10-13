@@ -6,12 +6,29 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import {
   addToCart as addToCartLib,
+  emptyCurrentCart,
   removeFromCart as removeFromCartLib,
   updateCartQuantity as updateCartQuantityLib,
 } from "@/lib/cart";
 import { formatCartLibError } from "@/lib/store/cart-messages";
 
 export type CartActionState = { error?: string; success?: string };
+
+export async function emptyCart(_prev: CartActionState, formData: FormData): Promise<CartActionState> {
+  const t = await getTranslations("cart");
+  if (formData.get("confirmed") !== "yes") return { error: t("clearConfirm") };
+  const maintenanceError = await maintenanceActionError();
+  if (maintenanceError) return { error: maintenanceError };
+  try {
+    const result = await emptyCurrentCart();
+    const error = formatCartLibError(result, t);
+    if (error) return { error };
+    revalidateCartPaths();
+    return { success: t("clearedSuccess") };
+  } catch {
+    return { error: t("errors.cartUnavailable") };
+  }
+}
 
 function revalidateCartPaths() {
   revalidatePath("/cart");

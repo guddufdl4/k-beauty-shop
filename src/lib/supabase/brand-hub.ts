@@ -61,7 +61,6 @@ export type NavBrandGroups = {
 };
 
 const MAX_FEATURED_NAV_BRANDS = 6;
-const MAX_MORE_NAV_BRANDS = 24;
 
 function getStaticFallbackBrandNames(): string[] {
   return buildBrandCatalog(
@@ -316,35 +315,8 @@ async function discoverBrandCategoryTabs(
 }
 
 async function fetchNavBrandNameSample(): Promise<string[]> {
-  if (!isSupabaseConfigured()) {
-    return getStaticFallbackBrandNames();
-  }
-
-  const supabase = createServiceClient() ?? createPublicClient();
-  if (!supabase) {
-    return getStaticFallbackBrandNames();
-  }
-
-  const featuredNames = HOME_FEATURED_BRANDS.filter((item) => item.enabled).map(
-    (item) => item.displayName,
-  );
-  const { data, error } = await supabase
-    .from("products")
-    .select("brand")
-    .eq("status", "active")
-    .not("image_url", "is", null)
-    .order("brand", { ascending: true })
-    .limit(400);
-
-  if (error) {
-    return featuredNames;
-  }
-
-  const sampled = (data ?? [])
-    .map((row) => String(row.brand ?? "").trim())
-    .filter(Boolean);
-
-  return [...new Set([...featuredNames, ...sampled])];
+  const { brands } = await getProductBrands();
+  return brands.length ? brands : getStaticFallbackBrandNames();
 }
 
 async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
@@ -383,7 +355,6 @@ async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
     .sort((a, b) =>
       a.displayName.localeCompare(b.displayName, "en", { sensitivity: "base" }),
     )
-    .slice(0, MAX_MORE_NAV_BRANDS)
     .map((entry) => toFeaturedNavBrand(entry, logoMap));
 
   return { featured, more };
@@ -392,7 +363,7 @@ async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
 export async function getNavBrandGroups(): Promise<NavBrandGroups> {
   return unstable_cache(
     fetchNavBrandGroupsFromSource,
-    ["storefront-nav-brand-groups", "server-read-v2"],
+    ["storefront-nav-brand-groups", "all-brands-v3"],
     {
       revalidate: 300,
       tags: [STOREFRONT_BRANDS_CACHE_TAG],

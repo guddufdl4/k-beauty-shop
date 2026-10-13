@@ -898,17 +898,22 @@ export async function removeFromCart(
   return {};
 }
 
-export async function clearCart(): Promise<void> {
+export async function emptyCurrentCart(): Promise<CartLibResult> {
   const userId = await getCurrentUserId();
 
   if (userId && isSupabaseConfigured()) {
     const supabase = await createSafeClient();
-    if (supabase) {
-      await supabase.from("cart_items").delete().eq("user_id", userId);
-    }
+    if (!supabase) return { errorCode: "cart_unavailable" };
+    const { error } = await supabase.from("cart_items").delete().eq("user_id", userId);
+    if (error) return { errorCode: "cart_unavailable" };
   }
 
   await writeDemoCart({});
+  return {};
+}
+
+export async function clearCart(): Promise<void> {
+  await emptyCurrentCart();
 }
 
 export function calculateShippingCost(subtotal: number): number {

@@ -7,6 +7,9 @@
     "hint": "Shows when our team opens the quotation on this site. This is separate from email read receipts."
   },
   "nav": {
+    "brandCount": "Explore {count} brands",
+    "searchBrands": "Search brands",
+    "noBrandResults": "No matching brands.",
     "categories": "Categories",
     "products": "Products",
     "cart": "Quote list",
@@ -538,6 +541,11 @@
     "freightExcluded": "Not included"
   },
   "cart": {
+    "clearCart": "Empty quote list",
+    "clearConfirm": "Remove all items from your quote list? Submitted orders and quotations will be kept.",
+    "clearCancel": "Cancel",
+    "clearing": "Clearing…",
+    "clearedSuccess": "Your quote list has been cleared.",
     "title": "Quote list",
     "loggedInHint": "Logged in — saved to the Supabase cart_items table.",
     "demoHint": "Demo mode — test with a cookie-based quote list (sample product IDs).",

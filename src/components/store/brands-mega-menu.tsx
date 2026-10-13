@@ -57,7 +57,7 @@ function BrandDirectoryGrid({
   onNavigate: () => void;
 }) {
   return (
-    <ul className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6">
+    <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
       {brands.map((brand) => (
         <li key={brand.slug} className="min-w-0">
           <BrandDirectoryLink brand={brand} onNavigate={onNavigate} />
@@ -82,7 +82,10 @@ function BrandsMegaMenuPanel({
 }) {
   const tNav = useTranslations("nav");
   const tHome = useTranslations("home.featuredBrands");
-  const hasBrands = featuredBrands.length > 0 || moreBrands.length > 0;
+  const [query, setQuery] = useState("");
+  const allBrands = [...featuredBrands, ...moreBrands];
+  const filteredBrands = (query.trim() ? allBrands : moreBrands).filter(brand => brand.displayName.toLowerCase().includes(query.trim().toLowerCase()));
+  const hasBrands = allBrands.length > 0;
 
   return (
     <div
@@ -98,8 +101,13 @@ function BrandsMegaMenuPanel({
             : "grid gap-3 px-5 py-3 sm:px-6 sm:py-4 lg:grid-cols-[1fr_auto] lg:items-start lg:gap-5"
         }
       >
-        <div className="min-w-0 space-y-3">
-          {featuredBrands.length > 0 ? (
+        <div className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+            <strong className="text-sm text-zinc-900">{tNav("brandCount", { count: allBrands.length })}</strong>
+            <Link href="/brands" onClick={onNavigate} className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-white">{tNav("browseAllBrandsAZ")} →</Link>
+          </div>
+          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={tNav("searchBrands")} aria-label={tNav("searchBrands")} className="min-h-11 w-full rounded-lg border border-zinc-200 px-3 text-sm" />
+          {!query.trim() && featuredBrands.length > 0 ? (
             <section aria-labelledby={`${panelId}-featured-heading`}>
               <h3
                 id={`${panelId}-featured-heading`}
@@ -111,7 +119,7 @@ function BrandsMegaMenuPanel({
             </section>
           ) : null}
 
-          {moreBrands.length > 0 ? (
+          {hasBrands ? (
             <section aria-labelledby={`${panelId}-more-heading`}>
               <h3
                 id={`${panelId}-more-heading`}
@@ -119,7 +127,10 @@ function BrandsMegaMenuPanel({
               >
                 {tNav("moreBrands")}
               </h3>
-              <BrandDirectoryGrid brands={moreBrands} onNavigate={onNavigate} />
+              <ul className="mt-2 grid max-h-60 grid-cols-2 gap-x-4 gap-y-1 overflow-y-auto overscroll-contain sm:grid-cols-4 lg:grid-cols-6">
+                {filteredBrands.map(brand => <li key={brand.slug} className="min-w-0"><Link href={buildBrandHref(brand.slug)} onClick={onNavigate} className="flex min-h-11 items-center rounded-lg px-2 text-sm text-zinc-700 hover:bg-pink-50 hover:text-accent">{brand.displayName}</Link></li>)}
+              </ul>
+              {filteredBrands.length === 0 ? <p className="py-3 text-sm text-zinc-500">{tNav("noBrandResults")}</p> : null}
             </section>
           ) : null}
 
