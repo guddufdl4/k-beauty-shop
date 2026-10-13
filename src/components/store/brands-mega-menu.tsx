@@ -26,7 +26,7 @@ function BrandDirectoryLink({
   return (
     <Link
       href={buildBrandHref(brand.slug)}
-      className="group flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 rounded-md border border-zinc-200 bg-white px-1.5 py-1.5 text-center transition-colors hover:border-accent hover:bg-accent-soft/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+      className="group flex h-24 flex-col items-center justify-center rounded-xl border border-zinc-200/70 bg-white px-5 text-center transition-colors hover:border-pink-300 hover:bg-pink-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
       onClick={onNavigate}
     >
       {showLogo ? (
@@ -34,15 +34,15 @@ function BrandDirectoryLink({
           src={brand.logoUrl!}
           alt=""
           aria-hidden
-          width={80}
-          height={28}
-          sizes="80px"
+          width={180}
+          height={48}
+          sizes="(max-width:640px) 120px, 180px"
           loading="lazy"
-          className="h-5 max-h-5 w-auto max-w-full object-contain"
+          className="h-8 w-auto max-w-full object-contain sm:h-9"
           onError={() => setLogoFailed(true)}
         />
       ) : null}
-      <span className="line-clamp-2 w-full text-[10px] font-medium leading-tight text-zinc-700 transition-colors group-hover:text-accent">
+      <span className={showLogo ? "sr-only" : "line-clamp-2 w-full text-base font-semibold leading-tight text-zinc-700 group-hover:text-accent"}>
         {brand.displayName}
       </span>
     </Link>
@@ -50,11 +50,9 @@ function BrandDirectoryLink({
 }
 
 function BrandDirectoryGrid({ brands, onNavigate, active }: { brands: FeaturedNavBrand[]; onNavigate: () => void; active: boolean }) {
-  const t = useTranslations("nav");
   const track = useRef<HTMLUListElement>(null);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [paused, setPaused] = useState(false);
   const advance = useCallback((direction: number, smooth = true) => {
     const el = track.current;
     if (!el) return;
@@ -64,18 +62,13 @@ function BrandDirectoryGrid({ brands, onNavigate, active }: { brands: FeaturedNa
     el.scrollTo({ left, behavior: smooth ? "smooth" : "instant" });
   }, []);
   useEffect(() => {
-    if (!active || hovered || focused || paused || brands.length <= 4) return;
+    if (!active || hovered || focused || brands.length <= 4) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     const tick = window.setInterval(() => { if (!reduced.matches && document.visibilityState === "visible") advance(1); }, 4000);
     return () => window.clearInterval(tick);
-  }, [active, hovered, focused, paused, brands.length, advance]);
-  return <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
-    <div className="mb-2 flex justify-end gap-1">
-      <button type="button" aria-label={t("previousBrand")} onClick={() => advance(-1)} className="min-h-9 min-w-9 rounded-lg border border-zinc-200 text-zinc-600">←</button>
-      <button type="button" aria-label={paused ? t("playBrands") : t("pauseBrands")} aria-pressed={paused} onClick={() => setPaused(value => !value)} className="min-h-9 min-w-9 rounded-lg border border-zinc-200 text-xs text-zinc-600">{paused ? "▶" : "Ⅱ"}</button>
-      <button type="button" aria-label={t("nextBrand")} onClick={() => advance(1)} className="min-h-9 min-w-9 rounded-lg border border-zinc-200 text-zinc-600">→</button>
-    </div>
-    <ul ref={track} className="flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:thin]" onPointerDown={() => setPaused(true)}>
+  }, [active, hovered, focused, brands.length, advance]);
+  return <div className="relative pt-4" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
+    <ul ref={track} className="flex snap-x snap-mandatory gap-2 overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {brands.map(brand => <li key={brand.slug} className="min-w-0 shrink-0 basis-[calc((100%-8px)/2)] snap-start sm:basis-[calc((100%-24px)/4)]"><BrandDirectoryLink brand={brand} onNavigate={onNavigate} /></li>)}
     </ul>
   </div>;
@@ -106,7 +99,7 @@ function BrandsMegaMenuPanel({
   return (
     <div
       id={panelId}
-      className="border border-zinc-200 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+      className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
       role="region"
       aria-label={tNav("brandsMenu")}
     >
@@ -118,13 +111,17 @@ function BrandsMegaMenuPanel({
         }
       >
         <div className="min-w-0 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-3">
-            <strong className="text-sm text-zinc-900">{tNav("brandCount", { count: allBrands.length })}</strong>
-            <Link href="/brands" onClick={onNavigate} className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-white">{tNav("browseAllBrandsAZ")} →</Link>
+          <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 pb-4">
+            <strong className="mr-auto text-lg font-semibold tracking-tight text-zinc-900">{tNav("brandCount", { count: allBrands.length })}</strong>
+            <label className="order-3 flex min-h-11 w-full items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-4 focus-within:border-pink-300 sm:order-none sm:w-72">
+              <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-zinc-400" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+              <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={tNav("searchBrands")} aria-label={tNav("searchBrands")} className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+            </label>
+            <Link href="/brands" onClick={onNavigate} className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-xs font-semibold text-white sm:text-sm">{tNav("browseAllBrandsAZ")} →</Link>
           </div>
-          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={tNav("searchBrands")} aria-label={tNav("searchBrands")} className="min-h-11 w-full rounded-lg border border-zinc-200 px-3 text-sm" />
+
           {!query.trim() && featuredBrands.length > 0 ? (
-            <section aria-labelledby={`${panelId}-featured-heading`}>
+            <section aria-labelledby={`${panelId}-featured-heading`} className="rounded-2xl border border-zinc-100 bg-zinc-50/70 p-4">
               <h3
                 id={`${panelId}-featured-heading`}
                 className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500"
@@ -143,8 +140,8 @@ function BrandsMegaMenuPanel({
               >
                 {tNav("moreBrands")}
               </h3>
-              <ul className="mt-2 grid max-h-60 grid-cols-2 gap-x-4 gap-y-1 overflow-y-auto overscroll-contain sm:grid-cols-4 lg:grid-cols-6">
-                {filteredBrands.map(brand => <li key={brand.slug} className="min-w-0"><Link href={buildBrandHref(brand.slug)} onClick={onNavigate} className="flex min-h-11 items-center rounded-lg px-2 text-sm text-zinc-700 hover:bg-pink-50 hover:text-accent">{brand.displayName}</Link></li>)}
+              <ul className="mt-3 grid max-h-52 grid-cols-2 gap-x-4 gap-y-1 overflow-y-auto overscroll-contain sm:grid-cols-4 lg:grid-cols-6">
+                {filteredBrands.map(brand => <li key={brand.slug} className="min-w-0"><Link href={buildBrandHref(brand.slug)} onClick={onNavigate} className="flex min-h-11 items-center rounded-lg px-2 text-sm text-zinc-700 transition-colors hover:bg-pink-50 hover:text-accent">{brand.displayName}</Link></li>)}
               </ul>
               {filteredBrands.length === 0 ? <p className="py-3 text-sm text-zinc-500">{tNav("noBrandResults")}</p> : null}
             </section>
@@ -154,13 +151,7 @@ function BrandsMegaMenuPanel({
             <p className="text-sm text-zinc-600">{tNav("brandsMenuEmpty")}</p>
           ) : null}
 
-          <Link
-            href="/brands"
-            className="inline-flex text-xs font-semibold text-accent transition-colors hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-            onClick={onNavigate}
-          >
-            {tNav("browseAllBrandsAZ")}
-          </Link>
+
         </div>
 
         {!isLoggedIn ? (
