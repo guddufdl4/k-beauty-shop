@@ -199,6 +199,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     wholesale_price: parsed.patch.wholesale_price,
   };
 
+  if (parsed.patch.compare_at_price !== undefined) updatePayload.compare_at_price = parsed.patch.compare_at_price;
+
   if (parsed.patch.price !== undefined) {
     updatePayload.price = parsed.patch.price;
   }
@@ -258,7 +260,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update(updatePayload)
     .eq("id", productId)
     .select(
-      "id, name, barcode, brand, price, wholesale_price, moq, stock, sku, slug, description, short_description, country_of_origin, image_url, category_id, sold_out, category:categories(id, name, slug)",
+      "id, name, barcode, brand, price, wholesale_price, compare_at_price, moq, stock, sku, slug, description, short_description, country_of_origin, image_url, category_id, sold_out, category:categories(id, name, slug)",
     )
     .maybeSingle();
 

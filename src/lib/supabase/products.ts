@@ -1021,7 +1021,7 @@ function sortStaticProducts(
 
 /** Lightweight select for admin product list table (skips heavy text/json columns). */
 const ADMIN_LIST_SELECT_CORE =
-  "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, moq, stock, sold_out, status, image_url, import_batch_id, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), import_batch:product_import_batches(id, filename), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
+  "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, compare_at_price, moq, stock, sold_out, status, image_url, import_batch_id, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), import_batch:product_import_batches(id, filename), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
 
 const ADMIN_FULL_SELECT = `*, category:categories(id, name, slug), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)`;
 
@@ -1251,6 +1251,7 @@ export async function getProducts(
         requireRealImage?: boolean;
         /** Admin: show only products without a registered image. */
         needsImageOnly?: boolean;
+        adminReview?: "missing-image" | "missing-price" | "missing-barcode" | "name-review";
         /** Resolved storefront audience; defaults via session when omitted. */
         audience?: StorefrontAudience;
         /** Skip unstable_cache wrapper (internal). */
@@ -1503,6 +1504,15 @@ export async function getProducts(
 
     if (needsImageOnly && includePriceColumns) {
       filtered = filtered.eq("needs_image", true);
+    }
+
+    if (privileged && options?.adminReview) {
+      const review = options.adminReview;
+      if (review === "missing-image") {
+        filtered = filtered.eq("needs_image", true).eq("admin_missing_price", false).eq("admin_missing_barcode", false).eq("admin_name_needs_review", false);
+      } else {
+        filtered = filtered.eq(review === "missing-price" ? "admin_missing_price" : review === "missing-barcode" ? "admin_missing_barcode" : "admin_name_needs_review", true);
+      }
     }
 
     if (sort === "trending") {

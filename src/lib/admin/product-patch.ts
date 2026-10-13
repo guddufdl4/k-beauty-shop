@@ -5,6 +5,7 @@ export type ProductPatch = {
   barcode: string | null;
   wholesale_price: number;
   price?: number;
+  compare_at_price?: number | null;
   brand?: string;
   description?: string | null;
   short_description?: string | null;
@@ -71,6 +72,12 @@ export function parseProductPatch(body: unknown): ProductPatchResult {
   const wholesale_price = Number(priceRaw);
   if (!Number.isFinite(wholesale_price) || wholesale_price < 0) {
     return { ok: false, error: "가격은 0 이상의 숫자여야 합니다." };
+  }
+
+  let compare_at_price: number | null | undefined;
+  if (record.compare_at_price !== undefined) {
+    compare_at_price = record.compare_at_price === null || record.compare_at_price === "" ? null : Number(record.compare_at_price);
+    if (compare_at_price !== null && (!Number.isFinite(compare_at_price) || compare_at_price < 0)) return { ok: false, error: "소비자가는 0 이상의 숫자여야 합니다." };
   }
 
   let image_url: string | null | undefined;
@@ -214,6 +221,7 @@ export function parseProductPatch(body: unknown): ProductPatchResult {
       barcode,
       wholesale_price,
       ...(price !== undefined ? { price } : {}),
+      ...(compare_at_price !== undefined ? { compare_at_price } : {}),
       ...(brand !== undefined ? { brand } : {}),
       ...(description !== undefined ? { description } : {}),
       ...(short_description !== undefined ? { short_description } : {}),

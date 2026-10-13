@@ -2,7 +2,7 @@ export type AdminProductsSort = "recent" | null;
 
 export type AdminProductsView = "active" | "deleted";
 
-export type AdminProductsTab = "missing-image" | "add" | "list";
+export type AdminProductsTab = "missing-image" | "missing-price" | "missing-barcode" | "name-review" | "add" | "list";
 
 export type AdminProductsFilters = {
   batchId: string | null;
@@ -31,7 +31,7 @@ export function resolveAdminProductsBrandPriority(
 export function resolveAdminProductsTab(
   tab: string | undefined | null,
 ): AdminProductsTab {
-  if (tab === "add" || tab === "list") {
+  if (tab === "add" || tab === "list" || tab === "missing-price" || tab === "missing-barcode" || tab === "name-review") {
     return tab;
   }
   if (tab === "missing-image" || tab === "bulk") {

@@ -108,6 +108,7 @@ type EditableProduct = Pick<
   | "id"
   | "name"
   | "barcode"
+  | "compare_at_price"
   | "wholesale_price"
   | "price"
   | "sku"
@@ -220,7 +221,6 @@ const ProductTableRow = memo(function ProductTableRow({
 }: ProductTableRowProps) {
   const imageUrl = resolveProductImageUrl(product);
   const isEven = index % 2 === 0;
-  const shownPrice = displayPrice(product);
   const timestamp = productTimestampDisplay(product);
 
   return (
@@ -247,8 +247,9 @@ const ProductTableRow = memo(function ProductTableRow({
           </p>
         ) : null}
         <p className="font-mono text-xs font-medium text-zinc-800">
-          {displayProductSku(product.barcode, product.sku)}
+          {product.sku.startsWith("SRC-") ? "내부 관리 코드" : displayProductSku(product.barcode, product.sku)}
         </p>
+        {!product.barcode ? <p className="mt-1 text-xs font-semibold text-amber-700">바코드 미등록</p> : null}
         {product.barcode ? (
           <p className="mt-0.5 font-mono text-[10px] text-zinc-400">
             {product.barcode}
@@ -291,14 +292,9 @@ const ProductTableRow = memo(function ProductTableRow({
           </button>
         </div>
       </td>
-      <td data-label="가격" className="px-3 py-2.5 align-top">
-        <p
-          className={`text-xs font-semibold ${
-            shownPrice <= 1 ? "text-amber-700" : "text-zinc-900"
-          }`}
-        >
-          {formatProductPrice(shownPrice)}
-        </p>
+      <td data-label="가격" className="px-3 py-2.5 align-top text-xs">
+        <p className={product.compare_at_price && product.compare_at_price > 0 ? "text-zinc-600" : "font-semibold text-amber-700"}>소비자가 {product.compare_at_price && product.compare_at_price > 0 ? formatProductPrice(product.compare_at_price) : "미등록"}</p>
+        <p className={product.wholesale_price && product.wholesale_price > 0 ? "mt-1 font-semibold text-zinc-900" : "mt-1 font-semibold text-amber-700"}>공급가 {product.wholesale_price && product.wholesale_price > 0 ? formatProductPrice(product.wholesale_price) : "미등록"}</p>
       </td>
       <td data-label="재고" className="px-3 py-2.5 align-top">
         {stockEditingId === product.id ? (
@@ -367,7 +363,7 @@ const ProductTableRow = memo(function ProductTableRow({
             ? "…"
             : product.sold_out
               ? "품절"
-              : "판매중"}
+              : product.status === "draft" ? "미공개" : "판매중"}
         </button>
       </td>
       <td data-label="카테고리" className="px-3 py-2.5 align-top text-xs text-zinc-600">
@@ -432,6 +428,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   const [name, setName] = useState("");
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
+  const [retailPrice, setRetailPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [soldOut, setSoldOut] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
@@ -581,6 +578,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
       id: product.id,
       name: product.name,
       barcode: product.barcode,
+      compare_at_price: product.compare_at_price,
       wholesale_price: product.wholesale_price,
       price: product.price,
       sku: product.sku,
@@ -593,6 +591,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
     });
     setName(product.name);
     setBarcode(product.barcode ?? "");
+    setRetailPrice(product.compare_at_price == null ? "" : String(product.compare_at_price));
     setPrice(String(displayPrice(product)));
     setCategoryId(product.category_id ?? "");
     setSoldOut(product.sold_out);
@@ -983,7 +982,8 @@ export const AdminProductsTable = memo(function AdminProductsTable({
         body: JSON.stringify({
           name: name.trim(),
           barcode: barcode.trim(),
-          wholesale_price: price.trim(),
+          wholesale_price: price.trim() || "0",
+          compare_at_price: retailPrice.trim() || null,
           image_url: imageUrlToSave,
           category_id: categoryId.trim() || null,
           sold_out: soldOut,
@@ -996,6 +996,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
           name: string;
           barcode: string | null;
           wholesale_price: number | null;
+          compare_at_price: number | null;
           image_url: string | null;
           category_id: string | null;
           sold_out: boolean;
@@ -1036,6 +1037,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                   name: saved.name,
                   barcode: saved.barcode,
                   wholesale_price: saved.wholesale_price,
+                  compare_at_price: saved.compare_at_price,
                   image_url: saved.image_url,
                   category_id: saved.category_id,
                   sold_out: saved.sold_out,
@@ -1304,7 +1306,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
 
               <div>
                 <label htmlFor="edit-price" className="block text-sm font-medium text-zinc-700">
-                  가격 (도매가) *
+                  공급가 (미등록이면 비워두세요)
                 </label>
                 <input
                   id="edit-price"
@@ -1313,9 +1315,13 @@ export const AdminProductsTable = memo(function AdminProductsTable({
                   step={1}
                   value={price}
                   onChange={(event) => setPrice(event.target.value)}
-                  required
                   className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="edit-retail-price" className="block text-sm font-medium text-zinc-700">소비자가 (미등록이면 비워두세요)</label>
+                <input id="edit-retail-price" type="number" min={0} step={1} value={retailPrice} onChange={(event) => setRetailPrice(event.target.value)} className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

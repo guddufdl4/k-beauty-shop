@@ -26,7 +26,7 @@ export function AdminProductsToolbar({
   batches,
   totalCount,
   priorityStats,
-  showNeedsImageToggle = true,
+  showNeedsImageToggle = false,
 }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState(filters.q ?? "");
@@ -174,10 +174,10 @@ export function AdminProductsToolbar({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <p className="text-sm font-semibold text-zinc-900">
-          {filters.brandPriority
+          {filters.tab === "missing-price" ? "가격 미등록 상품" : filters.tab === "missing-barcode" ? "바코드 미등록 상품" : filters.tab === "name-review" ? "상품명 확인 필요" : filters.brandPriority
             ? "Brand 우선 순위 리스트"
             : filters.needsImageOnly || filters.tab === "missing-image"
-              ? "미등록 이미지"
+              ? "이미지 미등록"
               : filters.view === "deleted"
                 ? "삭제된 상품"
                 : "전체 목록"}

@@ -1207,6 +1207,30 @@ function parseSheetWithIndices(
     blankrows: false,
   });
 
+  // Supplier W.dressroom layout has an extra internal-code column and merged
+  // product/volume/carton cells. Normalize only this exact header signature.
+  if (/^w\.?dressroom$/i.test(sheetName) && rawRows[1]?.slice(0, 7).join("|") === "Name|Fragrance|Barcode|Volume|Inbox|MSRP|Price") {
+    const normalized = { ...sheet };
+    for (const merge of sheet["!merges"] ?? []) {
+      const value = sheet[XLSX.utils.encode_cell(merge.s)];
+      if (!value) continue;
+      for (let r = merge.s.r; r <= merge.e.r; r++) {
+        for (let c = merge.s.c; c <= merge.e.c; c++) normalized[XLSX.utils.encode_cell({ r, c })] = { ...value };
+      }
+    }
+    ["Name", "Fragrance", "InternalCode", "Barcode", "Volume", "Inbox", "Price", "MSRP"].forEach((value, c) => {
+      normalized[XLSX.utils.encode_cell({ r: 1, c })] = { t: "s", v: value };
+    });
+    const range = XLSX.utils.decode_range(sheet["!ref"] ?? "A1");
+    for (let r = 2; r <= range.e.r; r++) {
+      const name = String(normalized[XLSX.utils.encode_cell({ r, c: 0 })]?.v ?? "").trim();
+      const option = String(normalized[XLSX.utils.encode_cell({ r, c: 1 })]?.v ?? "").trim();
+      if (name) normalized[XLSX.utils.encode_cell({ r, c: 0 })] = { t: "s", v: [name, option].filter(Boolean).join(" / ") };
+    }
+    normalized["!merges"] = [];
+    return parseSheetWithIndices(sheetName, normalized);
+  }
+
   if (shouldSkipSheet(sheetName, rawRows)) {
     return {
       headers: [],

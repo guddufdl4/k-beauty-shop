@@ -17,7 +17,7 @@ import { ProductImageBatchSection } from "@/components/admin/product-image-batch
 import { getCachedProductImageBatchStats } from "@/lib/admin/product-image-batch";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { getCategories, getCachedBrandPriorityListStats, getProductImportBatches, getProducts } from "@/lib/supabase/products";
-import { isPricedStorefrontProduct } from "@/lib/store/product-visibility";
+
 import { storefrontHref } from "@/lib/store/storefront-href";
 
 const ADMIN_PRODUCTS_PAGE_SIZE = 10;
@@ -26,10 +26,19 @@ const CARD_CLASS =
   "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm";
 
 const PRODUCT_TABS: Array<{ id: AdminProductsTab; label: string }> = [
-  { id: "missing-image", label: "미등록 이미지" },
+  { id: "list", label: "전체 상품" },
+  { id: "missing-image", label: "이미지 미등록" },
+  { id: "missing-price", label: "가격 미등록 상품" },
+  { id: "missing-barcode", label: "바코드 미등록 상품" },
+  { id: "name-review", label: "상품명 확인 필요" },
   { id: "add", label: "상품 개별 등록" },
-  { id: "list", label: "상품 목록 및 관리" },
 ];
+const REVIEW_COPY: Partial<Record<AdminProductsTab, string>> = {
+  "missing-image": "상품명·바코드·소비자가·공급가 확인 완료, 이미지만 없는 상품입니다.",
+  "missing-price": "소비자가 또는 공급가가 없는 상품입니다. 시트에 없는 가격은 추정하지 않습니다.",
+  "missing-barcode": "실제 바코드가 없거나 형식을 확인해야 하는 상품입니다. 내부 코드는 바코드로 인정하지 않습니다.",
+  "name-review": "상품명이 없거나 불명확한 상품입니다. 시트 원문 확인이 필요합니다.",
+};
 
 type AdminProductsPageProps = {
   searchParams: Promise<{
@@ -56,7 +65,7 @@ function ProductsTabNav({
   return (
     <nav
       aria-label="상품 관리 탭"
-      className="mb-2 flex shrink-0 gap-0.5 overflow-x-auto border-b border-zinc-200"
+      className="mb-3 flex shrink-0 flex-wrap gap-2"
     >
       {PRODUCT_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -69,10 +78,10 @@ function ProductsTabNav({
               needsImageOnly: tab.id === "missing-image",
               brandPriority: tab.id === "list" ? filters.brandPriority : false,
             })}
-            className={`shrink-0 border-b-2 px-3 py-2 text-xs font-medium transition-colors sm:px-4 sm:text-sm ${
+            className={`shrink-0 rounded-xl border px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
               isActive
-                ? "border-rose-500 text-rose-700"
-                : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800"
+                ? "border-violet-500 bg-violet-50 text-violet-700"
+                : "border-zinc-200 bg-white text-zinc-600 hover:border-violet-300"
             }`}
             aria-current={isActive ? "page" : undefined}
           >
@@ -122,10 +131,10 @@ export default async function AdminProductsPage({
     view: showDeleted ? ("deleted" as const) : ("active" as const),
     tab: activeTab,
   };
-  const needsCategories = activeTab === "list" || activeTab === "add" || activeTab === "missing-image";
-  const needsProducts = activeTab === "list" || activeTab === "missing-image";
-  const needsBatches = activeTab === "list" || activeTab === "missing-image";
-  const needsImageStats = activeTab === "missing-image";
+  const needsCategories = true;
+  const needsProducts = activeTab !== "add";
+  const needsBatches = needsProducts;
+  const needsImageStats = false;
   const needsPriorityStats = activeTab === "list";
   const [
     { configured, user, profile },
@@ -146,7 +155,8 @@ export default async function AdminProductsPage({
       ? getProducts({
           includeDraft: true,
           privileged: true,
-          priorityBrandList: brandPriority,
+          priorityBrandList: activeTab === "list" && brandPriority,
+          adminReview: activeTab === "list" ? undefined : activeTab,
           importBatchId: activeBatchId ?? undefined,
           categorySlug: categoryFilter,
           search: searchTerm,
@@ -180,9 +190,7 @@ export default async function AdminProductsPage({
   const imageStats = imageStatsResult.stats;
   const batchById = new Map(batches.map((batch) => [batch.id, batch]));
   const listProducts = products.flatMap((product) => {
-    if (!isPricedStorefrontProduct(product)) {
-      return [];
-    }
+    if (!("price" in product)) return [];
 
     if (product.import_batch?.filename || !product.import_batch_id) {
       return [product];
@@ -310,8 +318,9 @@ export default async function AdminProductsPage({
       </div>
 
       <ProductsTabNav activeTab={activeTab} filters={listFilters} />
+      {REVIEW_COPY[activeTab] ? <div className="mb-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">{REVIEW_COPY[activeTab]}<p className="mt-1 text-xs text-violet-600">가격과 바코드가 모두 없으면 두 목록에 함께 표시됩니다.</p></div> : null}
 
-      {activeTab === "missing-image" ? (
+      {false ? (
         <div className="mb-2 shrink-0">
           <ProductImageBatchSection
             initialStats={imageStats}
@@ -338,7 +347,7 @@ export default async function AdminProductsPage({
         </section>
       ) : null}
 
-      {activeTab === "list" || activeTab === "missing-image" ? (
+      {activeTab !== "add" ? (
         <section
           className={`${CARD_CLASS} min-h-0 flex-1`}
           aria-label={activeTab === "missing-image" ? "미등록 이미지" : "상품 목록 및 관리"}
@@ -424,7 +433,7 @@ export default async function AdminProductsPage({
 
             <div className="min-h-0 flex-1 overflow-auto">
               <AdminProductsTable
-                key={`${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${needsImageOnly ? "missing-image" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
+                key={`${activeTab}-${safePage}-${activeBatchId ?? ""}-${brandPriority ? "priority" : ""}-${needsImageOnly ? "missing-image" : ""}-${searchTerm ?? ""}-${brandFilter ?? ""}-${categoryFilter ?? ""}-${sortRecent ? "recent" : "created"}-${showDeleted ? "deleted" : "active"}`}
                 products={listProducts}
                 categories={categories}
                 emptyMessage={emptyMessage}
