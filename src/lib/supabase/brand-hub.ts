@@ -11,7 +11,7 @@ import {
 import { unstable_cache } from "next/cache";
 import { createSafeClient } from "@/lib/supabase/safe-server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createPublicClient } from "@/lib/supabase/service";
+import { createPublicClient, createServiceClient } from "@/lib/supabase/service";
 import {
   buildBrandCatalogEntries,
   resolveBrandCatalogEntry,
@@ -270,7 +270,7 @@ async function discoverBrandCategoryTabs(
     return discoverStaticBrandCategoryTabs(filterBrand, tabContext);
   }
 
-  const supabase = await createSafeClient();
+  const supabase = createServiceClient() ?? (await createSafeClient());
   if (!supabase) {
     return [];
   }
@@ -320,7 +320,7 @@ async function fetchNavBrandNameSample(): Promise<string[]> {
     return getStaticFallbackBrandNames();
   }
 
-  const supabase = createPublicClient();
+  const supabase = createServiceClient() ?? createPublicClient();
   if (!supabase) {
     return getStaticFallbackBrandNames();
   }
@@ -392,7 +392,7 @@ async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
 export async function getNavBrandGroups(): Promise<NavBrandGroups> {
   return unstable_cache(
     fetchNavBrandGroupsFromSource,
-    ["storefront-nav-brand-groups"],
+    ["storefront-nav-brand-groups", "server-read-v2"],
     {
       revalidate: 300,
       tags: [STOREFRONT_BRANDS_CACHE_TAG],
@@ -433,7 +433,7 @@ async function fetchRecentBrandKeys(limit: number): Promise<string[]> {
     return [];
   }
 
-  const supabase = await createSafeClient();
+  const supabase = createServiceClient() ?? (await createSafeClient());
   if (!supabase) {
     return [];
   }
@@ -633,7 +633,7 @@ async function fetchRelatedBrandHubEntriesFromSource(
       overlapCounts.set(key, (overlapCounts.get(key) ?? 0) + 1);
     }
   } else {
-    const supabase = createPublicClient() ?? (await createSafeClient());
+    const supabase = createServiceClient() ?? createPublicClient() ?? (await createSafeClient());
     if (!supabase) {
       return [];
     }

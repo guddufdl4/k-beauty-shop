@@ -1307,7 +1307,7 @@ export async function getProducts(
   if (guestProductsCacheable) {
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
-      "locale-names-search-v6",
+      "locale-names-server-v7",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -1403,11 +1403,8 @@ export async function getProducts(
     return staticProductsResult();
   }
 
-  const supabase = (privileged || Boolean(searchTerm))
-    ? createServiceClient() ?? (await createSafeClient())
-    : options?.usePublicClient || audience === "guest"
-      ? createPublicClient() ?? (await createSafeClient())
-      : await createSafeClient();
+  // Read on the server; finalizeStorefrontProductList enforces the audience DTO.
+  const supabase = createServiceClient() ?? (await createSafeClient());
   if (!supabase) {
     return staticProductsResult();
   }
@@ -2318,7 +2315,7 @@ export async function getProductBySlug(
     };
   }
 
-  const supabase = resolvedAudience === "guest" ? createPublicClient() : await createSafeClient();
+  const supabase = createServiceClient() ?? (await createSafeClient());
   if (!supabase) {
     const product = STATIC_PRODUCTS.find((p) => p.slug === slug) ?? null;
     return {
@@ -2528,7 +2525,7 @@ async function fetchProductBrandsFromSource(): Promise<{
     };
   }
 
-  const supabase = createPublicClient();
+  const supabase = createServiceClient() ?? createPublicClient();
   if (!supabase) {
     const brands = buildBrandCatalog(
       STATIC_PRODUCTS.filter((product) => product.status === "active").map(
@@ -2607,7 +2604,7 @@ export async function getProductBrands(): Promise<{
 }> {
   return unstable_cache(
     fetchProductBrandsFromSource,
-    ["storefront-product-brands"],
+    ["storefront-product-brands", "server-read-v2"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_BRANDS_CACHE_TAG, STOREFRONT_PRODUCTS_CACHE_TAG],
