@@ -252,7 +252,7 @@ const ProductTableRow = memo(function ProductTableRow({
             {product.product_code}
           </p>
         ) : null}
-        {!product.barcode && !/^(SRC-|REVIEW-)/.test(product.sku) ? <p className="font-mono text-xs font-medium text-zinc-800">{displayProductSku(product.barcode, product.sku)}</p> : null}
+        {!product.barcode && product.source_row?.__barcode_review !== "multiple_options_require_matching" && !/^(SRC-|REVIEW-)/.test(product.sku) ? <p className="font-mono text-xs font-medium text-zinc-800">{displayProductSku(product.barcode, product.sku)}</p> : null}
         {!product.barcode ? <p className="mt-1 text-xs font-semibold text-amber-700">바코드 미등록</p> : null}
         {product.barcode ? (
           <p className="mt-0.5 font-mono text-[10px] text-zinc-400">
