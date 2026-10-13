@@ -1307,7 +1307,7 @@ export async function getProducts(
   if (guestProductsCacheable) {
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
-      "locale-names-search-v5",
+      "locale-names-search-v6",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -1403,7 +1403,7 @@ export async function getProducts(
     return staticProductsResult();
   }
 
-  const supabase = privileged
+  const supabase = (privileged || Boolean(searchTerm))
     ? createServiceClient() ?? (await createSafeClient())
     : options?.usePublicClient || audience === "guest"
       ? createPublicClient() ?? (await createSafeClient())
