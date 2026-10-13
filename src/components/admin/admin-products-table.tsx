@@ -13,7 +13,7 @@ import type { ProductWithRelations, Category } from "@/lib/supabase/products";
 import { ProductNameWithCopy } from "@/components/admin/product-name-with-copy";
 import { formatProductPrice } from "@/lib/utils";
 import { CatalogQuickEdit } from "@/components/admin/catalog-quick-edit";
-import { catalogReviewReasons, catalogReviewExportRows } from "@/lib/admin/catalog-review";
+import { catalogReviewReasons } from "@/lib/admin/catalog-review";
 import { displayProductSku } from "@/lib/admin/product-dedupe";
 
 type Props = {
@@ -251,9 +251,7 @@ const ProductTableRow = memo(function ProductTableRow({
             {product.product_code}
           </p>
         ) : null}
-        <p className="font-mono text-xs font-medium text-zinc-800">
-          {/^(SRC-|REVIEW-)/.test(product.sku) ? "내부 관리 코드" : displayProductSku(product.barcode, product.sku)}
-        </p>
+        {!product.barcode && !/^(SRC-|REVIEW-)/.test(product.sku) ? <p className="font-mono text-xs font-medium text-zinc-800">{displayProductSku(product.barcode, product.sku)}</p> : null}
         {!product.barcode ? <p className="mt-1 text-xs font-semibold text-amber-700">바코드 미등록</p> : null}
         {product.barcode ? (
           <p className="mt-0.5 font-mono text-[10px] text-zinc-400">
@@ -436,7 +434,6 @@ export const AdminProductsTable = memo(function AdminProductsTable({
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [quickEditingId, setQuickEditingId] = useState<string | null>(null);
-  const [exportPending, setExportPending] = useState(false);
   const toggleSelected = useCallback((id: string) => setSelectedIds(previous => {
     const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next;
   }), []);
@@ -1185,21 +1182,6 @@ export const AdminProductsTable = memo(function AdminProductsTable({
     );
   }
 
-  async function exportSelected() {
-    setExportPending(true);
-    try {
-      const XLSX = await import("xlsx");
-      const chosen = products.filter(product => selectedIds.has(product.id));
-      if (!chosen.length) return;
-      const sheet = XLSX.utils.json_to_sheet(catalogReviewExportRows(chosen));
-      sheet["!cols"] = [{wch:16},{wch:20},{wch:60},{wch:20},{wch:18},{wch:18},{wch:45},{wch:25},{wch:12}];
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, sheet, "상품 확인 요청");
-      XLSX.writeFile(workbook, `HMT-상품확인-${new Date().toISOString().slice(0,10)}.xlsx`);
-    } catch { setTableMessage("엑셀을 만들지 못했습니다. 다시 시도해 주세요."); }
-    finally { setExportPending(false); }
-  }
-
   return (
     <>
       {error && !editing ? (
@@ -1213,7 +1195,7 @@ export const AdminProductsTable = memo(function AdminProductsTable({
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-white p-2">
         <label className="flex items-center gap-2 text-xs"><input type="checkbox" aria-label="현재 페이지 전체 선택" checked={products.length > 0 && products.every(product => selectedIds.has(product.id))} onChange={event => setSelectedIds(event.target.checked ? new Set(products.map(product => product.id)) : new Set())} className="h-4 w-4 accent-violet-700" />현재 페이지 선택 · {products.filter(product => selectedIds.has(product.id)).length}개 선택</label>
-        <button type="button" onClick={exportSelected} disabled={exportPending || !products.some(product => selectedIds.has(product.id))} className="rounded-lg border border-violet-200 px-3 py-2 text-xs font-semibold text-violet-700 disabled:opacity-40">{exportPending ? "엑셀 만드는 중…" : "선택 상품 엑셀"}</button>
+        <a href={products.some(product => selectedIds.has(product.id)) ? `/api/admin/products/export?ids=${products.filter(product => selectedIds.has(product.id)).map(product => product.id).join(",")}` : undefined} aria-disabled={!products.some(product => selectedIds.has(product.id))} className="rounded-lg border border-violet-200 px-3 py-2 text-xs font-semibold text-violet-700 aria-disabled:opacity-40">선택 상품 엑셀</a>
       </div>
       <div className="overflow-x-auto">
         <table className={`admin-data-table min-w-full border-collapse text-left text-sm ${reviewMode ? "catalog-review-table [&_tr>*:nth-child(5)]:hidden [&_tr>*:nth-child(6)]:hidden [&_tr>*:nth-child(7)]:hidden [&_tr>*:nth-child(8)]:hidden [&_tr>*:nth-child(10)]:hidden [&_td[data-label=상품명]_button[title]]:whitespace-normal [&_td[data-label=상품명]_button[title]]:overflow-visible" : ""}`}>

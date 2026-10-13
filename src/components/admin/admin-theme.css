@@ -46,9 +46,12 @@
 /* Review cards show actionable identity/price fields, including on narrow screens. */
 @media (max-width: 767px) {
   .hmt-admin .catalog-review-table tbody tr:not(.catalog-quick-row) > td:is(:nth-child(5),:nth-child(6),:nth-child(7),:nth-child(8),:nth-child(10)) { display: none; }
+  .hmt-admin .catalog-review-table tbody td[data-label="SKU"],
   .hmt-admin .catalog-review-table tbody td[data-label="상품명"],
   .hmt-admin .catalog-review-table tbody td[data-label="가격"] { display: block; text-align: left; }
+  .hmt-admin .catalog-review-table tbody td[data-label="SKU"]::before,
   .hmt-admin .catalog-review-table tbody td[data-label="상품명"]::before,
   .hmt-admin .catalog-review-table tbody td[data-label="가격"]::before { display: block; margin-bottom: 5px; }
+  .hmt-admin .catalog-review-table tbody td[data-label="SKU"]::before { content: "상품번호 · 바코드"; }
   .hmt-admin .catalog-review-table .catalog-quick-row td[colspan] { text-align: left; }
 }
