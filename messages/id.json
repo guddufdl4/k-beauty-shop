@@ -7,6 +7,10 @@
     "hint": "Menunjukkan kapan tim penjualan membuka permintaan penawaran di situs ini. Status ini berbeda dari konfirmasi email telah dibaca."
   },
   "nav": {
+    "previousBrand": "Merek sebelumnya",
+    "nextBrand": "Merek berikutnya",
+    "pauseBrands": "Jeda tayangan merek",
+    "playBrands": "Putar tayangan merek",
     "brandCount": "Jelajahi {count} merek",
     "searchBrands": "Cari merek",
     "noBrandResults": "Tidak ada merek yang cocok.",

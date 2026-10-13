@@ -7,6 +7,10 @@
     "hint": "담당자가 사이트에서 견적 내용을 확인한 상태입니다. 이메일 읽음 여부와는 별개입니다."
   },
   "nav": {
+    "previousBrand": "이전 브랜드",
+    "nextBrand": "다음 브랜드",
+    "pauseBrands": "브랜드 자동 이동 일시정지",
+    "playBrands": "브랜드 자동 이동 재생",
     "brandCount": "취급 브랜드 {count}개",
     "searchBrands": "브랜드 검색",
     "noBrandResults": "일치하는 브랜드가 없습니다.",

@@ -7,6 +7,10 @@
     "hint": "サイト上で担当者が見積内容を確認した状態です。メールの開封とは異なります。"
   },
   "nav": {
+    "previousBrand": "前のブランド",
+    "nextBrand": "次のブランド",
+    "pauseBrands": "自動移動を一時停止",
+    "playBrands": "自動移動を再開",
     "brandCount": "取扱ブランド {count}件",
     "searchBrands": "ブランドを検索",
     "noBrandResults": "該当するブランドはありません。",

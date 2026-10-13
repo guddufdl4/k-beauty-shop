@@ -7,6 +7,10 @@
     "hint": "Hiển thị khi bộ phận bán hàng mở yêu cầu báo giá trên website này. Trạng thái này không phải xác nhận đã đọc email."
   },
   "nav": {
+    "previousBrand": "Thương hiệu trước",
+    "nextBrand": "Thương hiệu tiếp theo",
+    "pauseBrands": "Tạm dừng trình chiếu",
+    "playBrands": "Tiếp tục trình chiếu",
     "brandCount": "Khám phá {count} thương hiệu",
     "searchBrands": "Tìm thương hiệu",
     "noBrandResults": "Không tìm thấy thương hiệu.",

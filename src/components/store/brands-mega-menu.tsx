@@ -49,22 +49,36 @@ function BrandDirectoryLink({
   );
 }
 
-function BrandDirectoryGrid({
-  brands,
-  onNavigate,
-}: {
-  brands: FeaturedNavBrand[];
-  onNavigate: () => void;
-}) {
-  return (
-    <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {brands.map((brand) => (
-        <li key={brand.slug} className="min-w-0">
-          <BrandDirectoryLink brand={brand} onNavigate={onNavigate} />
-        </li>
-      ))}
+function BrandDirectoryGrid({ brands, onNavigate, active }: { brands: FeaturedNavBrand[]; onNavigate: () => void; active: boolean }) {
+  const t = useTranslations("nav");
+  const track = useRef<HTMLUListElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const advance = useCallback((direction: number, smooth = true) => {
+    const el = track.current;
+    if (!el) return;
+    const step = (el.firstElementChild as HTMLElement | null)?.getBoundingClientRect().width || el.clientWidth / 4;
+    const last = el.scrollWidth - el.clientWidth;
+    const left = direction > 0 && el.scrollLeft >= last - 2 ? 0 : direction < 0 && el.scrollLeft <= 2 ? last : el.scrollLeft + direction * (step + 8);
+    el.scrollTo({ left, behavior: smooth ? "smooth" : "instant" });
+  }, []);
+  useEffect(() => {
+    if (!active || hovered || focused || paused || brands.length <= 4) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const tick = window.setInterval(() => { if (!reduced.matches && document.visibilityState === "visible") advance(1); }, 4000);
+    return () => window.clearInterval(tick);
+  }, [active, hovered, focused, paused, brands.length, advance]);
+  return <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
+    <div className="mb-2 flex justify-end gap-1">
+      <button type="button" aria-label={t("previousBrand")} onClick={() => advance(-1)} className="min-h-9 min-w-9 rounded-lg border border-zinc-200 text-zinc-600">←</button>
+      <button type="button" aria-label={paused ? t("playBrands") : t("pauseBrands")} aria-pressed={paused} onClick={() => setPaused(value => !value)} className="min-h-9 min-w-9 rounded-lg border border-zinc-200 text-xs text-zinc-600">{paused ? "▶" : "Ⅱ"}</button>
+      <button type="button" aria-label={t("nextBrand")} onClick={() => advance(1)} className="min-h-9 min-w-9 rounded-lg border border-zinc-200 text-zinc-600">→</button>
+    </div>
+    <ul ref={track} className="flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:thin]" onPointerDown={() => setPaused(true)}>
+      {brands.map(brand => <li key={brand.slug} className="min-w-0 shrink-0 basis-[calc((100%-8px)/2)] snap-start sm:basis-[calc((100%-24px)/4)]"><BrandDirectoryLink brand={brand} onNavigate={onNavigate} /></li>)}
     </ul>
-  );
+  </div>;
 }
 
 function BrandsMegaMenuPanel({
@@ -73,12 +87,14 @@ function BrandsMegaMenuPanel({
   isLoggedIn,
   panelId,
   onNavigate,
+  active,
 }: {
   featuredBrands: FeaturedNavBrand[];
   moreBrands: FeaturedNavBrand[];
   isLoggedIn: boolean;
   panelId: string;
   onNavigate: () => void;
+  active: boolean;
 }) {
   const tNav = useTranslations("nav");
   const tHome = useTranslations("home.featuredBrands");
@@ -115,7 +131,7 @@ function BrandsMegaMenuPanel({
               >
                 {tHome("title")}
               </h3>
-              <BrandDirectoryGrid brands={featuredBrands} onNavigate={onNavigate} />
+              <BrandDirectoryGrid brands={featuredBrands} onNavigate={onNavigate} active={active} />
             </section>
           ) : null}
 
@@ -246,6 +262,7 @@ function BrandsMegaMenuInner({ featuredBrands, moreBrands, isLoggedIn }: Props) 
             moreBrands={moreBrands}
             isLoggedIn={isLoggedIn}
             panelId={panelId}
+            active={open}
             onNavigate={closeMenu}
           />
         </div>

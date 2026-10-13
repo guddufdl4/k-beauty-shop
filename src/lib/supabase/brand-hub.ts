@@ -60,7 +60,11 @@ export type NavBrandGroups = {
   more: FeaturedNavBrand[];
 };
 
-const MAX_FEATURED_NAV_BRANDS = 6;
+// External reference: YesStyle 2025 mid-year bestsellers (global sales),
+// https://www.yesstyle.com/blog/2025-07-15/yesstyles-skin-care-bestsellers-mid-year-2025-beauty-awards/
+// Featured selection, not an HMT sales ranking. Only existing active brands are resolved.
+const NAV_FEATURED_BRAND_NAMES = ["Beauty of Joseon", "Dr.Althea", "ANUA", "SKIN1004", "COSRX", "MEDICUBE", "ROUND LAB", "Mixsoon", "TIRTIR", "Biodance", "Purito", "haraharu wonder"];
+const MAX_FEATURED_NAV_BRANDS = NAV_FEATURED_BRAND_NAMES.length;
 
 function getStaticFallbackBrandNames(): string[] {
   return buildBrandCatalog(
@@ -336,12 +340,12 @@ async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
   const featured: FeaturedNavBrand[] = [];
   const featuredSlugs = new Set<string>();
 
-  for (const config of HOME_FEATURED_BRANDS) {
-    if (!config.enabled || featured.length >= MAX_FEATURED_NAV_BRANDS) {
+  for (const displayName of NAV_FEATURED_BRAND_NAMES) {
+    if (featured.length >= MAX_FEATURED_NAV_BRANDS) {
       continue;
     }
 
-    const entry = entryByKey.get(normalizeBrandKey(config.displayName));
+    const entry = entryByKey.get(normalizeBrandKey(displayName));
     if (!entry) {
       continue;
     }
@@ -363,7 +367,7 @@ async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
 export async function getNavBrandGroups(): Promise<NavBrandGroups> {
   return unstable_cache(
     fetchNavBrandGroupsFromSource,
-    ["storefront-nav-brand-groups", "all-brands-v3"],
+    ["storefront-nav-brand-groups", "featured-carousel-v4"],
     {
       revalidate: 300,
       tags: [STOREFRONT_BRANDS_CACHE_TAG],

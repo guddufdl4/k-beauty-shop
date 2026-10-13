@@ -7,6 +7,10 @@
     "hint": "Shows when our team opens the quotation on this site. This is separate from email read receipts."
   },
   "nav": {
+    "previousBrand": "Previous brand",
+    "nextBrand": "Next brand",
+    "pauseBrands": "Pause brand slideshow",
+    "playBrands": "Play brand slideshow",
     "brandCount": "Explore {count} brands",
     "searchBrands": "Search brands",
     "noBrandResults": "No matching brands.",
