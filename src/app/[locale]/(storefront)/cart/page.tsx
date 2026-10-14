@@ -1,3 +1,4 @@
+import { readSavedPurchaseProfile } from "@/lib/store/purchase-profile";
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -8,7 +9,7 @@ import { getUsdKrwRate } from "@/lib/currency-rate";
 import { formatLocalePrice } from "@/lib/utils";
 import { getCart, revalidateQuoteCart } from "@/lib/cart";
 import { cartMeetsMinOrderUsd, MIN_ORDER_USD, minimumAdditionalKrw } from "@/lib/currency";
-import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { getAuthUser, getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
 import { NOINDEX_FOLLOW } from "@/lib/seo/constants";
@@ -38,6 +39,7 @@ export default async function CartPage() {
     getUsdKrwRate(),
   ]);
 
+  const defaultPurchaseProfile = readSavedPurchaseProfile((await getAuthUser())?.user_metadata?.purchase_profile);
   const verifiedCart = cart.items.length ? await revalidateQuoteCart(cart) : null;
   const quoteEligible = Boolean(verifiedCart && cartMeetsMinOrderUsd(verifiedCart.subtotal, usdKrwRate));
 
@@ -116,6 +118,7 @@ export default async function CartPage() {
             usdKrwRate={usdKrwRate}
             isMember={Boolean(session.user)}
             quoteEligible={quoteEligible}
+            defaultPurchaseProfile={defaultPurchaseProfile}
             draftId={session.user?.id}
             showPrices={hasBusinessApproval(session.profile)}
             defaultCompanyName={defaultCompanyName}

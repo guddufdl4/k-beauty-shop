@@ -1,3 +1,4 @@
+import { purchaseProfileText, type PurchaseProfile } from "@/lib/store/purchase-profile";
 import { validateQuoteQuantity } from "@/lib/store/quote-quantity";
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
@@ -134,6 +135,7 @@ function isUuid(value: string): boolean {
 }
 
 export type QuoteBuyer = {
+  purchaseProfile?: PurchaseProfile;
   companyName: string;
   contactName: string;
   email: string;
@@ -221,7 +223,9 @@ export async function createQuoteOrderFromCart(
     shipping_method_etc: buyer.shippingMethodEtc || undefined,
   };
 
+  const purchaseProfile = buyer.purchaseProfile;
   const notes = [
+    purchaseProfile ? purchaseProfileText(purchaseProfile) : "",
     `Quote request · ${buyer.companyName} · ${buyer.email}`,
     buyer.phone ? `Phone: ${buyer.phone}` : "",
     buyer.consignee ? `Consignee: ${buyer.consignee}` : "",
@@ -249,7 +253,7 @@ export async function createQuoteOrderFromCart(
     shipping_cost: 0,
     total: cart.subtotal,
     currency: "KRW",
-    shipping_address: { ...shippingAddress, usd_krw_rate: usdKrwRate },
+    shipping_address: { ...shippingAddress, usd_krw_rate: usdKrwRate, ...(purchaseProfile ? { purchase_purpose: purchaseProfile.purchasePurpose, purpose_other: purchaseProfile.purposeOther, sales_channel: purchaseProfile.salesChannel, sales_country: purchaseProfile.salesCountry, sales_details: purchaseProfile.salesDetails } : {}) },
     notes,
     payment_provider: "quote",
   };

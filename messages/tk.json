@@ -683,7 +683,8 @@
     "phone": "Mobil telefon belgisi",
     "phoneHint": "Ölkäni seçiň we mobil nomeriňizi giriziň.",
     "phoneCountry": "Telefon döwlet kody",
-    "phoneInvalid": "Saýlanan ýurduňyz üçin dogry telefon nomeri giriziň."
+    "phoneInvalid": "Saýlanan ýurduňyz üçin dogry telefon nomeri giriziň.",
+    "accountTypeRequired": "Işewürlik hökmünde bellige alynyň."
   },
   "account": {
     "title": "Hasabym",
@@ -917,5 +918,53 @@
     "processing": "Iberen bolýar…",
     "success": "Siziň import teklibňiz alyndy. Toparymyz ony gözden geçirer we siz bilen habarlaşar.",
     "failed": "Tabşyrmak mümkin däl. Ýerleri barlaň we täzeden synanyşyň."
+  },
+  "buyerProfile": {
+    "accountType": "Agzalyk görnüşi",
+    "personal": "Şahsy agza",
+    "business": "Işewür agza",
+    "personalHelp": "Kompaniýanyň ady we bellige alyş belgisi bolmazdan ýazylyň.",
+    "businessHelp": "Diňe işewürlik hasaplary. Kompaniýanyň adyny we bellige alyş belgisini giriziň. Lomaý şertler üçin resminama we tassyklama gerek.",
+    "chooseAccountType": "Agzalyk görnüşini saýlaň.",
+    "purchaseDetails": "Satyn alyş maksady we satuw ýeri",
+    "purchasePurpose": "Satyn alyş maksady",
+    "purposeOther": "Başga maksat",
+    "salesChannel": "Esasy satuw kanaly",
+    "salesCountry": "Satuw ýurdy",
+    "salesDetails": "Dükanyň ady / web sahypasy",
+    "detailsHint": "Onlaýn satuw üçin hakyky dükan URL salgysyny, oflaýn satuw/paýlamak üçin ady we salgyny ýazyň. Nusgalar üçin hem meýilleşdirilen satuw ýerleri gerek. Ählisini görkeziň.",
+    "selectOption": "Saýlaň",
+    "optionalCompany": "Kompaniýa / dükan ady (hökmany däl)",
+    "purposeRequired": "Satyn alyş maksadyny saýlaň.",
+    "channelRequired": "Satuw kanalyny saýlaň.",
+    "detailsRequired": "Jikme-jik maglumat ýazyň.",
+    "invalidDetails": "HTML ulanman, 500 nyşana çenli.",
+    "purposes": {
+      "retail": "Bölek satuw",
+      "wholesale": "Lomaý söwda / paýlama",
+      "salon": "Salon / hünär taýdan ulanmak",
+      "samples": "Nusga / önüm synagy",
+      "personal": "Şahsy ulanmak",
+      "other": "Başga"
+    },
+    "channels": {
+      "online": "Öz internet dükanyňyz",
+      "marketplace": "Onlaýn söwda platformasy",
+      "social": "Sosial tor / göni satuw",
+      "offline": "Fiziki dükan",
+      "distribution": "Lomaý söwda / paýlama",
+      "other": "Başga",
+      "amazon": "Amazon",
+      "aliexpress": "AliExpress",
+      "ebay": "eBay",
+      "shopee": "Shopee",
+      "lazada": "Lazada",
+      "tiktok": "TikTok Shop"
+    },
+    "countryRequired": "Öň ilki ýurtuňyzy saýlaň.",
+    "otherDetailsHint": "Başga kanal üçin platformanyň adyny we dükan URL salgysyny ýa-da adyny we salgysyny ýazyň.",
+    "savedHelp": "Talap iberilende satuw ýerleri hasaba ýazylýar we indiki gezek doldurylýar. Üýtgedip bilersiňiz. Bu müşderiniň maglumatydyr; üpjünçilik mümkinçiligi aýratyn barlanýar.",
+    "saveFailed": "Satuw ýerlerini saklap bolmady. Talap döredilmedi. Gaýtadan synanyşyň.",
+    "storeUrlRequired": "https:// bilen başlanýan hakyky dükan URL salgysyny giriziň, diňe platformanyň baş sahypasyny däl."
   }
 }

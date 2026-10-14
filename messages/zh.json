@@ -684,7 +684,8 @@
     "phone": "手机号码",
     "phoneHint": "请选择国家区号并输入手机号码。",
     "phoneCountry": "电话国家区号",
-    "phoneInvalid": "请输入所选国家的有效电话号码。"
+    "phoneInvalid": "请输入所选国家的有效电话号码。",
+    "accountTypeRequired": "请注册企业账户。"
   },
   "account": {
     "title": "我的账户",
@@ -918,5 +919,53 @@
     "processing": "提交中…",
     "success": "进口建议已收到，我们审核后将联系您。",
     "failed": "提交失败，请检查填写内容。"
+  },
+  "buyerProfile": {
+    "accountType": "会员类型",
+    "personal": "个人会员",
+    "business": "企业会员",
+    "personalHelp": "无需公司名称或企业注册号即可注册。",
+    "businessHelp": "仅限企业注册。请输入公司名称和注册号。批发权益需提交企业证明并通过审核。",
+    "chooseAccountType": "请选择会员类型。",
+    "purchaseDetails": "购买用途与销售渠道",
+    "purchasePurpose": "购买用途",
+    "purposeOther": "其他购买用途",
+    "salesChannel": "主要销售渠道",
+    "salesCountry": "销售国家",
+    "salesDetails": "店铺名称 / 销售网站",
+    "detailsHint": "线上销售请输入实际店铺链接，线下销售或分销请输入商户名称和地址。样品也需填写计划销售渠道；如有多个销售地点请全部填写。",
+    "selectOption": "请选择",
+    "optionalCompany": "公司 / 店铺名称（选填）",
+    "purposeRequired": "请选择购买用途。",
+    "channelRequired": "请选择销售渠道。",
+    "detailsRequired": "请输入详细信息。",
+    "invalidDetails": "请勿输入HTML，最多500个字符。",
+    "purposes": {
+      "retail": "零售转售",
+      "wholesale": "批发 / 分销",
+      "salon": "沙龙 / 专业使用",
+      "samples": "样品 / 产品测试",
+      "personal": "个人使用",
+      "other": "其他"
+    },
+    "channels": {
+      "online": "自营网店",
+      "marketplace": "电商平台",
+      "social": "社交媒体 / 直播销售",
+      "offline": "实体店",
+      "distribution": "批发 / 分销",
+      "other": "其他",
+      "amazon": "Amazon",
+      "aliexpress": "AliExpress",
+      "ebay": "eBay",
+      "shopee": "Shopee",
+      "lazada": "Lazada",
+      "tiktok": "TikTok Shop"
+    },
+    "countryRequired": "请选择国家/地区。",
+    "otherDetailsHint": "其他渠道请注明平台名称及实际店铺链接，或商户名称和地址。",
+    "savedHelp": "提交报价请求时将销售渠道保存至账户，下次自动填入，可随时修改。这些是客户申报资料，供货资格另行审核。",
+    "saveFailed": "销售渠道保存失败，尚未创建报价请求。请重试。",
+    "storeUrlRequired": "请输入以 https:// 开头的实际店铺链接，不能仅填写平台首页。"
   }
 }

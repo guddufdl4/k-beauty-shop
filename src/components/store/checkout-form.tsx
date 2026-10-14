@@ -1,4 +1,5 @@
 "use client";
+import { PURCHASE_PURPOSES, SALES_CHANNELS, type PurchaseProfile } from "@/lib/store/purchase-profile";
 import { QUOTE_DRAFT_FIELDS, readQuoteDraft } from "@/lib/store/quote-draft";
 
 import { useActionState, useState, useRef, useEffect } from "react";
@@ -22,6 +23,7 @@ type Props = {
   isMember: boolean;
   showPrices?: boolean;
   quoteEligible?: boolean;
+  defaultPurchaseProfile?: PurchaseProfile;
   draftId?: string;
   defaultCompanyName?: string;
   defaultContactName?: string;
@@ -41,6 +43,7 @@ export function CheckoutForm({
   isMember,
   showPrices = true,
   quoteEligible,
+  defaultPurchaseProfile,
   draftId = "",
   defaultCompanyName = "",
   defaultContactName = "",
@@ -48,6 +51,9 @@ export function CheckoutForm({
   defaultCountry = "",
 }: Props) {
   const t = useTranslations("checkout");
+  const tBuyer = useTranslations("buyerProfile");
+  const [purchasePurpose, setPurchasePurpose] = useState(defaultPurchaseProfile?.purchasePurpose ?? "");
+  const [salesChannel, setSalesChannel] = useState(defaultPurchaseProfile?.salesChannel ?? "");
   const [state, formAction, pending] = useActionState(submitQuoteRequest, initialState);
   const [tradeTerms, setTradeTerms] = useState("");
   const [shippingMethod, setShippingMethod] = useState("");
@@ -63,7 +69,14 @@ export function CheckoutForm({
     try {
       const fields = readQuoteDraft(sessionStorage.getItem(draftKey));
       if (!fields) {sessionStorage.removeItem(draftKey); return;}
+      if (!fields.purchase_purpose && defaultPurchaseProfile) {
+        Object.assign(fields, { purchase_purpose: defaultPurchaseProfile.purchasePurpose, purpose_other: defaultPurchaseProfile.purposeOther, sales_channel: defaultPurchaseProfile.salesChannel, sales_country: defaultPurchaseProfile.salesCountry, sales_details: defaultPurchaseProfile.salesDetails });
+      }
+      if (!(PURCHASE_PURPOSES as readonly string[]).includes(fields.purchase_purpose)) fields.purchase_purpose = "";
+      if (!(SALES_CHANNELS as readonly string[]).includes(fields.sales_channel)) fields.sales_channel = "";
       restoreFields.current = fields;
+      setPurchasePurpose(fields.purchase_purpose ?? "");
+      setSalesChannel(fields.sales_channel ?? "");
       setTradeTerms(typeof fields.trade_terms === "string" ? fields.trade_terms : "");
       setShippingMethod(typeof fields.shipping_method === "string" ? fields.shipping_method : "");
       for (const element of Array.from(formRef.current.elements)) {
@@ -72,16 +85,16 @@ export function CheckoutForm({
     } catch { /* Storage can be disabled in private browsing. */ }
     });
     return () => {window.cancelAnimationFrame(frame);if(saveTimer.current) clearTimeout(saveTimer.current);};
-  }, [draftKey]);
+  }, [draftKey, defaultPurchaseProfile]);
   useEffect(() => {
     const fields = restoreFields.current;
-    if (!fields || tradeTerms !== (fields.trade_terms ?? "") || shippingMethod !== (fields.shipping_method ?? "")) return;
-    for (const name of ["trade_terms_etc", "shipping_method_etc"]) {
+    if (!fields || tradeTerms !== (fields.trade_terms ?? "") || shippingMethod !== (fields.shipping_method ?? "") || purchasePurpose !== (fields.purchase_purpose ?? "") || salesChannel !== (fields.sales_channel ?? "")) return;
+    for (const name of ["trade_terms_etc", "shipping_method_etc", "purpose_other", "sales_details", "sales_country"]) {
       const input = formRef.current?.elements.namedItem(name);
-      if (input instanceof HTMLInputElement && fields[name]) input.value = fields[name];
+      if ((input instanceof HTMLInputElement || input instanceof HTMLSelectElement) && typeof fields[name] === "string") input.value = fields[name];
     }
     restoreFields.current = null;
-  }, [tradeTerms, shippingMethod]);
+  }, [tradeTerms, shippingMethod, purchasePurpose, salesChannel]);
   const saveDraft = () => {
     if (!draftKey) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -117,7 +130,7 @@ export function CheckoutForm({
 
   return (
     <form ref={formRef} action={formAction} onChange={saveDraft} className="space-y-6">
-      {draftKey ? <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600"><p>{t("draftHelp")}</p><button type="button" className="min-h-11 underline" onClick={()=>{restoreFields.current=null;if(saveTimer.current)clearTimeout(saveTimer.current);try{sessionStorage.removeItem(draftKey);}catch{} formRef.current?.reset();setTradeTerms("");setShippingMethod("");}}>{t("clearDraft")}</button></div> : null}
+      {draftKey ? <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600"><p>{t("draftHelp")}</p><button type="button" className="min-h-11 underline" onClick={()=>{restoreFields.current=null;if(saveTimer.current)clearTimeout(saveTimer.current);try{sessionStorage.removeItem(draftKey);}catch{} formRef.current?.reset();setTradeTerms("");setShippingMethod("");setPurchasePurpose(defaultPurchaseProfile?.purchasePurpose ?? "");setSalesChannel(defaultPurchaseProfile?.salesChannel ?? "");}}>{t("clearDraft")}</button></div> : null}
       <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden>
         <label htmlFor="spam_trap">{t("spamTrapLabel")}</label>
         <input id="spam_trap" name="spam_trap" type="text" tabIndex={-1} autoComplete="off" />
@@ -217,6 +230,20 @@ export function CheckoutForm({
           </label>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6" aria-labelledby="purchase-details-heading">
+        <h2 id="purchase-details-heading" className="text-lg font-semibold">{tBuyer("purchaseDetails")}</h2>
+        <p className="mt-2 text-sm text-zinc-600">{tBuyer("savedHelp")}</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="block sm:col-span-2" htmlFor="purchase_purpose"><span className="text-sm text-zinc-600">{tBuyer("purchasePurpose")} *</span><select id="purchase_purpose" name="purchase_purpose" required value={purchasePurpose} onChange={event => setPurchasePurpose(event.target.value)} className={inputClassName}><option value="">{tBuyer("selectOption")}</option>{PURCHASE_PURPOSES.map(purpose => <option key={purpose} value={purpose}>{tBuyer(`purposes.${purpose}`)}</option>)}</select></label>
+          {purchasePurpose === "other" ? <label className="block sm:col-span-2" htmlFor="purpose_other"><span className="text-sm text-zinc-600">{tBuyer("purposeOther")} *</span><input id="purpose_other" name="purpose_other" required defaultValue={defaultPurchaseProfile?.purposeOther ?? ""} maxLength={500} className={inputClassName}/></label> : null}
+          <>
+            <label className="block" htmlFor="sales_channel"><span className="text-sm text-zinc-600">{tBuyer("salesChannel")} *</span><select id="sales_channel" name="sales_channel" required value={salesChannel} onChange={event=>setSalesChannel(event.target.value)} className={inputClassName}><option value="">{tBuyer("selectOption")}</option>{SALES_CHANNELS.map(channel=><option key={channel} value={channel}>{tBuyer(`channels.${channel}`)}</option>)}</select></label>
+            <label className="block" htmlFor="sales_country"><span className="text-sm text-zinc-600">{tBuyer("salesCountry")} *</span><select id="sales_country" name="sales_country" required defaultValue={defaultPurchaseProfile?.salesCountry ?? ""} className={inputClassName}><option value="">{tBuyer("selectOption")}</option>{SIGNUP_COUNTRIES.map(country=><option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
+            <label className="block sm:col-span-2" htmlFor="sales_details"><span className="text-sm text-zinc-600">{tBuyer("salesDetails")} *</span><input id="sales_details" name="sales_details" required minLength={3} defaultValue={defaultPurchaseProfile?.salesDetails ?? ""} maxLength={500} aria-describedby="sales-details-hint" className={inputClassName}/><p id="sales-details-hint" className="mt-1 text-xs text-zinc-500">{tBuyer(salesChannel === "other" ? "otherDetailsHint" : "detailsHint")}</p></label>
+          </>
+        </div>
+      </section>
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("summaryTitle")}</h2>

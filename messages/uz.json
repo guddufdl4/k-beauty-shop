@@ -683,7 +683,8 @@
     "phone": "Mobil telefon raqami",
     "phoneHint": "Mamlakat kodini tanlang va mobil raqamingizni kiriting.",
     "phoneCountry": "Telefon mamlakat kodi",
-    "phoneInvalid": "Tanlangan mamlakat uchun haqiqiy telefon raqamini kiriting."
+    "phoneInvalid": "Tanlangan mamlakat uchun haqiqiy telefon raqamini kiriting.",
+    "accountTypeRequired": "Biznes sifatida ro‘yxatdan o‘ting."
   },
   "account": {
     "title": "Mening hisobim",
@@ -917,5 +918,53 @@
     "processing": "Yuborilmoqda…",
     "success": "Sizning import taklifingiz qabul qilindi. Bizning jamoamiz uni ko‘rib chiqadi va siz bilan bog‘lanadi.",
     "failed": "Yuborib bo‘lmadi. Iltimos, maydonlarni tekshirib qayta urinib ko‘ring."
+  },
+  "buyerProfile": {
+    "accountType": "A’zolik turi",
+    "personal": "Jismoniy shaxs",
+    "business": "Biznes",
+    "personalHelp": "Kompaniya nomi va biznes raqamisiz ro‘yxatdan o‘tish.",
+    "businessHelp": "Faqat biznes hisoblari. Kompaniya nomi va ro‘yxat raqamini kiriting. Ulgurji shartlar uchun hujjat va tasdiq kerak.",
+    "chooseAccountType": "A’zolik turini tanlang.",
+    "purchaseDetails": "Xarid maqsadi va savdo joyi",
+    "purchasePurpose": "Xarid maqsadi",
+    "purposeOther": "Boshqa maqsad",
+    "salesChannel": "Asosiy savdo kanali",
+    "salesCountry": "Savdo mamlakati",
+    "salesDetails": "Do‘kon nomi / sayt",
+    "detailsHint": "Onlayn savdo uchun haqiqiy do‘kon URL manzilini, oflayn savdo/tarqatish uchun nom va manzilni yozing. Namunalar uchun ham rejalashtirilgan savdo joylari kerak. Barchasini kiriting.",
+    "selectOption": "Tanlang",
+    "optionalCompany": "Kompaniya / do‘kon nomi (ixtiyoriy)",
+    "purposeRequired": "Xarid maqsadini tanlang.",
+    "channelRequired": "Savdo kanalini tanlang.",
+    "detailsRequired": "Batafsil ma’lumot kiriting.",
+    "invalidDetails": "HTMLsiz 500 tagacha belgi.",
+    "purposes": {
+      "retail": "Chakana savdo",
+      "wholesale": "Ulgurji savdo / tarqatish",
+      "salon": "Salon / professional foydalanish",
+      "samples": "Namuna / mahsulot sinovi",
+      "personal": "Shaxsiy foydalanish",
+      "other": "Boshqa"
+    },
+    "channels": {
+      "online": "Shaxsiy internet-do‘kon",
+      "marketplace": "Marketpleys",
+      "social": "Ijtimoiy tarmoq / jonli savdo",
+      "offline": "Jismoniy do‘kon",
+      "distribution": "Ulgurji savdo / tarqatish",
+      "other": "Boshqa",
+      "amazon": "Amazon",
+      "aliexpress": "AliExpress",
+      "ebay": "eBay",
+      "shopee": "Shopee",
+      "lazada": "Lazada",
+      "tiktok": "TikTok Shop"
+    },
+    "countryRequired": "Iltimos, o‘z davlatingizni tanlang.",
+    "otherDetailsHint": "Boshqa kanal uchun platforma nomi va do‘kon URL manzili yoki do‘kon nomi va manzilini yozing.",
+    "savedHelp": "So‘rov yuborilganda savdo joylari hisobga saqlanadi va keyingi safar to‘ldiriladi. Tahrirlash mumkin. Bu mijoz bergan ma’lumot; yetkazish imkoniyati alohida tekshiriladi.",
+    "saveFailed": "Savdo joylarini saqlab bo‘lmadi. So‘rov yaratilmagan. Qayta urinib ko‘ring.",
+    "storeUrlRequired": "https:// bilan boshlanadigan haqiqiy do‘kon URL manzilini kiriting, faqat platforma bosh sahifasini emas."
   }
 }

@@ -3,7 +3,7 @@
 import { businessAccessCopy } from "@/lib/auth/business-access-copy";
 import { asianCopy } from "@/lib/asia-copy";
 
-import { useLocale } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useActionState, useMemo, useState } from "react";
 import type { AuthState } from "@/app/actions/auth";
 import { resendSignupConfirmation } from "@/app/actions/auth";
@@ -51,6 +51,7 @@ const fieldClass =
 
 export function SignupForm({ action, returnTo, labels, footer, policies }: Props) {
   const locale = useLocale();
+  const tBuyer = useTranslations("buyerProfile");
   const businessNumberLabels: Record<string, string> = {"ru":"Регистрационный номер компании","kk":"Кәсіпкерліктің тіркеу нөмірі","uz":"Biznes ro‘yxat raqami","ky":"Ишкердиктин каттоо номери","tg":"Рақами бақайдгирии соҳибкорӣ","tk":"Işewürligiň bellige alyş belgisi"};
   const [state, formAction, pending] = useActionState(action, {});
   const [resendState, resendAction, resendPending] = useActionState(resendSignupConfirmation, {});
@@ -81,6 +82,8 @@ export function SignupForm({ action, returnTo, labels, footer, policies }: Props
 
       <form action={formAction} className="space-y-5">
         {returnTo ? <input type="hidden" name="next" value={returnTo} /> : null}
+        <input type="hidden" name="account_type" value="business" />
+        <p className="rounded-xl bg-pink-50 p-4 text-sm text-zinc-700">{tBuyer("businessHelp")}</p>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="country_code" className="block text-sm font-medium">

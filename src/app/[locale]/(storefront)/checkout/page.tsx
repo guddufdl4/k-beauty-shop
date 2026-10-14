@@ -1,9 +1,10 @@
+import { readSavedPurchaseProfile } from "@/lib/store/purchase-profile";
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { getTranslations, getLocale } from "next-intl/server";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { getUsdKrwRate } from "@/lib/currency-rate";
 import { getCart } from "@/lib/cart";
-import { getSessionProfile } from "@/lib/supabase/auth-helpers";
+import { getAuthUser, getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
@@ -32,6 +33,7 @@ export default async function CheckoutPage() {
     getUsdKrwRate(),
   ]);
 
+  const defaultPurchaseProfile = readSavedPurchaseProfile((await getAuthUser())?.user_metadata?.purchase_profile);
   let defaultCompanyName = "";
   let defaultCountry = "";
   if (session.user) {
@@ -80,6 +82,7 @@ export default async function CheckoutPage() {
           defaultContactName={session.profile?.full_name ?? ""}
           defaultEmail={session.profile?.email ?? session.user?.email ?? ""}
           defaultCountry={defaultCountry}
+          defaultPurchaseProfile={defaultPurchaseProfile}
         />
       </div>
     </main>

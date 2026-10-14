@@ -35,7 +35,7 @@ async function request(value,origin='https://hmt.test'){
  'next-intl':{hasLocale:()=>true},'next-intl/server':{getLocale:async()=>'en',getTranslations:async()=>key=>key},
  '@/i18n/navigation':{redirect:()=>{}},'@/i18n/routing':{routing:{locales:['en'],defaultLocale:'en'}},
  '@/lib/auth/consent':{PRIVACY_POLICY_VERSION:'test',TERMS_POLICY_VERSION:'test'},'@/lib/auth/confirm-email':{buildSignupConfirmEmail:()=>({subject:'test',html:'',text:''})},
- '@/lib/auth/signup-fields':{looksLikeEmail:()=>true,parseSignupForm:()=>({email:'test@example.invalid',fullName:'Test',companyName:'Test',countryCode:'KR',preferredCurrency:'USD',password:'test-only',phoneNumber:'+821012345678'})},
+ '@/lib/auth/signup-fields':{looksLikeEmail:()=>true,parseSignupForm:()=>({accountType:'business',email:'test@example.invalid',fullName:'Test',companyName:'Test',countryCode:'KR',preferredCurrency:'USD',password:'test-only',phoneNumber:'+821012345678'})},
  '@/lib/auth/return-to':{safeStorefrontReturnTo:()=>'/account'},'@/lib/email':{sendCustomerEmail:async()=>({ok:true})},'@/lib/site-url':{resolveAuthEmailBaseUrl:()=>'https://hmt.test'},
  '@/lib/supabase/server':{createClient:async()=>({})},'@/lib/supabase/service':{createServiceClient:()=>authService},
  });

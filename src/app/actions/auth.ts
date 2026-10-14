@@ -115,16 +115,16 @@ export async function signUp(
   if (maintenanceError) return { error: maintenanceError };
   const t = await getTranslations("auth");
   const locale = await getLocale();
-  const businessNumber = String(formData.get("business_number") || "").trim();
-  if (!validBusinessNumber(businessNumber)) return { error: asianCopy(locale)?.businessNumberError ?? (locale === "ko" ? "사업자 번호를 올바르게 입력해 주세요." : "Please enter a valid business registration number.") };
   const parsed = parseSignupForm(formData);
 
   if ("errorKey" in parsed) {
     return { error: t(parsed.errorKey) };
   }
 
+  const businessNumber = parsed.accountType === "business" ? String(formData.get("business_number") || "").trim() : "";
+  if (parsed.accountType === "business" && !validBusinessNumber(businessNumber)) return { error: asianCopy(locale)?.businessNumberError ?? (locale === "ko" ? "사업자 번호를 올바르게 입력해 주세요." : "Please enter a valid business registration number.") };
   const returnTo = safeStorefrontReturnTo(String(formData.get("next") ?? ""), "/account");
-  const metadata = { business_number: businessNumber, ...signupMetadata({
+  const metadata = { account_type: parsed.accountType, business_number: businessNumber, ...signupMetadata({
     phoneNumber: parsed.phoneNumber,    fullName: parsed.fullName,
     companyName: parsed.companyName,
     countryCode: parsed.countryCode,

@@ -1,4 +1,3 @@
-import { businessDocumentCopy } from "@/lib/auth/business-document-copy";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { signUp } from "@/app/actions/auth";
@@ -26,7 +25,6 @@ export default async function SignUpPage({
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
-  const locale = await getLocale();
   const t = await getTranslations("auth");
   const legal = await getTranslations("legal");
   const contact = getPublicSiteContact(await getSiteSettings());
@@ -37,7 +35,7 @@ export default async function SignUpPage({
   return (
     <main className="mx-auto max-w-6xl px-4 py-16">
       <h1 className="text-3xl font-bold">{t("signupTitle")}</h1>
-      <p className="mt-2 text-zinc-600">{t("signupSubtitle")}</p><p className="mt-4 rounded-xl bg-violet-50 p-4 text-sm leading-7">{businessDocumentCopy(locale).help}</p>
+      <p className="mt-2 text-zinc-600">{t("signupSubtitle")}</p>
       <div className="mt-8">
         <SignupForm
           policies={{

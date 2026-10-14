@@ -683,7 +683,8 @@
     "phone": "Mobile phone number",
     "phoneHint": "Select the country code and enter your mobile number.",
     "phoneCountry": "Phone country code",
-    "phoneInvalid": "Please enter a valid phone number for the selected country."
+    "phoneInvalid": "Please enter a valid phone number for the selected country.",
+    "accountTypeRequired": "Business registration is required."
   },
   "account": {
     "title": "My account",
@@ -917,5 +918,53 @@
     "processing": "Submitting…",
     "success": "Your import proposal has been received. Our team will review it and contact you.",
     "failed": "Unable to submit. Please check the fields and try again."
+  },
+  "buyerProfile": {
+    "accountType": "Account type",
+    "personal": "Individual member",
+    "business": "Business member",
+    "personalHelp": "Register without a company or business number.",
+    "businessHelp": "Business accounts only. Enter your company and registration number. Business evidence and approval are required for wholesale benefits.",
+    "chooseAccountType": "Choose an account type.",
+    "purchaseDetails": "Purchase and sales information",
+    "purchasePurpose": "Purchase purpose",
+    "purposeOther": "Other purchase purpose",
+    "salesChannel": "Main sales channel",
+    "salesCountry": "Country of sale",
+    "salesDetails": "Store name / sales website",
+    "detailsHint": "Enter your store URL for online sales, or your business name and address for offline sales/distribution. Include all intended sales destinations, even for samples.",
+    "selectOption": "Please select",
+    "optionalCompany": "Company / store name (optional)",
+    "purposeRequired": "Select a purchase purpose.",
+    "channelRequired": "Select a sales channel.",
+    "detailsRequired": "Enter the requested details.",
+    "invalidDetails": "Use up to 500 characters without HTML.",
+    "purposes": {
+      "retail": "Retail resale",
+      "wholesale": "Wholesale / distribution",
+      "salon": "Salon / professional use",
+      "samples": "Samples / product testing",
+      "personal": "Personal use",
+      "other": "Other"
+    },
+    "channels": {
+      "online": "Own online store",
+      "marketplace": "Online marketplace",
+      "social": "Social media / live selling",
+      "offline": "Physical shop",
+      "distribution": "Wholesale / distribution",
+      "other": "Other",
+      "amazon": "Amazon",
+      "aliexpress": "AliExpress",
+      "ebay": "eBay",
+      "shopee": "Shopee",
+      "lazada": "Lazada",
+      "tiktok": "TikTok Shop"
+    },
+    "countryRequired": "Please select your country.",
+    "otherDetailsHint": "For Other, specify the platform/channel name and the actual store URL or business name and address.",
+    "savedHelp": "Your sales information is saved to your account when you submit a quotation, and filled in next time. You can edit it. It is customer-declared information; supply eligibility is reviewed separately.",
+    "saveFailed": "Could not save your sales information. No quotation was created. Please try again.",
+    "storeUrlRequired": "Enter the actual store URL starting with https:// (not just the marketplace homepage)."
   }
 }

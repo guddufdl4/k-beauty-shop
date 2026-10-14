@@ -684,7 +684,8 @@
     "phone": "携帯電話番号",
     "phoneHint": "国番号を選択し、携帯電話番号を入力してください。",
     "phoneCountry": "電話の国番号",
-    "phoneInvalid": "選択した国の有効な電話番号を入力してください。"
+    "phoneInvalid": "選択した国の有効な電話番号を入力してください。",
+    "accountTypeRequired": "事業者として登録してください。"
   },
   "account": {
     "title": "マイページ",
@@ -918,5 +919,53 @@
     "processing": "送信中…",
     "success": "輸入提案を受け付けました。担当者が確認後ご連絡します。",
     "failed": "送信できません。入力内容を確認してください。"
+  },
+  "buyerProfile": {
+    "accountType": "会員区分",
+    "personal": "個人会員",
+    "business": "事業者会員",
+    "personalHelp": "会社名や事業者番号なしで登録できます。",
+    "businessHelp": "事業者のみ登録できます。会社名と登録番号を入力してください。卸売特典には事業証明と承認が必要です。",
+    "chooseAccountType": "会員区分を選択してください。",
+    "purchaseDetails": "購入目的と販売先",
+    "purchasePurpose": "購入目的",
+    "purposeOther": "その他の購入目的",
+    "salesChannel": "主な販売チャネル",
+    "salesCountry": "販売国",
+    "salesDetails": "店舗名 / 販売サイト",
+    "detailsHint": "オンライン販売は実際の店舗URL、実店舗・流通は店名と住所を入力してください。サンプルも販売予定先が必要です。複数ある場合はすべて記入してください。",
+    "selectOption": "選択してください",
+    "optionalCompany": "会社名 / 店舗名（任意）",
+    "purposeRequired": "購入目的を選択してください。",
+    "channelRequired": "販売チャネルを選択してください。",
+    "detailsRequired": "詳細を入力してください。",
+    "invalidDetails": "HTMLを含めず500文字以内で入力してください。",
+    "purposes": {
+      "retail": "小売販売",
+      "wholesale": "卸売 / 流通",
+      "salon": "サロン / 業務用",
+      "samples": "サンプル / 製品テスト",
+      "personal": "個人使用",
+      "other": "その他"
+    },
+    "channels": {
+      "online": "自社オンラインショップ",
+      "marketplace": "オンラインマーケットプレイス",
+      "social": "SNS / ライブ販売",
+      "offline": "実店舗",
+      "distribution": "卸売 / 流通",
+      "other": "その他",
+      "amazon": "Amazon",
+      "aliexpress": "AliExpress",
+      "ebay": "eBay",
+      "shopee": "Shopee",
+      "lazada": "Lazada",
+      "tiktok": "TikTok Shop"
+    },
+    "countryRequired": "国を選択してください。",
+    "otherDetailsHint": "その他のプラットフォーム名と実際の店舗URL、または店名と住所を記入してください。",
+    "savedHelp": "見積依頼時に販売先をアカウントに保存し、次回に表示します。編集できます。申告情報として扱い、供給可否は別途確認します。",
+    "saveFailed": "販売先を保存できませんでした。見積依頼は作成されていません。再試行してください。",
+    "storeUrlRequired": "https://で始まる実際の店舗URLを入力してください。マーケットのトップページだけでは不十分です。"
   }
 }

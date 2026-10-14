@@ -1,4 +1,4 @@
-export const QUOTE_DRAFT_FIELDS = ["company_name", "country", "contact_name", "email", "phone", "shipping_address", "trade_terms", "shipping_method", "trade_terms_etc", "shipping_method_etc", "message"] as const;
+export const QUOTE_DRAFT_FIELDS = ["purchase_purpose", "purpose_other", "sales_channel", "sales_country", "sales_details", "company_name", "country", "contact_name", "email", "phone", "shipping_address", "trade_terms", "shipping_method", "trade_terms_etc", "shipping_method_etc", "message"] as const;
 export function readQuoteDraft(value: string | null, now = Date.now()): Record<string,string> | null {
   try {
     const data = JSON.parse(value || "null");

@@ -683,7 +683,8 @@
     "phone": "Nomor ponsel",
     "phoneHint": "Pilih kode negara dan masukkan nomor ponsel.",
     "phoneCountry": "Kode telepon negara",
-    "phoneInvalid": "Masukkan nomor telepon valid untuk negara yang dipilih."
+    "phoneInvalid": "Masukkan nomor telepon valid untuk negara yang dipilih.",
+    "accountTypeRequired": "Silakan daftar sebagai bisnis."
   },
   "account": {
     "title": "Akun saya",
@@ -917,5 +918,53 @@
     "processing": "Mengirim…",
     "success": "Penawaran impor diterima. Tim akan meninjau dan menghubungi Anda.",
     "failed": "Gagal mengirim. Periksa kolom dan coba lagi."
+  },
+  "buyerProfile": {
+    "accountType": "Jenis anggota",
+    "personal": "Perorangan",
+    "business": "Bisnis",
+    "personalHelp": "Daftar tanpa nama perusahaan atau nomor usaha.",
+    "businessHelp": "Khusus akun bisnis. Masukkan nama perusahaan dan nomor registrasi. Bukti usaha dan persetujuan diperlukan untuk manfaat grosir.",
+    "chooseAccountType": "Pilih jenis anggota.",
+    "purchaseDetails": "Tujuan pembelian dan penjualan",
+    "purchasePurpose": "Tujuan pembelian",
+    "purposeOther": "Tujuan lainnya",
+    "salesChannel": "Saluran penjualan utama",
+    "salesCountry": "Negara penjualan",
+    "salesDetails": "Nama toko / situs penjualan",
+    "detailsHint": "Penjualan online: URL toko sebenarnya. Offline/distribusi: nama usaha dan alamat. Sampel juga memerlukan tujuan penjualan; cantumkan semua tujuan.",
+    "selectOption": "Silakan pilih",
+    "optionalCompany": "Nama perusahaan / toko (opsional)",
+    "purposeRequired": "Pilih tujuan pembelian.",
+    "channelRequired": "Pilih saluran penjualan.",
+    "detailsRequired": "Masukkan detail yang diminta.",
+    "invalidDetails": "Maksimal 500 karakter tanpa HTML.",
+    "purposes": {
+      "retail": "Penjualan eceran",
+      "wholesale": "Grosir / distribusi",
+      "salon": "Salon / profesional",
+      "samples": "Sampel / pengujian produk",
+      "personal": "Pemakaian pribadi",
+      "other": "Lainnya"
+    },
+    "channels": {
+      "online": "Toko online sendiri",
+      "marketplace": "Marketplace",
+      "social": "Media sosial / siaran langsung",
+      "offline": "Toko fisik",
+      "distribution": "Grosir / distribusi",
+      "other": "Lainnya",
+      "amazon": "Amazon",
+      "aliexpress": "AliExpress",
+      "ebay": "eBay",
+      "shopee": "Shopee",
+      "lazada": "Lazada",
+      "tiktok": "TikTok Shop"
+    },
+    "countryRequired": "Pilih negara Anda.",
+    "otherDetailsHint": "Lainnya: tulis nama platform serta URL toko sebenarnya atau nama usaha dan alamat.",
+    "savedHelp": "Tujuan penjualan disimpan di akun saat mengirim permintaan penawaran dan diisi pada permintaan berikutnya. Dapat diedit. Ini informasi dari pelanggan; kelayakan pasokan ditinjau terpisah.",
+    "saveFailed": "Gagal menyimpan tujuan penjualan. Penawaran belum dibuat. Silakan coba lagi.",
+    "storeUrlRequired": "Masukkan URL toko sebenarnya yang diawali https://, bukan hanya beranda marketplace."
   }
 }

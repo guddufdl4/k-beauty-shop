@@ -21,6 +21,7 @@ function validIdentity(value: string, maxLength: number): boolean {
 }
 
 export type ParsedSignupInput = {
+  accountType: "business";
   countryCode: string;
   phoneNumber: string;
   companyName: string;
@@ -33,6 +34,7 @@ export type ParsedSignupInput = {
 };
 
 export type SignupFormErrorKey =
+  | "accountTypeRequired"
   | "phoneInvalid"
   | "countryRequired"
   | "companyRequired"
@@ -44,6 +46,8 @@ export type SignupFormErrorKey =
   | "consentRequired";
 
 export function parseSignupForm(formData: FormData): ParsedSignupInput | { errorKey: SignupFormErrorKey } {
+  const accountType = String(formData.get("account_type") ?? "");
+  if (accountType !== "business") return { errorKey: "accountTypeRequired" };
   const countryCode = String(formData.get("country_code") ?? "").trim().toUpperCase();
   const companyName = String(formData.get("company_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -87,6 +91,7 @@ export function parseSignupForm(formData: FormData): ParsedSignupInput | { error
   }
 
   return {
+    accountType,
     countryCode,
     phoneNumber: phone.number,
     companyName,

@@ -683,7 +683,8 @@
     "phone": "Số điện thoại di động",
     "phoneHint": "Chọn mã quốc gia và nhập số di động.",
     "phoneCountry": "Mã điện thoại quốc gia",
-    "phoneInvalid": "Nhập số điện thoại hợp lệ cho quốc gia đã chọn."
+    "phoneInvalid": "Nhập số điện thoại hợp lệ cho quốc gia đã chọn.",
+    "accountTypeRequired": "Vui lòng đăng ký tài khoản doanh nghiệp."
   },
   "account": {
     "title": "Tài khoản của tôi",
@@ -917,5 +918,53 @@
     "processing": "Đang gửi…",
     "success": "Đã nhận đề xuất nhập khẩu. Chúng tôi sẽ xem xét và liên hệ.",
     "failed": "Không gửi được. Kiểm tra và thử lại."
+  },
+  "buyerProfile": {
+    "accountType": "Loại thành viên",
+    "personal": "Cá nhân",
+    "business": "Doanh nghiệp",
+    "personalHelp": "Đăng ký không cần tên công ty hoặc mã doanh nghiệp.",
+    "businessHelp": "Chỉ dành cho doanh nghiệp. Nhập tên công ty và mã đăng ký. Cần giấy tờ và phê duyệt để hưởng quyền lợi bán buôn.",
+    "chooseAccountType": "Chọn loại thành viên.",
+    "purchaseDetails": "Mục đích mua và nơi bán",
+    "purchasePurpose": "Mục đích mua",
+    "purposeOther": "Mục đích khác",
+    "salesChannel": "Kênh bán chính",
+    "salesCountry": "Quốc gia bán hàng",
+    "salesDetails": "Tên cửa hàng / trang web",
+    "detailsHint": "Bán trực tuyến: nhập URL gian hàng thực tế. Bán trực tiếp/phân phối: nhập tên và địa chỉ. Mẫu thử cũng cần nơi bán dự kiến; liệt kê tất cả nơi bán.",
+    "selectOption": "Vui lòng chọn",
+    "optionalCompany": "Tên công ty / cửa hàng (tùy chọn)",
+    "purposeRequired": "Chọn mục đích mua.",
+    "channelRequired": "Chọn kênh bán hàng.",
+    "detailsRequired": "Nhập thông tin chi tiết.",
+    "invalidDetails": "Tối đa 500 ký tự, không dùng HTML.",
+    "purposes": {
+      "retail": "Bán lẻ",
+      "wholesale": "Bán sỉ / phân phối",
+      "salon": "Salon / chuyên nghiệp",
+      "samples": "Mẫu / thử nghiệm sản phẩm",
+      "personal": "Sử dụng cá nhân",
+      "other": "Khác"
+    },
+    "channels": {
+      "online": "Cửa hàng trực tuyến riêng",
+      "marketplace": "Sàn thương mại điện tử",
+      "social": "Mạng xã hội / bán trực tiếp",
+      "offline": "Cửa hàng thực tế",
+      "distribution": "Bán sỉ / phân phối",
+      "other": "Khác",
+      "amazon": "Amazon",
+      "aliexpress": "AliExpress",
+      "ebay": "eBay",
+      "shopee": "Shopee",
+      "lazada": "Lazada",
+      "tiktok": "TikTok Shop"
+    },
+    "countryRequired": "Chọn quốc gia.",
+    "otherDetailsHint": "Kênh khác: ghi tên nền tảng và URL gian hàng hoặc tên, địa chỉ cửa hàng.",
+    "savedHelp": "Thông tin nơi bán được lưu vào tài khoản khi gửi yêu cầu báo giá và điền lại lần sau. Có thể sửa. Đây là thông tin khách khai báo; khả năng cung cấp được xét riêng.",
+    "saveFailed": "Không lưu được nơi bán. Chưa tạo yêu cầu báo giá. Vui lòng thử lại.",
+    "storeUrlRequired": "Nhập URL gian hàng thực tế bắt đầu bằng https://, không chỉ trang chủ sàn."
   }
 }

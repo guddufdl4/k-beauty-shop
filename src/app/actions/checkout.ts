@@ -2,6 +2,7 @@
 
 import { maintenanceActionError } from "@/lib/maintenance-server";
 
+import { parsePurchaseProfile, purchaseProfileText } from "@/lib/store/purchase-profile";
 import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
 
 import { revalidatePath } from "next/cache";
@@ -19,6 +20,7 @@ import {
   isQuoteMailConfigured,
   sendQuoteInquiryEmail,
 } from "@/lib/email";
+import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { formatKRW } from "@/lib/utils";
@@ -64,8 +66,9 @@ export async function submitQuoteRequest(
     return { success: true };
   }
 
-  const companyName = trimField(formData.get("company_name")) || session.profile?.company_name || "";
+  const companyInput = trimField(formData.get("company_name")) || session.profile?.company_name || "";
   const contactName = trimField(formData.get("contact_name")) || session.profile?.full_name || "";
+  const companyName = companyInput;
   const email = trimField(formData.get("email")) || session.user.email || "";
   const phone = trimField(formData.get("phone"));
   const countryCode = trimField(formData.get("country"));
@@ -115,6 +118,10 @@ export async function submitQuoteRequest(
     return { error: t("fieldTooLong") };
   }
 
+  const purchaseProfile = parsePurchaseProfile(formData);
+  if ("errorKey" in purchaseProfile) return { error: (await getTranslations("buyerProfile"))(purchaseProfile.errorKey) };
+  const purchaseSummary = purchaseProfileText(purchaseProfile);
+
   const cart = await getCart();
   const verified = await revalidateQuoteCart(cart);
   if (!verified) {
@@ -137,8 +144,18 @@ export async function submitQuoteRequest(
     return { error: t("minOrderUsd", { amount: MIN_ORDER_USD }) };
   }
 
+  // Customer-declared defaults only. Never used for business approval or authorization.
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.updateUser({ data: { purchase_profile: purchaseProfile } });
+    if (error) return { error: (await getTranslations("buyerProfile"))("saveFailed") };
+  } catch {
+    return { error: (await getTranslations("buyerProfile"))("saveFailed") };
+  }
+
   const created = await createQuoteOrderFromCart(verified, {
     companyName,
+    purchaseProfile,
     contactName,
     email,
     phone,
@@ -177,7 +194,7 @@ export async function submitQuoteRequest(
       whatsapp: phone || null,
       interested_brands: brands.join(", ").slice(0, MAX_FIELD) || "Quote list",
       estimated_quantity: `${totalUnits} units`,
-      message: [message, "", lineText, `Reference subtotal (KRW): ${formatKRW(verified.subtotal)}`]
+      message: [purchaseSummary, message, "", lineText, `Reference subtotal (KRW): ${formatKRW(verified.subtotal)}`]
         .filter(Boolean)
         .join("\n")
         .slice(0, MAX_MESSAGE),
@@ -203,8 +220,8 @@ export async function submitQuoteRequest(
       .join("");
     const sent = await sendQuoteInquiryEmail({
       subject: `[HMT Korea] Quote request · ${created.orderNumber} · ${companyName}`,
-      html: `<div style="font-family:Arial,sans-serif"><h2>HMT Korea wholesale quote request</h2><p>${escapeHtml(created.orderNumber)}</p><table style="border-collapse:collapse"><thead><tr><th>Product code</th><th>Barcode</th><th>Brand</th><th>Product name</th><th>Quantity</th></tr></thead><tbody>${rows}</tbody></table></div>`,
-      text: `HMT Korea wholesale quote request\n${created.orderNumber}\n${lineText}`,
+      html: `<div style="font-family:Arial,sans-serif"><h2>HMT Korea wholesale quote request</h2><p>${escapeHtml(created.orderNumber)}</p><p style="white-space:pre-wrap">${escapeHtml(purchaseSummary)}</p><table style="border-collapse:collapse"><thead><tr><th>Product code</th><th>Barcode</th><th>Brand</th><th>Product name</th><th>Quantity</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+      text: `HMT Korea wholesale quote request\n${created.orderNumber}\n${purchaseSummary}\n${lineText}`,
       replyTo: email,
     });
     emailSent = sent.ok;

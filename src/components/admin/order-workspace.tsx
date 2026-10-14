@@ -20,6 +20,14 @@ const country = (code?: string | null) => {
   try { return `${new Intl.DisplayNames(["ko"], { type: "region" }).of(code)} (${code})`; } catch { return code; }
 };
 
+const purchaseLabels: Record<string, string> = { amazon: "Amazon", aliexpress: "AliExpress", ebay: "eBay", shopee: "Shopee", lazada: "Lazada", tiktok: "TikTok Shop", retail: "소매 판매", wholesale: "도매 판매", salon: "미용실·에스테틱", samples: "샘플·테스트", personal: "개인 사용", other: "기타", online: "온라인 쇼핑몰", marketplace: "온라인 마켓", social: "소셜미디어", offline: "오프라인 매장", distribution: "유통·납품" };
+function buyerValue(key: string, value: unknown): string {
+  const text = String(value || "—");
+  if (key === "purchase_purpose" || key === "sales_channel") return purchaseLabels[text] || text;
+  if (key === "sales_country") return value ? country(text) : "—";
+  return text;
+}
+
 export function OrderWorkspace({ orders, admins, view, amountTotal, pageAmountTotal, total }: {
   orders: AdminOrderRow[]; admins: OrderAdmin[]; view: "active" | "deleted"; amountTotal: number; pageAmountTotal: number; total: number;
 }) {
@@ -121,9 +129,9 @@ export function OrderWorkspace({ orders, admins, view, amountTotal, pageAmountTo
             <p className="mt-2 text-xs text-zinc-500">관리자에게만 표시됩니다. 단계 변경으로 고객에게 메일이 발송되거나 결제 상태가 바뀌지 않습니다.</p>
             <div className="mt-4 flex flex-wrap gap-3"><button disabled={!dirty || saving} onClick={save} className={styles.button}>{saving ? "처리 중…" : "변경 저장"}</button>{!detail.order.shipping_address?.quote_reviewed_at && orders.find(o => o.order_number === detail.order.order_number)?.payment_provider === "quote" && <button onClick={markRead} className="rounded-lg border px-4 py-2 text-sm">확인 처리</button>}</div></fieldset>
           </section>
-          <section className={styles.panel}><h3 className="mb-3 font-semibold">고객 · 거래 정보</h3><dl className="grid gap-3 text-sm">{[
-            ["회사", "company_name"], ["담당자", "recipient_name"], ["이메일", "email"], ["연락처", "phone"], ["국가", "country_code"], ["수하인", "consignee"], ["통지처", "notify_party"], ["주소", "shipping_address"], ["거래조건", "trade_terms"], ["기타 거래조건", "trade_terms_etc"], ["고객 지정 운송사", "shipping_method"], ["기타 운송사", "shipping_method_etc"],
-          ].map(([label, key]) => <div key={key} className="grid grid-cols-[110px_1fr] gap-3"><dt className="text-zinc-500">{label}</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{String(detail.order.shipping_address?.[key] || "—")}</dd></div>)}<div><dt className="text-zinc-500">고객 요청사항</dt><dd className="mt-1 whitespace-pre-wrap break-words">{detail.order.notes || "—"}</dd></div></dl></section>
+          <section className={styles.panel}><h3 className="mb-3 font-semibold">고객 · 거래 정보</h3><p className="mb-3 text-xs text-zinc-500">판매처는 고객이 입력한 정보입니다. 사업자 승인 및 공급 가능 여부는 별도로 확인해 주세요.</p><dl className="grid gap-3 text-sm">{[
+            ["구매 목적", "purchase_purpose"], ["기타 구매 목적", "purpose_other"], ["판매 채널", "sales_channel"], ["판매 국가", "sales_country"], ["판매처 / 사이트", "sales_details"], ["회사", "company_name"], ["담당자", "recipient_name"], ["이메일", "email"], ["연락처", "phone"], ["국가", "country_code"], ["수하인", "consignee"], ["통지처", "notify_party"], ["주소", "shipping_address"], ["거래조건", "trade_terms"], ["기타 거래조건", "trade_terms_etc"], ["고객 지정 운송사", "shipping_method"], ["기타 운송사", "shipping_method_etc"],
+          ].map(([label, key]) => <div key={key} className="grid grid-cols-[110px_1fr] gap-3"><dt className="text-zinc-500">{label}</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{buyerValue(key, detail.order.shipping_address?.[key])}</dd></div>)}<div><dt className="text-zinc-500">고객 요청사항</dt><dd className="mt-1 whitespace-pre-wrap break-words">{detail.order.notes || "—"}</dd></div></dl></section>
           <section className={styles.panel}><h3 className="mb-3 font-semibold">요청 상품 · {detail.items.length}종</h3>{detail.items.map((item, index) => <div key={index} className="border-t border-zinc-100 py-3 text-sm"><p className="font-medium">{item.product_name}</p><p className="mt-1 break-all text-xs text-zinc-500">{item.product_sku} · {item.quantity}개 × {formatKRW(item.unit_price)}</p><p className="mt-2 text-right font-semibold">{formatKRW(item.line_total)}</p></div>)}<p className="mt-3 text-right font-bold">합계 {formatKRW(detail.order.total)}</p></section>
           <section className={styles.panel}><h3 className="mb-3 font-semibold">이 고객의 다른 요청 · 최근 20건</h3>{!detail.history.length && <p className="text-sm text-zinc-500">다른 요청이 없습니다.</p>}{detail.history.map(item => <div key={item.order_number} className={styles.history}><button disabled={saving} className="text-left text-sm text-violet-700" onClick={() => open(item.order_number)}>{item.order_number}<time className="mt-1 block text-xs text-zinc-500">{date(item.created_at)}</time></button><span className="text-sm">{formatKRW(item.total)}</span></div>)}</section>
           <details className={styles.panel}><summary className="cursor-pointer text-sm text-zinc-500">더 보기 · {view === "deleted" ? "복원" : "삭제"}</summary><div className="mt-4"><AdminOrderActionButton orderNumber={detail.order.order_number} restore={!!detail.order.deleted_at} onSuccess={() => { dialog.current?.close(); setSelected(null); setDetail(null); setDirty(false); router.refresh(); }} /></div></details>
