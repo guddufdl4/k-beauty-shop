@@ -28,6 +28,7 @@ function BrandDirectoryLink({
 
   return (
     <Link
+      prefetch={false}
       tabIndex={duplicate ? -1 : undefined}
       href={buildBrandHref(brand.slug)}
       className="group flex h-24 flex-col items-center justify-center rounded-xl border border-zinc-200/70 bg-white px-5 text-center transition-colors hover:border-pink-300 hover:bg-pink-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
@@ -125,7 +126,7 @@ function BrandsMegaMenuPanel({
               <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-zinc-400" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
               <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={tNav("searchBrands")} aria-label={tNav("searchBrands")} className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
             </label>
-            <Link href="/brands" onClick={onNavigate} className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-xs font-semibold text-white sm:text-sm">{tNav("browseAllBrandsAZ")} →</Link>
+            <Link prefetch={false} href="/brands" onClick={onNavigate} className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-xs font-semibold text-white sm:text-sm">{tNav("browseAllBrandsAZ")} →</Link>
           </div>
 
           {!query.trim() && featuredBrands.length > 0 ? (
@@ -149,7 +150,7 @@ function BrandsMegaMenuPanel({
                 {tNav("moreBrands")}
               </h3>
               <ul className="mt-3 grid max-h-52 grid-cols-2 gap-x-4 gap-y-1 overflow-y-auto overscroll-contain sm:grid-cols-4 lg:grid-cols-6">
-                {filteredBrands.map(brand => <li key={brand.slug} className="min-w-0"><Link href={buildBrandHref(brand.slug)} onClick={onNavigate} className="flex min-h-11 items-center rounded-lg px-2 text-sm text-zinc-700 transition-colors hover:bg-pink-50 hover:text-accent">{brand.displayName}</Link></li>)}
+                {filteredBrands.map(brand => <li key={brand.slug} className="min-w-0"><Link prefetch={false} href={buildBrandHref(brand.slug)} onClick={onNavigate} className="flex min-h-11 items-center rounded-lg px-2 text-sm text-zinc-700 transition-colors hover:bg-pink-50 hover:text-accent">{brand.displayName}</Link></li>)}
               </ul>
               {filteredBrands.length === 0 ? <p className="py-3 text-sm text-zinc-500">{tNav("noBrandResults")}</p> : null}
             </section>
@@ -256,14 +257,14 @@ function BrandsMegaMenuInner({ featuredBrands, moreBrands, isLoggedIn }: Props) 
         aria-hidden={!open}
       >
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-          <BrandsMegaMenuPanel
+          {open ? <BrandsMegaMenuPanel
             featuredBrands={featuredBrands}
             moreBrands={moreBrands}
             isLoggedIn={isLoggedIn}
             panelId={panelId}
             active={open}
             onNavigate={closeMenu}
-          />
+          /> : null}
         </div>
       </div>
     </div>

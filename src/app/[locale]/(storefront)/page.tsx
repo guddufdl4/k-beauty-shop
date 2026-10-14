@@ -238,15 +238,27 @@ function mapStoredHeroSlideToBannerSlide(
 }
 export default async function HomePage() {
   const audience = await resolveStorefrontAudience();
-  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings, homeSettings] = await Promise.all([
-    getTranslations("home"),
+  const homeTranslationsPending = getTranslations("home");
+  const localePending = getLocale();
+  const siteSettingsPending = loadSiteSettingsSafely();
+  // Brand rows depend on banner settings, not on the supplier-priority product read.
+  // Start them as soon as those settings are available instead of in a second waterfall.
+  const campaignCatalogPending = Promise.all([siteSettingsPending, homeTranslationsPending, localePending]).then(async ([settings, translations, language]) => {
+    const slides = getHeroSlides(settings).map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, language, settings, translations)).filter((slide): slide is HeroBannerSlide => slide !== null);
+    const campaignBrands = [...new Set(slides.filter(slide => slide.id.startsWith("seasonal-")).map(slide => slide.copy?.badge).filter((brand): brand is string => Boolean(brand)))];
+    const campaignCatalog = await Promise.all(campaignBrands.map(brand => getProducts({brand, brandExact: true, requireRealImage: true, sort: "trending", limit: 6, audience})));
+    return {campaignBrands, campaignCatalog};
+  });
+  const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings, homeSettings, {campaignBrands, campaignCatalog}] = await Promise.all([
+    homeTranslationsPending,
     getTranslations("products"),
     getPriorityBrandProducts({ limit: 48, audience }),
-    getLocale(),
+    localePending,
     getUsdKrwRate(),
     getStorefrontCategories(),
-    loadSiteSettingsSafely(),
+    siteSettingsPending,
     getHomeSettings(),
+    campaignCatalogPending,
   ]);
 
   const heroCopy = buildDefaultHeroCopy(siteSettings, t);
@@ -257,10 +269,6 @@ export default async function HomePage() {
 
   const trendingAll = localizeStorefrontProducts(selectTrendingCategoryProducts(products, null, categories, 8, homeSettings.trending_skus), locale);
   // Keep the curated lead products, then complete each brand row with real catalog items.
-  const campaignBrands = [...new Set(heroSlides.filter(slide => slide.id.startsWith("seasonal-")).map(slide => slide.copy?.badge).filter((brand): brand is string => Boolean(brand)))];
-  const campaignCatalog = await Promise.all(campaignBrands.map(brand => getProducts({
-    brand, brandExact: true, requireRealImage: true, sort: "trending", limit: 6, audience,
-  })));
   const campaignTrending = campaignBrands.flatMap((brand, index) => {
     const candidates = [...trendingAll, ...localizeStorefrontProducts(campaignCatalog[index].products, locale)]
       .filter(product => getDisplayBrandName(product.brand).toLowerCase() === brand.toLowerCase());

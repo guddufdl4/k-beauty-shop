@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { buildProductSearchFilter } from "./product-search-filter";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -38,7 +39,7 @@ import {
 
 } from "@/lib/store/products-url";
 
-import { STATIC_PRODUCTS, type ProductWithRelations } from "./products";
+import { STOREFRONT_PRODUCTS_CACHE_TAG, STATIC_PRODUCTS, type ProductWithRelations } from "./products";
 
 import { getLocalizedProductName, withLocalizedNameFields, containsHangul, isKoreanLocale } from "@/lib/store/localized-product-name";
 
@@ -356,7 +357,7 @@ async function fetchSuggestionsFromDatabase(
 
 ): Promise<SearchSuggestions | null> {
 
-  const supabase = createServiceClient() ?? createPublicClient() ?? (await createSafeClient());
+  const supabase = createServiceClient() ?? createPublicClient();
 
   if (!supabase) {
 
@@ -366,9 +367,7 @@ async function fetchSuggestionsFromDatabase(
 
 
 
-  await ensureSoftDeleteColumnProbed(supabase);
-
-  await ensureProductCodeColumnProbed(supabase);
+  await Promise.all([ensureSoftDeleteColumnProbed(supabase), ensureProductCodeColumnProbed(supabase)]);
 
 
 
@@ -546,6 +545,13 @@ async function fetchSuggestionsFromDatabase(
 
 
 
+// Public identities only: no cookies, price fields, or customer-specific data in this cache.
+const cachedPublicSuggestions = unstable_cache(async (query: string, limit: number, locale: string) => {
+  const result = await fetchSuggestionsFromDatabase(query, limit, locale);
+  if (!result) throw new Error("Search suggestions unavailable");
+  return result;
+}, ["public-search-suggestions-v1"], { revalidate: 60, tags: [STOREFRONT_PRODUCTS_CACHE_TAG] });
+
 export async function getSearchSuggestions(
 
   query: string,
@@ -556,7 +562,7 @@ export async function getSearchSuggestions(
 
 ): Promise<SearchSuggestions> {
 
-  const trimmed = query.trim();
+  const trimmed = query.trim().slice(0,160);
 
   if (trimmed.length < MIN_QUERY_LENGTH) {
 
@@ -574,15 +580,11 @@ export async function getSearchSuggestions(
 
 
 
-  const fromDb = await fetchSuggestionsFromDatabase(trimmed, limit, locale);
-
-  if (fromDb) {
-
-    return fromDb;
-
+  try {
+    return await cachedPublicSuggestions(trimmed.toLowerCase(), Math.max(1, Math.min(8, limit)), locale);
+  } catch {
+    // A database failure must not become a cached empty/static catalog.
   }
-
-
 
   return staticSuggestions(trimmed, limit, locale);
 

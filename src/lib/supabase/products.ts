@@ -1,3 +1,4 @@
+import { cache } from "react";
 import curatedBestSellers from "@/data/curated-best-sellers.json";
 import { sortExternalBestSellers } from "@/lib/store/external-best-sellers";
 import { buildProductSearchFilter } from "./product-search-filter";
@@ -851,7 +852,7 @@ async function hydrateProductLocaleNames(
   }
 
   const reader = createServiceClient() ?? supabase;
-  const ids = products.map((product) => product.id);
+  const ids = products.filter((product) => product.source_row == null).map((product) => product.id);
   const sourceById = new Map<string, Record<string, unknown>>();
 
   for (let offset = 0; offset < ids.length; offset += 80) {
@@ -1416,8 +1417,7 @@ export async function getProducts(
     return staticProductsResult();
   }
 
-  await ensureSoftDeleteColumnProbed(supabase);
-  await ensureProductCodeColumnProbed(supabase);
+  await Promise.all([ensureSoftDeleteColumnProbed(supabase), ensureProductCodeColumnProbed(supabase)]);
 
   let categoryIds: string[] | null = null;
   if (categorySlug) {
@@ -2335,7 +2335,7 @@ async function fetchPriorityBrandProductsFromSource(
   };
 }
 
-export async function getProductBySlug(
+async function fetchProductBySlug(
   slug: string,
   audience?: StorefrontAudience,
 ): Promise<{ product: StorefrontProduct | null; meta: FetchMeta }> {
@@ -2360,8 +2360,7 @@ export async function getProductBySlug(
     };
   }
 
-  await ensureSoftDeleteColumnProbed(supabase);
-  await ensureProductCodeColumnProbed(supabase);
+  await Promise.all([ensureSoftDeleteColumnProbed(supabase), ensureProductCodeColumnProbed(supabase)]);
 
   let detailQuery = supabase
     .from("products")
@@ -2378,11 +2377,11 @@ export async function getProductBySlug(
   if (error) {
     if (isMissingDeletedAtColumnError(error.message)) {
       markSoftDeleteColumnMissing();
-      return getProductBySlug(slug, resolvedAudience);
+      return fetchProductBySlug(slug, resolvedAudience);
     }
     if (isMissingProductCodeColumnError(error.message)) {
       markProductCodeColumnMissing();
-      return getProductBySlug(slug, resolvedAudience);
+      return fetchProductBySlug(slug, resolvedAudience);
     }
 
     const product = STATIC_PRODUCTS.find((p) => p.slug === slug) ?? null;
@@ -2412,6 +2411,9 @@ export async function getProductBySlug(
     meta: { source: "database", configured: true },
   };
 }
+
+// Deduplicate metadata and page reads within this request; never share member prices across requests.
+export const getProductBySlug = cache(fetchProductBySlug);
 
 export async function getAllProductsAdmin(): Promise<{
   products: ProductWithRelations[];

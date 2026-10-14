@@ -28,7 +28,7 @@ export function isSoftDeleteColumnAvailable(): boolean {
  * Probe once per process whether products.deleted_at exists.
  * When the migration has not been applied, callers should skip deleted_at filters.
  */
-export async function ensureSoftDeleteColumnProbed(
+async function probeColumn(
   supabase: SupabaseClient,
 ): Promise<boolean> {
   if (softDeleteColumnExists !== null) {
@@ -50,4 +50,11 @@ export async function ensureSoftDeleteColumnProbed(
   // Transient or unrelated error — assume column exists so we do not hide products.
   softDeleteColumnExists = true;
   return true;
+}
+// Coalesce simultaneous first requests while the schema capability is being checked.
+let pendingProbe: Promise<boolean> | null = null;
+export function ensureSoftDeleteColumnProbed(supabase: SupabaseClient): Promise<boolean> {
+  if (softDeleteColumnExists !== null) return Promise.resolve(softDeleteColumnExists);
+  if (!pendingProbe) pendingProbe = probeColumn(supabase).finally(() => { pendingProbe = null; });
+  return pendingProbe;
 }

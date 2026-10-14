@@ -36,7 +36,7 @@ export function isProductCodeColumnAvailable(): boolean {
   return productCodeColumnExists !== false;
 }
 
-export async function ensureProductCodeColumnProbed(
+async function probeColumn(
   supabase: SupabaseClient,
 ): Promise<boolean> {
   if (productCodeColumnExists !== null) {
@@ -102,4 +102,12 @@ export function readProductCode(row: Record<string, unknown> | null | undefined)
   }
   const value = row.product_code;
   return typeof value === "string" && isValidHmtProductCode(value) ? value : null;
+}
+
+// Coalesce simultaneous first requests while the schema capability is being checked.
+let pendingProbe: Promise<boolean> | null = null;
+export function ensureProductCodeColumnProbed(supabase: SupabaseClient): Promise<boolean> {
+  if (productCodeColumnExists !== null) return Promise.resolve(productCodeColumnExists);
+  if (!pendingProbe) pendingProbe = probeColumn(supabase).finally(() => { pendingProbe = null; });
+  return pendingProbe;
 }
