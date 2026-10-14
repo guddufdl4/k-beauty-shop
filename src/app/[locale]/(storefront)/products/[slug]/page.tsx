@@ -145,8 +145,19 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
     notFound();
   }
 
-  const categoriesResult =
-    isAdmin && isPricedStorefrontProduct(product) ? await getCategories() : null;
+  const [categoriesResult, publicRetailAmount, relatedResult] = await Promise.all([
+    isAdmin && isPricedStorefrontProduct(product) ? getCategories() : Promise.resolve(null),
+    !(canViewPrices && isPricedStorefrontProduct(product)) && meta.source === "database" ? getPublicRetailPrice(product.id) : Promise.resolve(null),
+    product.brand
+      ? getProducts({
+        brand: product.brand,
+        brandExact: true,
+        limit: 8,
+        requireRealImage: true,
+        audience,
+      })
+    : Promise.resolve({ products: [] }),
+  ]);
 
   const displayImageUrl = resolveProductImageUrl(product);
   const isPlaceholder = isCategoryPlaceholderUrl(displayImageUrl);
@@ -159,7 +170,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
   const retailAmount =
     canViewPrices && isPricedStorefrontProduct(product)
       ? usableShopPrice(product.compare_at_price)
-      : meta.source === "database" ? await getPublicRetailPrice(product.id) : null;
+      : publicRetailAmount;
   const displayName = getLocalizedProductName(product, locale);
   const koreanName = getKoreanProductSubtitle(product, displayName);
   const localizedDescription = getLocalizedProductDescription(product, locale);
@@ -207,15 +218,6 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
     metaDescription: storefrontTextForLocale(product.meta_description, locale),
     catalogDescription,
   });
-  const relatedResult = product.brand
-    ? await getProducts({
-        brand: product.brand,
-        brandExact: true,
-        limit: 8,
-        requireRealImage: true,
-        audience,
-      })
-    : { products: [] };
   const relatedProducts = localizeStorefrontProducts(
     relatedResult.products.filter((item) => item.slug !== product.slug).slice(0, 4),
     locale,

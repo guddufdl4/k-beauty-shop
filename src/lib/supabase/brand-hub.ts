@@ -367,7 +367,7 @@ async function fetchNavBrandGroupsFromSource(): Promise<NavBrandGroups> {
 export async function getNavBrandGroups(): Promise<NavBrandGroups> {
   return unstable_cache(
     fetchNavBrandGroupsFromSource,
-    ["storefront-nav-brand-groups", "featured-carousel-v4"],
+    ["storefront-nav-brand-groups", "compact-directory-v5"],
     {
       revalidate: 300,
       tags: [STOREFRONT_BRANDS_CACHE_TAG],

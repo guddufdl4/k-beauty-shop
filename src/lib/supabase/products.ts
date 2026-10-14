@@ -1,3 +1,4 @@
+import { attachHomePrices, type HomePriceSnapshot } from "@/lib/store/home-price-overlay";
 import { cache } from "react";
 import curatedBestSellers from "@/data/curated-best-sellers.json";
 import { sortExternalBestSellers } from "@/lib/store/external-best-sellers";
@@ -21,7 +22,6 @@ import {
   buildMemberProductSelect,
   canViewProductPrices,
   resolveStorefrontAudience,
-  storefrontCacheAudienceKey,
   toStorefrontProduct,
   toStorefrontProducts,
   type StorefrontAudience,
@@ -2155,35 +2155,35 @@ async function fetchProductsByIdentifierBatch(
   return (result.data ?? []) as unknown as Record<string, unknown>[];
 }
 
-export async function getPriorityBrandProducts(options?: {
-  limit?: number;
-  audience?: StorefrontAudience;
-}): Promise<{ products: StorefrontProduct[]; totalCount: number; meta: FetchMeta }> {
+const cachedPublicPriorityProducts = unstable_cache(async (limit: number) => {
+  const result = await fetchPriorityBrandProductsFromSource(limit, "guest");
+  return { ...result, products: toStorefrontProducts(result.products, "guest") };
+}, [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "public-home-selection-v5"], {
+  revalidate: CACHE_REVALIDATE_SECONDS,
+  tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, STOREFRONT_PRODUCTS_CACHE_TAG],
+});
+
+export async function getPriorityBrandProducts(options?: { limit?: number; audience?: StorefrontAudience }): Promise<{ products: StorefrontProduct[]; totalCount: number; meta: FetchMeta }> {
   const limit = options?.limit ?? 200;
   const audience = options?.audience ?? (await resolveStorefrontAudience());
-
-  if (canViewProductPrices(audience)) {
-    const result = await fetchPriorityBrandProductsFromSource(limit, audience);
-    return {
-      ...result,
-      products: toStorefrontProducts(result.products, audience),
-    };
+  const publicResult = await cachedPublicPriorityProducts(limit);
+  if (!canViewProductPrices(audience)) return publicResult;
+  // Reuse only public selection; never put session-bound prices into a shared cache.
+  const supabase = isSupabaseConfigured() ? await createSafeClient() : null;
+  if (supabase && publicResult.meta.source === "database") {
+    const ids = publicResult.products.map(product => product.id);
+    if (!ids.length) return publicResult;
+    let query = supabase.from("products").select("id, price, wholesale_price, compare_at_price, stock, moq, sold_out, updated_at").in("id", ids).eq("status", "active");
+    if (isSoftDeleteColumnAvailable()) query = query.is("deleted_at", null);
+    const {data, error} = await query;
+    if (!error) {
+      const products = attachHomePrices(publicResult.products, (data ?? []) as HomePriceSnapshot[], audience);
+      return { ...publicResult, products, totalCount: products.length };
+    }
   }
-
-  return unstable_cache(
-    async () => {
-      const result = await fetchPriorityBrandProductsFromSource(limit, "guest");
-      return {
-        ...result,
-        products: toStorefrontProducts(result.products, "guest"),
-      };
-    },
-    [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "locale-names-v4", "trending-list-v4", String(limit), storefrontCacheAudienceKey("guest")],
-    {
-      revalidate: CACHE_REVALIDATE_SECONDS,
-      tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG],
-    },
-  )();
+  // Preserve the existing session-bound fallback when a database or policy is unavailable.
+  const result = await fetchPriorityBrandProductsFromSource(limit, audience);
+  return { ...result, products: toStorefrontProducts(result.products, audience) };
 }
 
 async function fetchHomepageProductsFromDatabase(
@@ -2576,6 +2576,16 @@ async function fetchProductBrandsFromSource(): Promise<{
     };
   }
 
+  // The compact server-only RPC replaces a count plus ~16 paginated reads.
+  const service = createServiceClient();
+  if (service) {
+    const { data, error } = await service.rpc("storefront_active_brand_names");
+    if (!error && Array.isArray(data)) return {
+      brands: buildBrandCatalog(data.map(row => String(row.brand ?? "")).filter(Boolean)),
+      meta: { source: "database", configured: true },
+    };
+  }
+
   await ensureSoftDeleteColumnProbed(supabase);
 
   const fetchBrandPage = async (from: number, to: number) => {
@@ -2642,7 +2652,7 @@ export async function getProductBrands(): Promise<{
 }> {
   return unstable_cache(
     fetchProductBrandsFromSource,
-    ["storefront-product-brands", "server-read-v2"],
+    ["storefront-product-brands", "distinct-rpc-v3"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_BRANDS_CACHE_TAG, STOREFRONT_PRODUCTS_CACHE_TAG],
