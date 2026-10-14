@@ -2670,7 +2670,6 @@ export async function getPublicProductSitemapCount(): Promise<number> {
         let next = query
           .eq("status", "active")
           .not("image_url", "is", null)
-          .eq("needs_image", false)
           .not("image_url", "eq", "")
           .not("image_url", "like", "%/images/categories/%")
           .not("image_url", "ilike", "%placeholder%");
@@ -2681,7 +2680,7 @@ export async function getPublicProductSitemapCount(): Promise<number> {
       });
       return count;
     },
-    ["storefront-product-sitemap-count", "verified-images-v3"],
+    ["storefront-product-sitemap-count", "verified-images-v4-public"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
@@ -2720,7 +2719,6 @@ export async function getPublicProductSitemapRows(options?: {
           .select("slug, updated_at")
           .eq("status", "active")
           .not("image_url", "is", null)
-          .eq("needs_image", false)
           .not("image_url", "eq", "")
           .not("image_url", "like", "%/images/categories/%")
           .not("image_url", "ilike", "%placeholder%")
@@ -2752,7 +2750,7 @@ export async function getPublicProductSitemapRows(options?: {
 
       return rows;
     },
-    ["storefront-product-sitemap-rows", String(offset), String(limit), "v3-verified-images"],
+    ["storefront-product-sitemap-rows", String(offset), String(limit), "v4-public-images"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
