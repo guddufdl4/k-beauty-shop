@@ -13,6 +13,7 @@ type Props = {
   name?: string;
   moq: number;
   defaultValue?: number;
+  onQuantityChange?: (quantity: number) => void;
   disabled?: boolean;
   className?: string;
   productName?: string;
@@ -23,6 +24,7 @@ export function MoqQuantityInput({
   name = "quantity",
   moq,
   defaultValue,
+  onQuantityChange,
   disabled,
   productName,
   className = "w-24 rounded-lg border border-zinc-300 px-3 py-2 text-center text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-zinc-100",
@@ -38,6 +40,7 @@ export function MoqQuantityInput({
   function commit(next: number) {
     const snapped = snapToMoqQuantity(next, step);
     setValue(snapped);
+    onQuantityChange?.(snapped);
     if (inputRef.current) {
       inputRef.current.value = String(snapped);
     }
@@ -65,7 +68,11 @@ export function MoqQuantityInput({
         step={1}
         value={value}
         disabled={disabled}
-        onChange={(event) => setValue(Number(event.target.value))}
+        onChange={(event) => {
+          const next = Number(event.target.value);
+          setValue(next);
+          onQuantityChange?.(next);
+        }}
         onBlur={(event) => commit(Number(event.target.value))}
         className={className}
       />

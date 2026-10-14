@@ -92,6 +92,7 @@ export function AddToCartForm({
         <MoqQuantityInput
           moq={safeMoq}
           defaultValue={quantity}
+          onQuantityChange={setQuantity}
           disabled={unavailable || disabled}
           productName={productName}
           className="w-20 rounded-lg border border-zinc-300 px-2 py-2 text-center text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
