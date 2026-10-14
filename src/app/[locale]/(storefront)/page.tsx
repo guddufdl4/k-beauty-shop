@@ -246,7 +246,7 @@ export default async function HomePage() {
   const campaignCatalogPending = Promise.all([siteSettingsPending, homeTranslationsPending, localePending]).then(async ([settings, translations, language]) => {
     const slides = getHeroSlides(settings).map((slide, index) => mapStoredHeroSlideToBannerSlide(slide, index, language, settings, translations)).filter((slide): slide is HeroBannerSlide => slide !== null);
     const campaignBrands = [...new Set(slides.filter(slide => slide.id.startsWith("seasonal-")).map(slide => slide.copy?.badge).filter((brand): brand is string => Boolean(brand)))];
-    const campaignCatalog = await Promise.all(campaignBrands.map(brand => getProducts({brand, brandExact: true, requireRealImage: true, sort: "trending", limit: 6, audience})));
+    const campaignCatalog = await Promise.all(campaignBrands.map(brand => getProducts({brand, brandExact: true, requireRealImage: true, limit: 6, audience})));
     return {campaignBrands, campaignCatalog};
   });
   const [t, tProducts, { products, meta }, locale, usdKrwRate, { categories }, siteSettings, homeSettings, {campaignBrands, campaignCatalog}] = await Promise.all([

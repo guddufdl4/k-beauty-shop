@@ -347,7 +347,7 @@ body:has(.seasonal-home) header > div:first-child > div{color:#555}
 .authentic-campaign-products img{padding:12px}
 @media(max-width:639px){.authentic-campaign{height:550px;grid-template-columns:1fr;grid-template-rows:260px 290px}.authentic-campaign-copy{padding:20px 24px 8px}.authentic-campaign-brand{font-size:11px;margin-bottom:12px}.authentic-campaign h1,.authentic-campaign h2{font-size:32px}.authentic-campaign-description{font-size:13px;line-height:1.45;margin:10px 0 14px;max-width:310px}.authentic-campaign-cta{padding:10px 16px;font-size:12px}.authentic-campaign-products{padding:0 24px 38px;gap:18px}.authentic-campaign-products>a{height:100%;width:44%}.authentic-campaign-products>a:nth-child(2){transform:translateY(10px)}}
 
-.seasonal-slider > [aria-hidden="true"]{display:none}
+.seasonal-slider{transition-property:transform;transition-timing-function:cubic-bezier(.22,.61,.36,1)}
 /* Homepage proportions shared by the campaign, catalog and footer. */
 body:has(.seasonal-home){--home-width:1440px;--home-gutter:clamp(20px,4vw,64px)}
 body:has(.seasonal-home) header .max-w-7xl{max-width:var(--home-width)}

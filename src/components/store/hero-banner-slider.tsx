@@ -500,7 +500,6 @@ function HeroSlideFrame({
         <picture>
           <source media="(min-width: 640px)" srcSet={slide.src} />
           {/* Campaign assets are already optimized WebP; picture downloads only the matching device image. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={slide.mobileSrc} alt={imageAlt} width={750} height={938}
             loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"}
             className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
@@ -568,13 +567,32 @@ export function HeroBannerSlider({ slides, copy }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [autoplayPaused, setAutoplayPaused] = useState(false);
+  const [trackIndex, setTrackIndex] = useState(0);
+  const [resettingTrack, setResettingTrack] = useState(false);
+  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pauseAutoplay = useCallback(() => {
+    setAutoplayPaused(true);
+    if (pauseTimer.current) clearTimeout(pauseTimer.current);
+    pauseTimer.current = setTimeout(() => setAutoplayPaused(false), 8000);
+  }, []);
+  const resumeAutoplay = useCallback(() => {
+    if (pauseTimer.current) clearTimeout(pauseTimer.current);
+    setAutoplayPaused(false);
+  }, []);
+  useEffect(() => () => { if (pauseTimer.current) clearTimeout(pauseTimer.current); }, []);
+  useEffect(() => {
+    if (!resettingTrack) return;
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => { secondFrame = requestAnimationFrame(() => setResettingTrack(false)); });
+    return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(secondFrame); };
+  }, [resettingTrack]);
   useEffect(() => {
     const brand = slides[activeIndex]?.copy?.badge;
     if (brand) window.dispatchEvent(new CustomEvent("hmt:campaign-brand", {detail:brand}));
   }, [activeIndex, slides]);
   const activeIndexRef = useRef(0);
-  const [autoplayPaused, setAutoplayPaused] = useState(false);
-  useEffect(() => { const pause = () => setAutoplayPaused(true); window.addEventListener("hmt:pause-campaign",pause); return () => window.removeEventListener("hmt:pause-campaign",pause); }, []);
+  useEffect(() => { window.addEventListener("hmt:pause-campaign", pauseAutoplay); return () => window.removeEventListener("hmt:pause-campaign", pauseAutoplay); }, [pauseAutoplay]);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, scrollLeft: 0 });
@@ -619,6 +637,9 @@ export function HeroBannerSlider({ slides, copy }: Props) {
     (index: number) => {
       if (seasonal) {
         const nextIndex = Math.min(Math.max(index, 0), slideCount - 1);
+        const wrapsForward = activeIndexRef.current === slideCount - 1 && nextIndex === 0 && !prefersReducedMotion;
+        setResettingTrack(false);
+        setTrackIndex(wrapsForward ? slideCount : nextIndex);
         activeIndexRef.current = nextIndex;
         setActiveIndex(nextIndex);
         return;
@@ -641,7 +662,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       activeIndexRef.current = nextIndex;
       setActiveIndex(nextIndex);
     },
-    [slideCount, seasonal],
+    [slideCount, seasonal, prefersReducedMotion],
   );
 
   useEffect(() => {
@@ -653,6 +674,8 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       if (document.hidden || !sectionRef.current) return;
       const bounds = sectionRef.current.getBoundingClientRect();
       if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return;
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && focused.matches(":focus-visible") && (sectionRef.current.contains(focused) || focused.closest(".home-campaign-product"))) return;
       const current = activeIndexRef.current;
       const nextIndex = current >= slideCount - 1 ? 0 : current + 1;
       scrollToIndex(nextIndex);
@@ -688,14 +711,14 @@ export function HeroBannerSlider({ slides, copy }: Props) {
   );
 
   const goToPrevious = useCallback(() => {
-    setAutoplayPaused(true);
+    pauseAutoplay();
     scrollToIndex(activeIndex <= 0 ? slideCount - 1 : activeIndex - 1);
-  }, [activeIndex, scrollToIndex, slideCount]);
+  }, [activeIndex, scrollToIndex, slideCount, pauseAutoplay]);
 
   const goToNext = useCallback(() => {
-    setAutoplayPaused(true);
+    pauseAutoplay();
     scrollToIndex(activeIndex >= slideCount - 1 ? 0 : activeIndex + 1);
-  }, [activeIndex, scrollToIndex, slideCount]);
+  }, [activeIndex, scrollToIndex, slideCount, pauseAutoplay]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -714,8 +737,6 @@ export function HeroBannerSlider({ slides, copy }: Props) {
     [goToNext, goToPrevious, showControls],
   );
 
-  const pauseAutoplay = useCallback(() => setAutoplayPaused(true), []);
-  const resumeAutoplay = useCallback(() => setAutoplayPaused(false), []);
 
   if (slideCount === 0) {
     const { desktop } = resolveHeroSlideLayout(null);
@@ -744,7 +765,6 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         <div
           className="relative w-full overflow-hidden"
-          onMouseEnter={showControls ? pauseAutoplay : undefined}
           onMouseLeave={showControls ? resumeAutoplay : undefined}
           onFocusCapture={showControls ? pauseAutoplay : undefined}
           onBlurCapture={showControls ? resumeAutoplay : undefined}
@@ -753,10 +773,16 @@ export function HeroBannerSlider({ slides, copy }: Props) {
           ref={showControls ? containerRef : undefined}
           className={
             showControls
-              ? seasonal ? "seasonal-slider relative z-0 flex overflow-hidden" : "relative z-0 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              ? seasonal ? "seasonal-slider relative z-0 flex" : "relative z-0 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "relative z-0 w-full"
           }
-          style={showControls ? { cursor: "grab", touchAction: "pan-x pan-y pinch-zoom" } : undefined}
+          style={showControls ? { cursor: "grab", touchAction: "pan-x pan-y pinch-zoom", ...(seasonal ? { transform: `translate3d(-${trackIndex * 100}%, 0, 0)`, transitionDuration: resettingTrack || prefersReducedMotion ? "0ms" : "650ms" } : {}) } : undefined}
+          onTransitionEnd={seasonal ? (event) => {
+            if (event.target === event.currentTarget && event.propertyName === "transform" && trackIndex === slideCount) {
+              setResettingTrack(true);
+              setTrackIndex(0);
+            }
+          } : undefined}
           onPointerDown={
             showControls
               ? (event) => {
@@ -801,19 +827,19 @@ export function HeroBannerSlider({ slides, copy }: Props) {
           aria-roledescription="carousel"
           aria-label="Featured brand products"
         >
-          {slides.map((slide, index) => (
+          {(seasonal && showControls ? [...slides, slides[0]] : slides).map((slide, index) => (
             <div
-              key={slide.id}
+              key={`${slide.id}-${index}`}
               className={showControls ? "w-full min-w-0 shrink-0 snap-center snap-always" : "w-full"}
-              aria-hidden={showControls && index !== activeIndex ? true : undefined}
-              inert={showControls && index !== activeIndex ? true : undefined}
+              aria-hidden={showControls && index !== (seasonal ? trackIndex : activeIndex) ? true : undefined}
+              inert={showControls && index !== (seasonal ? trackIndex : activeIndex) ? true : undefined}
             >
               <HeroSlideFrame
                 slide={slide}
                 defaultCopy={copy}
                 priority={index === 0}
                 preload={index === 0}
-                isActive={!showControls || index === activeIndex}
+                isActive={!showControls || index === (seasonal ? trackIndex : activeIndex)}
                 isPrimaryHeading={index === 0}
               />
             </div>
