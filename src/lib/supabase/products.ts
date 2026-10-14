@@ -2660,7 +2660,7 @@ export async function getPublicProductSitemapCount(): Promise<number> {
         return 0;
       }
 
-      const supabase = createPublicClient();
+      const supabase = createServiceClient() ?? createPublicClient();
       if (!supabase) {
         return 0;
       }
@@ -2680,7 +2680,7 @@ export async function getPublicProductSitemapCount(): Promise<number> {
       });
       return count;
     },
-    ["storefront-product-sitemap-count", "verified-images-v4-public"],
+    ["storefront-product-sitemap-count", "verified-images-v5-server-count"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
