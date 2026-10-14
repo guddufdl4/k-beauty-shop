@@ -1,3 +1,4 @@
+import { readSheetReviewDecision } from "@/lib/admin/sheet-review-decision";
 import { readFileSync, existsSync } from "node:fs";
 import { getUsdKrwRate } from "@/lib/currency-rate";
 import { resolve } from "node:path";
@@ -52,6 +53,7 @@ type CategoryRow = {
 };
 
 type ProductRow = {
+  review?: unknown;
   id: string;
   sku: string;
   slug: string;
@@ -305,7 +307,7 @@ export async function POST(request: Request) {
     fetchAllPages<ProductRow>(async (from, to) => {
       const result = await supabase
         .from("products")
-        .select("id, sku, slug, barcode, name, brand")
+        .select("id, sku, slug, barcode, name, brand, review:source_row->__sheet_review")
         .range(from, to);
       return { data: (result.data ?? []) as ProductRow[], error: result.error };
     }),
@@ -503,6 +505,7 @@ export async function POST(request: Request) {
       external_sku: sku,
       source_row: {
         ...row.sourceRow,
+        ...(readSheetReviewDecision({__sheet_review:existing?.review}) ? {__sheet_review:existing?.review} : {}),
         __sheet: row.sourceSheet,
       },
       content_status: image_url && description ? "complete" : "pending",

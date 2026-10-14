@@ -1,3 +1,5 @@
+import centralCopy from "@/data/central-asian-ui-copy.json";
+const central = (locale:string) => centralCopy[locale as keyof typeof centralCopy];
 /** Shared copy for the new Southeast Asian locales, including non-next-intl forms. */
 const localeIndex: Record<string, number> = { vi: 0, id: 1, th: 2 };
 const phrases = {
@@ -29,6 +31,7 @@ const phrases = {
 } as const;
 
 export function asianCopy(locale: string) {
+  if (central(locale)) return central(locale).common;
   const index = localeIndex[locale];
   if (index === undefined) return null;
   return Object.fromEntries(Object.entries(phrases).map(([key, values]) => [key, values[index]])) as Record<keyof typeof phrases, string>;
@@ -49,6 +52,7 @@ const business = {
  format: ["PDF · JPG · PNG", "PDF · JPG · PNG", "PDF · JPG · PNG"],
 } as const;
 export function asianBusinessCopy(locale: string) {
+ if (central(locale)) return central(locale).business;
  const index = localeIndex[locale];
  if (index === undefined) return null;
  return Object.fromEntries(Object.entries(business).map(([key, values]) => [key, values[index]])) as Record<keyof typeof business, string>;
@@ -71,6 +75,7 @@ const support = {
  cta: ["Liên hệ hỗ trợ", "Hubungi layanan pelanggan", "ติดต่อบริการลูกค้า"], resolved: ["Đã xử lý", "Selesai", "ดำเนินการแล้ว"],
 } as const;
 export function asianSupportCopy(locale: string) {
+ if (central(locale)) return central(locale).support;
  const index = localeIndex[locale];
  if (index === undefined) return null;
  return Object.fromEntries(Object.entries(support).map(([key, values]) => [key, values[index]])) as Record<keyof typeof support, string>;

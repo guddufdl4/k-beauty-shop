@@ -4,6 +4,9 @@ import { routing } from "@/i18n/routing";
 import { getMaintenanceSettings, maintenanceExempt, maintenanceHtml, maintenanceLocale } from "@/lib/maintenance";
 import { isMaintenanceAdmin } from "@/lib/supabase/middleware";
 import { updateSession } from "@/lib/supabase/middleware";
+import { createPublicClient } from "@/lib/supabase/service";
+import publicCategorySlugs from "@/data/public-category-slugs.json";
+import { isStorefrontNavSlug } from "@/lib/store/category-taxonomy";
 
 const handleI18nRouting = createIntlMiddleware(routing);
 
@@ -43,6 +46,21 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/auth")
   ) {
     return updateSession(request);
+  }
+
+  // Stop unknown categories before streaming starts so the response is a real 404.
+  // Known categories take no extra database request. Newly added categories are checked live.
+  const category = request.nextUrl.searchParams.get("category")?.trim();
+  if (category && /^\/(?:[a-z]{2}\/)?products\/?$/.test(pathname) && !isStorefrontNavSlug(category) && !publicCategorySlugs.includes(category)) {
+    const client = createPublicClient();
+    if (client) {
+      const result = await client.from("categories").select("slug").eq("is_active", true).eq("slug", category).limit(1);
+      if (!result.error && result.data?.length === 0) {
+        const prefix = pathname.split("/")[1];
+        const locale = routing.locales.includes(prefix as typeof routing.locales[number]) ? prefix : routing.defaultLocale;
+        return new NextResponse(`<!doctype html><html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>Page not found · HMT KOREA</title></head><body style="font-family:system-ui;padding:48px;max-width:720px;margin:auto"><h1>Page not found</h1><p>This product category is not available.</p><a href="/${locale}/products">Browse products →</a></body></html>`, {status:404, headers:{"Content-Type":"text/html; charset=utf-8", "Cache-Control":"private, no-store", "X-Robots-Tag":"noindex, follow"}});
+      }
+    }
   }
 
   const intlResponse = handleI18nRouting(request);

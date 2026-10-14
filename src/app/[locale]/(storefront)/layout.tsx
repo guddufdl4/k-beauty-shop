@@ -1,3 +1,4 @@
+import { PerformanceDiagnosticsGate } from "@/components/store/performance-diagnostics-gate";
 import { CatalogFreshness } from "@/components/store/catalog-freshness";
 import { Suspense } from "react";
 import { getLocale } from "next-intl/server";
@@ -27,6 +28,7 @@ export default async function StorefrontLayout({
     <ViewModeProvider>
       <StorefrontVisitTracker />
       <CatalogFreshness />
+      <Suspense fallback={null}><PerformanceDiagnosticsGate /></Suspense>
       <StorefrontViewShell>
         <JsonLd data={organizationJsonLd(publicContact, description)} />
         <JsonLd data={websiteJsonLd(description)} />

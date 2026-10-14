@@ -9,7 +9,6 @@ import {
 } from "@/app/actions/cart";
 import { MoqQuantityInput, snapMoqFormQuantity } from "@/components/store/moq-quantity-input";
 import { getMoqStep } from "@/lib/store/moq-quantity";
-import { quoteBoxCount } from "@/lib/store/quote-list";
 import { withReturnTo } from "@/lib/auth/return-to";
 import { isProductSoldOut } from "@/lib/store/products-url";
 import { useState } from "react";
@@ -45,9 +44,7 @@ export function AddToCartForm({
   const [state, formAction, pending] = useActionState(addToCart, initialState);
   const unavailable = isProductSoldOut({ sold_out: soldOut, stock });
   const safeMoq = getMoqStep(moq);
-  const maxQuantity = 999999;
   const [quantity, setQuantity] = useState(defaultQuantity && defaultQuantity >= safeMoq ? defaultQuantity : safeMoq);
-  const boxes = quoteBoxCount(quantity, safeMoq);
   const returnTo = `/products/${productSlug}?qty=${quantity}`;
 
 
@@ -84,7 +81,7 @@ export function AddToCartForm({
       action={formAction}
       noValidate
       className="mt-6 space-y-3"
-      onSubmit={(event) => snapMoqFormQuantity(event.currentTarget, safeMoq, maxQuantity)}
+      onSubmit={(event) => snapMoqFormQuantity(event.currentTarget, safeMoq)}
     >
       {approvalPending ? <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{t("approvalPending")}</p> : null}
       <input type="hidden" name="productId" value={productId} />
@@ -95,15 +92,12 @@ export function AddToCartForm({
         <MoqQuantityInput
           moq={safeMoq}
           defaultValue={quantity}
-          max={unavailable ? safeMoq : maxQuantity}
           disabled={unavailable || disabled}
           productName={productName}
           className="w-20 rounded-lg border border-zinc-300 px-2 py-2 text-center text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
         />
         <p className="text-sm text-zinc-600">
-          {boxes
-            ? t("boxesAndUnits", { boxes, units: quantity })
-            : t("totalUnits", { count: quantity })}
+          {t("totalUnits", { count: quantity })}
         </p>
       </div>
       <button

@@ -10,5 +10,11 @@ export function cartMeetsMinOrderUsd(subtotalKrw: number, usdKrwRate: number): b
 
   const rate =
     Number.isFinite(usdKrwRate) && usdKrwRate > 0 ? usdKrwRate : DEFAULT_USD_KRW_RATE;
-  return subtotalKrw / rate >= MIN_ORDER_USD - 1e-9;
+  // Compare displayed USD cents so $1,000.00 never passes due to fractions.
+  return Math.round(subtotalKrw / rate * 100) > MIN_ORDER_USD * 100;
+}
+
+export function minimumAdditionalKrw(subtotalKrw: number, rate: number): number {
+  const safeRate = Number.isFinite(rate) && rate > 0 ? rate : DEFAULT_USD_KRW_RATE;
+  return Math.max(0, (MIN_ORDER_USD + 0.01) * safeRate - subtotalKrw);
 }

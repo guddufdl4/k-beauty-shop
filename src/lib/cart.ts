@@ -1,3 +1,4 @@
+import { validateQuoteQuantity } from "@/lib/store/quote-quantity";
 import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
 import { getLocale } from "next-intl/server";
@@ -159,7 +160,7 @@ export async function createQuoteOrderFromCart(
   }
 
   const usdKrwRate = await getUsdKrwRate();
-  if (hasBusinessApproval((await getSessionProfile()).profile) && !cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
+  if (!cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate)) {
     return {};
   }
 
@@ -527,8 +528,7 @@ export async function revalidateQuoteCart(cart: CartView): Promise<CartView | nu
       return null;
     }
     const quantity = item.quantity;
-    const step = getMoqStep(product.moq);
-    if (quantity < step || !isValidMoqQuantity(quantity, step)) {
+    if (validateQuoteQuantity(product, quantity)) {
       return null;
     }
     items.push(cartItemFromProduct(product, quantity, locale));
@@ -716,24 +716,8 @@ export type CartLibResult = {
   errorParams?: Record<string, string | number>;
 };
 
-function validateQuantity(
-  product: ProductWithRelations,
-  quantity: number,
-): CartLibResult | null {
-  if (!Number.isFinite(quantity) || !Number.isInteger(quantity) || quantity < 1) {
-    return { errorCode: "invalid_quantity" };
-  }
-  if (product.sold_out) {
-    return { errorCode: "out_of_stock" };
-  }
-  const step = getMoqStep(product.moq);
-  if (quantity < step) {
-    return { errorCode: "moq_not_met", errorParams: { moq: step } };
-  }
-  if (!isValidMoqQuantity(quantity, step)) {
-    return { errorCode: "moq_multiple_not_met", errorParams: { moq: step } };
-  }
-  return null;
+function validateQuantity(product: ProductWithRelations, quantity: number): CartLibResult | null {
+  return validateQuoteQuantity(product, quantity);
 }
 
 export async function addToCart(

@@ -1,0 +1,38 @@
+.viewport {
+  container-type: inline-size;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+.viewport::-webkit-scrollbar { display: none; }
+.track {
+  display: flex;
+  width: max-content;
+  animation: brand-flow 40s linear infinite;
+}
+.group {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  padding-right: 8px;
+}
+.card {
+  flex: 0 0 auto;
+  width: calc((100cqw - 8px) / 2);
+  min-width: 0;
+}
+@media (min-width: 640px) {
+  .card { width: calc((100cqw - 24px) / 4); }
+}
+@keyframes brand-flow {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+/* Keyboard navigation uses a stationary, scrollable list of the original links. */
+.viewport:has(a:focus-visible) { overflow-x: auto; }
+.viewport:has(a:focus-visible) .track { animation: none; }
+.viewport:has(a:focus-visible) .group[aria-hidden="true"], .viewport:has(a:focus-visible) .card[aria-hidden="true"] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .viewport { overflow-x: auto; }
+  .track { animation: none; }
+  .group[aria-hidden="true"], .card[aria-hidden="true"] { display: none; }
+}

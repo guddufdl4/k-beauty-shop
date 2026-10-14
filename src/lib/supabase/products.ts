@@ -1,4 +1,5 @@
 import curatedBestSellers from "@/data/curated-best-sellers.json";
+import { sortExternalBestSellers } from "@/lib/store/external-best-sellers";
 import { buildProductSearchFilter } from "./product-search-filter";
 import { getHomeSettings } from "@/lib/site-settings";
 import { readFileSync, existsSync } from "node:fs";
@@ -1010,6 +1011,7 @@ function sortProductsForList(
   products: StorefrontProduct[],
   options: ProductListOrderOptions,
 ): StorefrontProduct[] {
+  if (options.sort === "trending") return sortExternalBestSellers(products);
   return [...products].sort((a, b) => compareProductsForList(a, b, options));
 }
 
@@ -1283,8 +1285,7 @@ export async function getProducts(
   const brandFilter = options?.brand?.trim();
   const brandExact = Boolean(options?.brandExact);
   const sort = options?.sort;
-  const configuredCuratedSkus = sort === "trending" ? (await getHomeSettings()).trending_skus : [];
-  const curatedSkus = (configuredCuratedSkus.length ? configuredCuratedSkus : curatedBestSellers.skus).slice(0, 40);
+  const curatedSkus = curatedBestSellers.skus;
   const orderBy = options?.orderBy ?? "created_at";
   const deletionFilter = options?.deletionFilter ?? "active";
   const imageFirst = options?.imageFirst === true;
@@ -1313,6 +1314,7 @@ export async function getProducts(
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
       "locale-names-server-v7",
+      sort === "trending" ? `external-best-${curatedBestSellers.checked}` : "",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -1570,7 +1572,8 @@ export async function getProducts(
     query = applyProductFilters(query, true) as typeof query;
 
     const from = (listPage - 1) * listLimit;
-    const { data, error, count } = await query.range(from, from + listLimit - 1);
+    // Rank the complete small curated selection before slicing any page.
+    const { data, error, count } = await query.range(sort === "trending" ? 0 : from, sort === "trending" ? curatedSkus.length - 1 : from + listLimit - 1);
 
     if (error) {
       if (isMissingDeletedAtColumnError(error.message)) {
@@ -1600,6 +1603,7 @@ export async function getProducts(
       mapProductWithRelations(row as unknown as Record<string, unknown>),
     );
     products = await hydrateProductLocaleNames(supabase, products);
+    if (sort === "trending") products = sortExternalBestSellers(products).slice(from, from + listLimit);
 
     return {
       products: finalizeStorefrontProductList(products, audience, privileged),

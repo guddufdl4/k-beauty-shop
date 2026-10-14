@@ -10,7 +10,6 @@ import {
 } from "@/app/actions/cart";
 import { MoqQuantityInput, snapMoqFormQuantity } from "@/components/store/moq-quantity-input";
 import { getMoqStep } from "@/lib/store/moq-quantity";
-import { quoteBoxCount } from "@/lib/store/quote-list";
 import { formatLocalePrice } from "@/lib/utils";
 import type { CartItemView } from "@/types/cart";
 
@@ -31,7 +30,7 @@ function CartItemRow({
   const [updateState, updateAction, updatePending] = useActionState(updateQuantity, initialState);
   const [removeState, removeAction, removePending] = useActionState(removeFromCart, initialState);
   const step = getMoqStep(item.moq);
-  const boxes = quoteBoxCount(item.quantity, step);
+  const tProducts = useTranslations("products");
   const error = updateState.error ?? removeState.error;
 
   return (
@@ -56,9 +55,7 @@ function CartItemRow({
               <p className="break-all font-mono text-xs text-zinc-500">{t("barcode", { code: item.barcode })}</p>
             ) : null}
             <p className="mt-1 text-sm text-zinc-500">
-              {t("boxQuantity", { count: step })} · {t("orderQuantity", { count: item.quantity })} ·{" "}
-              {t("totalUnits", { count: item.quantity })}
-              {boxes ? ` · ${t("boxCount", { count: boxes })}` : ""}
+              {tProducts("moqUnit", { count: step })} · {t("orderQuantity", { count: item.quantity })}
             </p>
             {showPrices ? (
               <p className="mt-2 text-lg font-bold">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p>

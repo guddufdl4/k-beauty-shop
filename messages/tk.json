@@ -388,7 +388,8 @@
     "catalogOverview": "{brand} brendiniň {name} harydy. Baha soramazdan öň görkezilen göwrümi, iň az sargyt mukdaryny we ştrih-kody barlaň. Elýeterlilik we gaplama şertleri baha teklibinde tassyklanýar.",
     "officialSource": "Resmi haryt maglumaty",
     "wholesaleTitle": "{name} lomaý · {brand}",
-    "bestsellerBasis": "Daşarky bestseller ýygyndylaryna esaslanýar; HMT satuw reýtingi däl"
+    "bestsellerBasis": "Daşarky bestseller ýygyndylaryna esaslanýar; HMT satuw reýtingi däl",
+    "availableToOrder": "Sargyt edip bolýar"
   },
   "brands": {
     "browse": "Görmek",
@@ -453,7 +454,7 @@
     "title": "Baha teklibini soramak",
     "titleWithOrder": "Soragy ibermek",
     "emptyCart": "Ýükiňizdäki teklip sanawy boş. Ilki haryt we mukdarlary goşuň.",
-    "minOrderUsd": "Iň az sargyt möçberi — {amount} USD.",
+    "minOrderUsd": "Baha teklibini soramak üçin harytlaryň jemi eltip bermek tölegsiz USD {amount} möçberinden geçmeli.",
     "backToCart": "← Teklip sanawyna gaýt.",
     "quoteHint": "Teklip sanawyndaky haryt we mukdarlary iberiň. Bu onlaýn töleg däl.",
     "createWholesaleAccount": "Lomaý hasap açmak",
@@ -527,7 +528,10 @@
     "shippingSeparate": "Halkara hyzmat alyjynyň tarapyndan gurnalan. Haryt bahalary hyzmaty öz içine almaýar; ylalaşylyşdan öňki eltip bermäge degişli ähli çykdajylar tassyklanýar.",
     "shippingCalculated": "Görkezilen ýüküňizi alyjy boýunça belläň, maksatly ýurt we razylaşylan kabul ediş ýa-da ýükleme ýeriňizi aýdyňlaň.",
     "brandMinimum": "Käbir markalaryň iň az sargyt mukdary bolup biler, we sargydyňyz tassyklanylanda bahalar üýtgäp biler. Has giňişleýin maglumat üçin toparymyza ýüz tutuň.",
-    "vatExcluded": "Meblegler BGG goşulmazdan görkezilýär."
+    "vatExcluded": "Meblegler BGG goşulmazdan görkezilýär.",
+    "draftHelp": "Maglumatlar şu goýumda 12 sagat wagtlaýyn saklanýar.",
+    "clearDraft": "Saklanan maglumatlary pozmak",
+    "confirmDetails": "Harytlary, mukdarlary we aragatnaşyk maglumatlaryny barladym."
   },
   "orderConfirmation": {
     "paymentCompleted": "Töleg tamamlandy",
@@ -575,7 +579,7 @@
     "subtotal": "Deslapky jemi",
     "quoteHint": "Önümleri we mukdary goşuň, soňra teklip soragyny tabşyryň. Bu sahypada kart arkaly töleg kabul etmeýäris.",
     "quoteNote": "Ahyrky bahasy, stoku, lider wagty we eltgi maglumaty teklipden soň tassyklanylar. Töleg bank geçirimi arkaly amala aşyrylýar.",
-    "minOrderUsd": "Iň az sargyt möçberi — {amount} USD.",
+    "minOrderUsd": "Baha teklibini soramak üçin harytlaryň jemi eltip bermek tölegsiz USD {amount} möçberinden geçmeli.",
     "checkout": "Baha teklibini soramak",
     "loginRequired": "Teklip soragyny ibermek üçin hasaba giriň.",
     "loginAction": "Giriş",
@@ -620,7 +624,8 @@
     },
     "approvalPending": "Hasaba durmak üçin işewürligiň bellige alyş belgisi gerek. Bahalary görmek üçin hasaba duranyňyzdan soň tassyklaýjy resminamalary iberiň.",
     "invoiceExcel": "Excel ýüklemek",
-    "invoicePdf": "PDF ýüklemek"
+    "invoicePdf": "PDF ýüklemek",
+    "remainingMinimum": "Iň az sargyt möçberine çenli {amount} galdy"
   },
   "auth": {
     "loginTitle": "Giriş",

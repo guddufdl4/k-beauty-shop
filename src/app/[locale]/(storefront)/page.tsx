@@ -1,3 +1,4 @@
+import marketingCopy from "@/data/central-asian-marketing-copy.json";
 import { Link } from "@/i18n/navigation";
 import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -159,6 +160,16 @@ function mapStoredHeroSlideToBannerSlide(
   siteSettings: Awaited<ReturnType<typeof loadSiteSettingsSafely>>,
   t: Awaited<ReturnType<typeof getTranslations>>,
 ): HeroBannerSlide | null {
+  const campaign = marketingCopy.localized[locale as keyof typeof marketingCopy.localized]?.campaigns;
+  const translated = campaign?.[slide.id as keyof typeof campaign];
+  const original = marketingCopy.source[slide.id as keyof typeof marketingCopy.source];
+  if (translated && original && slide.copy) {
+    const copy = {...slide.copy};
+    for (const key of ["title", "subtitle", "button_text"] as const) {
+      if (copy[key]?.trim() === original[key].trim()) copy[key] = translated[key];
+    }
+    slide = {...slide,copy};
+  }
   const src = resolveHeroImageSrc(slide.image_url, siteSettings.updated_at);
   if (!src) {
     return null;

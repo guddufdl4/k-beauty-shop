@@ -388,7 +388,8 @@
     "catalogOverview": "{brand} 的 {name}。申请报价前请核对标示规格、起订量和条码。供货情况及包装条件将在报价时确认。",
     "officialSource": "品牌官方产品资料",
     "wholesaleTitle": "{name} 批发 · {brand}",
-    "bestsellerBasis": "参考外部畅销商品合集精选，并非HMT销售排名"
+    "bestsellerBasis": "参考外部畅销商品合集精选，并非HMT销售排名",
+    "availableToOrder": "可订购"
   },
   "categories": {
     "browse": "Browse",
@@ -496,7 +497,7 @@
     "subtotal": "参考小计",
     "quoteHint": "加入所需商品和数量后提交询价。本站不支持刷卡支付。",
     "quoteNote": "最终价格、库存和运费以邮件确认为准。确认后通过银行转账付款。",
-    "minOrderUsd": "最低订购金额为 USD {amount}。",
+    "minOrderUsd": "商品总额（不含运费）必须超过 USD {amount} 才能提交报价请求。",
     "checkout": "提交询价",
     "loginRequired": "请登录后使用购物车。",
     "loginAction": "登录",
@@ -541,13 +542,14 @@
     "boxesAndUnits": "{boxes} boxes · {units} units",
     "approvalPending": "注册账户必须填写企业注册号。注册后提交企业证明材料即可查看价格。",
     "invoiceExcel": "下载Excel",
-    "invoicePdf": "下载PDF"
+    "invoicePdf": "下载PDF",
+    "remainingMinimum": "距离最低订单金额还差{amount}"
   },
   "checkout": {
     "title": "询价",
     "titleWithOrder": "发送询价",
     "emptyCart": "购物车为空，请先添加商品和数量。",
-    "minOrderUsd": "最低订购金额为 USD {amount}。",
+    "minOrderUsd": "商品总额（不含运费）必须超过 USD {amount} 才能提交报价请求。",
     "backToCart": "← 返回询价清单",
     "quoteHint": "请提交购物车中的商品和数量。我们的团队会通过邮件回复，这不是在线支付。",
     "buyerTitle": "买家信息",
@@ -621,7 +623,10 @@
     "shippingSeparate": "国际运输由客户安排。商品价格不含运费，约定交接范围内的费用在订购前确认。",
     "shippingCalculated": "请告知指定货代、目的国家及拟定的交接或装运地点。",
     "brandMinimum": "部分品牌可能有最低订购金额，订单确认时价格可能变动。详情请联系我们。",
-    "vatExcluded": "显示金额不含增值税。"
+    "vatExcluded": "显示金额不含增值税。",
+    "draftHelp": "输入信息在此标签页临时保存12小时。",
+    "clearDraft": "清除已保存的信息",
+    "confirmDetails": "我已核对商品、数量和联系方式。"
   },
   "auth": {
     "loginTitle": "登录",

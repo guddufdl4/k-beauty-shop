@@ -388,7 +388,8 @@
     "catalogOverview": "{brand}の{name}です。見積依頼の前に表示サイズ、最小注文数量、バーコードをご確認ください。在庫と梱包条件は見積時に確定します。",
     "officialSource": "ブランド公式商品情報",
     "wholesaleTitle": "{name} 卸売 · {brand}",
-    "bestsellerBasis": "外部のベストセラー特集を参考にした選定です。HMTの販売順位ではありません"
+    "bestsellerBasis": "外部のベストセラー特集を参考にした選定です。HMTの販売順位ではありません",
+    "availableToOrder": "注文可能"
   },
   "categories": {
     "browse": "Browse",
@@ -496,7 +497,7 @@
     "subtotal": "参考小計",
     "quoteHint": "希望する商品と数量を入れたあと、見積依頼を送信してください。カード決済はありません。",
     "quoteNote": "最終価格・在庫・配送はメールで確定します。確認後の支払いは銀行振込です。",
-    "minOrderUsd": "最低注文金額は USD {amount} です。",
+    "minOrderUsd": "送料を除く商品合計が USD {amount} を超える場合に見積もりを依頼できます。",
     "checkout": "見積を依頼",
     "loginRequired": "カートを利用するにはログインしてください。",
     "loginAction": "ログイン",
@@ -541,13 +542,14 @@
     "boxesAndUnits": "{boxes} boxes · {units} units",
     "approvalPending": "会員登録には事業者登録番号が必要です。登録後、事業証明書類を提出すると価格を確認できます。",
     "invoiceExcel": "Excelをダウンロード",
-    "invoicePdf": "PDFをダウンロード"
+    "invoicePdf": "PDFをダウンロード",
+    "remainingMinimum": "最低注文金額まであと{amount}"
   },
   "checkout": {
     "title": "見積依頼",
     "titleWithOrder": "見積を送信",
     "emptyCart": "カートが空です。先に商品と数量を入れてください。",
-    "minOrderUsd": "最低注文金額は USD {amount} です。",
+    "minOrderUsd": "送料を除く商品合計が USD {amount} を超える場合に見積もりを依頼できます。",
     "backToCart": "← 見積リストに戻る",
     "quoteHint": "カートの商品と数量を送信してください。担当者よりメールでご連絡します。オンライン決済ではありません。",
     "buyerTitle": "バイヤー情報",
@@ -621,7 +623,10 @@
     "shippingSeparate": "国際輸送はお客様が手配します。商品価格に運賃は含まれず、引き渡し範囲の費用は注文前に確認します。",
     "shippingCalculated": "指定フォワーダー、仕向国、受け取り・積載場所をお知らせください。",
     "brandMinimum": "ブランドごとの最低注文金額や注文確定時の価格変更が適用される場合があります。詳細は担当者にお問い合わせください。",
-    "vatExcluded": "表示金額にVATは含まれていません。"
+    "vatExcluded": "表示金額にVATは含まれていません。",
+    "draftHelp": "入力情報はこのタブに12時間一時保存されます。",
+    "clearDraft": "保存情報を削除",
+    "confirmDetails": "商品・数量・連絡先を確認しました。"
   },
   "auth": {
     "loginTitle": "ログイン",

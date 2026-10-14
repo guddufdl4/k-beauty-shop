@@ -2,7 +2,6 @@
 
 import { maintenanceActionError } from "@/lib/maintenance-server";
 
-import { hasBusinessApproval } from "@/lib/auth/business-approval";
 import { SIGNUP_COUNTRIES } from "@/lib/auth/signup-fields";
 
 import { revalidatePath } from "next/cache";
@@ -134,7 +133,7 @@ export async function submitQuoteRequest(
   }
 
   const usdKrwRate = await getUsdKrwRate();
-  if (hasBusinessApproval(session.profile) && !cartMeetsMinOrderUsd(verified.subtotal, usdKrwRate)) {
+  if (!cartMeetsMinOrderUsd(verified.subtotal, usdKrwRate)) {
     return { error: t("minOrderUsd", { amount: MIN_ORDER_USD }) };
   }
 

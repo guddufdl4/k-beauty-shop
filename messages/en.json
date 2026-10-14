@@ -388,7 +388,8 @@
     "catalogOverview": "{name} by {brand}. Check the listed size, minimum order quantity and barcode before requesting a quotation. Availability and packing are confirmed with your quotation.",
     "officialSource": "Official product source",
     "wholesaleTitle": "{name} wholesale · {brand}",
-    "bestsellerBasis": "Selected with reference to external bestseller collections; not an HMT sales ranking"
+    "bestsellerBasis": "Selected with reference to external bestseller collections; not an HMT sales ranking",
+    "availableToOrder": "Available to order"
   },
   "brands": {
     "browse": "Browse",
@@ -453,7 +454,7 @@
     "title": "Quote request",
     "titleWithOrder": "Send quote request",
     "emptyCart": "Your quote list is empty. Add products and quantities first.",
-    "minOrderUsd": "The minimum order amount is USD {amount}.",
+    "minOrderUsd": "Quote requests require an order total above USD {amount} (shipping excluded).",
     "backToCart": "← Back to quote list",
     "quoteHint": "Submit the products and quantities in your quote list. This is not an online payment.",
     "createWholesaleAccount": "Create wholesale account",
@@ -527,7 +528,10 @@
     "shippingSeparate": "International freight is arranged by the buyer. Product prices exclude freight; any costs within the agreed handover scope are confirmed before ordering.",
     "shippingCalculated": "Tell us your appointed forwarder, destination country, and agreed receiving or loading location.",
     "brandMinimum": "Some brands may have a minimum order amount, and prices may change when your order is confirmed. Please contact our team for details.",
-    "vatExcluded": "Amounts exclude VAT."
+    "vatExcluded": "Amounts exclude VAT.",
+    "draftHelp": "Buyer details are saved temporarily in this tab for 12 hours.",
+    "clearDraft": "Clear saved details",
+    "confirmDetails": "I have checked the products, quantities and contact details."
   },
   "orderConfirmation": {
     "paymentCompleted": "Payment completed",
@@ -575,7 +579,7 @@
     "subtotal": "Reference subtotal",
     "quoteHint": "Add products and quantities, then submit a quote request. We do not take card payments on this site.",
     "quoteNote": "Final price, stock, lead time, and shipping are confirmed after the quotation. Payment is by bank transfer.",
-    "minOrderUsd": "The minimum order amount is USD {amount}.",
+    "minOrderUsd": "Quote requests require an order total above USD {amount} (shipping excluded).",
     "checkout": "Request quote",
     "loginRequired": "Please log in to submit a quote request.",
     "loginAction": "Log in",
@@ -620,7 +624,8 @@
     },
     "approvalPending": "A business registration number is required to sign up. Submit business evidence after registration to view prices.",
     "invoiceExcel": "Download Excel",
-    "invoicePdf": "Download PDF"
+    "invoicePdf": "Download PDF",
+    "remainingMinimum": "Only {amount} left to reach the minimum order"
   },
   "auth": {
     "loginTitle": "Log in",

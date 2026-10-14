@@ -6,8 +6,8 @@ import { EmptyCartButton } from "@/components/store/empty-cart-button";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { getUsdKrwRate } from "@/lib/currency-rate";
 import { formatLocalePrice } from "@/lib/utils";
-import { getCart } from "@/lib/cart";
-import { cartMeetsMinOrderUsd, MIN_ORDER_USD } from "@/lib/currency";
+import { getCart, revalidateQuoteCart } from "@/lib/cart";
+import { cartMeetsMinOrderUsd, MIN_ORDER_USD, minimumAdditionalKrw } from "@/lib/currency";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 import { buildStorefrontMetadata } from "@/lib/seo/metadata";
@@ -37,6 +37,9 @@ export default async function CartPage() {
     getLocale(),
     getUsdKrwRate(),
   ]);
+
+  const verifiedCart = cart.items.length ? await revalidateQuoteCart(cart) : null;
+  const quoteEligible = Boolean(verifiedCart && cartMeetsMinOrderUsd(verifiedCart.subtotal, usdKrwRate));
 
   let defaultCompanyName = "";
   let defaultCountry = "";
@@ -100,6 +103,7 @@ export default async function CartPage() {
               >
                 {t("minOrderUsd", { amount: MIN_ORDER_USD })}
               </p>
+              {hasBusinessApproval(session.profile) && !cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate) ? <div className="mt-4 border-t pt-4"><p className="text-sm font-medium text-rose-700">{t("remainingMinimum", {amount: formatLocalePrice(minimumAdditionalKrw(cart.subtotal, usdKrwRate), locale, usdKrwRate)})}</p><progress aria-label={t("minOrderUsd", {amount:MIN_ORDER_USD})} value={Math.max(0,Math.min(cart.subtotal,MIN_ORDER_USD*usdKrwRate))} max={MIN_ORDER_USD*usdKrwRate} className="mt-3 h-2 w-full accent-pink-600"/></div> : null}
             </aside>
           </div>
           {hasBusinessApproval(session.profile) ? <div className="flex flex-wrap gap-3">
@@ -111,6 +115,8 @@ export default async function CartPage() {
             locale={locale}
             usdKrwRate={usdKrwRate}
             isMember={Boolean(session.user)}
+            quoteEligible={quoteEligible}
+            draftId={session.user?.id}
             showPrices={hasBusinessApproval(session.profile)}
             defaultCompanyName={defaultCompanyName}
             defaultContactName={session.profile?.full_name ?? ""}

@@ -1,4 +1,5 @@
 "use client";
+import centralCopy from "@/data/central-asian-ui-copy.json";
 import { useRef, useState, type FormEvent } from "react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -8,7 +9,7 @@ import { supportInquiryCopy } from "@/lib/support-inquiry-copy";
 export function SupportInquiryForm({ name = "", email = "" }: { name?: string; email?: string }) {
   const locale = useLocale();
   const t = supportInquiryCopy(locale);
-  const contactCopy = ({
+  const contactCopy = centralCopy[locale as keyof typeof centralCopy]?.contact ?? ({
     ko: { label: "전화번호 / WhatsApp · Viber · Line (선택)", hint: "연락 가능한 앱 이름과 국가번호를 포함한 전화번호 또는 ID를 적어 주세요.", consent: "선택 입력한 연락처를 문의 답변에 사용하는 것에 동의합니다." },
     en: { label: "Phone / WhatsApp · Viber · Line (optional)", hint: "Include the app name and your phone number with country code, or your ID.", consent: "I consent to using my optional contact details to reply to this inquiry." },
     ja: { label: "電話番号 / WhatsApp・Viber・Line（任意）", hint: "アプリ名と国番号付きの電話番号、またはIDをご入力ください。", consent: "任意の連絡先をお問い合わせへの返信に使用することに同意します。" },
@@ -16,7 +17,7 @@ export function SupportInquiryForm({ name = "", email = "" }: { name?: string; e
     vi: { label: "Điện thoại / WhatsApp · Viber · Line (tùy chọn)", hint: "Nhập tên ứng dụng và số điện thoại có mã quốc gia hoặc ID của bạn.", consent: "Tôi đồng ý sử dụng thông tin liên hệ tùy chọn để trả lời yêu cầu này." },
     id: { label: "Telepon / WhatsApp · Viber · Line (opsional)", hint: "Cantumkan nama aplikasi dan nomor telepon dengan kode negara, atau ID Anda.", consent: "Saya menyetujui penggunaan kontak opsional untuk membalas pertanyaan ini." },
     th: { label: "โทรศัพท์ / WhatsApp · Viber · Line (ไม่บังคับ)", hint: "ระบุชื่อแอปและหมายเลขโทรศัพท์พร้อมรหัสประเทศ หรือ ID ของคุณ", consent: "ฉันยินยอมให้ใช้ข้อมูลติดต่อเพิ่มเติมเพื่อตอบคำถามนี้" },
-  } as const)[locale as "ko" | "en" | "ja" | "zh" | "vi" | "id" | "th"];
+  } as const)[locale as "ko" | "en" | "ja" | "zh" | "vi" | "id" | "th"] ?? {label:"Additional reply contact (optional)",hint:"Include your country code or messaging ID.",consent:"I consent to the use of this contact to answer my inquiry."};
   const requestId = useRef<{ signature: string; id: string } | null>(null);
   const [pending, setPending] = useState(false);
   const [reference, setReference] = useState("");

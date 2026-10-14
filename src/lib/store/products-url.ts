@@ -70,8 +70,8 @@ export function getProductPriceColumns(product: ProductPriceFields): {
 }
 
 export function usesBoxQuantityField(product: object): boolean {
-  const record = product as { wholesale_price?: number | null };
-  return usableShopPrice(record.wholesale_price) == null;
+  void product;
+  return false;
 }
 
 export type MoqBadgeKey = "moqBadge" | "unitsPerBoxBadge";

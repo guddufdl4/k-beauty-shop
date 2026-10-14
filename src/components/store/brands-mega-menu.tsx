@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import styles from "./brands-mega-menu.module.css";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -16,7 +17,9 @@ type Props = {
 function BrandDirectoryLink({
   brand,
   onNavigate,
+  duplicate = false,
 }: {
+  duplicate?: boolean;
   brand: FeaturedNavBrand;
   onNavigate: () => void;
 }) {
@@ -25,6 +28,7 @@ function BrandDirectoryLink({
 
   return (
     <Link
+      tabIndex={duplicate ? -1 : undefined}
       href={buildBrandHref(brand.slug)}
       className="group flex h-24 flex-col items-center justify-center rounded-xl border border-zinc-200/70 bg-white px-5 text-center transition-colors hover:border-pink-300 hover:bg-pink-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
       onClick={onNavigate}
@@ -50,28 +54,32 @@ function BrandDirectoryLink({
 }
 
 function BrandDirectoryGrid({ brands, onNavigate, active }: { brands: FeaturedNavBrand[]; onNavigate: () => void; active: boolean }) {
-  const track = useRef<HTMLUListElement>(null);
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const advance = useCallback((direction: number, smooth = true) => {
-    const el = track.current;
-    if (!el) return;
-    const step = (el.firstElementChild as HTMLElement | null)?.getBoundingClientRect().width || el.clientWidth / 4;
-    const last = el.scrollWidth - el.clientWidth;
-    const left = direction > 0 && el.scrollLeft >= last - 2 ? 0 : direction < 0 && el.scrollLeft <= 2 ? last : el.scrollLeft + direction * (step + 8);
-    el.scrollTo({ left, behavior: smooth ? "smooth" : "instant" });
-  }, []);
+  const [visible, setVisible] = useState(true);
   useEffect(() => {
-    if (!active || hovered || focused || brands.length <= 4) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const tick = window.setInterval(() => { if (!reduced.matches && document.visibilityState === "visible") advance(1); }, 4000);
-    return () => window.clearInterval(tick);
-  }, [active, hovered, focused, brands.length, advance]);
-  return <div className="relative pt-4" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
-    <ul ref={track} className="flex snap-x snap-mandatory gap-2 overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {brands.map(brand => <li key={brand.slug} className="min-w-0 shrink-0 basis-[calc((100%-8px)/2)] snap-start sm:basis-[calc((100%-24px)/4)]"><BrandDirectoryLink brand={brand} onNavigate={onNavigate} /></li>)}
-    </ul>
-  </div>;
+    const updateVisibility = () => setVisible(document.visibilityState === "visible");
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
+  if (!brands.length) return null;
+  // Each identical half fills at least one desktop viewport, including its trailing gap.
+  const copies = Math.ceil(4 / brands.length);
+  const items = Array.from({ length: copies }, () => brands).flat();
+  return (
+    <div className={`${styles.viewport} mt-4`}>
+      <div className={styles.track} style={{ animationDuration: `${items.length * 5}s`, animationPlayState: active && visible && brands.length > 1 ? "running" : "paused" }}>
+        {[0, 1].map(half => (
+          <ul key={half} className={styles.group} aria-hidden={half === 1 || undefined}>
+            {items.map((brand, index) => (
+              <li key={`${brand.slug}-${index}`} className={styles.card} aria-hidden={index >= brands.length || undefined}>
+                <BrandDirectoryLink brand={brand} onNavigate={onNavigate} duplicate={half === 1 || index >= brands.length} />
+              </li>
+            ))}
+          </ul>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function BrandsMegaMenuPanel({

@@ -388,7 +388,8 @@
     "catalogOverview": "{name} của {brand}. Kiểm tra quy cách, số lượng đặt tối thiểu và mã vạch trước khi yêu cầu báo giá. Tình trạng hàng và đóng gói được xác nhận khi báo giá.",
     "officialSource": "Thông tin sản phẩm chính thức",
     "wholesaleTitle": "Sỉ {name} · {brand}",
-    "bestsellerBasis": "Tham khảo bộ sưu tập bán chạy bên ngoài; không phải xếp hạng doanh số HMT"
+    "bestsellerBasis": "Tham khảo bộ sưu tập bán chạy bên ngoài; không phải xếp hạng doanh số HMT",
+    "availableToOrder": "Có thể đặt hàng"
   },
   "brands": {
     "browse": "Khám phá",
@@ -453,7 +454,7 @@
     "title": "Yêu cầu báo giá",
     "titleWithOrder": "Gửi yêu cầu báo giá",
     "emptyCart": "Danh sách báo giá trống. Hãy thêm sản phẩm và số lượng.",
-    "minOrderUsd": "Giá trị đơn hàng tối thiểu là {amount} USD.",
+    "minOrderUsd": "Tổng tiền hàng phải lớn hơn USD {amount} (không gồm phí vận chuyển) để yêu cầu báo giá.",
     "backToCart": "← Quay lại danh sách báo giá",
     "quoteHint": "Gửi sản phẩm và số lượng để báo giá. Không thanh toán trực tuyến.",
     "createWholesaleAccount": "Tạo tài khoản bán sỉ",
@@ -527,7 +528,10 @@
     "shippingSeparate": "Người mua tự sắp xếp vận tải quốc tế. Giá không gồm vận tải. Chi phí trong phạm vi bàn giao thỏa thuận được xác nhận trước đặt hàng.",
     "shippingCalculated": "Cho biết đơn vị giao nhận chỉ định, quốc gia đích và điểm nhận hoặc xếp hàng đã thỏa thuận.",
     "brandMinimum": "Một số thương hiệu có mức đặt tối thiểu; giá có thể đổi khi xác nhận đơn. Liên hệ để biết chi tiết.",
-    "vatExcluded": "Giá chưa bao gồm VAT."
+    "vatExcluded": "Giá chưa bao gồm VAT.",
+    "draftHelp": "Thông tin được lưu tạm trong tab này trong 12 giờ.",
+    "clearDraft": "Xóa thông tin đã lưu",
+    "confirmDetails": "Tôi đã kiểm tra sản phẩm, số lượng và thông tin liên hệ."
   },
   "orderConfirmation": {
     "paymentCompleted": "Đã thanh toán",
@@ -575,7 +579,7 @@
     "subtotal": "Tổng tham khảo",
     "quoteHint": "Thêm sản phẩm và số lượng rồi gửi yêu cầu báo giá. Website không nhận thanh toán thẻ.",
     "quoteNote": "Giá cuối cùng, tồn kho, thời gian và giao nhận xác nhận sau báo giá. Thanh toán chuyển khoản.",
-    "minOrderUsd": "Giá trị đơn hàng tối thiểu là {amount} USD.",
+    "minOrderUsd": "Tổng tiền hàng phải lớn hơn USD {amount} (không gồm phí vận chuyển) để yêu cầu báo giá.",
     "checkout": "Yêu cầu báo giá",
     "loginRequired": "Vui lòng đăng nhập để gửi yêu cầu báo giá.",
     "loginAction": "Đăng nhập",
@@ -620,7 +624,8 @@
     },
     "approvalPending": "Cần có mã số doanh nghiệp để đăng ký. Sau khi đăng ký, hãy gửi chứng từ doanh nghiệp để xem giá.",
     "invoiceExcel": "Tải Excel",
-    "invoicePdf": "Tải PDF"
+    "invoicePdf": "Tải PDF",
+    "remainingMinimum": "Còn {amount} để đạt mức đặt hàng tối thiểu"
   },
   "auth": {
     "loginTitle": "Đăng nhập",

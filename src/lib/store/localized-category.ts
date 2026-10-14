@@ -1,3 +1,4 @@
+import marketingCopy from "@/data/central-asian-marketing-copy.json";
 const CENTRAL_ASIA_CATEGORY_LABELS: Record<string, string[]> = {"Skincare":["Уход за кожей","Тері күтімі","Teri parvarishi","Териге кам көрүү","Нигоҳубини пӯст","Deri idegi"],"Makeup":["Макияж","Макияж","Pardoz","Макияж","Ороиш","Makiýaž"],"Suncare":["Защита от солнца","Күннен қорғау","Quyoshdan himoya","Күндөн коргоо","Муҳофизат аз офтоб","Günden gorag"],"Hair Care":["Уход за волосами","Шаш күтімі","Soch parvarishi","Чачка кам көрүү","Нигоҳубини мӯй","Saç idegi"],"Body Care":["Уход за телом","Дене күтімі","Tana parvarishi","Денеге кам көрүү","Нигоҳубини бадан","Beden idegi"],"Mask Pack":["Маски","Маскалар","Niqoblar","Маскалар","Ниқобҳо","Maskalar"]};
 const ASIAN_CATEGORY_LABELS: Record<string, string[]> = {"Skincare": ["Chăm sóc da", "Perawatan kulit", "ดูแลผิว"], "Makeup": ["Trang điểm", "Riasan", "เครื่องสำอาง"], "Suncare": ["Chống nắng", "Perlindungan matahari", "กันแดด"], "Hair Care": ["Chăm sóc tóc", "Perawatan rambut", "ดูแลเส้นผม"], "Body Care": ["Chăm sóc cơ thể", "Perawatan tubuh", "ดูแลผิวกาย"], "Mask Pack": ["Mặt nạ", "Masker", "มาสก์"], "Tools & Accessories": ["Dụng cụ và phụ kiện", "Alat & aksesori", "อุปกรณ์และเครื่องมือ"], "Nail": ["Móng tay", "Kuku", "เล็บ"], "Set Menu": ["Bộ sản phẩm", "Set produk", "ชุดผลิตภัณฑ์"], "Promotions": ["Khuyến mãi", "Promosi", "โปรโมชั่น"], "Skin/Toner": ["Nước cân bằng", "Toner", "โทนเนอร์"], "Lotion/Emulsion": ["Sữa dưỡng", "Losion/Emulsi", "โลชั่น/อิมัลชัน"], "Essence/Serum/Ampoule": ["Tinh chất/Serum/Ampoule", "Esens/Serum/Ampul", "เอสเซนส์/เซรั่ม/แอมพูล"], "Cream": ["Kem dưỡng", "Krim", "ครีม"], "Moisture Cream": ["Kem dưỡng ẩm", "Krim pelembap", "ครีมให้ความชุ่มชื้น"], "Nutrition Cream": ["Kem dưỡng bổ sung", "Krim nutrisi", "ครีมบำรุง"], "Basic Sets": ["Bộ chăm sóc cơ bản", "Set perawatan dasar", "ชุดดูแลผิวพื้นฐาน"], "Eye Care": ["Chăm sóc mắt", "Perawatan mata", "ดูแลรอบดวงตา"], "Cleansing": ["Làm sạch", "Pembersih", "ทำความสะอาด"], "Sun Care": ["Chống nắng", "Perlindungan matahari", "กันแดด"], "Base": ["Trang điểm nền", "Riasan dasar", "เมคอัพเบส"], "Lip": ["Môi", "Bibir", "ริมฝีปาก"], "Eye": ["Mắt", "Mata", "ดวงตา"], "Cheek": ["Má", "Pipi", "แก้ม"], "Sheet Mask": ["Mặt nạ giấy", "Masker lembaran", "ชีตมาสก์"], "Sleeping Mask": ["Mặt nạ ngủ", "Masker tidur", "สลีปปิ้งมาสก์"], "Wash-off Pack": ["Mặt nạ rửa", "Masker bilas", "มาสก์ล้างออก"], "Sunscreen": ["Kem chống nắng", "Tabir surya", "ครีมกันแดด"], "Sun Stick": ["Chống nắng dạng thỏi", "Tabir surya stik", "กันแดดแบบแท่ง"], "After Sun": ["Chăm sóc sau nắng", "Perawatan setelah matahari", "ดูแลผิวหลังออกแดด"], "Shampoo": ["Dầu gội", "Sampo", "แชมพู"], "Treatment": ["Dưỡng tóc", "Perawatan rambut", "ทรีตเมนต์"], "Styling": ["Tạo kiểu tóc", "Penataan rambut", "จัดแต่งทรงผม"], "Body Wash": ["Sữa tắm", "Sabun mandi", "ผลิตภัณฑ์อาบน้ำ"], "Body Lotion": ["Sữa dưỡng thể", "Losion tubuh", "โลชั่นบำรุงผิวกาย"], "Hand & Foot": ["Tay và chân", "Tangan & kaki", "มือและเท้า"]};
 import type { Category } from "@/lib/supabase/products";
@@ -47,6 +48,9 @@ export function getLocalizedCategoryName(
   category: Pick<Category, "name" | "slug">,
   locale: string,
 ): string {
+  const translated = marketingCopy.localized[locale as keyof typeof marketingCopy.localized]?.categories;
+  const translatedName = translated?.[getEnglishCategoryName(category) as keyof typeof translated];
+  if (translatedName) return translatedName;
   const centralIndex = ["ru", "kk", "uz", "ky", "tg", "tk"].indexOf(locale);
   const central = CENTRAL_ASIA_CATEGORY_LABELS[getEnglishCategoryName(category)];
   if (centralIndex >= 0 && central) return central[centralIndex];
@@ -85,7 +89,7 @@ export function getCategorySortLocale(locale: string): string {
   if (locale === "ko") return "ko";
   if (locale === "ja") return "ja";
   if (locale === "zh") return "zh";
-  if (["vi", "id", "th"].includes(locale)) return locale;
+  if (["vi", "id", "th", "ru", "kk", "uz", "ky", "tg", "tk"].includes(locale)) return locale;
   return "en";
 }
 

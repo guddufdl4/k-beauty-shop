@@ -330,6 +330,7 @@ export function ProductCatalogSidebar({
           brandFilter={brandFilter}
           sort={sort}
         />
+        <details className="mt-3 rounded-xl border border-zinc-200 px-3"><summary className="flex min-h-11 cursor-pointer items-center justify-between text-sm font-semibold"><span>{t("categoryFilter")} · {tNav("brands")}</span><span aria-hidden="true">＋</span></summary>
         <div className="mt-4 -mx-4 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex w-max min-w-full gap-2">
             <Link
@@ -362,6 +363,8 @@ export function ProductCatalogSidebar({
           </div>
         </div>
         <details className="mt-4 rounded-xl border border-zinc-200 bg-white px-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">{tNav("brands")}{brandFilter ? ` · ${getDisplayBrandName(brandFilter)}` : ""}</summary><CatalogBrandFilter categories={categories} brands={brands} activeCategorySlug={activeCategorySlug} searchQuery={searchQuery} brandFilter={brandFilter} sort={sort} /></details>
+        </details>
+        {(activeCategorySlug || brandFilter) ? <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="max-w-full break-words rounded-full bg-rose-50 px-3 py-2 text-rose-700">{[activeCategorySlug ? getLocalizedCategoryName(categories.find(c=>c.slug===activeCategorySlug) ?? {name:activeCategorySlug,slug:activeCategorySlug},locale) : "", brandFilter ? getDisplayBrandName(brandFilter) : ""].filter(Boolean).join(" · ")}</span><Link prefetch={false} href={buildProductsHref({q:searchQuery,sort})} className="px-2 py-2 underline">{t("all")}</Link></div> : null}
       </div>
     </>
   );

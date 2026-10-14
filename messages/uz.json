@@ -388,7 +388,8 @@
     "catalogOverview": "{brand} brendining {name} mahsuloti. Narx so‘rashdan oldin hajm, minimal buyurtma miqdori va shtrix-kodni tekshiring. Mavjudlik va qadoqlash narx taklifida tasdiqlanadi.",
     "officialSource": "Rasmiy mahsulot ma’lumoti",
     "wholesaleTitle": "{name} ulgurji · {brand}",
-    "bestsellerBasis": "Tashqi bestseller to‘plamlari asosida tanlangan; HMT savdo reytingi emas"
+    "bestsellerBasis": "Tashqi bestseller to‘plamlari asosida tanlangan; HMT savdo reytingi emas",
+    "availableToOrder": "Buyurtma berish mumkin"
   },
   "brands": {
     "browse": "Ko‘rish",
@@ -453,7 +454,7 @@
     "title": "Narx so‘rovi",
     "titleWithOrder": "So‘rov yuborish",
     "emptyCart": "Sizning taklif ro'yxatingiz bo'sh. Avval mahsulotlar va miqdorlarni qo'shing.",
-    "minOrderUsd": "Minimal buyurtma summasi — {amount} USD.",
+    "minOrderUsd": "Narx taklifini so‘rash uchun mahsulotlar jami yetkazib berishsiz USD {amount} dan oshishi kerak.",
     "backToCart": "← Taklif ro'yxatiga qaytish",
     "quoteHint": "Taklif ro'yxatingizdagi mahsulot va miqdorlarni yuboring. Bu onlayn to'lov emas.",
     "createWholesaleAccount": "Ulgurji hisob yaratish",
@@ -527,7 +528,10 @@
     "shippingSeparate": "Xalqaro yuk tashishni xaridor tashkil qiladi. Mahsulot narxlari yuk tashishni oʻz ichiga olmaydi; kelishilgan topshirish doirasidagi har qanday xarajat buyurtma berishdan oldin tasdiqlanadi.",
     "shippingCalculated": "Bizga belgilangan yuk tashuvchingiz, manzil mamlakati va kelishilgan qabul qilish yoki yuklash joyini ayting.",
     "brandMinimum": "Ba'zi brendlar minimum buyurtma miqdoriga ega bo'lishi mumkin va buyurtmangiz tasdiqlanganda narxlar o'zgarishi mumkin. Tafsilotlar uchun jamoamiz bilan bog'laning.",
-    "vatExcluded": "Miqdorlar QQSsiz."
+    "vatExcluded": "Miqdorlar QQSsiz.",
+    "draftHelp": "Ma’lumotlar ushbu varaqda 12 soat vaqtincha saqlanadi.",
+    "clearDraft": "Saqlangan ma’lumotlarni o‘chirish",
+    "confirmDetails": "Mahsulotlar, miqdorlar va aloqa ma’lumotlarini tekshirdim."
   },
   "orderConfirmation": {
     "paymentCompleted": "To‘lov yakunlandi",
@@ -575,7 +579,7 @@
     "subtotal": "Dastlabki jami",
     "quoteHint": "Mahsulotlar va miqdorlarni qo'shing, so'ngra qotlash so'rovini yuboring. Biz bu saytda karta to'lovlarini qabul qilmaymiz.",
     "quoteNote": "Yakuniy narx, mavjud zaxira, yetkazib berish vaqti va yuk tashish narxi taklifdan so‘ng tasdiqlanadi. To‘lov bank o‘tkazmasi orqali amalga oshiriladi.",
-    "minOrderUsd": "Minimal buyurtma summasi — {amount} USD.",
+    "minOrderUsd": "Narx taklifini so‘rash uchun mahsulotlar jami yetkazib berishsiz USD {amount} dan oshishi kerak.",
     "checkout": "Narx so‘rash",
     "loginRequired": "Iltimos, taklif so‘rovini yuborish uchun tizimga kiring.",
     "loginAction": "Kirish",
@@ -620,7 +624,8 @@
     },
     "approvalPending": "Ro‘yxatdan o‘tish uchun biznes ro‘yxat raqami kerak. Narxlarni ko‘rish uchun ro‘yxatdan o‘tgach tasdiqlovchi hujjatlarni yuboring.",
     "invoiceExcel": "Excel yuklab olish",
-    "invoicePdf": "PDF yuklab olish"
+    "invoicePdf": "PDF yuklab olish",
+    "remainingMinimum": "Minimal buyurtma summasigacha {amount} qoldi"
   },
   "auth": {
     "loginTitle": "Kirish",

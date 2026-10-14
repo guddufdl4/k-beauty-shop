@@ -1,0 +1,414 @@
+{
+  "source": {
+    "seasonal-2026-10-beauty-of-joseon": {
+      "badge": "Beauty of Joseon",
+      "title": "Korean heritage\nEveryday glow",
+      "subtitle": "Timeless Korean wisdom for modern skin",
+      "button_text": "Explore Beauty of Joseon",
+      "button_link": "/products?brand=Beauty%20of%20Joseon",
+      "wholesale_label": "",
+      "order_guide_label": ""
+    },
+    "seasonal-2026-10-dr-althea": {
+      "badge": "Dr.Althea",
+      "title": "The 345 care edit",
+      "subtitle": "Discover 345 Relief Cream and Cream Mist for your autumn skincare selection",
+      "button_text": "Explore Dr.Althea",
+      "button_link": "/products?brand=Dr.Althea",
+      "wholesale_label": "",
+      "order_guide_label": ""
+    },
+    "seasonal-2026-10-anua": {
+      "badge": "ANUA",
+      "title": "Your serum essentials",
+      "subtitle": "Explore Azelaic Acid 10 and Niacinamide 10 + TXA 4 serums",
+      "button_text": "Explore ANUA",
+      "button_link": "/products?brand=ANUA",
+      "wholesale_label": "",
+      "order_guide_label": ""
+    },
+    "seasonal-2026-10-skin1004": {
+      "badge": "SKIN1004",
+      "title": "A fresh take on daily care",
+      "subtitle": "Explore Madagascar Centella Ampoule and Hyalu-Cica Sun Serum",
+      "button_text": "Explore SKIN1004",
+      "button_link": "/products?brand=SKIN1004",
+      "wholesale_label": "",
+      "order_guide_label": ""
+    }
+  },
+  "localized": {
+    "ru": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "title": "Корейское наследие\nЕжедневное сияние",
+          "subtitle": "Вечная корейская мудрость для современной кожи",
+          "button_text": "Смотреть Beauty of Joseon"
+        },
+        "seasonal-2026-10-dr-althea": {
+          "title": "Уход с коллекцией 345",
+          "subtitle": "Откройте для себя крем 345 Relief Cream и крем-мист для вашего осеннего ухода за кожей",
+          "button_text": "Смотреть Dr.Althea"
+        },
+        "seasonal-2026-10-anua": {
+          "title": "Подборка сывороток",
+          "subtitle": "Изучите сыворотки Azelaic Acid 10 и Niacinamide 10 + TXA 4",
+          "button_text": "Смотреть ANUA"
+        },
+        "seasonal-2026-10-skin1004": {
+          "title": "Новый взгляд на ежедневный уход",
+          "subtitle": "Изучите ампулу Madagascar Centella и солнцезащитную сыворотку Hyalu-Cica",
+          "button_text": "Смотреть SKIN1004"
+        }
+      },
+      "categories": {
+        "Skincare": "Уход за кожей",
+        "Makeup": "Макияж",
+        "Suncare": "Защита от солнца",
+        "Hair Care": "Уход за волосами",
+        "Body Care": "Уход за телом",
+        "Mask Pack": "Маски",
+        "Tools & Accessories": "Инструменты и аксессуары",
+        "Nail": "Ногти",
+        "Set Menu": "Наборы",
+        "Promotions": "Акции",
+        "Skin/Toner": "Кожа/Тоник",
+        "Lotion/Emulsion": "Лосьон/Эмульсия",
+        "Essence/Serum/Ampoule": "Эссенция/Сыворотка/Ампула",
+        "Cream": "Крем",
+        "Moisture Cream": "Увлажняющий крем",
+        "Nutrition Cream": "Питательный крем",
+        "Basic Sets": "Базовые наборы",
+        "Eye Care": "Уход за глазами",
+        "Cleansing": "Очищение",
+        "Sun Care": "Защита от солнца",
+        "Base": "Основа",
+        "Lip": "Губы",
+        "Eye": "Глаза",
+        "Cheek": "Щёки",
+        "Sheet Mask": "Тканевая маска",
+        "Sleeping Mask": "Ночная маска",
+        "Wash-off Pack": "Смываемая маска",
+        "Sunscreen": "Солнцезащитный крем",
+        "Sun Stick": "Солнечный стик",
+        "After Sun": "Средство после солнца",
+        "Shampoo": "Шампунь",
+        "Treatment": "Лечение (уход)",
+        "Styling": "Укладка",
+        "Body Wash": "Гель для душа",
+        "Body Lotion": "Лосьон для тела",
+        "Hand & Foot": "Уход за руками и ногами"
+      }
+    },
+    "kk": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "title": "Корей мұрасы\nКүнделікті жарқырау",
+          "subtitle": "Қазіргі теріге арналған уақытсыз корей даналығы",
+          "button_text": "Beauty of Joseon өнімдері"
+        },
+        "seasonal-2026-10-dr-althea": {
+          "title": "345 күтім топтамасы",
+          "subtitle": "Күзгі тері күтіміңіздің таңдауы үшін 345 Relief Cream және Cream Mist-ті ашыңыз",
+          "button_text": "Dr.Althea өнімдері"
+        },
+        "seasonal-2026-10-anua": {
+          "title": "Сарысулар топтамасы",
+          "subtitle": "Azelaic Acid 10 және Niacinamide 10 + TXA 4 сарысуларын зерттеңіз",
+          "button_text": "ANUA өнімдері"
+        },
+        "seasonal-2026-10-skin1004": {
+          "title": "Күнделікті күтімге жаңа көзқарас",
+          "subtitle": "Madagascar Centella Ampoule және Hyalu-Cica Sun Serum-ды зерттеңіз",
+          "button_text": "SKIN1004 өнімдері"
+        }
+      },
+      "categories": {
+        "Skincare": "Тері күтімі",
+        "Makeup": "Макияж",
+        "Suncare": "Күннен қорғау",
+        "Hair Care": "Шаш күтімі",
+        "Body Care": "Дене күтімі",
+        "Mask Pack": "Маскалар",
+        "Tools & Accessories": "Құралдар мен аксессуарлар",
+        "Nail": "Тырнақ",
+        "Set Menu": "Жиынтық мәзір",
+        "Promotions": "Акциялар",
+        "Skin/Toner": "Тері/Тонер",
+        "Lotion/Emulsion": "Лосьон/Эмульсия",
+        "Essence/Serum/Ampoule": "Эссенция/Сарысу/Ампула",
+        "Cream": "Крем",
+        "Moisture Cream": "Ылғалды крем",
+        "Nutrition Cream": "Қоректік крем",
+        "Basic Sets": "Негізгі жиынтықтар",
+        "Eye Care": "Көз күтімі",
+        "Cleansing": "Тазарту",
+        "Sun Care": "Күннен қорғау",
+        "Base": "База",
+        "Lip": "Лип",
+        "Eye": "Көз",
+        "Cheek": "Чик",
+        "Sheet Mask": "Sheet Mask",
+        "Sleeping Mask": "Ұйықтайтын маска",
+        "Wash-off Pack": "Жуғыш пакет",
+        "Sunscreen": "Күннен қорғайтын крем",
+        "Sun Stick": "Sun Stick",
+        "After Sun": "Күннен кейін",
+        "Shampoo": "Шампунь",
+        "Treatment": "Емдеу",
+        "Styling": "Стиль",
+        "Body Wash": "Денеге арналған жуғыш",
+        "Body Lotion": "Денеге арналған лосьон",
+        "Hand & Foot": "Қол мен аяқ"
+      }
+    },
+    "uz": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "title": "Koreys merosi\nHar kunlik porlash",
+          "subtitle": "Zamonaviy teri uchun abadiy koreys donoligi",
+          "button_text": "Beauty of Joseon mahsulotlari"
+        },
+        "seasonal-2026-10-dr-althea": {
+          "title": "345 parvarish to‘plami",
+          "subtitle": "Kuzgi teri parvarishi uchun 345 Relief Cream va Cream Mist ni kashf eting",
+          "button_text": "Dr.Althea mahsulotlari"
+        },
+        "seasonal-2026-10-anua": {
+          "title": "Serumlar to‘plami",
+          "subtitle": "Azelaic Acid 10 va Niacinamide 10 + TXA 4 serumlarini kashf eting",
+          "button_text": "ANUA mahsulotlari"
+        },
+        "seasonal-2026-10-skin1004": {
+          "title": "Har kunlik parvarishga yangi yondashuv",
+          "subtitle": "Madagascar Centella Ampoule va Hyalu-Cica Sun Serum ni kashf eting",
+          "button_text": "SKIN1004 mahsulotlari"
+        }
+      },
+      "categories": {
+        "Skincare": "Teri parvarishi",
+        "Makeup": "Pardoz",
+        "Suncare": "Quyoshdan himoya",
+        "Hair Care": "Soch parvarishi",
+        "Body Care": "Tana parvarishi",
+        "Mask Pack": "Niqoblar",
+        "Tools & Accessories": "Asboblar va aksessuarlar",
+        "Nail": "Tirnoq",
+        "Set Menu": "To'plam menyusi",
+        "Promotions": "Aksiyalar",
+        "Skin/Toner": "Teri / Tonik",
+        "Lotion/Emulsion": "Loson / Emulsiya",
+        "Essence/Serum/Ampoule": "Essensiya/Serum/Ampula",
+        "Cream": "Krema",
+        "Moisture Cream": "Namlik kremi",
+        "Nutrition Cream": "Ozuqa kremi",
+        "Basic Sets": "Asosiy to'plamlar",
+        "Eye Care": "Ko'z parvarishi",
+        "Cleansing": "Tozalash",
+        "Sun Care": "Quyoshdan himoya",
+        "Base": "Baza",
+        "Lip": "Lab",
+        "Eye": "Ko'z",
+        "Cheek": "Yonoq",
+        "Sheet Mask": "List niqobi",
+        "Sleeping Mask": "Uyqu niqobi",
+        "Wash-off Pack": "Yuviladigan paket",
+        "Sunscreen": "Quyoshdan himoya kremlari",
+        "Sun Stick": "Quyosh stiki",
+        "After Sun": "Quyoshdan keyingi",
+        "Shampoo": "Shampun",
+        "Treatment": "Davolash",
+        "Styling": "Stil berish",
+        "Body Wash": "Tana yuvish",
+        "Body Lotion": "Tana losyoni",
+        "Hand & Foot": "Qo'l va oyoq"
+      }
+    },
+    "ky": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "title": "Корей мурасы\nКүн сайын жаркыраган тери",
+          "subtitle": "Замандын терисине ылайыкташкан татынакай корей акылы",
+          "button_text": "Beauty of Joseon товарлары"
+        },
+        "seasonal-2026-10-dr-althea": {
+          "title": "345 кам көрүү топтому",
+          "subtitle": "Күзгү терини камтуу үчүн 345 Relief Cream жана Cream Mist табыңыз",
+          "button_text": "Dr.Althea товарлары"
+        },
+        "seasonal-2026-10-anua": {
+          "title": "Сывороткалар топтому",
+          "subtitle": "Azelaic Acid 10 жана Niacinamide 10 + TXA 4 серумдарын изилде",
+          "button_text": "ANUA товарлары"
+        },
+        "seasonal-2026-10-skin1004": {
+          "title": "Күнүмдүк кам көрүүгө жаңыча мамиле",
+          "subtitle": "Madagascar Centella Ampoule жана Hyalu-Cica Sun Serumду изилде",
+          "button_text": "SKIN1004 товарлары"
+        }
+      },
+      "categories": {
+        "Skincare": "Териге кам көрүү",
+        "Makeup": "Макияж",
+        "Suncare": "Күндөн коргоо",
+        "Hair Care": "Чачка кам көрүү",
+        "Body Care": "Денеге кам көрүү",
+        "Mask Pack": "Маскалар",
+        "Tools & Accessories": "Куралдар жана аксессуарлар",
+        "Nail": "Тырмак",
+        "Set Menu": "Жыйнак менюсу",
+        "Promotions": "Акциялар",
+        "Skin/Toner": "Теринин/Тонер",
+        "Lotion/Emulsion": "Лосьон/Эмульсия",
+        "Essence/Serum/Ampoule": "Эссенция/Сыворотка/Ампула",
+        "Cream": "Крем",
+        "Moisture Cream": "Нымдандыруучу крем",
+        "Nutrition Cream": "Тамактандыруучу крем",
+        "Basic Sets": "Негизги топтомдор",
+        "Eye Care": "Көз камкордугу",
+        "Cleansing": "Тазалоо",
+        "Sun Care": "Күндөн коргоо",
+        "Base": "База",
+        "Lip": "Эрин",
+        "Eye": "Көз",
+        "Cheek": "Щек",
+        "Sheet Mask": "Табак маска",
+        "Sleeping Mask": "Укуу маскасы",
+        "Wash-off Pack": "Жууучу пак",
+        "Sunscreen": "Күндөн сактоочу крем",
+        "Sun Stick": "Күндөн сактоочу стик",
+        "After Sun": "Күндөн кийин камкордук",
+        "Shampoo": "Шампунь",
+        "Treatment": "Дарылоо",
+        "Styling": "Стайлинг",
+        "Body Wash": "Дене жуунуучу каражат",
+        "Body Lotion": "Дене лосьону",
+        "Hand & Foot": "Кол & Топтук камкордук"
+      }
+    },
+    "tg": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "title": "Мероси кореягӣ Ҳаррӯза равшанӣ",
+          "subtitle": "Хирадҳои бепоёни кореягӣ барои пӯсти муосир",
+          "button_text": "Маҳсулоти Beauty of Joseon"
+        },
+        "seasonal-2026-10-dr-althea": {
+          "title": "Маҷмӯаи нигоҳубини 345",
+          "subtitle": "Кашфи Крем ва Мисти 345 барои интихоботи нигоҳубини тобистонаи шумо",
+          "button_text": "Маҳсулоти Dr.Althea"
+        },
+        "seasonal-2026-10-anua": {
+          "title": "Маҷмӯаи зардобҳо",
+          "subtitle": "Кашфи серумҳои Azelaic Acid 10 ва Niacinamide 10 + TXA 4",
+          "button_text": "Маҳсулоти ANUA"
+        },
+        "seasonal-2026-10-skin1004": {
+          "title": "Нигоҳи нав ба нигоҳубини ҳаррӯза",
+          "subtitle": "Кашфи Ампулаи Madagascar Centella ва Hyalu-Cica Sun Serum",
+          "button_text": "Маҳсулоти SKIN1004"
+        }
+      },
+      "categories": {
+        "Skincare": "Нигоҳубини пӯст",
+        "Makeup": "Ороиш",
+        "Suncare": "Муҳофизат аз офтоб",
+        "Hair Care": "Нигоҳубини мӯй",
+        "Body Care": "Нигоҳубини бадан",
+        "Mask Pack": "Ниқобҳо",
+        "Tools & Accessories": "Асбобҳо ва лавозимот",
+        "Nail": "Нохун",
+        "Set Menu": "Менюи маҷмӯӣ",
+        "Promotions": "Тарғиботҳо",
+        "Skin/Toner": "Пӯст/Тонер",
+        "Lotion/Emulsion": "Лосион/Эмулсия",
+        "Essence/Serum/Ampoule": "Эссенсия/Зардоб/Ампула",
+        "Cream": "Крем",
+        "Moisture Cream": "Креми намнокӣ",
+        "Nutrition Cream": "Креми ғизоӣ",
+        "Basic Sets": "Ҷамъҳои асосӣ",
+        "Eye Care": "Мудофиаи чашм",
+        "Cleansing": "Тозакунӣ",
+        "Sun Care": "Муҳофизат аз офтоб",
+        "Base": "Асос",
+        "Lip": "Лаб",
+        "Eye": "Чашм",
+        "Cheek": "Гӯша",
+        "Sheet Mask": "Нақши рӯи варақӣ",
+        "Sleeping Mask": "Нақши хобзор",
+        "Wash-off Pack": "Пакет барои ҷӯшидан",
+        "Sunscreen": "Креми офтоб",
+        "Sun Stick": "Лавҳаи офтобӣ",
+        "After Sun": "Баъд аз офтоб",
+        "Shampoo": "Шампун",
+        "Treatment": "Табобат",
+        "Styling": "Ороиш",
+        "Body Wash": "Шустушӯи бадан",
+        "Body Lotion": "Лосюни бадан",
+        "Hand & Foot": "Дасту по"
+      }
+    },
+    "tk": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "title": "Koreýa mirasy\nGünsaýyn şöhle",
+          "subtitle": "Häzirki zaman deri üçin wagtyň geçmeýän Koreýa akyly",
+          "button_text": "Beauty of Joseon önümleri"
+        },
+        "seasonal-2026-10-dr-althea": {
+          "title": "345 ideg ýygyndysy",
+          "subtitle": "Tomus deri idegi üçin 345 Relief kremi we krem mgistini tapyň",
+          "button_text": "Dr.Althea önümleri"
+        },
+        "seasonal-2026-10-anua": {
+          "title": "Serumlar ýygyndysy",
+          "subtitle": "Azelaik turşusy 10 we Niacinamide 10 + TXA 4 serumlaryny öwreniň",
+          "button_text": "ANUA önümleri"
+        },
+        "seasonal-2026-10-skin1004": {
+          "title": "Günlük idege täze garaýyş",
+          "subtitle": "Madagaszkaryň Sentella ampulasyny we Hyalu-Cica Gün Serumyny öwreniň",
+          "button_text": "SKIN1004 önümleri"
+        }
+      },
+      "categories": {
+        "Skincare": "Deri idegi",
+        "Makeup": "Makiýaž",
+        "Suncare": "Günden gorag",
+        "Hair Care": "Saç idegi",
+        "Body Care": "Beden idegi",
+        "Mask Pack": "Maskalar",
+        "Tools & Accessories": "Gurallar we esbaplar",
+        "Nail": "Dirsek",
+        "Set Menu": "Toplam menu",
+        "Promotions": "Mazmunlar",
+        "Skin/Toner": "Deri/Toner",
+        "Lotion/Emulsion": "Losion/Emulsiýa",
+        "Essence/Serum/Ampoule": "Essensiýa/Serum/Ampul",
+        "Cream": "Krem",
+        "Moisture Cream": "Çyglylyk Kremi",
+        "Nutrition Cream": "Bölek Kremi",
+        "Basic Sets": "Esasy Toplumlar",
+        "Eye Care": "Göz Goraýjy",
+        "Cleansing": "Arassalaýjy",
+        "Sun Care": "Günden gorag",
+        "Base": "Esas",
+        "Lip": "Duwak",
+        "Eye": "Göz",
+        "Cheek": "Yüz",
+        "Sheet Mask": "List Maskasy",
+        "Sleeping Mask": "Ukamak Maskasy",
+        "Wash-off Pack": "Ýuwulan Gap",
+        "Sunscreen": "Günşalynma",
+        "Sun Stick": "Gün Lapa",
+        "After Sun": "Gün Soňy",
+        "Shampoo": "Şampun",
+        "Treatment": "Bejergi",
+        "Styling": "Saç Doýduryşy",
+        "Body Wash": "Bedeniň Arassalaýjy",
+        "Body Lotion": "Bedeniň Losýony",
+        "Hand & Foot": "Ellik & Aýak"
+      }
+    }
+  }
+}

@@ -1,15 +1,278 @@
 {
   "source": "https://www.stylekorean.com/promotion/180",
-  "checked": "2026-10-09",
-  "note": "External bestseller selection; not October sales ranking. Centella Ampoule source is 100ml duo.",
+  "checked": "2026-10-14",
+  "note": "External recommendation order, not an HMT or October sales ranking. Distinct exact-product sources first, then YesStyle category rank, then Stylevana displayed position. Bundle evidence is not transferred to single products. Ambiguous Probiotics/Niacinamide versions and products without verified barcodes are excluded.",
+  "sources": [
+    {
+      "id": "yesstyle",
+      "name": "YesStyle",
+      "url": "https://www.yesstyle.com/blog/2026-06-30/yesstyles-skin-care-bestsellers-mid-year-2026/",
+      "period": "Global sales volume, 2025-12-16 to 2026-06-15",
+      "type": "category-sales-ranking"
+    },
+    {
+      "id": "stylevana",
+      "name": "Stylevana",
+      "url": "https://www.stylevana.com/en_US/best-sellers.html",
+      "period": "US best-seller collection checked 2026-10-14",
+      "type": "collection-display-position"
+    },
+    {
+      "id": "stylekorean",
+      "name": "StyleKorean",
+      "url": "https://www.stylekorean.com/promotion/180",
+      "period": "Best-seller collection checked 2026-10-14; region-dependent",
+      "type": "collection-membership"
+    }
+  ],
   "skus": [
-    "8809640737190",
-    "8809640734526",
-    "8809782555508",
-    "8809968130277",
     "8809447256221",
+    "8809913830122",
+    "8809640737190",
+    "8809968130277",
+    "8809782551814",
+    "8809640734526",
+    "8809562192763",
+    "8809532221707",
     "8809447256115",
-    "8809576260663",
-    "8809913830603"
+    "8809563103430",
+    "8809640734427",
+    "8809576261592"
+  ],
+  "items": [
+    {
+      "sku": "8809447256221",
+      "productCode": "HMT-003606",
+      "name": "Dr.Althea 345 Relief Cream (Renewal) 50ml",
+      "sourceIds": [
+        "yesstyle",
+        "stylekorean"
+      ],
+      "yesStyleCategoryRank": 1,
+      "stylevanaDisplayPosition": null,
+      "sheet": [
+        {
+          "sheet": "Dr.Althea",
+          "row": 3,
+          "name": "345 Relief Cream (Renewal)",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809913830122",
+      "productCode": "HMT-012628",
+      "name": "SKIN1004 Hyalu-Cica Water-Fit Sun Serum Twin Pack 50ml x 2",
+      "sourceIds": [
+        "yesstyle",
+        "stylevana"
+      ],
+      "yesStyleCategoryRank": 2,
+      "stylevanaDisplayPosition": 1,
+      "sheet": [
+        {
+          "sheet": "SKIN1004",
+          "row": 43,
+          "name": "SKIN1004 Madagascar Centella Hyalu-Cica Water-Fit Sun Serum Twin Pack (50ml 2)",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809640737190",
+      "productCode": "HMT-000737",
+      "name": "Anua Azelaic Acid 10 Hyaluron Redness Soothing Serum 30ml",
+      "sourceIds": [
+        "yesstyle",
+        "stylekorean"
+      ],
+      "yesStyleCategoryRank": 2,
+      "stylevanaDisplayPosition": null,
+      "sheet": [
+        {
+          "sheet": "ANUA",
+          "row": 28,
+          "name": "AZELAIC HYALURON SOOTHING SERUM 30ML",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809968130277",
+      "productCode": "HMT-001680",
+      "name": "Beauty of Joseon Relief Sun Aqua-fresh Rice + B5 50ml",
+      "sourceIds": [
+        "yesstyle",
+        "stylevana"
+      ],
+      "yesStyleCategoryRank": 3,
+      "stylevanaDisplayPosition": 3,
+      "sheet": [
+        {
+          "sheet": "Beauty of Joseon",
+          "row": 22,
+          "name": "Relief Sun Aqua-fresh Rice +B5",
+          "volume": "50ml"
+        }
+      ]
+    },
+    {
+      "sku": "8809782551814",
+      "productCode": "HMT-012413",
+      "name": "ROUND LAB Birch Juice Moisturizing Sunscreen 50ml",
+      "sourceIds": [
+        "yesstyle",
+        "stylevana"
+      ],
+      "yesStyleCategoryRank": 4,
+      "stylevanaDisplayPosition": 10,
+      "sheet": [
+        {
+          "sheet": "RoundLab",
+          "row": 33,
+          "name": "BIRCH JUICE MOISTURIZING SUNSCREEN_50ml",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809640734526",
+      "productCode": "HMT-000780",
+      "name": "Anua Niacinamide 10% + TXA 4% Serum 30ml",
+      "sourceIds": [
+        "yesstyle",
+        "stylekorean"
+      ],
+      "yesStyleCategoryRank": 4,
+      "stylevanaDisplayPosition": null,
+      "sheet": [
+        {
+          "sheet": "ANUA",
+          "row": 20,
+          "name": "ANUA NIACINAMIDE 10% + TXA 4% SERUM 30ml",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809562192763",
+      "productCode": "HMT-001146",
+      "name": "Arencia Vitamin C Booster Shot 30ml",
+      "sourceIds": [
+        "yesstyle",
+        "stylekorean"
+      ],
+      "yesStyleCategoryRank": 5,
+      "stylevanaDisplayPosition": null,
+      "sheet": [
+        {
+          "sheet": "Arencia",
+          "row": 35,
+          "name": "Arencia Retinal Booster Shot 30ml",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809532221707",
+      "productCode": "HMT-005879",
+      "name": "haruharu wonder Black Rice Moisture Airyfit Sunscreen 50ml",
+      "sourceIds": [
+        "yesstyle",
+        "stylevana"
+      ],
+      "yesStyleCategoryRank": 6,
+      "stylevanaDisplayPosition": 4,
+      "sheet": [
+        {
+          "sheet": "haraharu wonder",
+          "row": 8,
+          "name": "haruharu wonder Black Rice Moisture Airyfit Daily Sunscreen SPF50+ PA++++",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809447256115",
+      "productCode": "HMT-003610",
+      "name": "Dr.Althea 345 Relief Cream Mist 100ml",
+      "sourceIds": [
+        "yesstyle"
+      ],
+      "yesStyleCategoryRank": 1,
+      "stylevanaDisplayPosition": null,
+      "sheet": [
+        {
+          "sheet": "Dr.Althea",
+          "row": 8,
+          "name": "345 Relief Cream Mist 100ml",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809563103430",
+      "productCode": "HMT-011703",
+      "name": "Purito Mighty Bamboo Panthenol Cream 100ml",
+      "sourceIds": [
+        "yesstyle"
+      ],
+      "yesStyleCategoryRank": 2,
+      "stylevanaDisplayPosition": null,
+      "sheet": [
+        {
+          "sheet": "Purito",
+          "row": 27,
+          "name": "PURITO Mighty Bamboo Panthenol Cream",
+          "volume": "100ml"
+        }
+      ]
+    },
+    {
+      "sku": "8809640734427",
+      "productCode": "HMT-000730",
+      "name": "Anua Heartleaf Quercetinol Cleansing Foam 150ml",
+      "sourceIds": [
+        "yesstyle"
+      ],
+      "yesStyleCategoryRank": 4,
+      "stylevanaDisplayPosition": null,
+      "sheet": [
+        {
+          "sheet": "ANUA",
+          "row": 6,
+          "name": "ANUA HEARTLEAF QUERCETINOL PORE DEEP CLEANSING FOAM 150ml",
+          "volume": null
+        }
+      ]
+    },
+    {
+      "sku": "8809576261592",
+      "productCode": "HMT-012626",
+      "name": "SKIN1004 Hyalu-Cica Water-Fit Sun Serum 50ml",
+      "sourceIds": [
+        "stylevana"
+      ],
+      "yesStyleCategoryRank": null,
+      "stylevanaDisplayPosition": 2,
+      "sheet": [
+        {
+          "sheet": "SKIN1004",
+          "row": 41,
+          "name": "SKIN1004 Madagascar Centella Hyalu-Cica Water-Fit Sun Serum 50ml",
+          "volume": null
+        }
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "productCode": "HMT-001678",
+      "reason": "Probiotics versus Niacinamide version ambiguity"
+    },
+    {
+      "productCode": "HMT-000419",
+      "reason": "Missing barcode; cannot safely identify exact supplier SKU"
+    }
   ]
 }

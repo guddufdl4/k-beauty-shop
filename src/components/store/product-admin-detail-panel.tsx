@@ -526,9 +526,7 @@ export function ProductAdminDetailPanel({
                   <dd className={`font-semibold ${product.sold_out ? "text-red-600" : "text-emerald-600"}`}>
                     {product.sold_out
                       ? t("outOfStock")
-                      : product.stock > 0
-                        ? t("inStock", { count: product.stock })
-                        : "—"}
+                      : t("availableToOrder")}
                   </dd>
                 </div>
                 <div className="min-w-0">

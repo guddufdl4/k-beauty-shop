@@ -196,6 +196,9 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
       label: tab.label,
     }));
 
+  const tGuide = await getTranslations("supportDesign");
+  const tCheckout = await getTranslations("checkout");
+
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
       <JsonLd
@@ -308,6 +311,12 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
         )}
       </section>
 
+      <section className="mt-10 rounded-xl border border-zinc-200 p-5 sm:p-6" aria-label={tCheckout("tradeNoteTitle")}>
+        <h2 className="text-lg font-semibold">{entry.displayName} · {tCheckout("tradeNoteTitle")}</h2>
+        <p className="mt-2 text-sm text-zinc-600">{tCheckout("brandMinimum")}</p>
+        <ol className="mt-5 grid gap-5 sm:grid-cols-3">{[1,2,3].map(step=><li key={step}><h3 className="font-medium">{step}. {tGuide(`about${step}Title`)}</h3><p className="mt-2 text-sm leading-relaxed text-zinc-600">{tGuide(`about${step}Body`)}</p></li>)}</ol>
+        <Link href="/order-guide" className="mt-5 inline-block min-h-11 py-3 text-sm font-medium text-rose-600 underline">{tCheckout("nextStepsTitle")} →</Link>
+      </section>
       <BrandHubWholesaleCta
         needQuoteLabel={t("needQuote", { brand: entry.displayName })}
         requestQuoteLabel={t("requestQuote")}

@@ -388,7 +388,8 @@
     "catalogOverview": "{name} dari {brand}. Periksa ukuran, jumlah pesanan minimum, dan barcode sebelum meminta penawaran. Ketersediaan dan pengemasan dikonfirmasi melalui penawaran.",
     "officialSource": "Informasi produk resmi",
     "wholesaleTitle": "Grosir {name} · {brand}",
-    "bestsellerBasis": "Pilihan mengacu pada koleksi terlaris eksternal; bukan peringkat penjualan HMT"
+    "bestsellerBasis": "Pilihan mengacu pada koleksi terlaris eksternal; bukan peringkat penjualan HMT",
+    "availableToOrder": "Dapat dipesan"
   },
   "brands": {
     "browse": "Jelajahi",
@@ -453,7 +454,7 @@
     "title": "Permintaan penawaran",
     "titleWithOrder": "Kirim permintaan penawaran",
     "emptyCart": "Daftar penawaran kosong. Tambahkan produk dan jumlah.",
-    "minOrderUsd": "Nilai pesanan minimum USD {amount}.",
+    "minOrderUsd": "Total produk harus melebihi USD {amount} (tidak termasuk ongkir) untuk meminta penawaran.",
     "backToCart": "← Kembali ke daftar penawaran",
     "quoteHint": "Kirim produk dan jumlah untuk penawaran. Ini bukan pembayaran online.",
     "createWholesaleAccount": "Buat akun grosir",
@@ -527,7 +528,10 @@
     "shippingSeparate": "Pembeli mengatur transportasi internasional. Harga tidak termasuk ongkos angkut. Biaya lingkup penyerahan disepakati sebelum pemesanan.",
     "shippingCalculated": "Sebutkan forwarder pilihan, negara tujuan dan lokasi penerimaan atau pemuatan yang disepakati.",
     "brandMinimum": "Beberapa merek memiliki nilai minimum; harga dapat berubah saat konfirmasi. Hubungi untuk rincian.",
-    "vatExcluded": "Harga belum termasuk PPN."
+    "vatExcluded": "Harga belum termasuk PPN.",
+    "draftHelp": "Data disimpan sementara di tab ini selama 12 jam.",
+    "clearDraft": "Hapus data tersimpan",
+    "confirmDetails": "Saya telah memeriksa produk, jumlah, dan kontak."
   },
   "orderConfirmation": {
     "paymentCompleted": "Pembayaran selesai",
@@ -575,7 +579,7 @@
     "subtotal": "Subtotal referensi",
     "quoteHint": "Tambahkan produk dan jumlah lalu minta penawaran. Situs tidak menerima pembayaran kartu.",
     "quoteNote": "Harga akhir, stok, jadwal dan pengiriman dikonfirmasi setelah penawaran. Bayar melalui transfer bank.",
-    "minOrderUsd": "Nilai pesanan minimum USD {amount}.",
+    "minOrderUsd": "Total produk harus melebihi USD {amount} (tidak termasuk ongkir) untuk meminta penawaran.",
     "checkout": "Minta penawaran",
     "loginRequired": "Silakan masuk untuk mengirim permintaan penawaran.",
     "loginAction": "Masuk",
@@ -620,7 +624,8 @@
     },
     "approvalPending": "Nomor registrasi usaha wajib diisi untuk mendaftar. Kirim bukti usaha setelah pendaftaran untuk melihat harga.",
     "invoiceExcel": "Unduh Excel",
-    "invoicePdf": "Unduh PDF"
+    "invoicePdf": "Unduh PDF",
+    "remainingMinimum": "Kurang {amount} untuk mencapai minimum pesanan"
   },
   "auth": {
     "loginTitle": "Masuk",

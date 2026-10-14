@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import { isStorefrontNavSlug } from "@/lib/store/category-taxonomy";
 import curatedBestSellers from "@/data/curated-best-sellers.json";
 import type { Metadata } from "next";
 import { getTranslations, getLocale } from "next-intl/server";
@@ -19,6 +21,7 @@ import { localizeStorefrontProducts } from "@/lib/store/localized-product-name";
 import { getUsdKrwRate } from "@/lib/currency-rate";
 import {
   getStorefrontCategories,
+  getCategories,
   getProducts,
   getProductBrands,
   STOREFRONT_PRODUCTS_PAGE_SIZE,
@@ -34,6 +37,7 @@ import { buildProductsHref } from "@/lib/store/products-url";
 import type { AppLocale } from "@/i18n/routing";
 
 export const revalidate = 60;
+const countAvailableForPage = (meta: {countAvailable?: boolean; error?: string | null}) => !meta.error && meta.countAvailable !== false;
 
 type ProductsPageProps = {
   searchParams: Promise<{
@@ -54,6 +58,8 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
   const sortKey = parseProductListSort(sort);
   const currentPage = Math.max(1, Number.parseInt(page ?? "1", 10) || 1);
   const indexSeo = getProductsIndexSeo(locale);
+  const categoryData = categorySlug ? await getCategories() : null;
+  if (categoryData && !categoryData.meta.error && !isStorefrontNavSlug(categorySlug!) && !categoryData.categories.some(item => item.slug === categorySlug)) notFound();
 
   if (searchTerm) {
     return buildStorefrontMetadata({
@@ -88,7 +94,9 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
   }
 
   if (categorySlug) {
-    const { categories } = await getStorefrontCategories();
+    const { categories } = categoryData!;
+    const { totalCount, meta: countMeta } = await getProducts({categorySlug, limit: 1, page: 1, requireRealImage: true, audience: "guest"});
+    if (!countMeta.error && countMeta.countAvailable !== false && totalCount > 0 && currentPage > Math.ceil(totalCount / STOREFRONT_PRODUCTS_PAGE_SIZE)) notFound();
     const activeCategory = categories.find((item) => item.slug === categorySlug);
     const fallbackName = activeCategory
       ? getLocalizedCategoryName(activeCategory, locale)
@@ -103,6 +111,7 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
       path: canonicalPath,
       title: categorySeo.title,
       description: categorySeo.description,
+      robots: sortKey || (!countMeta.error && countMeta.countAvailable !== false && totalCount === 0) ? NOINDEX_FOLLOW : undefined,
     });
   }
 
@@ -146,6 +155,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     getStorefrontCategories(),
     getProductBrands(),
   ]);
+
+  if (categorySlug && !isStorefrontNavSlug(categorySlug)) {
+    const allCategories = await getCategories();
+    if (!allCategories.meta.error && !allCategories.categories.some(item => item.slug === categorySlug)) notFound();
+  }
+  if (countAvailableForPage(meta) && totalCount > 0 && currentPage > Math.ceil(totalCount / STOREFRONT_PRODUCTS_PAGE_SIZE)) notFound();
 
   const products = localizeStorefrontProducts(fetchedProducts, locale);
 
@@ -285,7 +300,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <RelatedSearchTerms query={searchTerm} />
           ) : null}
 
-          {sort === "trending" && !searchTerm ? <p className="mb-5 text-xs leading-relaxed text-zinc-500">{t("bestsellerBasis")} · <a href={curatedBestSellers.source} target="_blank" rel="noreferrer" className="underline">StyleKorean</a> · {curatedBestSellers.checked}</p> : null}
+          {sort === "trending" && !searchTerm ? <p className="mb-5 text-xs leading-relaxed text-zinc-500">{t("bestsellerBasis")} · {curatedBestSellers.sources.map((source, index) => <span key={source.id}>{index > 0 ? " / " : ""}<a href={source.url} target="_blank" rel="noreferrer" className="underline">{source.name}</a></span>)} · {curatedBestSellers.checked}</p> : null}
 
           {showCategoryLandingSeo && categorySeo ? (
             <CategoryLandingSeo

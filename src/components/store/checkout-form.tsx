@@ -1,6 +1,7 @@
 "use client";
+import { QUOTE_DRAFT_FIELDS, readQuoteDraft } from "@/lib/store/quote-draft";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import {
   submitQuoteRequest,
@@ -20,6 +21,8 @@ type Props = {
   usdKrwRate: number;
   isMember: boolean;
   showPrices?: boolean;
+  quoteEligible?: boolean;
+  draftId?: string;
   defaultCompanyName?: string;
   defaultContactName?: string;
   defaultEmail?: string;
@@ -37,6 +40,8 @@ export function CheckoutForm({
   usdKrwRate,
   isMember,
   showPrices = true,
+  quoteEligible,
+  draftId = "",
   defaultCompanyName = "",
   defaultContactName = "",
   defaultEmail = "",
@@ -46,7 +51,47 @@ export function CheckoutForm({
   const [state, formAction, pending] = useActionState(submitQuoteRequest, initialState);
   const [tradeTerms, setTradeTerms] = useState("");
   const [shippingMethod, setShippingMethod] = useState("");
-  const meetsMinOrder = !showPrices || cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate);
+  const meetsMinOrder = quoteEligible ?? cartMeetsMinOrderUsd(cart.subtotal, usdKrwRate);
+  const formRef = useRef<HTMLFormElement>(null);
+  const restoreFields = useRef<Record<string,string> | null>(null);
+  const draftKey = draftId ? `hmt-quote-draft:${draftId}` : "";
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!draftKey || !formRef.current) return;
+    const frame = window.requestAnimationFrame(() => {
+    if (!formRef.current) return;
+    try {
+      const fields = readQuoteDraft(sessionStorage.getItem(draftKey));
+      if (!fields) {sessionStorage.removeItem(draftKey); return;}
+      restoreFields.current = fields;
+      setTradeTerms(typeof fields.trade_terms === "string" ? fields.trade_terms : "");
+      setShippingMethod(typeof fields.shipping_method === "string" ? fields.shipping_method : "");
+      for (const element of Array.from(formRef.current.elements)) {
+        if ((element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) && element.name !== "spam_trap" && typeof fields[element.name] === "string") element.value = fields[element.name].slice(0,5000);
+      }
+    } catch { /* Storage can be disabled in private browsing. */ }
+    });
+    return () => {window.cancelAnimationFrame(frame);if(saveTimer.current) clearTimeout(saveTimer.current);};
+  }, [draftKey]);
+  useEffect(() => {
+    const fields = restoreFields.current;
+    if (!fields || tradeTerms !== (fields.trade_terms ?? "") || shippingMethod !== (fields.shipping_method ?? "")) return;
+    for (const name of ["trade_terms_etc", "shipping_method_etc"]) {
+      const input = formRef.current?.elements.namedItem(name);
+      if (input instanceof HTMLInputElement && fields[name]) input.value = fields[name];
+    }
+    restoreFields.current = null;
+  }, [tradeTerms, shippingMethod]);
+  const saveDraft = () => {
+    if (!draftKey) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      if (!formRef.current) return;
+      const fields: Record<string,string> = {};
+      for (const [name,value] of new FormData(formRef.current)) if ((QUOTE_DRAFT_FIELDS as readonly string[]).includes(name) && typeof value === "string") fields[name] = value.slice(0,5000);
+      try {sessionStorage.setItem(draftKey,JSON.stringify({at:Date.now(),fields}));} catch { /* The form still works without storage. */ }
+    }, 250);
+  };
 
   if (!isMember) {
     return (
@@ -71,7 +116,8 @@ export function CheckoutForm({
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={saveDraft} className="space-y-6">
+      {draftKey ? <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600"><p>{t("draftHelp")}</p><button type="button" className="min-h-11 underline" onClick={()=>{restoreFields.current=null;if(saveTimer.current)clearTimeout(saveTimer.current);try{sessionStorage.removeItem(draftKey);}catch{} formRef.current?.reset();setTradeTerms("");setShippingMethod("");}}>{t("clearDraft")}</button></div> : null}
       <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden>
         <label htmlFor="spam_trap">{t("spamTrapLabel")}</label>
         <input id="spam_trap" name="spam_trap" type="text" tabIndex={-1} autoComplete="off" />
@@ -204,6 +250,7 @@ export function CheckoutForm({
         </p>
       ) : null}
 
+      <label className="flex min-h-11 items-start gap-3 text-sm"><input type="checkbox" name="confirm_details" required className="mt-1 h-5 w-5 shrink-0"/>{t("confirmDetails")}</label>
       <button
         type="submit"
         disabled={pending || !meetsMinOrder}
