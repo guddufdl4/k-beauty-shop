@@ -68,7 +68,13 @@
     "zh": "中文",
     "vi": "Tiếng Việt",
     "id": "Bahasa Indonesia",
-    "th": "ไทย"
+    "th": "ไทย",
+    "ru": "Русский",
+    "kk": "Қазақша",
+    "uz": "O‘zbekcha",
+    "ky": "Кыргызча",
+    "tg": "Тоҷикӣ",
+    "tk": "Türkmençe"
   },
   "viewMode": {
     "label": "Mode tampilan",
@@ -174,7 +180,10 @@
     "categoryNavSubtitle": "Lihat semua {category}",
     "promoBestProducts": "Produk pilihan",
     "promoShopNow": "LIHAT SEKARANG",
-    "whyHmtKorea": "Mengapa HMT Korea"
+    "whyHmtKorea": "Mengapa HMT Korea",
+    "quoteTitle": "Siapkan pesanan grosir berikutnya",
+    "quoteIntro": "Pilih merek K-Beauty asli bersama HMT KOREA",
+    "quoteAction": "Minta penawaran"
   },
   "footer": {
     "about": "Tentang kami",
@@ -375,7 +384,11 @@
       "soldOutLabel": "Ketersediaan",
       "available": "Tersedia"
     },
-    "businessApprovalPending": "Usaha menunggu persetujuan"
+    "businessApprovalPending": "Usaha menunggu persetujuan",
+    "catalogOverview": "{name} dari {brand}. Periksa ukuran, jumlah pesanan minimum, dan barcode sebelum meminta penawaran. Ketersediaan dan pengemasan dikonfirmasi melalui penawaran.",
+    "officialSource": "Informasi produk resmi",
+    "wholesaleTitle": "Grosir {name} · {brand}",
+    "bestsellerBasis": "Pilihan mengacu pada koleksi terlaris eksternal; bukan peringkat penjualan HMT"
   },
   "brands": {
     "browse": "Jelajahi",

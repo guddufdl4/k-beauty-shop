@@ -80,6 +80,7 @@ export function productJsonLd(input: {
   description: string;
   slug: string;
   sku?: string | null;
+  barcode?: string | null;
   image?: string | null;
   categoryName?: string | null;
   origin?: string | null;
@@ -119,7 +120,14 @@ export function productJsonLd(input: {
   if (input.image) {
     jsonLd.image = [input.image];
   }
-  if (input.sku?.trim()) {
+  const gtin = input.barcode?.trim() ?? "";
+  if (/^(?:[0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$/.test(gtin)) {
+    const digits = [...gtin].map(Number);
+    const check = digits.pop();
+    const sum = digits.reverse().reduce((total, digit, index) => total + digit * (index % 2 === 0 ? 3 : 1), 0);
+    if ((10 - sum % 10) % 10 === check) jsonLd[`gtin${gtin.length}`] = gtin;
+  }
+  if (input.sku?.trim() && !/^(none|null|undefined)$/i.test(input.sku.trim())) {
     jsonLd.sku = input.sku.trim();
   }
   if (input.categoryName?.trim()) {

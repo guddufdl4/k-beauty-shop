@@ -1,3 +1,4 @@
+import curatedBestSellers from "@/data/curated-best-sellers.json";
 import { buildProductSearchFilter } from "./product-search-filter";
 import { getHomeSettings } from "@/lib/site-settings";
 import { readFileSync, existsSync } from "node:fs";
@@ -962,7 +963,7 @@ function filterStaticProducts(
   if (options?.sort === "sale" && options.includePriceColumns !== false) {
     filtered = filtered.filter((product) => isProductOnSale(product));
   } else if (options?.sort === "trending") {
-    filtered = filtered.filter((product) => product.is_featured);
+    filtered = filtered.filter((product) => curatedBestSellers.skus.includes(product.sku));
   }
 
   return filtered;
@@ -1282,6 +1283,8 @@ export async function getProducts(
   const brandFilter = options?.brand?.trim();
   const brandExact = Boolean(options?.brandExact);
   const sort = options?.sort;
+  const configuredCuratedSkus = sort === "trending" ? (await getHomeSettings()).trending_skus : [];
+  const curatedSkus = (configuredCuratedSkus.length ? configuredCuratedSkus : curatedBestSellers.skus).slice(0, 40);
   const orderBy = options?.orderBy ?? "created_at";
   const deletionFilter = options?.deletionFilter ?? "active";
   const imageFirst = options?.imageFirst === true;
@@ -1535,7 +1538,7 @@ export async function getProducts(
     }
 
     if (sort === "trending") {
-      filtered = filtered.eq("is_featured", true);
+      filtered = filtered.in("sku", curatedSkus);
     }
 
     if (withOrder) {
@@ -2667,7 +2670,10 @@ export async function getPublicProductSitemapCount(): Promise<number> {
         let next = query
           .eq("status", "active")
           .not("image_url", "is", null)
-          .not("image_url", "like", "/images/categories/%");
+          .eq("needs_image", false)
+          .not("image_url", "eq", "")
+          .not("image_url", "like", "%/images/categories/%")
+          .not("image_url", "ilike", "%placeholder%");
         if (isSoftDeleteColumnAvailable()) {
           next = next.is("deleted_at", null);
         }
@@ -2675,7 +2681,7 @@ export async function getPublicProductSitemapCount(): Promise<number> {
       });
       return count;
     },
-    ["storefront-product-sitemap-count"],
+    ["storefront-product-sitemap-count", "verified-images-v3"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
@@ -2714,7 +2720,10 @@ export async function getPublicProductSitemapRows(options?: {
           .select("slug, updated_at")
           .eq("status", "active")
           .not("image_url", "is", null)
-          .not("image_url", "like", "/images/categories/%")
+          .eq("needs_image", false)
+          .not("image_url", "eq", "")
+          .not("image_url", "like", "%/images/categories/%")
+          .not("image_url", "ilike", "%placeholder%")
           .order("slug", { ascending: true })
           .range(from, to);
 
@@ -2735,7 +2744,7 @@ export async function getPublicProductSitemapRows(options?: {
           }));
 
         rows.push(...page);
-        if (page.length < to - from + 1) {
+        if ((result.data ?? []).length < to - from + 1) {
           break;
         }
         from = to + 1;
@@ -2743,7 +2752,7 @@ export async function getPublicProductSitemapRows(options?: {
 
       return rows;
     },
-    ["storefront-product-sitemap-rows", String(offset), String(limit), "v2-slug"],
+    ["storefront-product-sitemap-rows", String(offset), String(limit), "v3-verified-images"],
     {
       revalidate: CACHE_REVALIDATE_SECONDS,
       tags: [STOREFRONT_PRODUCTS_CACHE_TAG],

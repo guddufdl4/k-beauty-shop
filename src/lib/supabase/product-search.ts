@@ -722,36 +722,6 @@ function relatedTermsFromProducts(
 
 
 
-  if (terms.size < limit) {
-
-    for (const product of products) {
-
-      if (product.status !== "active") {
-
-        continue;
-
-      }
-
-      if (terms.has(getBrandFilterValue(product.brand))) {
-
-        continue;
-
-      }
-
-      terms.add(getBrandFilterValue(product.brand));
-
-      if (terms.size >= limit) {
-
-        break;
-
-      }
-
-    }
-
-  }
-
-
-
   return termsForLocale([...terms], locale).slice(0, limit);
 
 }

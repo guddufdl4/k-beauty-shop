@@ -1,3 +1,4 @@
+import curatedBestSellers from "@/data/curated-best-sellers.json";
 import type { Metadata } from "next";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -208,7 +209,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const showCategoryLandingSeo = Boolean(categorySeo && paginationPage === 1);
 
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+    <main className="catalog-results-page mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:px-6 sm:py-10">
       {categorySeo && categorySlug ? (
         <JsonLd
           data={breadcrumbJsonLd(locale, [
@@ -230,7 +231,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         ) : null}
 
         <div className="min-w-0 flex-1">
-          <header className="mb-6 border-b border-zinc-200 pb-4 sm:mb-8">
+          <header className="catalog-results-header mb-4 border-b border-zinc-200 pb-3 sm:mb-8">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
               <div>
                 {!brandFilter && !searchTerm && !activeCategory && sort ? (
@@ -280,9 +281,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             ) : null}
           </header>
 
-          {searchTerm && totalCount <= 3 ? (
+          {searchTerm && totalCount === 0 ? (
             <RelatedSearchTerms query={searchTerm} />
           ) : null}
+
+          {sort === "trending" && !searchTerm ? <p className="mb-5 text-xs leading-relaxed text-zinc-500">{t("bestsellerBasis")} · <a href={curatedBestSellers.source} target="_blank" rel="noreferrer" className="underline">StyleKorean</a> · {curatedBestSellers.checked}</p> : null}
 
           {showCategoryLandingSeo && categorySeo ? (
             <CategoryLandingSeo

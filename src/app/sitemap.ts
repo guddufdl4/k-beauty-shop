@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { routing } from "@/i18n/routing";
+import { routing, indexedLocales } from "@/i18n/routing";
 import { STOREFRONT_NAV_SLUGS } from "@/lib/store/category-taxonomy";
 import { brandNameToSlug } from "@/lib/store/brand-url";
 import { buildProductsHref } from "@/lib/store/products-url";
@@ -15,7 +15,7 @@ function languageAlternates(path: string): Record<string, string> {
   const languages: Record<string, string> = {
     "x-default": absoluteLocaleUrl(routing.defaultLocale, path),
   };
-  for (const locale of routing.locales) {
+  for (const locale of indexedLocales) {
     languages[locale] = absoluteLocaleUrl(locale, path);
   }
   return languages;
@@ -25,7 +25,7 @@ function localizedEntries(
   path: string,
   options?: { lastModified?: Date; changeFrequency?: MetadataRoute.Sitemap[number]["changeFrequency"]; priority?: number },
 ): MetadataRoute.Sitemap {
-  return routing.locales.map((locale) => ({
+  return indexedLocales.map((locale) => ({
     url: absoluteLocaleUrl(locale, path),
     ...(options?.lastModified ? { lastModified: options.lastModified } : {}),
     changeFrequency: options?.changeFrequency,

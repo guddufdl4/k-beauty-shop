@@ -458,3 +458,8 @@ html.view-mode-mobile .seasonal-home .home-campaign-products .store-product-grid
   .admin-notification-toast > button:last-child { flex-shrink: 0; min-width: 40px; min-height: 40px; }
 }
 html.view-mode-mobile .admin-notification-toast { bottom: calc(5rem + env(safe-area-inset-bottom)); }
+
+/* Keep search results visible before supplementary content on narrow screens. */
+@media (max-width: 639px) { .catalog-results-header h1 { font-size: 1.125rem; line-height: 1.4; overflow-wrap: anywhere; } }
+html.view-mode-mobile .catalog-results-page { padding-top: 1rem !important; }
+html.view-mode-mobile .catalog-results-header h1 { font-size: 1.125rem !important; line-height: 1.4; overflow-wrap: anywhere; }

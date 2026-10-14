@@ -68,7 +68,13 @@
     "zh": "中文",
     "vi": "Tiếng Việt",
     "id": "Bahasa Indonesia",
-    "th": "ไทย"
+    "th": "ไทย",
+    "ru": "Русский",
+    "kk": "Қазақша",
+    "uz": "O‘zbekcha",
+    "ky": "Кыргызча",
+    "tg": "Тоҷикӣ",
+    "tk": "Türkmençe"
   },
   "viewMode": {
     "label": "Chế độ hiển thị",
@@ -174,7 +180,10 @@
     "categoryNavSubtitle": "Xem tất cả {category}",
     "promoBestProducts": "Sản phẩm hàng đầu",
     "promoShopNow": "XEM NGAY",
-    "whyHmtKorea": "Vì sao chọn HMT Korea"
+    "whyHmtKorea": "Vì sao chọn HMT Korea",
+    "quoteTitle": "Chuẩn bị đơn hàng sỉ tiếp theo",
+    "quoteIntro": "Chọn thương hiệu K-Beauty chính hãng cùng HMT KOREA",
+    "quoteAction": "Yêu cầu báo giá"
   },
   "footer": {
     "about": "Giới thiệu",
@@ -375,7 +384,11 @@
       "soldOutLabel": "Tình trạng hàng",
       "available": "Có sẵn"
     },
-    "businessApprovalPending": "Chờ duyệt doanh nghiệp"
+    "businessApprovalPending": "Chờ duyệt doanh nghiệp",
+    "catalogOverview": "{name} của {brand}. Kiểm tra quy cách, số lượng đặt tối thiểu và mã vạch trước khi yêu cầu báo giá. Tình trạng hàng và đóng gói được xác nhận khi báo giá.",
+    "officialSource": "Thông tin sản phẩm chính thức",
+    "wholesaleTitle": "Sỉ {name} · {brand}",
+    "bestsellerBasis": "Tham khảo bộ sưu tập bán chạy bên ngoài; không phải xếp hạng doanh số HMT"
   },
   "brands": {
     "browse": "Khám phá",

@@ -438,7 +438,7 @@ function HeroSlideFrame({
     return <div className="campaign-photo-scene" data-brand={copy.badge ?? slide.brandLabel}>
       <HeroNavLink href={slide.href} tabIndex={isActive ? undefined : -1} className="campaign-photo-art" aria-label={imageAlt}>
         <NextImage src={`/campaigns/october-2026-v2/${scene}.webp`} alt={slide.products?.map(product => product.name).join(" and ") || imageAlt}
-          fill unoptimized priority={priority} />
+          fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 100vw, 1280px" quality={75} priority={priority} />
       </HeroNavLink>
       <div className="campaign-photo-copy">
         <p className="campaign-photo-brand">{copy.badge ?? slide.brandLabel}</p>

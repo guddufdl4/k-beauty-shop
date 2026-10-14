@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { routing, type AppLocale } from "@/i18n/routing";
+import { routing, indexedLocales, isIndexedLocale, type AppLocale } from "@/i18n/routing";
 import { getHomeSeo } from "@/lib/seo/catalog-copy";
 import { INDEX_FOLLOW, SEO_BRAND_NAME } from "@/lib/seo/constants";
 import { PUBLIC_STORE_NAME, absoluteLocaleUrl, resolveSiteUrl } from "@/lib/site-url";
@@ -12,6 +12,7 @@ const OG_LOCALE: Record<AppLocale, string> = {
   vi: "vi_VN",
   id: "id_ID",
   th: "th_TH",
+  ru: "ru_RU", kk: "kk_KZ", uz: "uz_UZ", ky: "ky_KG", tg: "tg_TJ", tk: "tk_TM",
 };
 
 /** Legacy alias used by older call sites; homepage English listing copy. */
@@ -28,6 +29,12 @@ export const STOREFRONT_SEO: Record<AppLocale, { title: string; description: str
   vi: { title: getHomeSeo("vi").title, description: getHomeSeo("vi").description },
   id: { title: getHomeSeo("id").title, description: getHomeSeo("id").description },
   th: { title: getHomeSeo("th").title, description: getHomeSeo("th").description },
+  ru: { title: getHomeSeo("ru").title, description: getHomeSeo("ru").description },
+  kk: { title: getHomeSeo("kk").title, description: getHomeSeo("kk").description },
+  uz: { title: getHomeSeo("uz").title, description: getHomeSeo("uz").description },
+  ky: { title: getHomeSeo("ky").title, description: getHomeSeo("ky").description },
+  tg: { title: getHomeSeo("tg").title, description: getHomeSeo("tg").description },
+  tk: { title: getHomeSeo("tk").title, description: getHomeSeo("tk").description },
 };
 
 function resolveLocale(value: string): AppLocale {
@@ -74,12 +81,12 @@ export function buildStorefrontMetadata(options: {
   const languages: Record<string, string> = {
     "x-default": absoluteLocaleUrl(routing.defaultLocale, hrefPath),
   };
-  for (const entry of routing.locales) {
+  for (const entry of indexedLocales) {
     languages[entry] = absoluteLocaleUrl(entry, hrefPath);
   }
 
   const ogImage = options.ogImage?.trim() || null;
-  const alternateLocale = routing.locales
+  const alternateLocale = indexedLocales
     .filter((entry) => entry !== locale)
     .map((entry) => OG_LOCALE[entry]);
 
@@ -88,7 +95,7 @@ export function buildStorefrontMetadata(options: {
     title,
     description,
     verification: googleSiteVerification(),
-    robots: options.robots ?? INDEX_FOLLOW,
+    robots: isIndexedLocale(locale) ? options.robots ?? INDEX_FOLLOW : { index: false, follow: true },
     alternates: {
       canonical,
       languages,

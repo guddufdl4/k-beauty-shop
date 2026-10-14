@@ -318,6 +318,7 @@ export default async function AdminProductsPage({
       </div>
 
       <ProductsTabNav activeTab={activeTab} filters={listFilters} />
+      <Link href="/admin/catalog-review" className="mb-4 inline-flex rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700">공급사 시트 대조 검토함 →</Link>
       {REVIEW_COPY[activeTab] ? <div className="mb-2 hidden rounded-xl border border-violet-200 sm:block bg-violet-50 px-3 py-2 text-xs text-violet-900 sm:text-sm">{REVIEW_COPY[activeTab]}<p className="mt-1 text-xs text-violet-600">가격과 바코드가 모두 없으면 두 목록에 함께 표시됩니다.</p></div> : null}
 
       {activeTab === "add" ? (

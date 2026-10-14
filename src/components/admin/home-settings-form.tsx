@@ -64,7 +64,7 @@ export function AdminHomeSettingsForm({ initialSettings }: Props) {
         <h2 className="text-lg font-semibold text-zinc-900">홈 Trending 상품</h2>
         <p className="mt-1 text-sm text-zinc-500">
           홈페이지 Trending(All) 탭에 노출할 SKU를 한 줄에 하나씩 입력하세요. 순서대로 표시되며,
-          비어 있으면 VT·SKINFOOD·Torriden·COSRX·ANUA 등 브랜드가 섞인 기본 구성이 사용됩니다.
+          최대 40개이며, 비어 있으면 StyleKorean 베스트셀러 자료를 참고한 기본 8개 상품을 사용합니다. 외부 제품군 참고이며 HMT 판매 순위는 아닙니다.
         </p>
       </div>
 
@@ -77,7 +77,7 @@ export function AdminHomeSettingsForm({ initialSettings }: Props) {
           name="trending_skus"
           rows={8}
           defaultValue={settings.trending_skus.join("\n")}
-          placeholder={"VT-001\nSKINFOOD-123\n..."}
+          placeholder={"8809640737190\n8809782555508\n..."}
           className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm"
         />
       </div>

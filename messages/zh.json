@@ -68,7 +68,13 @@
     "zh": "中文",
     "vi": "Tiếng Việt",
     "id": "Bahasa Indonesia",
-    "th": "ไทย"
+    "th": "ไทย",
+    "ru": "Русский",
+    "kk": "Қазақша",
+    "uz": "O‘zbekcha",
+    "ky": "Кыргызча",
+    "tg": "Тоҷикӣ",
+    "tk": "Türkmençe"
   },
   "viewMode": {
     "label": "显示模式",
@@ -174,7 +180,10 @@
     "categoryNavSubtitle": "查看全部{category}",
     "promoBestProducts": "精选商品",
     "promoShopNow": "SHOP NOW",
-    "whyHmtKorea": "为什么选择 HMT Korea"
+    "whyHmtKorea": "为什么选择 HMT Korea",
+    "quoteTitle": "准备您的下一笔批发订单",
+    "quoteIntro": "与HMT KOREA一起选购正品K-Beauty品牌",
+    "quoteAction": "申请报价"
   },
   "footer": {
     "about": "关于我们",
@@ -375,7 +384,11 @@
     "returns": "Returns",
     "returnsBody": "Wholesale export returns are reviewed case by case for damaged or incorrect shipments. Use your quotation number when you contact us.",
     "lastUpdated": "Last updated: {date}",
-    "businessApprovalPending": "企业审核中"
+    "businessApprovalPending": "企业审核中",
+    "catalogOverview": "{brand} 的 {name}。申请报价前请核对标示规格、起订量和条码。供货情况及包装条件将在报价时确认。",
+    "officialSource": "品牌官方产品资料",
+    "wholesaleTitle": "{name} 批发 · {brand}",
+    "bestsellerBasis": "参考外部畅销商品合集精选，并非HMT销售排名"
   },
   "categories": {
     "browse": "Browse",

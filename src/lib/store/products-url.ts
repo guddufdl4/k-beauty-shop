@@ -190,6 +190,7 @@ export const CONFIRMED_BRAND_ALIAS_GROUPS: BrandAliasGroup[] = [
     canonical: "MEDICUBE",
     aliases: [
       "MEDICUBE",
+      "Medicube.",
       "Medicube(X)",
       "Medicube(XX)",
       "MEDICUBE(X)",
@@ -226,6 +227,11 @@ export const CONFIRMED_BRAND_ALIAS_GROUPS: BrandAliasGroup[] = [
 export function normalizeBrandKey(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
+
+CONFIRMED_BRAND_ALIAS_GROUPS.push(
+  { canonical: "Derma-B", aliases: ["Derma-B", "Derma:B", "DermaB", "Derma B"] },
+  { canonical: "Pyunkang Yul", aliases: ["Pyunkang Yul", "Pyunkang yul", "Pyung kang yul"] },
+);
 
 const aliasGroupByRawKey = new Map<string, BrandAliasGroup>();
 const aliasGroupByCanonicalKey = new Map<string, BrandAliasGroup>();

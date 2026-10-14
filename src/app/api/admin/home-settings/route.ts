@@ -5,6 +5,8 @@ import {
   HOME_SETTINGS_CACHE_TAG,
   saveHomeSettings,
 } from "@/lib/site-settings";
+import { routing } from "@/i18n/routing";
+import { STOREFRONT_PRODUCTS_CACHE_TAG } from "@/lib/supabase/products";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 
 export const runtime = "nodejs";
@@ -61,10 +63,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "trending_skus must be an array." }, { status: 400 });
   }
 
-  const trendingSkus = rawSkus
+  const trendingSkus = [...new Set(rawSkus
     .filter((value): value is string => typeof value === "string")
     .map((value) => value.trim())
-    .filter(Boolean);
+    .filter(Boolean))];
+
+  if (trendingSkus.length > 40) return NextResponse.json({ error: "최대 40개까지 지정할 수 있습니다." }, { status: 400 });
 
   const { data, error } = await saveHomeSettings({ trending_skus: trendingSkus });
   if (error || !data) {
@@ -72,10 +76,8 @@ export async function PATCH(request: Request) {
   }
 
   revalidateTag(HOME_SETTINGS_CACHE_TAG, { expire: 0 });
-  revalidatePath("/en");
-  revalidatePath("/ko");
-  revalidatePath("/ja");
-  revalidatePath("/zh");
+  revalidateTag(STOREFRONT_PRODUCTS_CACHE_TAG, { expire: 0 });
+  for (const locale of routing.locales) revalidatePath(`/${locale}`);
 
   return NextResponse.json({ settings: data });
 }

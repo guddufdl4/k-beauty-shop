@@ -68,7 +68,13 @@
     "zh": "中文",
     "vi": "Tiếng Việt",
     "id": "Bahasa Indonesia",
-    "th": "ไทย"
+    "th": "ไทย",
+    "ru": "Русский",
+    "kk": "Қазақша",
+    "uz": "O‘zbekcha",
+    "ky": "Кыргызча",
+    "tg": "Тоҷикӣ",
+    "tk": "Türkmençe"
   },
   "viewMode": {
     "label": "화면 보기",
@@ -174,7 +180,10 @@
     "categoryNavSubtitle": "{category} 전체보기",
     "promoBestProducts": "베스트 제품",
     "promoShopNow": "SHOP NOW",
-    "whyHmtKorea": "HMT Korea를 선택하는 이유"
+    "whyHmtKorea": "HMT Korea를 선택하는 이유",
+    "quoteTitle": "다음 도매 주문을 준비하세요",
+    "quoteIntro": "HMT KOREA와 함께 정품 K-Beauty 브랜드를 만나보세요",
+    "quoteAction": "견적 요청하기"
   },
   "footer": {
     "about": "회사 소개",
@@ -375,7 +384,11 @@
     "returns": "Returns",
     "returnsBody": "Wholesale export returns are reviewed case by case for damaged or incorrect shipments. Use your quotation number when you contact us.",
     "lastUpdated": "Last updated: {date}",
-    "businessApprovalPending": "사업자 승인 대기"
+    "businessApprovalPending": "사업자 승인 대기",
+    "catalogOverview": "{brand}의 {name} 상품입니다. 견적을 요청하기 전에 표시된 용량, 최소 주문 수량과 바코드를 확인해 주세요. 공급 가능 여부와 포장 조건은 견적 시 확정됩니다.",
+    "officialSource": "브랜드 공식 상품 자료",
+    "wholesaleTitle": "{name} 도매 · {brand}",
+    "bestsellerBasis": "외부 베스트셀러 컬렉션 참고 추천 · HMT 자체 판매 순위가 아닙니다"
   },
   "categories": {
     "browse": "Browse",

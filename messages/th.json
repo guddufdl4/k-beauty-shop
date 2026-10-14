@@ -68,7 +68,13 @@
     "zh": "中文",
     "vi": "Tiếng Việt",
     "id": "Bahasa Indonesia",
-    "th": "ไทย"
+    "th": "ไทย",
+    "ru": "Русский",
+    "kk": "Қазақша",
+    "uz": "O‘zbekcha",
+    "ky": "Кыргызча",
+    "tg": "Тоҷикӣ",
+    "tk": "Türkmençe"
   },
   "viewMode": {
     "label": "โหมดการแสดงผล",
@@ -174,7 +180,10 @@
     "categoryNavSubtitle": "ดู {category} ทั้งหมด",
     "promoBestProducts": "สินค้ายอดนิยม",
     "promoShopNow": "ดูสินค้าเลย",
-    "whyHmtKorea": "ทำไมต้อง HMT Korea"
+    "whyHmtKorea": "ทำไมต้อง HMT Korea",
+    "quoteTitle": "เตรียมคำสั่งซื้อขายส่งครั้งต่อไป",
+    "quoteIntro": "เลือกแบรนด์ K-Beauty ของแท้กับ HMT KOREA",
+    "quoteAction": "ขอใบเสนอราคา"
   },
   "footer": {
     "about": "เกี่ยวกับเรา",
@@ -375,7 +384,11 @@
       "soldOutLabel": "สถานะสินค้า",
       "available": "มีสินค้า"
     },
-    "businessApprovalPending": "ธุรกิจรออนุมัติ"
+    "businessApprovalPending": "ธุรกิจรออนุมัติ",
+    "catalogOverview": "{name} จาก {brand} โปรดตรวจสอบขนาด จำนวนสั่งซื้อขั้นต่ำ และบาร์โค้ดก่อนขอใบเสนอราคา สินค้าพร้อมจำหน่ายและเงื่อนไขบรรจุภัณฑ์จะยืนยันในใบเสนอราคา",
+    "officialSource": "ข้อมูลผลิตภัณฑ์อย่างเป็นทางการ",
+    "wholesaleTitle": "ขายส่ง {name} · {brand}",
+    "bestsellerBasis": "คัดเลือกโดยอ้างอิงสินค้าขายดีจากภายนอก ไม่ใช่อันดับยอดขายของ HMT"
   },
   "brands": {
     "browse": "เลือกดู",

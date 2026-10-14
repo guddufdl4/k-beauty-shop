@@ -1,7 +1,13 @@
+import ru from "../../../messages/ru.json";
+import kk from "../../../messages/kk.json";
+import uz from "../../../messages/uz.json";
+import ky from "../../../messages/ky.json";
+import tg from "../../../messages/tg.json";
+import tk from "../../../messages/tk.json";
 import vi from "../../../messages/vi.json";
 import id from "../../../messages/id.json";
 import th from "../../../messages/th.json";
-const asianMessages = (locale: string) => ({ vi, id, th }[locale as "vi" | "id" | "th"]);
+const asianMessages = (locale: string) => ({ vi, id, th, ru, kk, uz, ky, tg, tk }[locale as "vi" | "id" | "th" | "ru" | "kk" | "uz" | "ky" | "tg" | "tk"]);
 import type { AppLocale } from "@/i18n/routing";
 import { SEO_BRAND_NAME } from "@/lib/seo/constants";
 

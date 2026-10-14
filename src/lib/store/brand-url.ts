@@ -1,5 +1,6 @@
 import { slugify } from "@/lib/utils";
 import {
+  CONFIRMED_BRAND_ALIAS_GROUPS,
   getBrandFilterValue,
   getDisplayBrandName,
   normalizeBrandKey,
@@ -74,7 +75,10 @@ export function resolveBrandCatalogEntry(
     return null;
   }
 
-  return entries.find((entry) => entry.slug === normalizedSlug) ?? null;
+  const direct = entries.find((entry) => entry.slug === normalizedSlug);
+  if (direct) return direct;
+  const alias = CONFIRMED_BRAND_ALIAS_GROUPS.find(group => group.aliases.some(name => slugify(name) === normalizedSlug));
+  return alias ? entries.find(entry => normalizeBrandKey(entry.filterBrand) === normalizeBrandKey(alias.canonical)) ?? null : null;
 }
 
 export function buildBrandHref(slug: string): string {

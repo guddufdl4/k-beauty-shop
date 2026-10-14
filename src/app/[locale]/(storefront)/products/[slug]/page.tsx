@@ -1,3 +1,4 @@
+import verifiedOverviews from "@/data/verified-product-overviews.json";
 import { VerifiedPackingInfo } from "@/components/store/verified-packing-info";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -62,7 +63,7 @@ type ProductDetailPageProps = {
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const [locale, audience] = await Promise.all([getLocale(), resolveStorefrontAudience()]);
+  const [locale, audience, t] = await Promise.all([getLocale(), resolveStorefrontAudience(), getTranslations("products")]);
   const { product } = await getProductBySlug(slug, audience);
   if (!product) {
     return {};
@@ -72,11 +73,14 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   const displayName = getLocalizedProductName(product, locale);
   const brandName = getDisplayBrandName(product.brand);
   const localizedDescription = getLocalizedProductDescription(product, locale);
+  const officialOverview = (verifiedOverviews as Record<string, {quote:string;source:string;barcode:string}>)[product.id];
+  const verifiedOfficialOverview = officialOverview?.barcode === getStorefrontBarcode(product) ? officialOverview : null;
+  const fallbackDescription = locale === "en" && verifiedOfficialOverview ? verifiedOfficialOverview.quote : t("catalogOverview", {name:displayName,brand:brandName});
   const catalogDescription =
     !localizedDescription ||
     isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
     isRedundantProductDescription(localizedDescription, product.name, product.brand)
-      ? null
+      ? fallbackDescription
       : localizedDescription;
   const seo = getProductSeo({
     name: displayName,
@@ -88,7 +92,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
     sku: product.sku,
     moq: product.moq,
     origin: storefrontTextForLocale(product.country_of_origin, locale),
-    metaTitle: storefrontTextForLocale(product.meta_title, locale),
+    metaTitle: storefrontTextForLocale(product.meta_title, locale) || t("wholesaleTitle", {name:displayName,brand:brandName}),
     metaDescription: storefrontTextForLocale(product.meta_description, locale),
     catalogDescription,
   });
@@ -171,11 +175,14 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
   const showVolumeLine = Boolean(volume && !catalogTitleIncludesVolume(displayName, volume));
   const barcode = getStorefrontBarcode(product);
   const productCode = isValidHmtProductCode(product.product_code ?? "") ? product.product_code : null;
+  const officialOverview = (verifiedOverviews as Record<string, {quote:string;source:string;barcode:string}>)[product.id];
+  const verifiedOfficialOverview = officialOverview?.barcode === barcode ? officialOverview : null;
+  const fallbackDescription = locale === "en" && verifiedOfficialOverview ? verifiedOfficialOverview.quote : t("catalogOverview", {name:displayName,brand:brandName});
   const catalogDescription =
     !localizedDescription ||
     isRedundantProductDescription(localizedDescription, displayName, product.brand) ||
     isRedundantProductDescription(localizedDescription, product.name, product.brand)
-      ? null
+      ? fallbackDescription
       : localizedDescription;
   const lastUpdated = formatCatalogDate(product.updated_at);
   const defaultQty = Number.parseInt(qty ?? "", 10);
@@ -196,7 +203,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
     sku: product.sku,
     moq: product.moq,
     origin,
-    metaTitle: storefrontTextForLocale(product.meta_title, locale),
+    metaTitle: storefrontTextForLocale(product.meta_title, locale) || t("wholesaleTitle", {name:displayName,brand:brandName}),
     metaDescription: storefrontTextForLocale(product.meta_description, locale),
     catalogDescription,
   });
@@ -227,7 +234,8 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
           brand: brandName,
           description: productSeo.description,
           slug: product.slug,
-          sku: product.sku,
+          sku: productCode || product.sku,
+          barcode,
           image: isPlaceholder ? null : displayImageUrl,
           categoryName,
           origin,
@@ -439,6 +447,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   <p className="mt-3 whitespace-pre-line break-words leading-relaxed text-zinc-600">
                     {catalogDescription}
                   </p>
+                  {verifiedOfficialOverview && catalogDescription === verifiedOfficialOverview.quote ? <a href={verifiedOfficialOverview.source} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-zinc-500 underline">{t("officialSource")} ↗</a> : null}
                 </section>
               ) : null}
 

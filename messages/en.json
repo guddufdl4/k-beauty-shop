@@ -68,7 +68,13 @@
     "zh": "中文",
     "vi": "Tiếng Việt",
     "id": "Bahasa Indonesia",
-    "th": "ไทย"
+    "th": "ไทย",
+    "ru": "Русский",
+    "kk": "Қазақша",
+    "uz": "O‘zbekcha",
+    "ky": "Кыргызча",
+    "tg": "Тоҷикӣ",
+    "tk": "Türkmençe"
   },
   "viewMode": {
     "label": "View mode",
@@ -174,7 +180,10 @@
     "categoryNavSubtitle": "View all {category}",
     "promoBestProducts": "Best Products",
     "promoShopNow": "SHOP NOW",
-    "whyHmtKorea": "Why HMT Korea"
+    "whyHmtKorea": "Why HMT Korea",
+    "quoteTitle": "Build your next wholesale selection",
+    "quoteIntro": "Partner with HMT KOREA for authentic K-Beauty brands",
+    "quoteAction": "Request a quote"
   },
   "footer": {
     "about": "About",
@@ -375,7 +384,11 @@
       "soldOutLabel": "Availability",
       "available": "Available"
     },
-    "businessApprovalPending": "Business approval pending"
+    "businessApprovalPending": "Business approval pending",
+    "catalogOverview": "{name} by {brand}. Check the listed size, minimum order quantity and barcode before requesting a quotation. Availability and packing are confirmed with your quotation.",
+    "officialSource": "Official product source",
+    "wholesaleTitle": "{name} wholesale · {brand}",
+    "bestsellerBasis": "Selected with reference to external bestseller collections; not an HMT sales ranking"
   },
   "brands": {
     "browse": "Browse",

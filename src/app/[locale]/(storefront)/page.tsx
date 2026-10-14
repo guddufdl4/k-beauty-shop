@@ -344,7 +344,7 @@ export default async function HomePage() {
           }),
         ]}
       /></details>
-      <section className="home-quote-banner"><div><h2>{locale === "ko" ? "다음 도매 주문을 준비하세요." : "Build your next wholesale selection."}</h2><p>{locale === "ko" ? "HMT KOREA와 함께 정품 K-Beauty 브랜드를 만나보세요." : "Partner with HMT KOREA for authentic K-Beauty brands."}</p></div><Link href="/cart">{locale === "ko" ? "견적 요청하기" : "Request a quote"} <span aria-hidden>→</span></Link></section>
+      <section className="home-quote-banner"><div><h2>{t("quoteTitle")}</h2><p>{t("quoteIntro")}</p></div><Link href="/cart">{t("quoteAction")} <span aria-hidden>→</span></Link></section>
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import { CatalogFreshness } from "@/components/store/catalog-freshness";
 import { Suspense } from "react";
 import { getLocale } from "next-intl/server";
 import { JsonLd } from "@/components/store/json-ld";
@@ -25,6 +26,7 @@ export default async function StorefrontLayout({
   return (
     <ViewModeProvider>
       <StorefrontVisitTracker />
+      <CatalogFreshness />
       <StorefrontViewShell>
         <JsonLd data={organizationJsonLd(publicContact, description)} />
         <JsonLd data={websiteJsonLd(description)} />

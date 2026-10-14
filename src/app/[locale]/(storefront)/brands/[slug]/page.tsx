@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BrandLogo } from "@/components/store/brand-logo";
 import { getTranslations, getLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Link, redirect } from "@/i18n/navigation";
 import { BrandHubCategoryTabs } from "@/components/store/brand-hub-category-tabs";
 import { BrandHubPagination } from "@/components/store/brand-hub-pagination";
@@ -107,6 +107,10 @@ export default async function BrandHubPage({ params, searchParams }: BrandHubPag
   ]);
   if (!entry) {
     notFound();
+  }
+
+  if (slug.toLowerCase() !== entry.slug) {
+    permanentRedirect(`/${locale}${buildBrandHubHref(entry.slug, {category:categoryFilter,page:pageParam.page > 1 ? pageParam.page : undefined})}`);
   }
 
   const [logoUrl, { tabs }] = await Promise.all([

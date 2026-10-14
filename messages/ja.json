@@ -68,7 +68,13 @@
     "zh": "中文",
     "vi": "Tiếng Việt",
     "id": "Bahasa Indonesia",
-    "th": "ไทย"
+    "th": "ไทย",
+    "ru": "Русский",
+    "kk": "Қазақша",
+    "uz": "O‘zbekcha",
+    "ky": "Кыргызча",
+    "tg": "Тоҷикӣ",
+    "tk": "Türkmençe"
   },
   "viewMode": {
     "label": "表示モード",
@@ -174,7 +180,10 @@
     "categoryNavSubtitle": "{category}をすべて見る",
     "promoBestProducts": "ベスト商品",
     "promoShopNow": "SHOP NOW",
-    "whyHmtKorea": "HMT Koreaを選ぶ理由"
+    "whyHmtKorea": "HMT Koreaを選ぶ理由",
+    "quoteTitle": "次の卸売注文を準備しましょう",
+    "quoteIntro": "HMT KOREAで正規のK-Beautyブランドをお選びください",
+    "quoteAction": "見積もりを依頼"
   },
   "footer": {
     "about": "会社概要",
@@ -375,7 +384,11 @@
     "returns": "Returns",
     "returnsBody": "Wholesale export returns are reviewed case by case for damaged or incorrect shipments. Use your quotation number when you contact us.",
     "lastUpdated": "Last updated: {date}",
-    "businessApprovalPending": "事業者承認待ち"
+    "businessApprovalPending": "事業者承認待ち",
+    "catalogOverview": "{brand}の{name}です。見積依頼の前に表示サイズ、最小注文数量、バーコードをご確認ください。在庫と梱包条件は見積時に確定します。",
+    "officialSource": "ブランド公式商品情報",
+    "wholesaleTitle": "{name} 卸売 · {brand}",
+    "bestsellerBasis": "外部のベストセラー特集を参考にした選定です。HMTの販売順位ではありません"
   },
   "categories": {
     "browse": "Browse",
