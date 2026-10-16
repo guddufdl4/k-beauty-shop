@@ -1,3 +1,4 @@
+import { storeNotifications, markNotifications } from "@/lib/notifications/server";
 import {getSessionProfile} from "@/lib/supabase/auth-helpers";
 import {createServiceClient} from "@/lib/supabase/service";
 export const dynamic="force-dynamic";
@@ -11,11 +12,15 @@ export async function GET(){
  if(documents.error||orders.error)return new Response(null,{status:503});
  const notifications=[];
  if(profile?.role!=="admin"&&profile?.role!=="wholesale")notifications.push({id:"business:verification-required:v1",kind:"businessRequired",detail:"",href:"/account"});
- if(documents.data?.submitted_at)notifications.push({id:`business:${documents.data.submitted_at}:${profile?.role}`,kind:profile?.role==="wholesale"?"approved":"review",detail:"",href:"/account"});
+ if(documents.data?.submitted_at)notifications.push({id:`business:${documents.data.submitted_at}:${profile?.role}`,createdAt:documents.data.submitted_at,kind:profile?.role==="wholesale"?"approved":"review",detail:"",href:"/account"});
  else if(profile?.role==="wholesale")notifications.push({id:"business:manual:approved",kind:"approved",detail:"",href:"/account"});
  for(const order of orders.data??[]){
-  notifications.push({id:`order:${order.order_number}:${order.status}`,kind:"order",detail:order.order_number,status:order.status,href:`/orders/${encodeURIComponent(order.order_number)}`});
-  if(order.shipping_address?.quote_reviewed_at)notifications.push({id:`review:${order.order_number}`,kind:"quoteRead",detail:order.order_number,href:`/orders/${encodeURIComponent(order.order_number)}`});
+  notifications.push({id:`order:${order.order_number}:${order.status}`,kind:"order",createdAt:order.created_at,detail:order.order_number,status:order.status,href:`/orders/${encodeURIComponent(order.order_number)}`});
+  if(order.shipping_address?.quote_reviewed_at)notifications.push({id:`review:${order.order_number}`,kind:"quoteRead",createdAt:order.shipping_address.quote_reviewed_at,detail:order.order_number,href:`/orders/${encodeURIComponent(order.order_number)}`});
  }
- return Response.json({userId:user.id,notifications},{headers:{"Cache-Control":"private, no-store",Vary:"Cookie"}});
+ let stored;
+ try { stored=await storeNotifications(client,user.id,"account",notifications); } catch { return new Response(null,{status:503}); }
+ return Response.json({userId:user.id,notifications:stored},{headers:{"Cache-Control":"private, no-store",Vary:"Cookie"}});
 }
+
+export async function POST(request:Request) { return markNotifications(request,"account"); }

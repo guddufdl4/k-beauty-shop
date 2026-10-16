@@ -1,3 +1,4 @@
+import { storeNotifications, markNotifications } from "@/lib/notifications/server";
 import { getSessionProfile } from "@/lib/supabase/auth-helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -33,7 +34,11 @@ export async function GET() {
       detail: order.order_number, href: `/en/orders/${encodeURIComponent(order.order_number)}`,
     })),
   ].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || a.id.localeCompare(b.id));
-  return Response.json({ adminId: session.user.id, notifications }, {
+  let stored;
+  try { stored=await storeNotifications(client,session.user.id,"admin",notifications); } catch { return new Response(null,{status:503}); }
+  return Response.json({ adminId: session.user.id, notifications:stored }, {
     headers: { "Cache-Control": "private, no-store", Vary: "Cookie" },
   });
 }
+
+export async function POST(request:Request) { return markNotifications(request,"admin"); }

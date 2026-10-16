@@ -1,9 +1,10 @@
 "use client";
 
+import { mergeRead, saveRead, localRead } from "@/lib/notifications/client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-type Notification = { id: string; kind: string; title: string; detail: string; href: string; createdAt: string };
+type Notification = { id: string; kind: string; title: string; detail: string; href: string; createdAt: string; readAt?: string | null };
 type Feed = { adminId: string; notifications: Notification[] };
 
 export function AdminNotifications() {
@@ -29,13 +30,9 @@ export function AdminNotifications() {
         if (!response.ok) throw new Error("Unavailable");
         const next: Feed = await response.json();
         if (stopped) return;
-        let saved: string[] = [];
-        try {
-          const value = JSON.parse(localStorage.getItem(`hmt-admin-notifications:${next.adminId}`) || "[]");
-          if (Array.isArray(value)) saved = value.filter((id): id is string => typeof id === "string");
-        } catch { /* Reading alerts still works if browser storage is unavailable. */ }
+        const saved = await mergeRead("admin",next.adminId,next.notifications);
         const fresh = next.notifications.filter(item => !saved.includes(item.id) && (!previous.current || !previous.current.has(item.id)));
-        if (fresh.length) setToast(previous.current ? `새 알림 ${fresh.length}건이 도착했습니다.` : `확인하지 않은 알림 ${fresh.length}건이 있습니다.`);
+        if (previous.current && fresh.length) setToast(previous.current ? `새 알림 ${fresh.length}건이 도착했습니다.` : `확인하지 않은 알림 ${fresh.length}건이 있습니다.`);
         previous.current = new Set(next.notifications.map(item => item.id));
         setFeed(next);
         setRead(saved);
@@ -67,10 +64,15 @@ export function AdminNotifications() {
     return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape); };
   }, [open]);
 
-  function markRead(ids: string[]) {
-    const next = Array.from(new Set([...read, ...ids])).slice(-2000);
-    setRead(next);
-    if (feed) try { localStorage.setItem(`hmt-admin-notifications:${feed.adminId}`, JSON.stringify(next)); } catch { /* Keep the current view usable. */ }
+  useEffect(()=>{
+    if(!feed)return;
+    const sync=()=>{setRead(localRead(`hmt-admin-notifications:${feed.adminId}`));setToast("");};
+    window.addEventListener("hmt-notifications-read",sync);window.addEventListener("storage",sync);
+    return()=>{window.removeEventListener("hmt-notifications-read",sync);window.removeEventListener("storage",sync);};
+  },[feed]);
+  async function markRead(ids: string[]) {
+    if(!feed)return;
+    try {const next=await saveRead("admin",feed.adminId,ids);setRead(next);setToast("");setError(false);}catch{setError(true);}
   }
 
   return <div ref={panel} className="relative shrink-0">
@@ -80,12 +82,12 @@ export function AdminNotifications() {
     </button>
     {open && <section aria-label="관리자 알림 목록" className="fixed inset-x-4 top-28 z-[100] rounded-2xl border border-violet-100 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-96">
       <div className="flex items-center justify-between border-b border-zinc-100 p-4"><h2 className="font-bold text-zinc-900">관리자 알림 <span className="text-violet-700">{unread.length}</span></h2><button type="button" disabled={!unread.length} onClick={() => markRead(feed?.notifications.map(item => item.id) ?? [])} className="text-xs font-semibold text-violet-700 disabled:text-zinc-400">모두 읽음</button></div>
-      <p className="px-4 py-2 text-xs text-zinc-500">최근 7일 · 회원/주문 각각 최신 100건 · 30초마다 갱신</p>
+      <p className="px-4 py-2 text-xs text-zinc-500">미확인 알림 · 읽은 알림은 보관함에서 확인할 수 있습니다</p>
       {error && <p role="status" className="px-4 py-3 text-sm text-rose-700">알림을 갱신하지 못했습니다. 잠시 후 다시 확인합니다.</p>}
       {!feed && !error && <p className="p-5 text-sm text-zinc-500">알림을 불러오는 중입니다.</p>}
-      {feed && !feed.notifications.length && <p className="p-5 text-sm text-zinc-500">최근 알림이 없습니다.</p>}
-      <ul className="max-h-[min(55vh,28rem)] overflow-y-auto">{feed?.notifications.map(item => <li key={item.id}><Link prefetch={false} href={item.href} onClick={() => { markRead([item.id]); setOpen(false); }} className={`block border-t border-zinc-100 px-4 py-3 hover:bg-violet-50 ${read.includes(item.id) ? "bg-white" : "bg-violet-50/60"}`}><p className="text-sm font-semibold text-zinc-900">{!read.includes(item.id) && <span aria-label="읽지 않음" className="mr-2 inline-block h-2 w-2 rounded-full bg-rose-500" />}{item.title}</p><p className="mt-1 break-words text-sm text-zinc-600">{item.detail}</p><time className="mt-1 block text-xs text-zinc-400">{new Date(item.createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST)</time></Link></li>)}</ul>
-      <p className="border-t border-zinc-100 px-4 py-3 text-xs text-zinc-500">읽음 표시는 현재 브라우저의 관리자 계정별로 저장됩니다.</p>
+      {feed && !unread.length && <p className="p-5 text-sm text-zinc-500">미확인 알림이 없습니다.</p>}
+      <ul className="max-h-[min(55vh,28rem)] overflow-y-auto">{unread.map(item => <li key={item.id}><Link prefetch={false} href={item.href} onClick={() => { markRead([item.id]); setOpen(false); }} className={`block border-t border-zinc-100 px-4 py-3 hover:bg-violet-50 ${read.includes(item.id) ? "bg-white" : "bg-violet-50/60"}`}><p className="text-sm font-semibold text-zinc-900">{!read.includes(item.id) && <span aria-label="읽지 않음" className="mr-2 inline-block h-2 w-2 rounded-full bg-rose-500" />}{item.title}</p><p className="mt-1 break-words text-sm text-zinc-600">{item.detail}</p><time className="mt-1 block text-xs text-zinc-400">{new Date(item.createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST)</time></Link></li>)}</ul>
+      <Link href="/admin/notifications" onClick={()=>setOpen(false)} className="block border-t px-4 py-4 text-center text-sm font-semibold text-violet-700">알림 보관함 전체 보기 →</Link>
     </section>}
     {toast && !open && <div role="status" className="admin-notification-toast fixed bottom-5 right-4 z-[100] flex max-w-[calc(100vw-2rem)] items-center gap-4 rounded-2xl bg-zinc-900 px-5 py-4 text-sm text-white shadow-xl"><button type="button" onClick={() => { setOpen(true); setToast(""); }}>{toast} <span className="ml-2 text-pink-300">확인 →</span></button><button type="button" aria-label="알림 안내 닫기" onClick={() => setToast("")}>×</button></div>}
   </div>;

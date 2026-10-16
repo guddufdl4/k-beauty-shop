@@ -1,9 +1,10 @@
 "use client";
+import { mergeRead, saveRead } from "@/lib/notifications/client";
 import { businessAccessCopy } from "@/lib/auth/business-access-copy";
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import { asianCopy } from "@/lib/asia-copy";
-type Item={id:string;kind:string;detail:string;href:string;status?:string};
+type Item={id:string;kind:string;detail:string;href:string;status?:string;readAt?:string|null};
 type Feed={userId:string;notifications:Item[]};
 export function CustomerNotifications({locale}:{locale:string}){
  const ko=locale==="ko",ja=locale==="ja",zh=locale==="zh";
@@ -22,8 +23,7 @@ export function CustomerNotifications({locale}:{locale:string}){
        if (!response.ok) throw Error();
        const data: Feed = await response.json();
        if (stopped) return;
-       let ids: string[] = [];
-       try { const saved = JSON.parse(localStorage.getItem(`hmt-customer-notifications:${data.userId}`) || "[]"); if (Array.isArray(saved)) ids = saved.filter(x=>typeof x === "string"); } catch {}
+       const ids = await mergeRead("account",data.userId,data.notifications);
        userId = data.userId; setFeed(data); setRead(ids); setError(false);
      } catch { if (!stopped) setError(true); }
      finally { active = false; }
@@ -34,11 +34,11 @@ export function CustomerNotifications({locale}:{locale:string}){
    };
    void refresh();
    const timer = setInterval(() => void refresh(), 30000);
-   window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh); window.addEventListener("hmt-notifications-read", syncRead);
-   return () => { stopped = true; controller.abort(); clearInterval(timer); window.removeEventListener("focus",refresh); document.removeEventListener("visibilitychange",refresh); window.removeEventListener("hmt-notifications-read",syncRead); };
+   window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh); window.addEventListener("hmt-notifications-read", syncRead); window.addEventListener("storage", syncRead);
+   return () => { stopped = true; controller.abort(); clearInterval(timer); window.removeEventListener("focus",refresh); document.removeEventListener("visibilitychange",refresh); window.removeEventListener("hmt-notifications-read",syncRead); window.removeEventListener("storage",syncRead); };
  }, []);
  useEffect(()=>{if(!open)return;const close=(event:PointerEvent)=>{if(!panel.current?.contains(event.target as Node))setOpen(false);};const escape=(event:KeyboardEvent)=>{if(event.key==="Escape")setOpen(false);};document.addEventListener("pointerdown",close);document.addEventListener("keydown",escape);return()=>{document.removeEventListener("pointerdown",close);document.removeEventListener("keydown",escape);};},[open]);
- const mark=(ids:string[])=>{const next=[...new Set([...read,...ids])].slice(-2000);setRead(next);try{localStorage.setItem(`hmt-customer-notifications:${feed?.userId}`,JSON.stringify(next));}catch{}};
+ const mark=async(ids:string[])=>{if(!feed)return;try{const next=await saveRead("account",feed.userId,ids);setRead(next);setError(false);}catch{setError(true);}};
  const unread=feed?.notifications.filter(x=>!read.includes(x.id)).length||0;
- return <div ref={panel} className="relative"><button type="button" aria-label={`${labels.title}${unread?` (${unread})`:""}`} aria-expanded={open} onClick={()=>setOpen(!open)} className="relative flex h-10 w-10 items-center justify-center rounded-full border border-violet-200 text-violet-700 hover:bg-violet-50"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" strokeLinecap="round"/></svg>{unread>0&&<span className="absolute -right-1 -top-1 rounded-full bg-pink-500 px-1.5 text-[10px] font-bold text-white">{unread>99?"99+":unread}</span>}</button>{open&&<section aria-label={labels.title} className="absolute right-0 top-12 z-[100] w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border bg-white shadow-xl"><div className="flex justify-between border-b p-4"><h2 className="font-bold">{labels.title}</h2><button type="button" onClick={()=>mark(feed?.notifications.map(x=>x.id)||[])} className="text-xs text-violet-700">{labels.all}</button></div>{error?<p role="status" className="p-4 text-sm">{labels.error}</p>:!feed?.notifications.length?<p className="p-4 text-sm text-zinc-500">{labels.empty}</p>:<ul className="max-h-[55vh] overflow-y-auto">{feed.notifications.map(item=><li key={item.id}><Link prefetch={false} href={`/${locale}/account/notifications?id=${encodeURIComponent(item.id)}`} onClick={()=>setOpen(false)} className={`block border-b p-4 hover:bg-violet-50 ${read.includes(item.id)?"":"bg-violet-50/60"}`}><p className="text-sm font-semibold">{item.kind==="businessRequired"?businessAccessCopy(locale).required:labels[item.kind as keyof typeof labels]||labels.order}</p><p className="mt-1 text-xs text-zinc-500">{item.detail}{item.status?` · ${item.status}`:""}</p></Link></li>)}</ul>}<Link href={`/${locale}/account/notifications`} onClick={()=>setOpen(false)} className="block border-t p-4 text-center text-sm font-semibold text-violet-700">{asian?.viewAll ?? (ko?"알림 전체 보기":ja?"すべてのお知らせ":zh?"查看全部通知":"View all notifications")} →</Link></section>}</div>;
+ return <div ref={panel} className="relative"><button type="button" aria-label={`${labels.title}${unread?` (${unread})`:""}`} aria-expanded={open} onClick={()=>setOpen(!open)} className="relative flex h-10 w-10 items-center justify-center rounded-full border border-violet-200 text-violet-700 hover:bg-violet-50"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" strokeLinecap="round"/></svg>{unread>0&&<span className="absolute -right-1 -top-1 rounded-full bg-pink-500 px-1.5 text-[10px] font-bold text-white">{unread>99?"99+":unread}</span>}</button>{open&&<section aria-label={labels.title} className="absolute right-0 top-12 z-[100] w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border bg-white shadow-xl"><div className="flex justify-between border-b p-4"><h2 className="font-bold">{labels.title}</h2><button type="button" onClick={()=>mark(feed?.notifications.map(x=>x.id)||[])} className="text-xs text-violet-700">{labels.all}</button></div>{error?<p role="status" className="p-4 text-sm">{labels.error}</p>:!unread?<p className="p-4 text-sm text-zinc-500">{labels.empty}</p>:<ul className="max-h-[55vh] overflow-y-auto">{feed?.notifications.filter(item=>!read.includes(item.id)).map(item=><li key={item.id}><Link prefetch={false} href={`/${locale}/account/notifications?id=${encodeURIComponent(item.id)}`} onClick={()=>{void mark([item.id]);setOpen(false);}} className={`block border-b p-4 hover:bg-violet-50 ${read.includes(item.id)?"":"bg-violet-50/60"}`}><p className="text-sm font-semibold">{item.kind==="businessRequired"?businessAccessCopy(locale).required:labels[item.kind as keyof typeof labels]||labels.order}</p><p className="mt-1 text-xs text-zinc-500">{item.detail}{item.status?` · ${item.status}`:""}</p></Link></li>)}</ul>}<Link href={`/${locale}/account/notifications`} onClick={()=>setOpen(false)} className="block border-t p-4 text-center text-sm font-semibold text-violet-700">{asian?.viewAll ?? (ko?"알림 전체 보기":ja?"すべてのお知らせ":zh?"查看全部通知":"View all notifications")} →</Link></section>}</div>;
 }
