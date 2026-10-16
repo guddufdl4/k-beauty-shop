@@ -300,7 +300,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <RelatedSearchTerms query={searchTerm} />
           ) : null}
 
-          {sort === "trending" && !searchTerm ? <p className="mb-5 text-xs leading-relaxed text-zinc-500">{t("bestsellerBasis")} · {curatedBestSellers.sources.map((source, index) => <span key={source.id}>{index > 0 ? " / " : ""}<a href={source.url} target="_blank" rel="noreferrer" className="underline">{source.name}</a></span>)} · {curatedBestSellers.checked}</p> : null}
+          {(sort === "trending" || !sort) && !searchTerm ? <p className="mb-5 text-xs leading-relaxed text-zinc-500">{t("bestsellerBasis")} · {curatedBestSellers.sources.map((source, index) => <span key={source.id}>{index > 0 ? " / " : ""}<a href={source.url} target="_blank" rel="noreferrer" className="underline">{source.name}</a></span>)} · {curatedBestSellers.checked}</p> : null}
 
           {showCategoryLandingSeo && categorySeo ? (
             <CategoryLandingSeo

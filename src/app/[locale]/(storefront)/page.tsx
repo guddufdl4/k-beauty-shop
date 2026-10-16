@@ -1,3 +1,4 @@
+import { sortExternalBestSellers } from "@/lib/store/external-best-sellers";
 import marketingCopy from "@/data/central-asian-marketing-copy.json";
 import { Link } from "@/i18n/navigation";
 import { Suspense } from "react";
@@ -272,7 +273,7 @@ export default async function HomePage() {
   const campaignTrending = campaignBrands.flatMap((brand, index) => {
     const candidates = [...trendingAll, ...localizeStorefrontProducts(campaignCatalog[index].products, locale)]
       .filter(product => getDisplayBrandName(product.brand).toLowerCase() === brand.toLowerCase());
-    return [...new Map(candidates.map(product => [product.id, product])).values()].slice(0, 3);
+    return sortExternalBestSellers([...new Map(candidates.map(product => [product.id, product])).values()]).slice(0, 3);
   });
   for (const slide of heroSlides.filter((item) => item.id.startsWith("seasonal-"))) {
     const matched = trendingAll.filter((product) => getDisplayBrandName(product.brand) === slide.copy?.badge);

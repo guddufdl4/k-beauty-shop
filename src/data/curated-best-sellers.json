@@ -1,7 +1,7 @@
 {
   "source": "https://www.stylekorean.com/promotion/180",
-  "checked": "2026-10-14",
-  "note": "External recommendation order, not an HMT or October sales ranking. Distinct exact-product sources first, then YesStyle category rank, then Stylevana displayed position. Bundle evidence is not transferred to single products. Ambiguous Probiotics/Niacinamide versions and products without verified barcodes are excluded.",
+  "checked": "2026-10-16",
+  "note": "External recommendation priority, not HMT sales volume or an October sales league table. More independent evidence sources first, then a published category rank, then collection display position. StyleKorean matches preserve exact product, capacity and pack count. Supplier-listed variants only; generic bundles are never mapped to singles. Products without both prices, verified product image or a supplier barcode are not promoted.",
   "sources": [
     {
       "id": "yesstyle",
@@ -21,11 +21,20 @@
       "id": "stylekorean",
       "name": "StyleKorean",
       "url": "https://www.stylekorean.com/promotion/180",
-      "period": "Best-seller collection checked 2026-10-14; region-dependent",
+      "period": "Best-seller collection checked 2026-10-16; display position is not sales volume",
+      "type": "collection-membership"
+    },
+    {
+      "id": "medicube-official",
+      "name": "Medicube Official",
+      "url": "https://medicube.us/collections/best-sellers",
+      "period": "Official best-seller collection checked 2026-10-16",
       "type": "collection-membership"
     }
   ],
   "skus": [
+    "8800256114665",
+    "8800256113217",
     "8809447256221",
     "8809913830122",
     "8809640737190",
@@ -33,13 +42,117 @@
     "8809782551814",
     "8809640734526",
     "8809562192763",
+    "8800289467714",
     "8809532221707",
+    "8800256109661",
+    "8800256114399",
+    "8800256108053",
+    "8809576261592",
+    "8809960356767",
     "8809447256115",
     "8809563103430",
     "8809640734427",
-    "8809576261592"
+    "8800289470448",
+    "8809655952236",
+    "8800366240544",
+    "8800307373331",
+    "8809576261172",
+    "8809728080231",
+    "8809913834670",
+    "8809640736667",
+    "8800312061933",
+    "8809728081146",
+    "8809576261622",
+    "8809576261301",
+    "8809913832485",
+    "8809686384204",
+    "8809576261127",
+    "8809576261110",
+    "8809655952373",
+    "8809913830641",
+    "8809738608364",
+    "8809562193500",
+    "8809738592236",
+    "8809576261189",
+    "8809640735462",
+    "8809738600238",
+    "8800307373386",
+    "8809679699612",
+    "8800307374499",
+    "8809481762832",
+    "8800289470455",
+    "8809611868311",
+    "8809151133573",
+    "8809647391104",
+    "8809238962706",
+    "8800289461965",
+    "8803463017491",
+    "8800289479885",
+    "8800289461408",
+    "8800366241060",
+    "8809723781867",
+    "8809911696485",
+    "8809964313735",
+    "8809714721858",
+    "8809151130510",
+    "8800289475221",
+    "8800289475238",
+    "8800256112227",
+    "8800256114610",
+    "8800289467240",
+    "8800240567354",
+    "8809982769866",
+    "8809982769934"
   ],
   "items": [
+    {
+      "sku": "8800256114665",
+      "productCode": "HMT-009524",
+      "name": "Medicube 2024 ZERO PORE PAD 2.0",
+      "sourceIds": [
+        "yesstyle",
+        "medicube-official",
+        "stylekorean"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 10,
+          "name": "2024 ZERO PORE PAD 2.0",
+          "volume": "155g (70pcs)",
+          "barcode": "8800256114665"
+        }
+      ],
+      "yesStyleCategoryRank": 1,
+      "officialProductUrl": "https://medicube.us/products/zero-pore-pad-1",
+      "officialCollectionPosition": 20,
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-zero-pore-pad-2.0-70ea/1718073988",
+      "stylekoreanCollectionPosition": 48
+    },
+    {
+      "sku": "8800256113217",
+      "productCode": "HMT-009548",
+      "name": "Medicube COLLAGEN NIGHT WRAPPING MASK",
+      "sourceIds": [
+        "yesstyle",
+        "medicube-official",
+        "stylekorean"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 45,
+          "name": "COLLAGEN NIGHT WRAPPING MASK",
+          "volume": "75ml",
+          "barcode": "8800256113217"
+        }
+      ],
+      "yesStyleCategoryRank": 6,
+      "officialProductUrl": "https://medicube.us/products/collagen-night-wrapping-mask",
+      "officialCollectionPosition": 7,
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-collagen-night-wrapping-mask-75ml/1721697162",
+      "stylekoreanCollectionPosition": 173
+    },
     {
       "sku": "8809447256221",
       "productCode": "HMT-003606",
@@ -171,7 +284,30 @@
           "name": "Arencia Retinal Booster Shot 30ml",
           "volume": null
         }
-      ]
+      ],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/arencia-vitamin-c-booster-shot-30ml/1762424311",
+      "stylekoreanCollectionPosition": 31
+    },
+    {
+      "sku": "8800289467714",
+      "productCode": "HMT-020034",
+      "name": "Medicube PDRN PINK COLLAGEN CAPSULE CREAM 55g",
+      "sourceIds": [
+        "yesstyle",
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 85,
+          "name": "PDRN PINK COLLAGEN CAPSULE CREAM 55g",
+          "volume": "55g",
+          "barcode": "8800289467714"
+        }
+      ],
+      "yesStyleCategoryRank": 5,
+      "officialProductUrl": "https://medicube.us/products/pdrn-pink-collagen-capsule-cream",
+      "officialCollectionPosition": 41
     },
     {
       "sku": "8809532221707",
@@ -191,6 +327,96 @@
           "volume": null
         }
       ]
+    },
+    {
+      "sku": "8800256109661",
+      "productCode": "HMT-009529",
+      "name": "Medicube 2024 DEEP VITA C PAD",
+      "sourceIds": [
+        "yesstyle",
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 20,
+          "name": "2024 DEEP VITA C PAD",
+          "volume": "150g (70pcs)",
+          "barcode": "8800256109661"
+        }
+      ],
+      "yesStyleCategoryRank": 8,
+      "officialProductUrl": "https://medicube.us/products/deep-vita-c-pad",
+      "officialCollectionPosition": 28
+    },
+    {
+      "sku": "8800256114399",
+      "productCode": "HMT-009496",
+      "name": "MEDICUBE PDRN Pink Collagen Gel Mask (4ea)",
+      "sourceIds": [
+        "stylekorean",
+        "yesstyle"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-pdrn-pink-collagen-gel-mask-4ea/1742519686",
+      "stylekoreanCollectionPosition": 179,
+      "yesStyleCategoryRank": 9
+    },
+    {
+      "sku": "8800256108053",
+      "productCode": "HMT-009559",
+      "name": "Medicube PDRN PINK PEPTIDE SERUM 30ml",
+      "sourceIds": [
+        "yesstyle",
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 74,
+          "name": "PDRN PINK PEPTIDE SERUM 30ml",
+          "volume": "30ml",
+          "barcode": "8800256108053"
+        }
+      ],
+      "yesStyleCategoryRank": 9,
+      "officialProductUrl": "https://medicube.us/products/rose-pdrn-pink-peptide-serum",
+      "officialCollectionPosition": 8
+    },
+    {
+      "sku": "8809576261592",
+      "productCode": "HMT-012626",
+      "name": "SKIN1004 Hyalu-Cica Water-Fit Sun Serum 50ml",
+      "sourceIds": [
+        "stylevana",
+        "stylekorean"
+      ],
+      "yesStyleCategoryRank": null,
+      "stylevanaDisplayPosition": 2,
+      "sheet": [
+        {
+          "sheet": "SKIN1004",
+          "row": 41,
+          "name": "SKIN1004 Madagascar Centella Hyalu-Cica Water-Fit Sun Serum 50ml",
+          "volume": null
+        }
+      ],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-hyalu-cica-water-fit-sun-serum-50ml/1661399353",
+      "stylekoreanCollectionPosition": 90
+    },
+    {
+      "sku": "8809960356767",
+      "productCode": "HMT-009474",
+      "name": "MEDICUBE Zero Pore Blackhead Mud Mask 100g",
+      "sourceIds": [
+        "stylekorean",
+        "medicube-official"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-zero-pore-blackhead-mud-mask-100g/1719970548",
+      "stylekoreanCollectionPosition": 181,
+      "officialProductUrl": "https://medicube.us/products/zero-pore-blackhead-mud-mask",
+      "officialCollectionPosition": 26
     },
     {
       "sku": "8809447256115",
@@ -247,22 +473,636 @@
       ]
     },
     {
-      "sku": "8809576261592",
-      "productCode": "HMT-012626",
-      "name": "SKIN1004 Hyalu-Cica Water-Fit Sun Serum 50ml",
+      "sku": "8800289470448",
+      "productCode": "HMT-009652",
+      "name": "Medicube PDRN PINK COLLAGEN TONING GEL PAD 70pcs",
       "sourceIds": [
-        "stylevana"
+        "yesstyle"
       ],
-      "yesStyleCategoryRank": null,
-      "stylevanaDisplayPosition": 2,
       "sheet": [
         {
-          "sheet": "SKIN1004",
-          "row": 41,
-          "name": "SKIN1004 Madagascar Centella Hyalu-Cica Water-Fit Sun Serum 50ml",
-          "volume": null
+          "sheet": "Medicube.",
+          "row": 82,
+          "name": "PDRN PINK COLLAGEN TONING GEL PAD 70pcs",
+          "volume": "120ml\n70 pcs",
+          "barcode": "8800289470448"
         }
-      ]
+      ],
+      "yesStyleCategoryRank": 10
+    },
+    {
+      "sku": "8809655952236",
+      "productCode": "HMT-007566",
+      "name": "Jumiso Niacinamide 20 Serum 40ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/jumiso-niacinamide-20-serum-40ml/1753251133",
+      "stylekoreanCollectionPosition": 20
+    },
+    {
+      "sku": "8800366240544",
+      "productCode": "HMT-020052",
+      "name": "MEDICUBE Vanilla & Pistacho Deodorant 80g",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-vanilla-pistacho-deodorant-80g/1782449266",
+      "stylekoreanCollectionPosition": 37
+    },
+    {
+      "sku": "8800307373331",
+      "productCode": "HMT-000809",
+      "name": "Anua PDRN Hyaluronic Acid Hydrating Capsule Mist 100ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/anua-pdrn-hyaluronic-acid-hydrating-capsule-mist-100ml/1769647911",
+      "stylekoreanCollectionPosition": 40
+    },
+    {
+      "sku": "8809576261172",
+      "productCode": "HMT-012642",
+      "name": "SKIN1004 Madagascar Centella Tone Brightening Capsule Ampoule 100ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-tone-brightening-capsule-ampoule-100ml/1639622288",
+      "stylekoreanCollectionPosition": 49
+    },
+    {
+      "sku": "8809728080231",
+      "productCode": "HMT-007283",
+      "name": "iUNIK Beta Glucan Power Moisture Serum 50ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/iunik-beta-glucan-power-moisture-serum-50ml/1729824077",
+      "stylekoreanCollectionPosition": 57
+    },
+    {
+      "sku": "8809913834670",
+      "productCode": "HMT-020565",
+      "name": "SKIN1004 Madagascar Centella Azelaic Acid 10 Ampoule 30ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-azelaic-acid-10-ampoule-30ml/1773891841",
+      "stylekoreanCollectionPosition": 60
+    },
+    {
+      "sku": "8809640736667",
+      "productCode": "HMT-000732",
+      "name": "Anua PDRN Hyaluronic Acid Capsule 100 Serum 30ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/anua-pdrn-hyaluronic-acid-capsule-100-serum-30ml/1734073142",
+      "stylekoreanCollectionPosition": 65
+    },
+    {
+      "sku": "8800312061933",
+      "productCode": "HMT-011151",
+      "name": "Numbuzin No.5 Glutathione Vitamin Tone-up Sun Serum 30ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/numbuzin-no.5-glutathione-vitamin-tone-up-sun-serum-30ml/1768885484",
+      "stylekoreanCollectionPosition": 80
+    },
+    {
+      "sku": "8809728081146",
+      "productCode": "HMT-007300",
+      "name": "iUNIK Beta Glucan Barrier Sunscreen 60ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/iunik-timedeal-beta-glucan-barrier-sunscreen-60ml/1744873176",
+      "stylekoreanCollectionPosition": 93
+    },
+    {
+      "sku": "8809576261622",
+      "productCode": "HMT-012648",
+      "name": "SKIN1004 Madagascar Centella Tone Brightening Tone-Up Sunscreen 50ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-tone-brightening-tone-up-sunscreen-50ml/1654564736",
+      "stylekoreanCollectionPosition": 104
+    },
+    {
+      "sku": "8809576261301",
+      "productCode": "HMT-012607",
+      "name": "SKIN1004 Madagascar Centella Air-Fit Suncream Plus 50ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-air-fit-suncream-plus-50ml/1637301677",
+      "stylekoreanCollectionPosition": 108
+    },
+    {
+      "sku": "8809913832485",
+      "productCode": "HMT-012664",
+      "name": "SKIN1004 Madagascar Centella Poremizing Velvet Finish Sunscreen 50ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-poremizing-velvet-finish-sunscreen-50ml/1766459623",
+      "stylekoreanCollectionPosition": 110
+    },
+    {
+      "sku": "8809686384204",
+      "productCode": "HMT-007016",
+      "name": "Isntree Hyaluronic Acid Watery Sun Gel 50ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/isntree-hyaluronic-acid-watery-sun-gel-50ml/1731488153",
+      "stylekoreanCollectionPosition": 112
+    },
+    {
+      "sku": "8809576261127",
+      "productCode": "HMT-012590",
+      "name": "SKIN1004 Madagascar Centella Ampoule Foam 125ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-ampoule-foam-125ml/1637207240",
+      "stylekoreanCollectionPosition": 119
+    },
+    {
+      "sku": "8809576261110",
+      "productCode": "HMT-012588",
+      "name": "SKIN1004 Madagascar Centella Light Cleansing OIl 200ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-light-cleansing-oil-200ml/1637214837",
+      "stylekoreanCollectionPosition": 123
+    },
+    {
+      "sku": "8809655952373",
+      "productCode": "HMT-007574",
+      "name": "Jumiso D-Panthenol Barrier Soothing Cleansing Milk 300ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/jumiso-d-panthenol-barrier-soothing-cleansing-milk-300ml/1760592570",
+      "stylekoreanCollectionPosition": 130
+    },
+    {
+      "sku": "8809913830641",
+      "productCode": "HMT-012706",
+      "name": "SKIN1004 Madagascar Centella Double Cleansing Duo",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-double-cleansing-duo/1718601009",
+      "stylekoreanCollectionPosition": 132
+    },
+    {
+      "sku": "8809738608364",
+      "productCode": "HMT-012388",
+      "name": "ROUND LAB 1025 Dokdo Cleanser 150ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/round-lab-renewal-1025-dokdo-cleanser-150ml/1731386439",
+      "stylekoreanCollectionPosition": 147
+    },
+    {
+      "sku": "8809562193500",
+      "productCode": "HMT-018246",
+      "name": "ARENCIA Eraser Shot Glycolic Acid Exfoliator 200ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/arencia-timedeal-eraser-shot-glycolic-acid-exfoliator-200ml/1779351104",
+      "stylekoreanCollectionPosition": 149
+    },
+    {
+      "sku": "8809738592236",
+      "productCode": "HMT-007029",
+      "name": "Isntree Green Tea Fresh Cleanser 120ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/isntree-green-tea-fresh-cleanser-120ml/1631165722",
+      "stylekoreanCollectionPosition": 153
+    },
+    {
+      "sku": "8809576261189",
+      "productCode": "HMT-012640",
+      "name": "SKIN1004 Madagascar Centella Tone Brightening Cleansing Gel Foam 125ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/skin1004-timedeal-madagascar-centella-tone-brightening-cleansing-gel-foam-125ml/1639618676",
+      "stylekoreanCollectionPosition": 155
+    },
+    {
+      "sku": "8809640735462",
+      "productCode": "HMT-000741",
+      "name": "Anua Rice Enzyme Brightening Cleansing Powder 40g",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/anua-rice-enzyme-brightening-cleansing-powder-40g/1721639755",
+      "stylekoreanCollectionPosition": 156
+    },
+    {
+      "sku": "8809738600238",
+      "productCode": "HMT-012409",
+      "name": "ROUND LAB Birch Juice Moisturizing Cleanser 150ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/round-lab-birch-juice-moisturizing-cleanser-150ml/1726814068",
+      "stylekoreanCollectionPosition": 164
+    },
+    {
+      "sku": "8800307373386",
+      "productCode": "HMT-000812",
+      "name": "Anua PDRN Collagen Melting Patch For Neck (4ea)",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/anua-pdrn-collagen-melting-patch-for-neck-4ea/1774940817",
+      "stylekoreanCollectionPosition": 192
+    },
+    {
+      "sku": "8809679699612",
+      "productCode": "HMT-015814",
+      "name": "TIRTIR Mask Fit Make Up Fixer 80ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/tirtir-mask-fit-make-up-fixer-80ml/1730776127",
+      "stylekoreanCollectionPosition": 217
+    },
+    {
+      "sku": "8800307374499",
+      "productCode": "HMT-000808",
+      "name": "Anua PDRN Lip Serum 10ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/anua-pdrn-lip-serum-10ml/1770686744",
+      "stylekoreanCollectionPosition": 238
+    },
+    {
+      "sku": "8809481762832",
+      "productCode": "HMT-019220",
+      "name": "heimish Dailism Peptide Enhancing Lash Serum",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/heimish-dailism-peptide-enhancing-lash-serum/1775107130",
+      "stylekoreanCollectionPosition": 241
+    },
+    {
+      "sku": "8800289470455",
+      "productCode": "HMT-009567",
+      "name": "MEDICUBE PDRN Lip Sleeping Mask 10g",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-pdrn-lip-sleeping-mask-10g/1743152197",
+      "stylekoreanCollectionPosition": 254
+    },
+    {
+      "sku": "8809611868311",
+      "productCode": "HMT-008866",
+      "name": "LAKA Spicy Lip Plumper #01 Pineapple 4g",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/laka-spicy-lip-plumper-01-pineapple-4g/1782812575",
+      "stylekoreanCollectionPosition": 257
+    },
+    {
+      "sku": "8809151133573",
+      "productCode": "HMT-001155",
+      "name": "AROMATICA Rosemary Root Enhancer 100ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/aromatica-rosemary-root-enhancer-100ml/1629276763",
+      "stylekoreanCollectionPosition": 264
+    },
+    {
+      "sku": "8809647391104",
+      "productCode": "HMT-012833",
+      "name": "SOME BY MI Cica Peptide Anti Hair Loss Derma Scalp Tonic 150ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/some-by-mi-cica-peptide-anti-hair-loss-derma-scalp-tonic-150ml/1605161652",
+      "stylekoreanCollectionPosition": 268
+    },
+    {
+      "sku": "8809238962706",
+      "productCode": "HMT-001151",
+      "name": "AROMATICA Rosemary Scalp Scaling Shampoo 400ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/aromatica-rosemary-scalp-scaling-shampoo-400ml/1649906796",
+      "stylekoreanCollectionPosition": 291
+    },
+    {
+      "sku": "8800289461965",
+      "productCode": "HMT-009574",
+      "name": "MEDICUBE Rosemary PDRN Cooling Thickening Shampoo 400ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-rosemary-pdrn-cooling-thickening-shampoo-400ml/1773732541",
+      "stylekoreanCollectionPosition": 300
+    },
+    {
+      "sku": "8803463017491",
+      "productCode": "HMT-017218",
+      "name": "VT Cosmetics PDRN Reedle Shot Brush Hair Serum 100ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/vt-cosmetics-pdrn-reedle-shot-brush-hair-serum-100ml/1773733080",
+      "stylekoreanCollectionPosition": 305
+    },
+    {
+      "sku": "8800289479885",
+      "productCode": "HMT-009514",
+      "name": "MEDICUBE Hypochlorous Acid Body Peel Shot 280ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-hypochlorous-acid-body-peel-shot-280ml/1774426263",
+      "stylekoreanCollectionPosition": 310
+    },
+    {
+      "sku": "8800289461408",
+      "productCode": "HMT-009541",
+      "name": "MEDICUBE Kojic Acid Turmeric Body Peel Shot 280ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-kojic-acid-turmeric-body-peel-shot-280ml/1768891444",
+      "stylekoreanCollectionPosition": 323
+    },
+    {
+      "sku": "8800366241060",
+      "productCode": "HMT-020054",
+      "name": "MEDICUBE Vanilla Hair Body Fragrance Mist 100ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/medicube-vanilla-hair-body-fragrance-mist-100ml/1782864333",
+      "stylekoreanCollectionPosition": 329
+    },
+    {
+      "sku": "8809723781867",
+      "productCode": "HMT-003363",
+      "name": "Derma-B CeraMD Repair Cream 430ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/derma-b-renewal-ceramd-repair-cream-430ml/1761197296",
+      "stylekoreanCollectionPosition": 341
+    },
+    {
+      "sku": "8809911696485",
+      "productCode": "HMT-018949",
+      "name": "Derma-B Mild Balancing Feminine Foam 150ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/derma-b-mild-balancing-feminine-foam-150ml/1779842860",
+      "stylekoreanCollectionPosition": 344
+    },
+    {
+      "sku": "8809964313735",
+      "productCode": "HMT-019587",
+      "name": "lilyeve Grow:Turn Pro",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/lilyeve-growturn-pro/1789022069",
+      "stylekoreanCollectionPosition": 355
+    },
+    {
+      "sku": "8809714721858",
+      "productCode": "HMT-006627",
+      "name": "ILSO Deep Clean Master",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/ilso-deep-clean-master/1716249863",
+      "stylekoreanCollectionPosition": 388
+    },
+    {
+      "sku": "8809151130510",
+      "productCode": "HMT-001186",
+      "name": "AROMATICA Pure & Soft Feminine Wash 170ml",
+      "sourceIds": [
+        "stylekorean"
+      ],
+      "sheet": [],
+      "stylekoreanProductUrl": "https://www.stylekorean.com/product/aromatica-pure-soft-feminine-wash-170ml/1600307346",
+      "stylekoreanCollectionPosition": 458
+    },
+    {
+      "sku": "8800289475221",
+      "productCode": "HMT-009504",
+      "name": "Medicube (US) AGE-R BOOSTER PRO MINI PLUS PINK",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 180,
+          "name": "(US) AGE-R BOOSTER PRO MINI PLUS PINK",
+          "volume": "135g",
+          "barcode": "8800289475221"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/mini-booster-pro-plus",
+      "officialCollectionPosition": 4
+    },
+    {
+      "sku": "8800289475238",
+      "productCode": "HMT-009503",
+      "name": "Medicube (US) AGE-R BOOSTER PRO MINI PLUS IVORY",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 179,
+          "name": "(US) AGE-R BOOSTER PRO MINI PLUS IVORY",
+          "volume": "135g",
+          "barcode": "8800289475238"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/mini-booster-pro-plus",
+      "officialCollectionPosition": 4
+    },
+    {
+      "sku": "8800256112227",
+      "productCode": "HMT-009549",
+      "name": "Medicube COLLAGEN JELLY CREAM 50ml",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 47,
+          "name": "COLLAGEN JELLY CREAM 50ml",
+          "volume": "50ml",
+          "barcode": "8800256112227"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/collagen-niacinamide-jelly-cream",
+      "officialCollectionPosition": 11
+    },
+    {
+      "sku": "8800256114610",
+      "productCode": "HMT-009528",
+      "name": "Medicube ZERO PORE BLACKHEAD DEEP CLEANSING OIL 205ml",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 18,
+          "name": "ZERO PORE BLACKHEAD DEEP CLEANSING OIL 205ml",
+          "volume": "205ml",
+          "barcode": "8800256114610"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/zero-pore-blackhead-deep-cleansing-oil",
+      "officialCollectionPosition": 21
+    },
+    {
+      "sku": "8800289467240",
+      "productCode": "HMT-009521",
+      "name": "Medicube ZERO PORE ONE DAY PEPTIDE SERUM 30ml",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 3,
+          "name": "ZERO PORE ONE DAY PEPTIDE SERUM 30ml",
+          "volume": "30ml",
+          "barcode": "8800289467240"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/zero-pore-one-day-serum",
+      "officialCollectionPosition": 24
+    },
+    {
+      "sku": "8800240567354",
+      "productCode": "HMT-009522",
+      "name": "Medicube ZERO PORE ONE DAY CREAM 50ml",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 4,
+          "name": "ZERO PORE ONE DAY CREAM 50ml",
+          "volume": "50ml",
+          "barcode": "8800240567354"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/zero-pore-one-day-cream",
+      "officialCollectionPosition": 25
+    },
+    {
+      "sku": "8809982769866",
+      "productCode": "HMT-009475",
+      "name": "Medicube DEEP VITA C CAPSULE CREAM 55g",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 23,
+          "name": "DEEP VITA C CAPSULE CREAM 55g",
+          "volume": "55g",
+          "barcode": "8809982769866"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/deep-vita-c-capsule-cream",
+      "officialCollectionPosition": 27
+    },
+    {
+      "sku": "8809982769934",
+      "productCode": "HMT-009479",
+      "name": "Medicube SUPER CICA DAILY QUICK MASK",
+      "sourceIds": [
+        "medicube-official"
+      ],
+      "sheet": [
+        {
+          "sheet": "Medicube.",
+          "row": 54,
+          "name": "SUPER CICA DAILY QUICK MASK",
+          "volume": "350g/ 30pcs",
+          "barcode": "8809982769934"
+        }
+      ],
+      "officialProductUrl": "https://medicube.us/products/super-cica-daily-quick-mask",
+      "officialCollectionPosition": 35
     }
   ],
   "excluded": [

@@ -1,7 +1,7 @@
 import { attachHomePrices, type HomePriceSnapshot } from "@/lib/store/home-price-overlay";
 import { cache } from "react";
 import curatedBestSellers from "@/data/curated-best-sellers.json";
-import { sortExternalBestSellers } from "@/lib/store/external-best-sellers";
+import { sortExternalBestSellers, compareExternalBestSellers } from "@/lib/store/external-best-sellers";
 import { buildProductSearchFilter } from "./product-search-filter";
 import { getHomeSettings } from "@/lib/site-settings";
 import { readFileSync, existsSync } from "node:fs";
@@ -975,6 +975,7 @@ type ProductListOrderOptions = {
   orderBy: "created_at" | "updated_at";
   sort?: ProductListSort;
   imageFirst?: boolean;
+  popularFirst?: boolean;
 };
 
 function compareProductsForList(
@@ -982,6 +983,10 @@ function compareProductsForList(
   b: StorefrontProduct,
   options: ProductListOrderOptions,
 ): number {
+  if (options.popularFirst) {
+    const priority = compareExternalBestSellers(a,b);
+    if (priority) return priority;
+  }
   if (options.imageFirst === true) {
     const aHasImage = productHasRealImage(a) ? 1 : 0;
     const bHasImage = productHasRealImage(b) ? 1 : 0;
@@ -1294,7 +1299,9 @@ export async function getProducts(
   const requireRealImage = options?.requireRealImage === true;
   const needsImageOnly = options?.needsImageOnly === true;
   const listPage = Math.max(1, options?.page ?? 1);
+  const popularFirst = !privileged && !sort && !options?.includeDraft && deletionFilter === "active";
   const listOrderOptions: ProductListOrderOptions = {
+    popularFirst,
     orderBy,
     sort,
     imageFirst,
@@ -1314,8 +1321,8 @@ export async function getProducts(
   if (guestProductsCacheable) {
     const cacheKey = [
       STOREFRONT_PRODUCTS_CACHE_TAG,
-      "locale-names-server-v7",
-      sort === "trending" ? `external-best-${curatedBestSellers.checked}` : "",
+      "external-popularity-list-v8",
+      sort === "trending" || popularFirst ? `external-best-${curatedBestSellers.checked}` : "",
       categorySlug ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
@@ -1455,7 +1462,7 @@ export async function getProducts(
       eq: (column: string, value: string | boolean) => typeof filtered;
       in: (column: string, values: string[]) => typeof filtered;
       or: (filter: string) => typeof filtered;
-      order: (column: string, options: { ascending: boolean }) => typeof filtered;
+      order: (column: string, options: { ascending: boolean; nullsFirst?: boolean }) => typeof filtered;
     };
 
     filtered = applyDeletedAtFilter(filtered, deletionFilter) as typeof filtered;
@@ -1544,6 +1551,10 @@ export async function getProducts(
     }
 
     if (withOrder) {
+      if (popularFirst) {
+        filtered = filtered.order("sold_out", { ascending: true });
+        filtered = filtered.order("external_best_rank", { ascending: true, nullsFirst: false });
+      }
       if (sort === "trending") {
         filtered = filtered.order("is_best_seller", { ascending: false });
       }
@@ -1931,7 +1942,7 @@ function getActiveStaticProducts(): ProductWithRelations[] {
 }
 
 function sortHomepagePriorityProducts(products: ProductWithRelations[]): ProductWithRelations[] {
-  return sortProductsForList(products, { orderBy: "created_at", imageFirst: true }) as ProductWithRelations[];
+  return sortProductsForList(products, { orderBy: "created_at", imageFirst: true, popularFirst:true }) as ProductWithRelations[];
 }
 
 function getStaticHomepageFallbackProducts(limit: number): ProductWithRelations[] {
@@ -1943,7 +1954,7 @@ function finalizeHomepageProducts(
   limit: number,
 ): ProductWithRelations[] {
   const sorted = sortHomepagePriorityProducts(products.filter((product) => productHasRealImage(product)))
-    .sort((a, b) => Number(b.is_best_seller) - Number(a.is_best_seller));
+    .sort((a, b) => compareExternalBestSellers(a,b) || Number(b.is_best_seller) - Number(a.is_best_seller));
   return [...new Map([...interleaveByBrand(sorted, 2), ...sorted].map((product) => [product.id, product])).values()].slice(0, limit);
 }
 
@@ -2044,6 +2055,8 @@ export function selectDiverseTrendingProducts(
 }
 
 function compareBestSellers(a: StorefrontProduct, b: StorefrontProduct): number {
+  const priority = compareExternalBestSellers(a,b);
+  if (priority) return priority;
   if (Boolean(b.is_best_seller) !== Boolean(a.is_best_seller)) {
     return Number(Boolean(b.is_best_seller)) - Number(Boolean(a.is_best_seller));
   }
@@ -2158,7 +2171,7 @@ async function fetchProductsByIdentifierBatch(
 const cachedPublicPriorityProducts = unstable_cache(async (limit: number) => {
   const result = await fetchPriorityBrandProductsFromSource(limit, "guest");
   return { ...result, products: toStorefrontProducts(result.products, "guest") };
-}, [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "public-home-selection-v5"], {
+}, [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, "public-home-external-selection-v6", curatedBestSellers.checked], {
   revalidate: CACHE_REVALIDATE_SECONDS,
   tags: [STOREFRONT_PRIORITY_PRODUCTS_CACHE_TAG, STOREFRONT_PRODUCTS_CACHE_TAG],
 });
@@ -2197,6 +2210,8 @@ async function fetchHomepageProductsFromDatabase(
     .select(productSelect)
     .eq("status", "active")
     .not("image_url", "is", null)
+    .order("sold_out", { ascending: true })
+    .order("external_best_rank", { ascending: true, nullsFirst: false })
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -2262,9 +2277,8 @@ async function fetchPriorityBrandProductsFromSource(
   // Start the small best-product read alongside supplier-list reads.
   const homeSettings = await getHomeSettings();
   let bestQuery = supabase.from("products").select(productSelect)
-    .eq("status", "active").eq("is_best_seller", true)
-    .not("image_url", "is", null).order("created_at", { ascending: false }).limit(limit);
-  if (homeSettings.trending_skus.length) bestQuery = bestQuery.in("sku", homeSettings.trending_skus);
+    .eq("status", "active").in("sku", [...new Set([...curatedBestSellers.skus,...homeSettings.trending_skus])])
+    .not("image_url", "is", null).order("sold_out", { ascending: true }).order("external_best_rank", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).limit(Math.max(limit,curatedBestSellers.skus.length));
   if (isSoftDeleteColumnAvailable()) bestQuery = bestQuery.is("deleted_at", null);
   const bestPending = Promise.resolve(bestQuery);
 
@@ -2319,7 +2333,7 @@ async function fetchPriorityBrandProductsFromSource(
 
   if (dbProducts.length > 0) {
     const curated = new Set(homeSettings.trending_skus.map(sku => sku.toUpperCase()));
-    const products = [...new Map([...dbProducts.filter(p => curated.has(p.sku.toUpperCase())), ...finalizeHomepageProducts(dbProducts, limit)].map(p => [p.id, p])).values()].slice(0, limit);
+    const products = sortExternalBestSellers([...new Map([...dbProducts.filter(p => curated.has(p.sku.toUpperCase())), ...finalizeHomepageProducts(dbProducts, limit)].map(p => [p.id, p])).values()]).slice(0, limit);
     return {
       products,
       totalCount: products.length,
