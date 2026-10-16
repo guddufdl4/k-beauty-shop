@@ -16,7 +16,7 @@ export async function storeNotifications(client: SupabaseClient, userId: string,
     notifications.push(...(data ?? []).map(row => ({...row.payload,createdAt:row.payload.createdAt ?? row.received_at,readAt:row.read_at})));
     if (!data || data.length<1000) break;
   }
-  return notifications;
+  return notifications.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))||a.id.localeCompare(b.id));
 }
 export async function markNotifications(request: Request, scope: "admin" | "account") {
   const {user,profile}=await getSessionProfile();
