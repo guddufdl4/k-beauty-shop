@@ -1,0 +1,31 @@
+const fs=require('fs'),ts=require('typescript'),assert=require('assert/strict');
+function load(path,modules){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:1,target:9}}).outputText)(name=>{if(name in modules)return modules[name];throw Error('Unexpected module '+name);},exports);return exports;}
+const policy=load('src/lib/support-center.ts',{});
+const validator=load('src/lib/support-inquiries.ts',{'@/i18n/routing':{routing:{locales:['en','ko']}}});
+const id='01234567-89ab-4cde-8fab-0123456789ab';
+const base={id,contact_name:'Support test',email:'test@example.invalid',category:'account',subject:'Verification issue',message:'Business document question',locale:'en',privacy_consent:true};
+assert(policy.supportOwnedBy({user_id:'owner'},'owner'));assert(!policy.supportOwnedBy({user_id:'other'},'owner'));assert(!policy.supportOwnedBy({user_id:null},undefined));
+assert.equal(policy.supportFileType(new Uint8Array([37,80,68,70,45])),'application/pdf');assert.equal(policy.supportFileType(new Uint8Array([255,216,255])),'image/jpeg');assert.equal(policy.supportFileType(new Uint8Array([137,80,78,71,13,10,26,10])),'image/png');assert.equal(policy.supportFileType(new TextEncoder().encode('<html>fake.pdf</html>')),null);
+let inserted,removed=false,notifications=0,duplicate=false,saveFail=false,uploadFail=false,session={user:{id:'owner'},profile:{company_name:'Saved company'}}, recentCount=0;
+const db={from(){return{select(){return{eq(){return{maybeSingle:async()=>({data:duplicate?{id}:null,error:null}),gte:async()=>({count:recentCount,error:null})}}}},insert:async row=>{inserted=row;return {error:saveFail?{code:'XX'}:null}}}},storage:{from(){return{upload:async()=>({error:uploadFail?{message:'failed'}:null}),remove:async()=>{removed=true;return {error:null}}}}}};
+const route=load('src/app/api/support-inquiry/route.ts',{'@/lib/supabase/service':{createServiceClient:()=>db},'@/lib/supabase/auth-helpers':{getSessionProfile:async()=>session},'@/lib/support-center':policy,'@/lib/support-inquiries':validator,'@/lib/email':{escapeHtml:x=>x,sendQuoteInquiryEmail:async()=>{notifications++;return {ok:true}}}});
+const request=(payload,origin='https://hmt.example',file)=>{if(file){const f=new FormData();f.set('payload',JSON.stringify(payload));f.set('attachment',file);return new Request('https://hmt.example/api/support-inquiry',{method:'POST',headers:{Origin:origin},body:f});}return new Request('https://hmt.example/api/support-inquiry',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(payload)});};
+(async()=>{
+ assert.equal((await route.POST(request(base,'https://evil.invalid'))).status,403);
+ assert.equal((await route.POST(request({...base,privacy_consent:false}))).status,400);
+ assert.equal((await route.POST(request(base,'https://hmt.example',new File(['<html>bad</html>'],'bad.pdf',{type:'application/pdf'})))).status,400);assert.equal(inserted,undefined);
+ const goodFile=()=>new File(['%PDF-1.4\nSupport fixture'],'fixture.pdf',{type:'application/pdf'});
+ assert.equal((await route.POST(request({...base,user_id:'attacker',company_name:' Current company '},'https://hmt.example',goodFile()))).status,200);
+ assert.equal(inserted.user_id,'owner');assert.equal(inserted.company_name,'Current company');assert(inserted.attachment_path.startsWith(id+'/'));assert.equal(inserted.attachment_name,'fixture.pdf');assert.equal(notifications,1);
+ duplicate=true;assert.equal((await route.POST(request(base))).status,200);assert.equal(notifications,1);duplicate=false;
+ recentCount=3;assert.equal((await route.POST(request(base))).status,429);recentCount=0;
+ uploadFail=true;assert.equal((await route.POST(request(base,'https://hmt.example',goodFile()))).status,503);uploadFail=false;
+ saveFail=true;assert.equal((await route.POST(request(base,'https://hmt.example',goodFile()))).status,503);assert(removed);saveFail=false;
+ session={user:null,profile:null};assert.equal((await route.POST(request(base))).status,200);assert.equal(inserted.user_id,null);
+ const downloadDb={from(){return{select(){return{eq(){return{is(){return{maybeSingle:async()=>({data:{user_id:'owner',attachment_path:'private',attachment_name:'file.pdf'},error:null})}}}}}}}},storage:{from(){return{createSignedUrl:async()=>({data:{signedUrl:'https://storage.invalid/signed'},error:null})}}}};
+ let actor={user:null,profile:null};
+ const download=load('src/app/api/support-inquiry/attachment/route.ts',{'@/lib/supabase/service':{createServiceClient:()=>downloadDb},'@/lib/supabase/auth-helpers':{getSessionProfile:async()=>actor},'@/lib/auth/member-access':{canManageInquiries:p=>p?.role==='admin'},'@/lib/support-center':policy});
+ const req=new Request('https://hmt.example/api/support-inquiry/attachment?id='+id);
+ assert.equal((await download.GET(req)).status,401);actor={user:{id:'other'},profile:{role:'customer'}};assert.equal((await download.GET(req)).status,404);actor.user.id='owner';let response=await download.GET(req);assert.equal(response.status,302);assert.equal(response.headers.get('Cache-Control'),'private, no-store');actor={user:{id:'staff'},profile:{role:'admin'}};assert.equal((await download.GET(req)).status,302);
+ console.log('PASS: actual support handler validates origin/consent/file bytes, binds owner server-side, preserves guest inquiries, limits repeats, cleans failed uploads, and blocks anonymous/non-owner attachments. Mock email/storage only; no real inquiries or emails sent.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

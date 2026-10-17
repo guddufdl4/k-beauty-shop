@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import NextLink from "next/link";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -278,6 +278,7 @@ export function MobileNavPanels() {
   } = useMobileNav();
 
   const tHome = useTranslations("home.featuredBrands");
+  const supportLocale=useLocale();
   const [brandsOpen, setBrandsOpen] = useState(false);
 
   const primaryLinks = MAIN_NAV_LINKS.filter((item) => !item.highlight).map((item) => ({
@@ -381,6 +382,7 @@ export function MobileNavPanels() {
               </Link>
             ))}
 
+            <Link href="/contact" className={`${mobileLinkClass} py-3`} onClick={closeAll}>{supportLocale==="ko"?"고객센터":"Support"}</Link>
             {wholesaleLink ? (
               <Link
                 href={wholesaleLink.href}

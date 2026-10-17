@@ -283,6 +283,7 @@ export async function StoreMainNav({
 }) {
   const tNav = await getTranslations("nav");
   const standardLinks = MAIN_NAV_LINKS.filter((item) => !item.highlight);
+  const supportLocale = await getLocale();
   const wholesaleLink = MAIN_NAV_LINKS.find((item) => item.highlight);
 
   return (
@@ -314,6 +315,7 @@ export async function StoreMainNav({
               {tNav(item.key as "newArrivals" | "bestSellers" | "howToOrder")}
             </Link>
           ))}
+          <Link prefetch={false} href="/contact" className="flex shrink-0 items-center border-r border-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-800 hover:text-accent">{supportLocale==="ko"?"고객센터":"Support"}</Link>
           {wholesaleLink ? (
             <Link
             prefetch={false}
