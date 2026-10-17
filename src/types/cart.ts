@@ -1,4 +1,5 @@
 export type CartItemView = {
+  priceOnRequest?: boolean;
   id: string;
   productId: string;
   quantity: number;

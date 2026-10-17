@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { priceRequestCopy } from "@/lib/store/price-request-copy";
 import { useActionState } from "react";
 import { addToCart, type CartActionState } from "@/app/actions/cart";
 import { getMoqStep } from "@/lib/store/moq-quantity";
@@ -67,6 +68,7 @@ export function ProductCard({
   const [cartState, cartAction, cartPending] = useActionState(addToCart, {} as CartActionState);
   const localeFromApp = useLocale();
   const activeLocale = locale || localeFromApp;
+  const priceRequest = priceRequestCopy(activeLocale);
   const isTrending = variant === "trending";
   const showPrices = isPricedStorefrontProduct(product);
   const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
@@ -179,7 +181,7 @@ export function ProductCard({
         ) : null}
         <div className={cn("mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-2")}>
           <div className="min-w-0 flex-1">
-            {showPrices && displayPrice != null ? (
+            {product.price_on_request ? (<p className="text-sm font-semibold text-accent">{priceRequest.label}</p>) : showPrices && displayPrice != null ? (
               <>
                 {isPricedStorefrontProduct(product) && product.compare_at_price && product.compare_at_price > 1 ? <p className="text-xs text-zinc-500">{labels("retailPrice")} {formatLocaleProductPrice(product.compare_at_price, activeLocale, usdKrwRate)}</p> : null}
                 <p className={cn("font-bold text-zinc-900", isTrending || compact ? "text-sm" : "text-base")}>
@@ -200,7 +202,7 @@ export function ProductCard({
         </div>
       </div>
       </Link>
-      <form action={cartAction} className="mt-3">
+      {product.price_on_request && !soldOut ? <Link href={`/products/${product.slug}#price-inquiry`} prefetch={false} className="mt-3 flex min-h-11 items-center justify-center rounded-lg border border-accent px-2 py-2 text-sm font-medium text-accent hover:bg-pink-50">{priceRequest.action}</Link> : <form action={cartAction} className="mt-3">
         <input type="hidden" name="productId" value={product.id} />
         <input type="hidden" name="quantity" value={getMoqStep(product.moq)} />
         <button type="submit" disabled={cartPending || soldOut} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-accent bg-white px-2 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-white disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400">
@@ -209,7 +211,7 @@ export function ProductCard({
         </button>
         {cartState.error ? <p role="alert" className="mt-2 text-xs text-red-700">{cartState.error}{cartState.error === tCart("errors.authRequired") ? <Link href={withReturnTo("/login", `/products/${product.slug}`)} className="ml-1 underline">{tCart("loginToQuote")}</Link> : null}</p> : null}
         {cartState.success ? <p role="status" className="mt-2 text-xs text-green-700">{cartState.success}</p> : null}
-      </form>
+      </form>}
     </article>
   );
 }

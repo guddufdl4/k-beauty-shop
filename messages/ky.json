@@ -620,7 +620,8 @@
       "orderUnavailable": "Заказ түзө алган жок.",
       "orderCreateFailed": "Заказ түзүү мүмкүн болбой калды.",
       "authRequired": "Улантуу үчүн кириңиз.",
-      "minOrderNotMet": "Буйрутманын минималдуу суммасы — {amount} USD."
+      "minOrderNotMet": "Буйрутманын минималдуу суммасы — {amount} USD.",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "approvalPending": "Катталуу үчүн ишкердиктин каттоо номери керек. Бааларды көрүү үчүн катталгандан кийин тастыктоочу документтерди жөнөтүңүз.",
     "invoiceExcel": "Excel жүктөп алуу",

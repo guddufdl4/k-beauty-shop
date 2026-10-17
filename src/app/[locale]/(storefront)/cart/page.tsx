@@ -60,6 +60,7 @@ export default async function CartPage() {
     <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
       <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
       <p className="mt-2 text-sm text-zinc-600">{t("quoteHint")}</p>
+      {cart.items.some(item => item.priceOnRequest) ? <p role="alert" className="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">{t("errors.priceOnRequest")}</p> : null}
       {cart.items.length > 0 ? <EmptyCartButton /> : null}
       {session.user && !hasBusinessApproval(session.profile) ? <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{t("approvalPending")} <Link href="/account" className="ml-3 underline">{locale === "ko" ? "사업자 증빙 제출" : "Submit business evidence"}</Link> <Link href="/wholesale-inquiry" className="ml-3 underline">{locale === "ko" ? "가격 없이 견적 문의" : "Request a quotation"}</Link></p> : null}
 

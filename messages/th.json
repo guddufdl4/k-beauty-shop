@@ -620,7 +620,8 @@
       "orderUnavailable": "สร้างคำสั่งซื้อไม่ได้",
       "orderCreateFailed": "สร้างคำสั่งซื้อไม่สำเร็จ",
       "authRequired": "โปรดเข้าสู่ระบบเพื่อดำเนินการต่อ",
-      "minOrderNotMet": "ยอดสั่งซื้อขั้นต่ำ {amount} USD"
+      "minOrderNotMet": "ยอดสั่งซื้อขั้นต่ำ {amount} USD",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "approvalPending": "ต้องกรอกเลขทะเบียนธุรกิจเพื่อสมัครสมาชิก หลังสมัครให้ส่งหลักฐานธุรกิจเพื่อดูราคา",
     "invoiceExcel": "ดาวน์โหลด Excel",

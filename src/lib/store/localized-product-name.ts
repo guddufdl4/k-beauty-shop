@@ -99,6 +99,13 @@ export function resolveProductNamePair(product: NamedProduct): { en: string | nu
     });
 
     nameEntries.forEach(([header, raw], index) => {
+      // Supplier cells can contain Korean, English and Chinese on separate lines.
+      // Extract the English name before collapsing whitespace; otherwise a later
+      // fallback can mistakenly select the Volume cell (e.g. "1000 ml").
+      for (const line of String(raw ?? "").split(/[\r\n]+/)) {
+        const candidate = cleanName(line, brand);
+        if (candidate && isLatinName(candidate) && /[a-z]{3}/i.test(candidate)) en = pickBetter(en, candidate);
+      }
       const value = cleanName(String(raw ?? ""), brand);
       if (!value) return;
       const kind = classifyNameHeader(header, index, nameEntries.length);

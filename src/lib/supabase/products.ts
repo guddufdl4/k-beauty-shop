@@ -112,6 +112,7 @@ export type Product = {
   moq: number;
   stock: number;
   sold_out: boolean;
+  price_on_request?: boolean;
   weight_grams: number | null;
   ingredients: string | null;
   how_to_use: string | null;
@@ -266,6 +267,7 @@ function staticProduct(
     how_to_use: partial.how_to_use ?? null,
     country_of_origin: partial.country_of_origin ?? null,
     sold_out: partial.sold_out ?? false,
+    price_on_request: Boolean(partial.price_on_request),
     import_batch_id: partial.import_batch_id ?? null,
     external_sku: partial.external_sku ?? null,
     source_row: partial.source_row ?? null,
@@ -734,6 +736,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     moq: Number(row.moq ?? 1),
     stock: Number(row.stock ?? 0),
     sold_out: Boolean(row.sold_out),
+    price_on_request: Boolean(row.price_on_request),
     weight_grams: row.weight_grams != null ? Number(row.weight_grams) : null,
     ingredients: row.ingredients ? String(row.ingredients) : null,
     how_to_use: row.how_to_use ? String(row.how_to_use) : null,
@@ -1030,7 +1033,7 @@ function sortStaticProducts(
 
 /** Lightweight select for admin product list table (skips heavy text/json columns). */
 const ADMIN_LIST_SELECT_CORE =
-  "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, compare_at_price, moq, stock, sold_out, status, image_url, import_batch_id, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), import_batch:product_import_batches(id, filename), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
+  "id, category_id, name, slug, brand, sku, barcode, price, wholesale_price, compare_at_price, moq, stock, sold_out, price_on_request, status, image_url, import_batch_id, source_row, needs_image, created_at, updated_at, category:categories(id, name, slug), import_batch:product_import_batches(id, filename), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)";
 
 const ADMIN_FULL_SELECT = `*, category:categories(id, name, slug), images:product_images(id, product_id, url, alt_text, sort_order, is_primary)`;
 
@@ -2186,7 +2189,7 @@ export async function getPriorityBrandProducts(options?: { limit?: number; audie
   if (supabase && publicResult.meta.source === "database") {
     const ids = publicResult.products.map(product => product.id);
     if (!ids.length) return publicResult;
-    let query = supabase.from("products").select("id, price, wholesale_price, compare_at_price, stock, moq, sold_out, updated_at").in("id", ids).eq("status", "active");
+    let query = supabase.from("products").select("id, price, wholesale_price, compare_at_price, stock, moq, sold_out, price_on_request, updated_at").in("id", ids).eq("status", "active");
     if (isSoftDeleteColumnAvailable()) query = query.is("deleted_at", null);
     const {data, error} = await query;
     if (!error) {

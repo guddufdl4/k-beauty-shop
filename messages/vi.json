@@ -620,7 +620,8 @@
       "orderUnavailable": "Không tạo được đơn hàng.",
       "orderCreateFailed": "Tạo đơn hàng thất bại.",
       "authRequired": "Đăng nhập để tiếp tục.",
-      "minOrderNotMet": "Giá trị đơn hàng tối thiểu là {amount} USD."
+      "minOrderNotMet": "Giá trị đơn hàng tối thiểu là {amount} USD.",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "approvalPending": "Cần có mã số doanh nghiệp để đăng ký. Sau khi đăng ký, hãy gửi chứng từ doanh nghiệp để xem giá.",
     "invoiceExcel": "Tải Excel",

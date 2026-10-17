@@ -526,7 +526,8 @@
       "orderUnavailable": "注文を作成できません。",
       "orderCreateFailed": "注文の作成に失敗しました。",
       "authRequired": "続行するにはログインしてください。",
-      "minOrderNotMet": "最低注文金額は USD {amount} です。"
+      "minOrderNotMet": "最低注文金額は USD {amount} です。",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "orderQuantityLabel": "Order quantity",
     "addToQuote": "見積に追加",

@@ -620,7 +620,8 @@
       "orderUnavailable": "Unable to create an order.",
       "orderCreateFailed": "Failed to create the order.",
       "authRequired": "Please log in to continue.",
-      "minOrderNotMet": "The minimum order amount is USD {amount}."
+      "minOrderNotMet": "The minimum order amount is USD {amount}.",
+      "priceOnRequest": "This product requires a price inquiry. Request its price on the product page."
     },
     "approvalPending": "A business registration number is required to sign up. Submit business evidence after registration to view prices.",
     "invoiceExcel": "Download Excel",

@@ -620,7 +620,8 @@
       "orderUnavailable": "Имконияти эҷоди фармоиш вуҷуд надорад.",
       "orderCreateFailed": "Эҷоди фармоиш ноком шуд.",
       "authRequired": "Барои идома ворид шавед.",
-      "minOrderNotMet": "Ҳадди ақали маблағи фармоиш — {amount} USD."
+      "minOrderNotMet": "Ҳадди ақали маблағи фармоиш — {amount} USD.",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "approvalPending": "Барои бақайдгирӣ рақами бақайдгирии соҳибкорӣ лозим аст. Барои дидани нархҳо пас аз бақайдгирӣ ҳуҷҷатҳои тасдиқкунандаро фиристед.",
     "invoiceExcel": "Боргирии Excel",

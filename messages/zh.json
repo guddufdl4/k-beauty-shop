@@ -526,7 +526,8 @@
       "orderUnavailable": "无法创建订单。",
       "orderCreateFailed": "创建订单失败。",
       "authRequired": "请登录后继续。",
-      "minOrderNotMet": "最低订购金额为 USD {amount}。"
+      "minOrderNotMet": "最低订购金额为 USD {amount}。",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "orderQuantityLabel": "Order quantity",
     "addToQuote": "加入询价",

@@ -1,0 +1,27 @@
+const fs=require('fs'),ts=require('typescript'),assert=require('assert/strict');
+function load(path,modules={}) {const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:1,target:9}}).outputText)(name=>{if(name in modules)return modules[name];throw Error('Unexpected dependency '+name)},exports);return exports;}
+const pricing=load('src/lib/store/products-url.ts');
+const names=load('src/lib/store/localized-product-name.ts',{'@/lib/store/product-copy':load('src/lib/store/product-copy.ts'),'@/lib/store/verified-product-descriptions':load('src/lib/store/verified-product-descriptions.ts'),'@/lib/store/hangul-product-english':load('src/lib/store/hangul-product-english.ts')});
+assert.equal(names.resolveProductNamePair({name:'제이멜라 샴푸',brand:'Jmella',source_row:{'Product Name - Korea,Chinese,English':'제이멜라 헤어 샴푸\nJMELLA IN FRANCE PURE HUG HAIR SHAMPOO\n洗发水',Volume:'1000 ml'}}).en,'JMELLA IN FRANCE PURE HUG HAIR SHAMPOO');
+assert.equal(pricing.getEffectiveProductPrice({price:6600,wholesale_price:null,price_on_request:true}),0);
+assert.equal(pricing.getEffectiveProductPrice({price:6600,wholesale_price:3000}),3000);
+const quantity=load('src/lib/store/quote-quantity.ts',{'./moq-quantity':load('src/lib/store/moq-quantity.ts')});
+for(const q of [40,41,100000])assert.equal(quantity.validateQuoteQuantity({moq:40,sold_out:false},q),null);
+assert.equal(quantity.validateQuoteQuantity({moq:40},39).errorCode,'moq_not_met');
+assert.equal(quantity.validateQuoteQuantity({moq:40,price_on_request:true},40).errorCode,'price_on_request');
+assert.equal(quantity.validateQuoteQuantity({moq:40,sold_out:true},40).errorCode,'out_of_stock');
+const inquiry=load('src/lib/store/product-price-inquiry.ts'), product={id:'01234567-89ab-4cde-8fab-0123456789ab',name:'Canonical product',product_code:'HMT-123456',barcode:'8809711716611',moq:40,price_on_request:true,sold_out:false};
+for(const q of [39,40.5,NaN,Infinity,'40'])assert.equal(inquiry.productPriceInquiryMessage(product,q),null);
+for(const q of [40,41,100000]){const message=inquiry.productPriceInquiryMessage(product,q);assert(message.includes(product.name));assert(message.includes(product.product_code));assert(message.includes(product.barcode));assert(message.includes(`Desired quantity: ${q}`));}
+assert.equal(inquiry.productPriceInquiryMessage({...product,sold_out:true},40),null);
+assert.equal(inquiry.productPriceInquiryMessage({...product,price_on_request:false},40),null);
+const visibility=load('src/lib/store/product-visibility.ts',{'@/lib/supabase/auth-helpers':{},'@/lib/store/localized-product-name':{withLocalizedNameFields:p=>p,omitProductSourceRow:p=>p},'@/lib/supabase/product-code':{isProductCodeColumnAvailable:()=>true}});
+const dto=visibility.toPublicProduct({...product,price:6600,wholesale_price:null,compare_at_price:6600,source_row:{private:true}});
+assert(dto.price_on_request);for(const field of ['price','wholesale_price','compare_at_price','source_row'])assert(!(field in dto));
+assert(visibility.buildGuestProductSelect().includes('price_on_request'));assert(!visibility.buildGuestProductSelect().includes('wholesale_price'));
+let saved,notified=0;
+const db={from(table){const query={select(){return query},eq(){return query},is(){return query},gte:async()=>({count:0,error:null}),maybeSingle:async()=>({data:table==='products'?product:null,error:null}),insert:async row=>{saved=row;return{error:null}}};return query;}};
+const api=load('src/app/api/support-inquiry/route.ts',{'@/lib/store/product-price-inquiry':inquiry,'@/lib/support-inquiries':load('src/lib/support-inquiries.ts',{'@/i18n/routing':{routing:{locales:['en','ko']}}}),'@/lib/support-center':{},'@/lib/supabase/service':{createServiceClient:()=>db},'@/lib/supabase/auth-helpers':{getSessionProfile:async()=>({user:{id:'real-owner'},profile:null})},'@/lib/email':{escapeHtml:x=>x,sendQuoteInquiryEmail:async()=>{notified++}}});
+const base={id:crypto.randomUUID(),contact_name:'Test buyer',email:'test@example.invalid',category:'product',subject:'Client supplied wrong name',message:'Client supplied wrong barcode and price',locale:'en',privacy_consent:true,product_id:product.id,quantity:41,user_id:'fake-owner'};
+const request=body=>new Request('https://hmt.test/api/support-inquiry',{method:'POST',headers:{origin:'https://hmt.test','content-type':'application/json'},body:JSON.stringify(body)});
+(async()=>{assert.equal((await api.POST(request({...base,quantity:39}))).status,400);assert.equal(notified,0);assert.equal((await api.POST(request(base))).status,200);assert.equal(saved.user_id,'real-owner');assert(saved.message.includes(product.barcode));assert(saved.message.includes('Desired quantity: 41'));assert(!saved.message.includes('wrong'));assert.equal(notified,1);console.log('PASS price request: guest DTO privacy, no retail fallback, server cart rejection, MOQ minimum/no maximum, canonical identifiers/quantity and owned inquiry. All writes/emails mocked.');})().catch(e=>{console.error(e);process.exitCode=1});

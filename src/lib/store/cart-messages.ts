@@ -6,6 +6,7 @@ type CartTranslator = (
 ) => string;
 
 const ERROR_KEY_BY_CODE: Record<CartLibErrorCode, string> = {
+  price_on_request: "errors.priceOnRequest",
   invalid_quantity: "errors.invalidQuantity",
   moq_not_met: "errors.moqNotMet",
   moq_multiple_not_met: "errors.moqMultiple",

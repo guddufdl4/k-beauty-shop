@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { priceRequestCopy } from "@/lib/store/price-request-copy";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -57,7 +58,7 @@ function CartItemRow({
             <p className="mt-1 text-sm text-zinc-500">
               {tProducts("moqUnit", { count: step })} · {t("orderQuantity", { count: item.quantity })}
             </p>
-            {showPrices ? (
+            {item.priceOnRequest ? <Link href={`/products/${item.slug}#price-inquiry`} className="mt-2 block text-sm font-semibold text-accent underline">{priceRequestCopy(locale).action}</Link> : showPrices ? (
               <p className="mt-2 text-lg font-bold">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p>
             ) : null}
           </div>

@@ -254,10 +254,10 @@ export function CheckoutForm({
                 <p className="font-medium">{item.name}</p>
                 <p className="text-zinc-500">
                   {[item.productCode, item.sku].filter(Boolean).join(" · ")} ·{" "}
-                  {showPrices ? t("lineItem", { quantity: item.quantity, price: formatLocalePrice(item.unitPrice, locale, usdKrwRate) }) : t("quantityOnly", { quantity: item.quantity })}
+                  {showPrices && !item.priceOnRequest ? t("lineItem", { quantity: item.quantity, price: formatLocalePrice(item.unitPrice, locale, usdKrwRate) }) : t("quantityOnly", { quantity: item.quantity })}
                 </p>
               </div>
-              {showPrices ? <p className="font-medium">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p> : null}
+              {showPrices && !item.priceOnRequest ? <p className="font-medium">{formatLocalePrice(item.lineTotal, locale, usdKrwRate)}</p> : null}
             </li>
           ))}
         </ul>

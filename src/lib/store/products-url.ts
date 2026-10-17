@@ -9,6 +9,7 @@ export function parseProductListSort(value: string | undefined): ProductListSort
 }
 
 export type ProductPriceFields = {
+  price_on_request?: boolean;
   price?: number;
   wholesale_price?: number | null;
   compare_at_price?: number | null;
@@ -23,6 +24,7 @@ export function usableShopPrice(value?: number | null): number | null {
 }
 
 export function getEffectiveProductPrice(product: ProductPriceFields): number {
+  if (product.price_on_request) return 0;
   return usableShopPrice(product.wholesale_price) ?? usableShopPrice(product.price) ?? 0;
 }
 

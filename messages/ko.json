@@ -613,7 +613,8 @@
       "orderUnavailable": "주문을 생성할 수 없습니다.",
       "orderCreateFailed": "주문 생성에 실패했습니다.",
       "authRequired": "계속하려면 로그인해 주세요.",
-      "minOrderNotMet": "최소 주문 금액은 USD {amount}입니다."
+      "minOrderNotMet": "최소 주문 금액은 USD {amount}입니다.",
+      "priceOnRequest": "가격 별도 문의 상품입니다. 상품 상세 페이지에서 가격을 문의해 주세요."
     },
     "orderQuantityLabel": "Order quantity",
     "addToQuote": "견적에 추가",

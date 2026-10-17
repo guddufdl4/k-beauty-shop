@@ -620,7 +620,8 @@
       "orderUnavailable": "Тапсырыс жасау мүмкін емес.",
       "orderCreateFailed": "Тапсырысты жасау сәтсіз аяқталды.",
       "authRequired": "Жалғастыру үшін кіріңіз.",
-      "minOrderNotMet": "Тапсырыстың ең аз сомасы — {amount} USD."
+      "minOrderNotMet": "Тапсырыстың ең аз сомасы — {amount} USD.",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "approvalPending": "Тіркелу үшін кәсіпкерлік тіркеу нөмірі қажет. Бағаларды көру үшін тіркелгеннен кейін растайтын құжаттарды жіберіңіз.",
     "invoiceExcel": "Excel жүктеп алу",

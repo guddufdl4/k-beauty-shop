@@ -620,7 +620,8 @@
       "orderUnavailable": "Невозможно создать заказ.",
       "orderCreateFailed": "Не удалось создать заказ.",
       "authRequired": "Войдите, чтобы продолжить.",
-      "minOrderNotMet": "Минимальная сумма заказа — {amount} USD."
+      "minOrderNotMet": "Минимальная сумма заказа — {amount} USD.",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "approvalPending": "Для регистрации нужен регистрационный номер компании. Для просмотра цен загрузите подтверждающие документы после регистрации.",
     "invoiceExcel": "Скачать Excel",

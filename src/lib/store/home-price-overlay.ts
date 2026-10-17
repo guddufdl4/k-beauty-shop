@@ -1,7 +1,7 @@
 import type { Product } from "@/lib/supabase/products";
 import type { StorefrontAudience, StorefrontProduct } from "./product-visibility";
 
-export type HomePriceSnapshot = Pick<Product, "id" | "price" | "wholesale_price" | "compare_at_price" | "stock" | "moq" | "sold_out" | "updated_at">;
+export type HomePriceSnapshot = Pick<Product, "id" | "price" | "wholesale_price" | "compare_at_price" | "stock" | "moq" | "sold_out" | "price_on_request" | "updated_at">;
 
 /** Public catalog is reusable; prices are fetched through the current approved session on every request. */
 export function attachHomePrices(products: StorefrontProduct[], prices: HomePriceSnapshot[], audience: StorefrontAudience): StorefrontProduct[] {

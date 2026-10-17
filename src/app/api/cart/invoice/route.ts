@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   const format = new URL(request.url).searchParams.get("format");
   if (format !== "xlsx" && format !== "pdf") return NextResponse.json({ error: "Invalid format" }, { status: 400 });
   const cart = await getCart();
+  if (cart.items.some(item => item.priceOnRequest)) return NextResponse.json({ error: "Request prices on the product pages before generating a quotation." }, { status: 409 });
   if (!cart.items.length) return NextResponse.json({ error: "Quote list is empty" }, { status: 400 });
   if (cart.items.length > 500) return NextResponse.json({ error: "Maximum 500 items per invoice" }, { status: 400 });
   const client = createServiceClient();

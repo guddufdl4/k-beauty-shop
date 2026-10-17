@@ -16,6 +16,8 @@ import {
   localizeStorefrontProducts,
 } from "@/lib/store/localized-product-name";
 import { getStorefrontBarcode } from "@/lib/store/hangul-product-english";
+import { ProductPriceInquiry } from "@/components/store/product-price-inquiry";
+import { priceRequestCopy } from "@/lib/store/price-request-copy";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { CopyValueButton } from "@/components/store/copy-value-button";
 import { ProductGallery } from "@/components/store/product-gallery";
@@ -387,13 +389,13 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   ) : null}
                   <InfoRow
                     label={t("wholesalePrice")}
-                    value={canViewPrices && priceColumns
+                    value={product.price_on_request ? priceRequestCopy(locale).label : canViewPrices && priceColumns
                       ? (hasSupplyPrice ? formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate) : t("supplyPriceOnRequest"))
                       : t(session.user ? "businessApprovalPending" : "signInToViewPrice")}
                   />
                 </dl>
 
-                {canViewPrices && priceColumns ? (
+                {product.price_on_request ? <p className="mt-6 text-lg font-bold text-accent">{priceRequestCopy(locale).label}</p> : canViewPrices && priceColumns ? (
                   <div className="mt-6">
                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                       {t(priceColumns.primary.labelKey)}
@@ -424,7 +426,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                 )}
 
                 <VerifiedPackingInfo sku={product.sku} locale={locale} />
-                <AddToCartForm
+                {product.price_on_request && !product.sold_out ? <ProductPriceInquiry productId={product.id} name={displayName} code={product.product_code} barcode={barcode} moq={product.moq} email={session.user?.email || ""} /> : <AddToCartForm
                   productId={product.id}
                   productSlug={product.slug}
                   productName={displayName}
@@ -434,7 +436,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                   canAdd={Boolean(session.user)}
                   approvalPending={Boolean(session.user) && !canViewPrices}
                   defaultQuantity={Number.isFinite(defaultQty) ? defaultQty : undefined}
-                />
+                />}
               </div>
 
               {minOrderNote ? (

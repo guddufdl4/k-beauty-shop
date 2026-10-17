@@ -4,6 +4,7 @@ import { VerifiedPackingInfo } from "@/components/store/verified-packing-info";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
+import { ProductPriceInquiry } from "@/components/store/product-price-inquiry";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { isRedundantProductDescription } from "@/lib/store/product-copy";
@@ -555,7 +556,7 @@ export function ProductAdminDetailPanel({
         </div>
 
         {!isEditing ? <VerifiedPackingInfo sku={initialProduct.sku} locale={locale} /> : null}
-        <AddToCartForm
+        {initialProduct.price_on_request && !product.sold_out ? <ProductPriceInquiry productId={product.id} name={product.name} code={initialProduct.product_code} barcode={initialProduct.barcode} moq={product.moq} /> : <AddToCartForm
           productId={product.id}
           productSlug={product.slug}
           productName={product.name}
@@ -563,7 +564,7 @@ export function ProductAdminDetailPanel({
           canAdd={hasSupplyPrice}
           stock={product.stock}
           soldOut={product.sold_out}
-        />
+        />}
 
         {minOrderNote ? (
           <p className="mt-3 rounded-lg border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm text-zinc-600">

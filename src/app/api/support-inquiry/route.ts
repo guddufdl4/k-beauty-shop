@@ -3,6 +3,7 @@ import { MAX_SUPPORT_FILE_BYTES, supportFileType } from "@/lib/support-center";
 import { createServiceClient } from "@/lib/supabase/service";
 import { escapeHtml, sendQuoteInquiryEmail } from "@/lib/email";
 import { validateSupportInquiry } from "@/lib/support-inquiries";
+import { productPriceInquiryMessage } from "@/lib/store/product-price-inquiry";
 
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };
@@ -36,6 +37,18 @@ export async function POST(request: Request) {
   const recent = await client.from("support_inquiries").select("id", { count: "exact", head: true }).eq("email", data.email).gte("created_at", new Date(Date.now() - 5 * 60 * 1000).toISOString());
   if (recent.error) return Response.json({ error: "unavailable" }, { status: 503, headers });
   if ((recent.count ?? 0) >= 3) return Response.json({ error: "rate_limited" }, { status: 429, headers: { ...headers, "Retry-After": "300" } });
+  const productId = (body as Record<string, unknown>).product_id;
+  if (productId !== undefined) {
+    if (typeof productId !== 'string' || !/^[0-9a-f-]{36}$/i.test(productId)) return Response.json({error:'invalid_product'},{status:400,headers});
+    const product = await client.from('products').select('id,name,product_code,barcode,moq,price_on_request,sold_out').eq('id',productId).eq('status','active').is('deleted_at',null).maybeSingle();
+    if (product.error) return Response.json({error:'unavailable'},{status:503,headers});
+    if (!product.data) return Response.json({error:'invalid_product'},{status:400,headers});
+    const message = productPriceInquiryMessage(product.data, (body as Record<string,unknown>).quantity);
+    if (!message) return Response.json({error:'invalid_product_or_quantity'},{status:400,headers});
+    data.category = 'product';
+    data.subject = `Price inquiry: ${product.data.product_code || product.data.name}`.slice(0,200);
+    data.message = message;
+  }
   const { user, profile } = await getSessionProfile();
   const company = typeof (body as Record<string,unknown>).company_name === 'string' ? String((body as Record<string,unknown>).company_name).trim() : '';
   if (company.length > 200) return Response.json({error:'invalid_fields'},{status:400,headers});

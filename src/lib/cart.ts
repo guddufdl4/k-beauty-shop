@@ -51,6 +51,7 @@ export type ShippingAddress = {
 };
 
 export type CartItemView = {
+  priceOnRequest?: boolean;
   id: string;
   productId: string;
   quantity: number;
@@ -393,6 +394,7 @@ async function getDatabaseCart(userId: string, locale: string, showPrices: boole
         image_url,
         price,
         wholesale_price,
+        price_on_request,
         moq,
         stock
       )
@@ -422,6 +424,7 @@ async function getDatabaseCart(userId: string, locale: string, showPrices: boole
 
     const quantity = Number(record.quantity ?? 1);
     const unitPrice = showPrices ? getEffectiveProductPrice({
+      price_on_request: Boolean(product.price_on_request),
       price: Number(product.price ?? 0),
       wholesale_price:
         product.wholesale_price != null ? Number(product.wholesale_price) : null,
@@ -430,6 +433,7 @@ async function getDatabaseCart(userId: string, locale: string, showPrices: boole
 
     items.push({
       id: String(record.id),
+      priceOnRequest: Boolean(product.price_on_request),
       productId: String(record.product_id),
       quantity,
       name: cartProductDisplayName(product, locale),
@@ -485,6 +489,7 @@ function cartItemFromProduct(
   const unitPrice = getEffectiveProductPrice(product);
   return {
     id: product.id,
+    priceOnRequest: Boolean(product.price_on_request),
     productId: product.id,
     quantity,
     name: cartProductDisplayName(product, locale),
@@ -669,6 +674,7 @@ async function resolveProductForCart(
     moq: Number(record.moq ?? 1),
     stock: Number(record.stock ?? 0),
     sold_out: Boolean(record.sold_out),
+    price_on_request: Boolean(record.price_on_request),
     weight_grams:
       record.weight_grams != null ? Number(record.weight_grams) : null,
     ingredients: record.ingredients ? String(record.ingredients) : null,
@@ -701,6 +707,7 @@ async function resolveProductForCart(
 }
 
 export type CartLibErrorCode =
+  | "price_on_request"
   | "invalid_quantity"
   | "moq_not_met"
   | "moq_multiple_not_met"

@@ -620,7 +620,8 @@
       "orderUnavailable": "Buyurtma yaratib bo‘lmadi.",
       "orderCreateFailed": "Buyurtmani yaratib bo'lmadi.",
       "authRequired": "Davom etish uchun kiring.",
-      "minOrderNotMet": "Minimal buyurtma summasi — {amount} USD."
+      "minOrderNotMet": "Minimal buyurtma summasi — {amount} USD.",
+      "priceOnRequest": "Price on request. Please request the price on the product page."
     },
     "approvalPending": "Ro‘yxatdan o‘tish uchun biznes ro‘yxat raqami kerak. Narxlarni ko‘rish uchun ro‘yxatdan o‘tgach tasdiqlovchi hujjatlarni yuboring.",
     "invoiceExcel": "Excel yuklab olish",
