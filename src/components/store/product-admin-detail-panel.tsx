@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { ProductPriceInquiry } from "@/components/store/product-price-inquiry";
+import { priceRequestCopy } from "@/lib/store/price-request-copy";
 import { AddToCartForm } from "@/components/store/add-to-cart-form";
 import { getLocalizedCategoryName } from "@/lib/store/localized-category";
 import { isRedundantProductDescription } from "@/lib/store/product-copy";
@@ -108,7 +109,7 @@ export function ProductAdminDetailPanel({
   const [categoryId, setCategoryId] = useState(product.category_id ?? "");
   const [price, setPrice] = useState(String(product.price));
   const [wholesalePrice, setWholesalePrice] = useState(
-    String(product.wholesale_price ?? product.price),
+    product.wholesale_price != null ? String(product.wholesale_price) : initialProduct.price_on_request ? "" : String(product.price),
   );
   const [moq, setMoq] = useState(String(product.moq));
   const [stock, setStock] = useState(String(product.stock));
@@ -122,14 +123,14 @@ export function ProductAdminDetailPanel({
     setBrand(source.brand);
     setCategoryId(source.category_id ?? "");
     setPrice(String(source.price));
-    setWholesalePrice(String(source.wholesale_price ?? source.price));
+    setWholesalePrice(source.wholesale_price != null ? String(source.wholesale_price) : initialProduct.price_on_request ? "" : String(source.price));
     setMoq(String(source.moq));
     setStock(String(source.stock));
     setSoldOut(source.sold_out);
     setShortDescription(source.short_description ?? "");
     setCountryOfOrigin(source.country_of_origin ?? "");
     setDescription(source.description ?? "");
-  }, []);
+  }, [initialProduct.price_on_request]);
 
   const startEditing = () => {
     resetDraft(product);
@@ -159,7 +160,7 @@ export function ProductAdminDetailPanel({
           brand: brand.trim(),
           category_id: categoryId.trim() || null,
           price: (wholesalePrice.trim() || price.trim()),
-          wholesale_price: (wholesalePrice.trim() || price.trim()),
+          wholesale_price: wholesalePrice.trim() || (initialProduct.price_on_request ? null : price.trim()),
           moq: moq.trim(),
           stock: Number(stock),
           sold_out: soldOut,
@@ -240,6 +241,7 @@ export function ProductAdminDetailPanel({
   };
 
   const priceColumns = getProductPriceColumns({
+    price_on_request: initialProduct.price_on_request && usableShopPrice(product.wholesale_price) == null,
     price: product.price,
     wholesale_price: product.wholesale_price,
     compare_at_price: initialProduct.compare_at_price,
@@ -502,7 +504,7 @@ export function ProductAdminDetailPanel({
                     {t(priceColumns.primary.labelKey)}
                   </p>
                   <p className="text-2xl font-bold text-zinc-900">
-                    {hasSupplyPrice ? formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate) : t("supplyPriceOnRequest")}
+                    {hasSupplyPrice ? formatLocaleProductPrice(priceColumns.primary.amount, locale, usdKrwRate) : priceRequestCopy(locale).label}
                   </p>
                 </div>
                 {retailAmount != null ? (
@@ -556,7 +558,7 @@ export function ProductAdminDetailPanel({
         </div>
 
         {!isEditing ? <VerifiedPackingInfo sku={initialProduct.sku} locale={locale} /> : null}
-        {initialProduct.price_on_request && !product.sold_out ? <ProductPriceInquiry productId={product.id} name={product.name} code={initialProduct.product_code} barcode={initialProduct.barcode} moq={product.moq} /> : <AddToCartForm
+        {initialProduct.price_on_request && !hasSupplyPrice && !product.sold_out ? <ProductPriceInquiry productId={product.id} name={getLocalizedProductName(initialProduct, locale)} code={initialProduct.product_code} barcode={initialProduct.barcode} moq={product.moq} /> : <AddToCartForm
           productId={product.id}
           productSlug={product.slug}
           productName={product.name}

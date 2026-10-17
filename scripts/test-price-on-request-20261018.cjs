@@ -1,6 +1,9 @@
 const fs=require('fs'),ts=require('typescript'),assert=require('assert/strict');
 function load(path,modules={}) {const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:1,target:9}}).outputText)(name=>{if(name in modules)return modules[name];throw Error('Unexpected dependency '+name)},exports);return exports;}
 const pricing=load('src/lib/store/products-url.ts');
+const patch=load('src/lib/admin/product-patch.ts',{'@/lib/admin/product-image-resolver':{isValidProductImageUrl:()=>true}});
+assert.equal(patch.parseProductPatch({name:'Supplier product',barcode:null,wholesale_price:null,price:6600}).patch.wholesale_price,null);
+assert.equal(patch.parseProductPatch({name:'Supplier product',barcode:null,price:3000}).patch.wholesale_price,3000);
 const names=load('src/lib/store/localized-product-name.ts',{'@/lib/store/product-copy':load('src/lib/store/product-copy.ts'),'@/lib/store/verified-product-descriptions':load('src/lib/store/verified-product-descriptions.ts'),'@/lib/store/hangul-product-english':load('src/lib/store/hangul-product-english.ts')});
 assert.equal(names.resolveProductNamePair({name:'제이멜라 샴푸',brand:'Jmella',source_row:{'Product Name - Korea,Chinese,English':'제이멜라 헤어 샴푸\nJMELLA IN FRANCE PURE HUG HAIR SHAMPOO\n洗发水',Volume:'1000 ml'}}).en,'JMELLA IN FRANCE PURE HUG HAIR SHAMPOO');
 assert.equal(pricing.getEffectiveProductPrice({price:6600,wholesale_price:null,price_on_request:true}),0);

@@ -3,7 +3,7 @@ import { isValidProductImageUrl } from "@/lib/admin/product-image-resolver";
 export type ProductPatch = {
   name: string;
   barcode: string | null;
-  wholesale_price: number;
+  wholesale_price: number | null;
   price?: number;
   compare_at_price?: number | null;
   brand?: string;
@@ -64,13 +64,13 @@ export function parseProductPatch(body: unknown): ProductPatchResult {
     barcode = trimmed || null;
   }
 
-  const priceRaw = record.wholesale_price ?? record.price;
-  if (priceRaw === undefined || priceRaw === null || priceRaw === "") {
+  const priceRaw = Object.prototype.hasOwnProperty.call(record, "wholesale_price") ? record.wholesale_price : record.price;
+  if (priceRaw === undefined || priceRaw === "") {
     return { ok: false, error: "가격은 필수입니다." };
   }
 
-  const wholesale_price = Number(priceRaw);
-  if (!Number.isFinite(wholesale_price) || wholesale_price < 0) {
+  const wholesale_price = priceRaw === null ? null : Number(priceRaw);
+  if (wholesale_price !== null && (!Number.isFinite(wholesale_price) || wholesale_price < 0)) {
     return { ok: false, error: "가격은 0 이상의 숫자여야 합니다." };
   }
 

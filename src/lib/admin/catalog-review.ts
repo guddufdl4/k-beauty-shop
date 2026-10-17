@@ -21,7 +21,7 @@ export function catalogReviewReasons(product: ReviewProduct): string[] {
 /** Clear only the review warnings addressed by an actual manual change. */
 export function catalogReviewMetadataPatch(
   existing: Record<string, unknown>,
-  patch: { name: string; barcode: string | null; wholesale_price: number; compare_at_price?: number | null },
+  patch: { name: string; barcode: string | null; wholesale_price: number | null; compare_at_price?: number | null },
 ): Record<string, unknown> | undefined {
   const metadata = { ...((existing.source_row as Record<string, unknown> | null) ?? {}) };
   let changed = false;
