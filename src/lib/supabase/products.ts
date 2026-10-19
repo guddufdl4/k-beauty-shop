@@ -858,19 +858,20 @@ async function hydrateProductLocaleNames(
   const ids = products.filter((product) => product.source_row == null).map((product) => product.id);
   const sourceById = new Map<string, Record<string, unknown>>();
 
-  for (let offset = 0; offset < ids.length; offset += 80) {
-    const { data, error } = await reader
-      .from("products")
-      .select("id, source_row")
-      .in("id", ids.slice(offset, offset + 80));
-
-    if (error) {
-      break;
+  // Cold homepage selections can contain hundreds of products. Bound concurrency
+  // instead of adding one network round trip for every 80 translated names.
+  for (let offset = 0; offset < ids.length; offset += 240) {
+    const batches = [];
+    for (let start = offset; start < Math.min(offset + 240, ids.length); start += 80) {
+      batches.push(reader.from("products").select("id, source_row").in("id", ids.slice(start, start + 80)));
     }
-
-    for (const row of data ?? []) {
-      if (row.source_row && typeof row.source_row === "object") {
-        sourceById.set(String(row.id), row.source_row as Record<string, unknown>);
+    const results = await Promise.all(batches);
+    for (const { data, error } of results) {
+      if (error) continue;
+      for (const row of data ?? []) {
+        if (row.source_row && typeof row.source_row === "object") {
+          sourceById.set(String(row.id), row.source_row as Record<string, unknown>);
+        }
       }
     }
   }
@@ -1327,6 +1328,7 @@ export async function getProducts(
       "external-popularity-list-v8",
       sort === "trending" || popularFirst ? `external-best-${curatedBestSellers.checked}` : "",
       categorySlug ?? "",
+      importBatchId ?? "",
       brandFilter ?? "",
       brandExact ? "1" : "0",
       searchTerm ?? "",
@@ -1351,6 +1353,34 @@ export async function getProducts(
         tags: [STOREFRONT_PRODUCTS_CACHE_TAG],
       },
     )();
+  }
+
+  // Reuse the guest-safe catalog selection/count, but read prices through the
+  // approved session on every request. Never store member prices in this cache.
+  if (
+    !privileged && canViewProductPrices(audience) && configured &&
+    listLimit != null && !options?.skipCache && !needsImageOnly &&
+    !options?.priorityBrandList && !options?.includeDraft &&
+    !options?.adminReview && !options?.adminIssue &&
+    deletionFilter === "active" && sort !== "sale" && !imageFirst
+  ) {
+    const sessionClient = await createSafeClient();
+    if (sessionClient) {
+      const selection = await getProducts({ ...options, audience: "guest" });
+      if (selection.meta.source === "database" && !selection.meta.error) {
+        const ids = selection.products.map(product => product.id);
+        if (!ids.length) return selection;
+        let pricesQuery = sessionClient.from("products")
+          .select("id, price, wholesale_price, compare_at_price, stock, moq, sold_out, price_on_request, updated_at")
+          .in("id", ids).eq("status", "active");
+        if (isSoftDeleteColumnAvailable()) pricesQuery = pricesQuery.is("deleted_at", null);
+        const { data, error } = await pricesQuery;
+        if (!error) {
+          return { ...selection, products: attachHomePrices(selection.products, (data ?? []) as HomePriceSnapshot[], audience) };
+        }
+      }
+    }
+    // Policy/database failures retain the existing direct-read behavior.
   }
 
   if (options?.priorityBrandList) {
