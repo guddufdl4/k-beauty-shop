@@ -30,10 +30,10 @@ import { AccountMenu } from "./account-menu";
 import { MobileNavActions, MobileNavPanels, MobileNavRoot, MobileQuickNav } from "./mobile-nav";
 
 import { StoreSearchBar } from "./store-search-bar";
-import { BrandsMegaMenu } from "./brands-mega-menu";
+import { BrandsMegaMenu, BrandDirectoryGrid } from "./brands-mega-menu";
 import { CategoryIcon } from "@/lib/store/category-icons";
-import { resolveFeaturedBrands, type FeaturedBrand } from "@/lib/store/partner-brands";
-import { brandNameToSlug, buildBrandHref } from "@/lib/store/brand-url";
+import { resolveFeaturedBrands } from "@/lib/store/partner-brands";
+import { brandNameToSlug } from "@/lib/store/brand-url";
 import { getNavBrandGroups } from "@/lib/supabase/brand-hub";
 import {
   buildProductsHref,
@@ -529,37 +529,17 @@ type HomeFeaturedBrandsSectionProps = {
   products: StorefrontProduct[];
 };
 
-function FeaturedBrandCard({ brand }: { brand: FeaturedBrand }) {
-  return (
-    <Link
-            prefetch={false}
-      href={buildBrandHref(brandNameToSlug(brand.displayName))}
-      className="group flex min-h-[88px] min-w-[140px] shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-6 transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:min-h-[96px] lg:min-w-0"
-    >
-      {brand.logoUrl ? (
-        <Image
-          src={brand.logoUrl}
-          alt={brand.displayName}
-          width={140}
-          height={48}
-          sizes="140px"
-          loading="lazy"
-          className="h-10 w-auto max-w-full object-contain"
-        />
-      ) : (
-        <span className="text-center text-xs font-bold uppercase leading-tight tracking-wide text-zinc-800 sm:text-sm">
-          {brand.displayName}
-        </span>
-      )}
-    </Link>
-  );
-}
-
 export async function HomeFeaturedBrandsSection({ products }: HomeFeaturedBrandsSectionProps) {
-  const [t, brands] = await Promise.all([
+  const [t, navBrands] = await Promise.all([
     getTranslations("home.featuredBrands"),
-    resolveFeaturedBrands(products),
+    getNavBrandGroups(),
   ]);
+  const brands = navBrands.featured.length
+    ? navBrands.featured
+    : (await resolveFeaturedBrands(products)).map(brand => ({
+        ...brand,
+        slug: brandNameToSlug(brand.displayName),
+      }));
 
   if (brands.length === 0) {
     return null;
@@ -581,11 +561,7 @@ export async function HomeFeaturedBrandsSection({ products }: HomeFeaturedBrands
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
-          {brands.map((brand) => (
-            <FeaturedBrandCard key={brand.displayName} brand={brand} />
-          ))}
-        </div>
+        <BrandDirectoryGrid brands={brands} />
       </div>
     </section>
   );

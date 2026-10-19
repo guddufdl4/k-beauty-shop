@@ -54,7 +54,7 @@ type Props = {
   copy: HeroCopy;
 };
 
-const AUTOPLAY_MS = 5500;
+const AUTOPLAY_MS = 7000;
 
 // Scope the artwork to this campaign so future admin-uploaded slides remain editable.
 const CAMPAIGN_SCENES: Record<string, string> = {
@@ -657,7 +657,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
       const nextIndex = Math.min(Math.max(index, 0), slideCount - 1);
       element.scrollTo({
         left: nextIndex * width,
-        behavior: "instant",
+        behavior: prefersReducedMotion ? "instant" : "smooth",
       });
       activeIndexRef.current = nextIndex;
       setActiveIndex(nextIndex);
@@ -776,7 +776,7 @@ export function HeroBannerSlider({ slides, copy }: Props) {
               ? seasonal ? "seasonal-slider relative z-0 flex" : "relative z-0 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "relative z-0 w-full"
           }
-          style={showControls ? { cursor: "grab", touchAction: "pan-x pan-y pinch-zoom", ...(seasonal ? { transform: `translate3d(-${trackIndex * 100}%, 0, 0)`, transitionDuration: resettingTrack || prefersReducedMotion ? "0ms" : "650ms" } : {}) } : undefined}
+          style={showControls ? { cursor: "grab", touchAction: "pan-x pan-y pinch-zoom", ...(seasonal ? { transform: `translate3d(-${trackIndex * 100}%, 0, 0)`, transitionDuration: resettingTrack || prefersReducedMotion ? "0ms" : "1800ms" } : {}) } : undefined}
           onTransitionEnd={seasonal ? (event) => {
             if (event.target === event.currentTarget && event.propertyName === "transform" && trackIndex === slideCount) {
               setResettingTrack(true);
