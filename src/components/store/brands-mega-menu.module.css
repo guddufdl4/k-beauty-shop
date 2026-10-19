@@ -32,8 +32,3 @@
 .viewport:has(a:focus-visible) { overflow-x: auto; }
 .viewport:has(a:focus-visible) .track { animation: none; }
 .viewport:has(a:focus-visible) .group[aria-hidden="true"], .viewport:has(a:focus-visible) .card[aria-hidden="true"] { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .viewport { overflow-x: auto; }
-  .track { animation: none; }
-  .group[aria-hidden="true"], .card[aria-hidden="true"] { display: none; }
-}

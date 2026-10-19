@@ -55,20 +55,13 @@ function BrandDirectoryLink({
 }
 
 export function BrandDirectoryGrid({ brands, onNavigate = () => {}, active = true }: { brands: FeaturedNavBrand[]; onNavigate?: () => void; active?: boolean }) {
-  const [visible, setVisible] = useState(true);
-  useEffect(() => {
-    const updateVisibility = () => setVisible(document.visibilityState === "visible");
-    updateVisibility();
-    document.addEventListener("visibilitychange", updateVisibility);
-    return () => document.removeEventListener("visibilitychange", updateVisibility);
-  }, []);
   if (!brands.length) return null;
   // Each identical half fills at least one desktop viewport, including its trailing gap.
   const copies = Math.ceil(4 / brands.length);
   const items = Array.from({ length: copies }, () => brands).flat();
   return (
     <div className={`${styles.viewport} mt-4`}>
-      <div className={styles.track} style={{ animationDuration: `${items.length * 3.5}s`, animationPlayState: active && visible && brands.length > 1 ? "running" : "paused" }}>
+      <div className={styles.track} style={{ animationDuration: `${items.length * 3.5}s`, animationPlayState: active && brands.length > 1 ? "running" : "paused" }}>
         {[0, 1].map(half => (
           <ul key={half} className={styles.group} aria-hidden={half === 1 || undefined}>
             {items.map((brand, index) => (

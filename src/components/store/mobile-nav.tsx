@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import NextLink from "next/link";
 import { Link, usePathname } from "@/i18n/navigation";
-import { buildBrandHref } from "@/lib/store/brand-url";
+import { BrandDirectoryGrid } from "./brands-mega-menu";
 import { buildProductsHref, MAIN_NAV_LINKS } from "@/lib/store/products-url";
 import type { FeaturedNavBrand } from "@/lib/supabase/brand-hub";
 import { LocaleSwitcher } from "./locale-switcher";
@@ -354,16 +354,7 @@ export function MobileNavPanels() {
                   <p className="px-3 text-xs font-bold uppercase tracking-wide text-zinc-500">
                     {tHome("title")}
                   </p>
-                  {featuredBrands.map((brand) => (
-                    <Link
-                      key={brand.slug}
-                      href={buildBrandHref(brand.slug)}
-                      className={mobileSubLinkClass}
-                      onClick={closeAll}
-                    >
-                      {brand.displayName}
-                    </Link>
-                  ))}
+                  <BrandDirectoryGrid brands={featuredBrands} onNavigate={closeAll} active={brandsOpen} />
                   <Link href="/brands" className={mobileSubLinkClass} onClick={closeAll}>
                     {tHome("viewAll")}
                   </Link>
