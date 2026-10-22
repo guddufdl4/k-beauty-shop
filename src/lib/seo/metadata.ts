@@ -6,6 +6,7 @@ import { PUBLIC_STORE_NAME, absoluteLocaleUrl, resolveSiteUrl } from "@/lib/site
 
 const OG_LOCALE: Record<AppLocale, string> = {
   en: "en_US",
+  fr: "fr_FR", es: "es_ES",
   ko: "ko_KR",
   ja: "ja_JP",
   zh: "zh_CN",
@@ -22,6 +23,8 @@ export const GOOGLE_LISTING_SEO = {
 } as const;
 
 export const STOREFRONT_SEO: Record<AppLocale, { title: string; description: string }> = {
+  fr: { title: getHomeSeo("fr").title, description: getHomeSeo("fr").description },
+  es: { title: getHomeSeo("es").title, description: getHomeSeo("es").description },
   en: { title: getHomeSeo("en").title, description: getHomeSeo("en").description },
   ko: { title: getHomeSeo("ko").title, description: getHomeSeo("ko").description },
   ja: { title: getHomeSeo("ja").title, description: getHomeSeo("ja").description },

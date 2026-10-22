@@ -89,7 +89,7 @@ export function getCategorySortLocale(locale: string): string {
   if (locale === "ko") return "ko";
   if (locale === "ja") return "ja";
   if (locale === "zh") return "zh";
-  if (["vi", "id", "th", "ru", "kk", "uz", "ky", "tg", "tk"].includes(locale)) return locale;
+  if (["vi", "id", "th", "ru", "kk", "uz", "ky", "tg", "tk", "fr", "es"].includes(locale)) return locale;
   return "en";
 }
 

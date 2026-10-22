@@ -409,6 +409,162 @@
         "Body Lotion": "Bedeniň Losýony",
         "Hand & Foot": "Ellik & Aýak"
       }
+    },
+    "fr": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "badge": "Beauty of Joseon",
+          "title": "Héritage coréen\nÉclat au quotidien",
+          "subtitle": "Sagesse coréenne intemporelle pour une peau moderne",
+          "button_text": "Explorer Beauty of Joseon",
+          "button_link": "/products?brand=Beauty%20of%20Joseon",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        },
+        "seasonal-2026-10-dr-althea": {
+          "badge": "Dr.Althea",
+          "title": "L'édition 345 soins",
+          "subtitle": "Découvrez la Crème 345 Relief et la Brume Crème pour votre sélection de soins d'automne",
+          "button_text": "Explorer Dr.Althea",
+          "button_link": "/products?brand=Dr.Althea",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        },
+        "seasonal-2026-10-anua": {
+          "badge": "ANUA",
+          "title": "Vos essentiels de sérum",
+          "subtitle": "Découvrez les sérums Acide Azélaïque 10 et Niacinamide 10 + TXA 4",
+          "button_text": "Explorer ANUA",
+          "button_link": "/products?brand=ANUA",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        },
+        "seasonal-2026-10-skin1004": {
+          "badge": "SKIN1004",
+          "title": "Une nouvelle vision des soins quotidiens",
+          "subtitle": "Découvrez l'ampoule Centella de Madagascar et le sérum solaire Hyalu-Cica",
+          "button_text": "Explorer SKIN1004",
+          "button_link": "/products?brand=SKIN1004",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        }
+      },
+      "categories": {
+        "Skincare": "Soins de la peau",
+        "Makeup": "Maquillage",
+        "Suncare": "Soins solaires",
+        "Hair Care": "Soins capillaires",
+        "Body Care": "Soins du corps",
+        "Mask Pack": "Pack de masques",
+        "Tools & Accessories": "Outils et accessoires",
+        "Nail": "Clou",
+        "Set Menu": "Définir le menu",
+        "Promotions": "Promotions",
+        "Skin/Toner": "Peau/Tonique",
+        "Lotion/Emulsion": "Lotion/émulsion",
+        "Essence/Serum/Ampoule": "Essence/Sérum/Ampoule",
+        "Cream": "Crème",
+        "Moisture Cream": "Crème Hydratante",
+        "Nutrition Cream": "Crème Nutritionnelle",
+        "Basic Sets": "Ensembles de base",
+        "Eye Care": "Soins des yeux",
+        "Cleansing": "Nettoyage",
+        "Sun Care": "Soins solaires",
+        "Base": "Socle",
+        "Lip": "Lèvre",
+        "Eye": "Oeil",
+        "Cheek": "Joue",
+        "Sheet Mask": "Masque en feuille",
+        "Sleeping Mask": "Masque de sommeil",
+        "Wash-off Pack": "Pack lavable",
+        "Sunscreen": "Crème solaire",
+        "Sun Stick": "Bâton solaire",
+        "After Sun": "Après le soleil",
+        "Shampoo": "Shampoing",
+        "Treatment": "Traitement",
+        "Styling": "Stylisme",
+        "Body Wash": "Gel douche",
+        "Body Lotion": "Lotion pour le corps",
+        "Hand & Foot": "Main et pied"
+      }
+    },
+    "es": {
+      "campaigns": {
+        "seasonal-2026-10-beauty-of-joseon": {
+          "badge": "Beauty of Joseon",
+          "title": "herencia coreana\nResplandor cotidiano",
+          "subtitle": "Sabiduría coreana atemporal para una piel moderna",
+          "button_text": "Explorar Beauty of Joseon",
+          "button_link": "/products?brand=Beauty%20of%20Joseon",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        },
+        "seasonal-2026-10-dr-althea": {
+          "badge": "Dr.Althea",
+          "title": "La edición de atención 345",
+          "subtitle": "Descubre 345 Relief Cream y Cream Mist para tu selección de cuidado de la piel de otoño",
+          "button_text": "Explorar Dr.Althea",
+          "button_link": "/products?brand=Dr.Althea",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        },
+        "seasonal-2026-10-anua": {
+          "badge": "ANUA",
+          "title": "Tus básicos de sérum",
+          "subtitle": "Explora los sueros de ácido azelaico 10 y niacinamida 10 + TXA 4",
+          "button_text": "Explorar ANUA",
+          "button_link": "/products?brand=ANUA",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        },
+        "seasonal-2026-10-skin1004": {
+          "badge": "SKIN1004",
+          "title": "Una nueva visión del cuidado diario",
+          "subtitle": "Explora la ampolla de centella de Madagascar y el suero solar Hyalu-Cica",
+          "button_text": "Explorar SKIN1004",
+          "button_link": "/products?brand=SKIN1004",
+          "wholesale_label": "",
+          "order_guide_label": ""
+        }
+      },
+      "categories": {
+        "Skincare": "Cuidado de la piel",
+        "Makeup": "Maquillaje",
+        "Suncare": "Protección solar",
+        "Hair Care": "cuidado del cabello",
+        "Body Care": "Cuidado del cuerpo",
+        "Mask Pack": "Paquete de máscaras",
+        "Tools & Accessories": "Herramientas y accesorios",
+        "Nail": "uñas",
+        "Set Menu": "Establecer menú",
+        "Promotions": "Promociones",
+        "Skin/Toner": "Piel/Tónico",
+        "Lotion/Emulsion": "Loción/emulsión",
+        "Essence/Serum/Ampoule": "Esencia/Suero/Ampolla",
+        "Cream": "crema",
+        "Moisture Cream": "Crema Hidratante",
+        "Nutrition Cream": "Crema Nutricional",
+        "Basic Sets": "Conjuntos básicos",
+        "Eye Care": "Cuidado de los ojos",
+        "Cleansing": "limpieza",
+        "Sun Care": "cuidado solar",
+        "Base": "bases",
+        "Lip": "labio",
+        "Eye": "Ojo",
+        "Cheek": "mejilla",
+        "Sheet Mask": "Máscara de hoja",
+        "Sleeping Mask": "Máscara para dormir",
+        "Wash-off Pack": "Paquete de lavado",
+        "Sunscreen": "protector solar",
+        "Sun Stick": "Palo solar",
+        "After Sun": "Después del sol",
+        "Shampoo": "Champú",
+        "Treatment": "Tratamiento",
+        "Styling": "Estilo",
+        "Body Wash": "Gel de baño",
+        "Body Lotion": "loción corporal",
+        "Hand & Foot": "Mano y pie"
+      }
     }
   }
 }

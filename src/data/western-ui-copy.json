@@ -1,0 +1,342 @@
+{
+  "fr": {
+    "common": {
+      "title": "Mes notifications",
+      "intro": "Vérifiez la vérification commerciale, les mises à jour des commandes et des devis.",
+      "all": "Marquer tout comme lu",
+      "empty": "Aucune notification pour l'instant.",
+      "error": "Impossible de charger les notifications.",
+      "retry": "Réessayez",
+      "action": "Ouvrir la page associée",
+      "account": "Mon compte",
+      "loading": "Chargement des notifications…",
+      "read": "Lire",
+      "unread": "Non lu",
+      "quoteRequest": "Demander un devis en attendant la vérification",
+      "businessNumber": "Numéro d'enregistrement d'entreprise/local",
+      "businessNumberError": "Veuillez saisir un numéro d'enregistrement d'entreprise valide.",
+      "viewAll": "Afficher toutes les notifications",
+      "businessRequired": "Vérification commerciale requise",
+      "businessRequiredBody": "Soumettez des documents commerciaux pour consulter les prix de gros.",
+      "approved": "Entreprise vérifiée",
+      "approvedBody": "Vous pouvez désormais consulter les prix de gros.",
+      "review": "Mise à jour des documents commerciaux",
+      "reviewBody": "Veuillez vérifier votre statut de vérification dans Mon compte.",
+      "quoteRead": "Devis consulté",
+      "quoteReadBody": "Notre équipe a ouvert votre devis.",
+      "order": "Mise à jour de la commande",
+      "orderBody": "Vérifiez le dernier statut de votre commande."
+    },
+    "business": {
+      "help": "Soumettez un certificat d'enregistrement d'entreprise ou une preuve d'opérations commerciales pour une approbation automatique et un accès aux prix de gros, aux devis et aux factures. Vous pouvez vous connecter, ajouter des produits et demander des devis avant de soumettre des preuves. Masquez les informations sensibles inutiles dans les documents.",
+      "title": "Vérification commerciale",
+      "file": "Document commercial",
+      "website": "Site Web professionnel ou canal de vente (facultatif)",
+      "consent": "J'accepte d'utiliser ce document pour vérifier mon entreprise.",
+      "upload": "Soumettre le document",
+      "pending": "Soumission…",
+      "saved": "Preuve commerciale soumise. Les prix sont maintenant disponibles.",
+      "error": "Impossible de soumettre votre document. Veuillez réessayer.",
+      "view": "Afficher le document soumis",
+      "none": "Aucun document soumis.",
+      "format": "PDF, JPG ou PNG, jusqu'à 5 Mo. Masquez les informations personnelles inutiles."
+    },
+    "support": {
+      "title": "Contacter le service client",
+      "intro": "Renseignez-vous sur votre compte, vos produits ou vos devis. Notre équipe vous répondra à l'adresse e-mail que vous fournissez.",
+      "name": "Nom",
+      "email": "E-mail de réponse",
+      "category": "Type de demande",
+      "subject": "Sujet",
+      "message": "Message",
+      "order": "Numéro de commande/devis (facultatif)",
+      "consent": "J'accepte la collecte et l'utilisation de mon nom, de mon adresse électronique et de mon message pour traiter cette demande.",
+      "privacy": "Politique de confidentialité",
+      "submit": "Envoyer une demande",
+      "sending": "Envoi…",
+      "success": "Votre demande a été reçue. Conservez votre numéro de référence. Nous vous répondrons par email.",
+      "reference": "Numéro de référence",
+      "failed": "Nous n'avons pas pu recevoir votre demande. Votre texte est enregistré sous cette forme. Veuillez réessayer sous peu.",
+      "limited": "Vous avez récemment envoyé plusieurs demandes de renseignements. Veuillez réessayer dans 5 minutes.",
+      "general": "Demande générale",
+      "account": "Compte",
+      "quotation": "Commande / devis",
+      "product": "Produit",
+      "other": "Autre",
+      "cta": "Contacter l'assistance",
+      "resolved": "Résolu"
+    },
+    "contact": {
+      "label": "Téléphone / WhatsApp · Viber · LINE (facultatif)",
+      "hint": "Incluez le nom de l'application et votre numéro de téléphone avec l'indicatif du pays ou votre identifiant.",
+      "consent": "J'accepte d'utiliser mes coordonnées facultatives pour répondre à cette demande."
+    },
+    "supportCenter": {
+      "title": "Comment pouvons-nous aider votre entreprise ?",
+      "intro": "Vérification de compte, devis de gros et assistance aux commandes en un seul endroit.",
+      "search": "Rechercher des articles d'aide",
+      "support": "Assistance",
+      "verification": "Complétez la vérification de votre entreprise",
+      "saved": "Numéro d'enregistrement enregistré. Soumettez votre document commercial pour continuer.",
+      "missing": "Ajoutez votre numéro d'enregistrement et votre document professionnel dans Mon compte.",
+      "approved": "Votre accès grossiste est actif.",
+      "review": "Votre document est soumis. Contactez-nous si l'accès en gros n'est toujours pas disponible.",
+      "guest": "Connectez-vous pour vérifier l'historique de vérification et de demande de votre entreprise.",
+      "upload": "Déposer un document",
+      "account": "Mon compte",
+      "steps": [
+        "Compte créé",
+        "Document commercial",
+        "Accès en gros"
+      ],
+      "topics": [
+        "Compte et vérification",
+        "Prix et quantité minimale de commande",
+        "Devis et commandes",
+        "Expédition et paiement"
+      ],
+      "topicHelp": [
+        "Création de compte et documents commerciaux",
+        "Prix de gros et quantités minimales",
+        "Demandes de devis et mises à jour des commandes",
+        "Informations sur la livraison, le paiement et l'importation"
+      ],
+      "my": "Mes demandes",
+      "all": "Tout",
+      "awaiting": "En attente de réponse",
+      "answered": "Répondu",
+      "closed": "Fermé",
+      "empty": "Aucune demande dans cette vue.",
+      "login": "Connectez-vous",
+      "view": "Afficher la conversation",
+      "team": "Assistance HMT",
+      "you": "Vous",
+      "attachment": "Télécharger la pièce jointe",
+      "loadError": "Nous n'avons pas pu charger vos demandes. Veuillez actualiser ou nous contacter par e-mail.",
+      "email": "Vous préférez le courrier électronique ?",
+      "emailHelp": "Incluez le nom de votre entreprise et la référence de votre demande.",
+      "faq": "Questions fréquemment posées",
+      "noResults": "Aucun article d'aide correspondant. Envoyez-nous une demande ci-dessous.",
+      "next": "Suivant",
+      "previous": "Précédent",
+      "history": "Vos 50 messages les plus récents sont affichés.",
+      "questions": [
+        [
+          "Pourquoi ne puis-je pas voir les prix de gros ?",
+          "Un numéro d'enregistrement enregistré n'active pas à lui seul l'accès en gros. Connectez-vous à Mon compte et soumettez un certificat d'enregistrement d'entreprise, une licence commerciale locale ou une preuve d'activité commerciale. Si le document est déjà soumis et que les prix sont toujours masqués, contactez le support."
+        ],
+        [
+          "Quels documents commerciaux puis-je soumettre ?",
+          "Soumettez un certificat d'enregistrement d'entreprise, une licence commerciale locale ou toute autre preuve d'activités commerciales. Les formats PDF, JPG et PNG sont pris en charge. Masquez les identifiants personnels inutiles. Utilisez le formulaire de vérification d'entreprise dans Mon compte."
+        ],
+        [
+          "Quel est le montant minimum de commande ?",
+          "Le sous-total du devis doit être supérieur à 1 000 USD, hors frais de port. Chaque produit a également une quantité minimale de commande (MOQ)."
+        ],
+        [
+          "Dois-je commander par cartons complets ?",
+          "MOQ est la quantité minimale, pas un incrément de boîte. Si MOQ est de 40, vous pouvez demander 40, 41 unités ou plus. Les chiffres des stocks n’imposent pas de plafond ; les produits explicitement épuisés ne peuvent pas être demandés. La disponibilité finale est confirmée avec votre devis."
+        ],
+        [
+          "Où puis-je vérifier les réponses ?",
+          "Les demandes soumises alors que vous êtes connecté apparaissent dans Mes demandes sur cette page. Ouvrez la conversation pour lire les réponses ou envoyer un suivi. Les réponses d'assistance sont également envoyées par e-mail à votre adresse de réponse. Les demandes des clients reçoivent des réponses par e-mail."
+        ],
+        [
+          "Comment l'expédition et le paiement sont-ils confirmés ?",
+          "Les frais d'expédition, les modalités de livraison, la disponibilité et les prix finaux sont confirmés avec votre devis. Le paiement s'effectue par virement bancaire après confirmation. Incluez votre pays de destination et la référence de votre commande lorsque vous contactez l'assistance."
+        ]
+      ]
+    },
+    "access": {
+      "hint": "Un numéro d’enregistrement d’entreprise est requis pour s’inscrire. Soumettez des preuves commerciales après l’inscription pour voir les prix.",
+      "help": "Soumettez un certificat d'enregistrement d'entreprise ou une preuve d'opérations commerciales pour une approbation automatique et un accès aux prix de gros, aux devis et aux factures. Vous pouvez vous connecter, ajouter des produits et demander des devis avant de soumettre des preuves. Masquez les informations sensibles inutiles dans les documents.",
+      "saved": "Preuve commerciale soumise. Les prix sont maintenant disponibles.",
+      "required": "Soumettez des preuves commerciales pour afficher les prix"
+    },
+    "formExtras": {
+      "fileSize": "Choisissez une pièce jointe jusqu'à 3 Mo.",
+      "fileType": "Choisissez un fichier PDF, JPG ou PNG valide.",
+      "myInquiries": "Mes demandes",
+      "newInquiry": "Nouvelle demande",
+      "company": "Nom de l'entreprise/du magasin",
+      "attachment": "Joindre un fichier (facultatif)",
+      "attachmentHelp": "maximum. Masquez les informations personnelles inutiles.",
+      "businessLink": "Pour la vérification de votre entreprise, soumettez les documents dans Mon compte.",
+      "followUp": "Suivi",
+      "reply": "Répondre au client",
+      "send": "Envoyer un message",
+      "sending": "Envoi…",
+      "failed": "Impossible d'envoyer. Veuillez réessayer."
+    }
+  },
+  "es": {
+    "common": {
+      "title": "Mis notificaciones",
+      "intro": "Verifique la verificación comercial, las actualizaciones de pedidos y cotizaciones.",
+      "all": "Marcar todo como leído",
+      "empty": "Aún no hay notificaciones.",
+      "error": "No se pudieron cargar las notificaciones.",
+      "retry": "Inténtalo de nuevo",
+      "action": "Abrir página relacionada",
+      "account": "mi cuenta",
+      "loading": "Cargando notificaciones…",
+      "read": "leer",
+      "unread": "No leído",
+      "quoteRequest": "Solicite una cotización mientras la verificación está pendiente",
+      "businessNumber": "Número de registro comercial/local",
+      "businessNumberError": "Ingrese un número de registro comercial válido.",
+      "viewAll": "Ver todas las notificaciones",
+      "businessRequired": "Se requiere verificación comercial",
+      "businessRequiredBody": "Envíe documentos comerciales para ver los precios mayoristas.",
+      "approved": "Negocio verificado",
+      "approvedBody": "Ahora puedes ver los precios al por mayor.",
+      "review": "Actualización de documentos comerciales",
+      "reviewBody": "Verifique el estado de su verificación en Mi cuenta.",
+      "quoteRead": "Cotización vista",
+      "quoteReadBody": "Nuestro equipo ha abierto su cotización.",
+      "order": "Actualización de pedido",
+      "orderBody": "Consulta el estado más reciente de tu pedido."
+    },
+    "business": {
+      "help": "Presentar un certificado de registro comercial o evidencia de operaciones comerciales para aprobación automática y acceso a precios mayoristas, cotizaciones y facturas. Puede iniciar sesión, agregar productos y solicitar cotizaciones antes de enviar evidencia. Enmascare información confidencial innecesaria en los documentos.",
+      "title": "Verificación comercial",
+      "file": "documento comercial",
+      "website": "Sitio web comercial o canal de ventas (opcional)",
+      "consent": "Doy mi consentimiento para utilizar este documento para verificar mi negocio.",
+      "upload": "Enviar documento",
+      "pending": "Enviando…",
+      "saved": "Pruebas comerciales presentadas. Los precios ya están disponibles.",
+      "error": "No se pudo enviar su documento. Por favor inténtalo de nuevo.",
+      "view": "Ver documento enviado",
+      "none": "Ningún documento presentado.",
+      "format": "PDF, JPG o PNG, hasta 5 MB. Enmascare información personal innecesaria."
+    },
+    "support": {
+      "title": "Póngase en contacto con atención al cliente",
+      "intro": "Pregunta por tu cuenta, productos o cotizaciones. Nuestro equipo le responderá a la dirección de correo electrónico que proporcione.",
+      "name": "Nombre",
+      "email": "Responder correo electrónico",
+      "category": "Tipo de consulta",
+      "subject": "Asunto",
+      "message": "Mensaje",
+      "order": "Número de pedido/cotización (opcional)",
+      "consent": "Doy mi consentimiento para la recopilación y el uso de mi nombre, correo electrónico y mensaje para manejar esta consulta.",
+      "privacy": "Política de privacidad",
+      "submit": "Enviar consulta",
+      "sending": "Enviando…",
+      "success": "Su consulta ha sido recibida. Conserve su número de referencia. Le responderemos por correo electrónico.",
+      "reference": "Número de referencia",
+      "failed": "No pudimos recibir su consulta. Su texto se guarda en este formulario. Inténtelo de nuevo en breve.",
+      "limited": "Ha enviado varias consultas recientemente. Inténtelo de nuevo en 5 minutos.",
+      "general": "Consulta general",
+      "account": "cuenta",
+      "quotation": "Pedido/cotización",
+      "product": "Producto",
+      "other": "Otro",
+      "cta": "Contactar con soporte",
+      "resolved": "Resuelto"
+    },
+    "contact": {
+      "label": "Teléfono / WhatsApp · Viber · LINE (opcional)",
+      "hint": "Incluya el nombre de la aplicación y su número de teléfono con el código de país o su identificación.",
+      "consent": "Doy mi consentimiento para utilizar mis datos de contacto opcionales para responder a esta consulta."
+    },
+    "supportCenter": {
+      "title": "¿Cómo podemos ayudar a su negocio?",
+      "intro": "Verificación de cuenta, cotizaciones mayoristas y soporte para pedidos en un solo lugar.",
+      "search": "Buscar artículos de ayuda",
+      "support": "Soporte",
+      "verification": "Complete la verificación de su negocio",
+      "saved": "Número de registro guardado. Envíe su documento comercial para continuar.",
+      "missing": "Agregue su número de registro y documento comercial en Mi cuenta.",
+      "approved": "Tu acceso mayorista está activo.",
+      "review": "Su documento está enviado. Contáctenos si el acceso mayorista aún no está disponible.",
+      "guest": "Inicie sesión para consultar el historial de consultas y verificación de su empresa.",
+      "upload": "Subir documento",
+      "account": "mi cuenta",
+      "steps": [
+        "Cuenta creada",
+        "documento comercial",
+        "Acceso mayorista"
+      ],
+      "topics": [
+        "Cuenta y verificación",
+        "Precios y cantidad mínima de pedido",
+        "Cotizaciones y pedidos",
+        "Envío y pago"
+      ],
+      "topicHelp": [
+        "Configuración de cuenta y documentos comerciales.",
+        "Precios al por mayor y cantidades mínimas.",
+        "Solicitudes de cotización y actualizaciones de pedidos",
+        "Información de entrega, pago e importación."
+      ],
+      "my": "Mis consultas",
+      "all": "Todos",
+      "awaiting": "esperando respuesta",
+      "answered": "Respondido",
+      "closed": "Cerrado",
+      "empty": "No hay consultas en esta vista.",
+      "login": "Iniciar sesión",
+      "view": "Ver conversación",
+      "team": "Soporte HMT",
+      "you": "tu",
+      "attachment": "Descargar archivo adjunto",
+      "loadError": "No pudimos cargar sus consultas. Por favor actualice o contáctenos por correo electrónico.",
+      "email": "¿Prefieres correo electrónico?",
+      "emailHelp": "Incluya el nombre de su empresa y la referencia de su consulta.",
+      "faq": "Preguntas frecuentes",
+      "noResults": "No hay artículos de ayuda coincidentes. Envíenos una consulta a continuación.",
+      "next": "Siguiente",
+      "previous": "Anterior",
+      "history": "Se muestran sus 50 mensajes más recientes.",
+      "questions": [
+        [
+          "¿Por qué no puedo ver los precios mayoristas?",
+          "Un número de registro guardado no activa el acceso mayorista por sí solo. Inicie sesión en Mi cuenta y envíe un certificado de registro comercial, una licencia comercial local o evidencia de operaciones comerciales. Si el documento ya se envió y los precios aún están ocultos, comuníquese con el soporte."
+        ],
+        [
+          "¿Qué documentos comerciales puedo presentar?",
+          "Presentar un certificado de registro comercial, licencia comercial local u otra evidencia de operaciones comerciales. Se admiten PDF, JPG y PNG. Enmascare identificadores personales innecesarios. Utilice el formulario de verificación comercial en Mi cuenta."
+        ],
+        [
+          "¿Cuál es el monto mínimo de pedido?",
+          "El subtotal de la cotización debe ser superior a USD 1000, sin incluir el envío. Cada producto también tiene una cantidad mínima de pedido (MOQ)."
+        ],
+        [
+          "¿Tengo que pedir en cajas completas?",
+          "La MOQ es la cantidad mínima de pedido. Si es de 40 unidades, puede solicitar 40, 41 o más unidades. Las existencias indicadas no limitan la cantidad solicitada. Solo se excluyen los productos marcados como agotados. La disponibilidad final se confirma en la cotización."
+        ],
+        [
+          "¿Dónde puedo consultar las respuestas?",
+          "Las consultas enviadas mientras estás registrado aparecen en Mis consultas en esta página. Abra la conversación para leer las respuestas o enviar un seguimiento. Las respuestas de soporte también se envían por correo electrónico a su dirección de respuesta. Las consultas de los huéspedes reciben respuestas por correo electrónico."
+        ],
+        [
+          "¿Cómo se confirman el envío y el pago?",
+          "Los costos de envío, arreglos de entrega, disponibilidad y precios finales se confirman con su cotización. El pago se realiza mediante transferencia bancaria previa confirmación. Incluya su país de destino y la referencia del pedido cuando se comunique con el soporte."
+        ]
+      ]
+    },
+    "access": {
+      "hint": "Se requiere un número de registro comercial para registrarse. Envíe evidencia comercial después del registro para ver los precios.",
+      "help": "Presentar un certificado de registro comercial o evidencia de operaciones comerciales para aprobación automática y acceso a precios mayoristas, cotizaciones y facturas. Puede iniciar sesión, agregar productos y solicitar cotizaciones antes de enviar evidencia. Enmascare información confidencial innecesaria en los documentos.",
+      "saved": "Pruebas comerciales presentadas. Los precios ya están disponibles.",
+      "required": "Envíe evidencia comercial para ver los precios."
+    },
+    "formExtras": {
+      "fileSize": "Elija un archivo adjunto de hasta 3 MB.",
+      "fileType": "Elija un archivo PDF, JPG o PNG válido.",
+      "myInquiries": "Mis consultas",
+      "newInquiry": "Nueva consulta",
+      "company": "Nombre de la empresa/tienda",
+      "attachment": "Adjuntar un archivo (opcional)",
+      "attachmentHelp": "máximo. Enmascare información personal innecesaria.",
+      "businessLink": "Para la verificación comercial, envíe los documentos en Mi cuenta.",
+      "followUp": "seguimiento",
+      "reply": "Responder al cliente",
+      "send": "enviar mensaje",
+      "sending": "Enviando…",
+      "failed": "No se puede enviar. Por favor inténtalo de nuevo."
+    }
+  }
+}

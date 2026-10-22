@@ -74,7 +74,9 @@
     "uz": "O‘zbekcha",
     "ky": "Кыргызча",
     "tg": "Тоҷикӣ",
-    "tk": "Türkmençe"
+    "tk": "Türkmençe",
+    "fr": "Français",
+    "es": "Español"
   },
   "viewMode": {
     "label": "Ko‘rish rejimi",

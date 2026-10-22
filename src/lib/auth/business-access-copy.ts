@@ -1,3 +1,4 @@
+import westernCopy from "@/data/western-ui-copy.json";
 const copies = {
   ko: {"hint":"사업자 번호는 회원가입에 필수입니다. 가입 후 사업자 증빙을 제출해야 가격을 볼 수 있습니다.","help":"사업자등록증 또는 사업 운영 증빙자료를 제출하면 자동 승인되어 공급가격과 가격이 포함된 견적·Invoice를 이용할 수 있습니다. 증빙 제출 전에도 로그인, 상품 담기, 견적 문의는 가능합니다. 서류에서 불필요한 민감정보는 가려 주세요.","saved":"증빙 제출이 완료되었습니다. 가격을 확인할 수 있습니다.","required":"가격 열람을 위한 사업자 증빙 제출 안내"},
   en: {"hint":"A business registration number is required to sign up. Submit business evidence after registration to view prices.","help":"Submit a business registration certificate or evidence of business operations for automatic approval and access to wholesale prices, priced quotations and invoices. You can sign in, add products and request quotations before submitting evidence. Mask unnecessary sensitive information in documents.","saved":"Business evidence submitted. Prices are now available.","required":"Submit business evidence to view prices"},
@@ -14,5 +15,5 @@ const copies = {
   tk: {"hint":"Hasaba durmak üçin işewürligiň bellige alyş belgisi gerek. Bahalary görmek üçin hasaba duranyňyzdan soň tassyklaýjy resminamalary iberiň.","help":"Awtomatiki tassyklama hem-de lomaý bahalara we hasap-fakturalara giriş üçin bellige alyş şahadatnamasyny ýa-da işewürlik subutnamasyny iberiň. Resminama ibermezden öň girip, haryt saýlap we baha sorap bilersiňiz. Gereksiz gizlin maglumatlary ýapyň.","saved":"Işewürlik resminamalary iberildi. Bahalar elýeterli.","required":"Hasaba durmak üçin işewürligiň bellige alyş belgisi gerek. Bahalary görmek üçin hasaba duranyňyzdan soň tassyklaýjy resminamalary iberiň."},
 } as const;
 export function businessAccessCopy(locale: string) {
-  return copies[locale as keyof typeof copies] ?? copies.en;
+  return westernCopy[locale as keyof typeof westernCopy]?.access ?? copies[locale as keyof typeof copies] ?? copies.en;
 }

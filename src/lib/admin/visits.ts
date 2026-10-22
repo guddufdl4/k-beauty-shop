@@ -126,7 +126,7 @@ export function normalizeVisitPath(raw: string | null | undefined): string | nul
 }
 
 function localeFromPath(path: string): string | null {
-  const match = path.match(/^\/(en|ko|ja|zh|vi|id|th|ru|kk|uz|ky|tg|tk)(?:\/|$)/);
+  const match = path.match(/^\/(en|ko|ja|zh|vi|id|th|ru|kk|uz|ky|tg|tk|fr|es)(?:\/|$)/);
   return match?.[1] ?? null;
 }
 

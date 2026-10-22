@@ -1,5 +1,6 @@
+import westernCopy from "@/data/western-ui-copy.json";
 import centralCopy from "@/data/central-asian-ui-copy.json";
-const central = (locale:string) => centralCopy[locale as keyof typeof centralCopy];
+const central = (locale:string) => westernCopy[locale as keyof typeof westernCopy] ?? centralCopy[locale as keyof typeof centralCopy];
 /** Shared copy for the new Southeast Asian locales, including non-next-intl forms. */
 const localeIndex: Record<string, number> = { vi: 0, id: 1, th: 2 };
 const phrases = {

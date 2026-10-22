@@ -1,3 +1,4 @@
+import westernCopy from "@/data/western-ui-copy.json";
 const en={
  title:'How can we help your business?',intro:'Account verification, wholesale quotes and order support in one place.',search:'Search help articles',support:'Support',
  verification:'Complete your business verification',saved:'Registration number saved. Submit your business document to continue.',missing:'Add your registration number and business document in My account.',approved:'Your wholesale access is active.',review:'Your document is submitted. Contact us if wholesale access is still unavailable.',guest:'Sign in to check your business verification and inquiry history.',upload:'Upload document',account:'My account',steps:['Account created','Business document','Wholesale access'],
@@ -28,4 +29,4 @@ const ko:typeof en={
  ['배송과 결제는 어떻게 진행되나요?','배송비, 배송 방법, 공급 가능 여부와 최종 가격은 견적 시 확정합니다. 확인 후 계좌이체로 결제합니다. 문의할 때 배송 국가와 주문·견적 번호를 함께 알려 주세요.'],
  ]
 };
-export function supportCenterCopy(locale:string){return locale==='ko'?ko:en;}
+export function supportCenterCopy(locale:string){return westernCopy[locale as keyof typeof westernCopy]?.supportCenter ?? (locale==='ko'?ko:en);}

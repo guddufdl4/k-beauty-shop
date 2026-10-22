@@ -1,4 +1,6 @@
 const labels: Record<string, [string, string, string, string]> = {
+  fr: ['Prix sur demande', 'Demander un prix', 'Contactez-nous pour connaître le prix de gros actuel.', 'Quantité souhaitée'],
+  es: ['Precio bajo consulta', 'Consultar precio', 'Contáctenos para conocer el precio mayorista actual.', 'Cantidad deseada'],
   ko: ['가격 별도 문의', '가격 문의하기', '최신 공급가는 문의 후 안내해 드립니다.', '희망 수량'],
   en: ['Price on request', 'Request a price', 'Contact us for the latest wholesale price.', 'Desired quantity'],
   ja: ['価格はお問い合わせください', '価格を問い合わせる', '最新の卸価格はお問い合わせ後にご案内します。', '希望数量'],
